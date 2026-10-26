@@ -1,3 +1,4 @@
+
 name: Build Memo APK
 
 on:
@@ -25,27 +26,26 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-          
+
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
         with:
           packages: 'platform-tools'
+
       - name: Install Android SDK packages
         shell: bash
         run: |
           set -euo pipefail
           yes | sdkmanager --licenses >/dev/null || true
-
           sdkmanager --install \
             "platform-tools" \
             "platforms;android-35" \
             "build-tools;35.0.0"
 
-      - name: Install exact Gradle version (8.14.6)
+      - name: Install exact Gradle version
         shell: bash
         run: |
           set -euo pipefail
-
           VERSION="8.14.6"
           SHA256="7988ed071b2a07900e2ec715fca15c6ab72bce6db433af301fa7fa7e9407bd24"
           ARCHIVE="$RUNNER_TEMP/gradle-${VERSION}-bin.zip"
@@ -55,97 +55,36 @@ jobs:
             "$URL" --output "$ARCHIVE"
 
           echo "${SHA256}  ${ARCHIVE}" | sha256sum --check
-
           unzip -q "$ARCHIVE" -d "$RUNNER_TEMP"
 
           echo "$RUNNER_TEMP/gradle-${VERSION}/bin" >> "$GITHUB_PATH"
           echo "PINNED_GRADLE=$RUNNER_TEMP/gradle-${VERSION}/bin/gradle" \
             >> "$GITHUB_ENV"
 
-      - name: Find or extract Memo Android project
+      - name: Locate Memo Android project
         shell: bash
         run: |
           set -euo pipefail
 
-          PROJECT_DIR=""
-
-          # Preferred layout: repository root contains Memo-Android/.
           if [ -f "Memo-Android/settings.gradle" ] && \
-             [ -f "Memo-Android/app/build.gradle" ] && \
-             [ -f "Memo-Android/app/src/main/AndroidManifest.xml" ]; then
+             [ -f "Memo-Android/app/build.gradle" ]; then
             PROJECT_DIR="Memo-Android"
-
-          # Also support a repository whose root is the Android project.
           elif [ -f "settings.gradle" ] && \
-               [ -f "app/build.gradle" ] && \
-               [ -f "app/src/main/AndroidManifest.xml" ]; then
+               [ -f "app/build.gradle" ]; then
             PROJECT_DIR="."
-
           else
-            ARCHIVE=""
-
-            for candidate in \
-              Memo-Android-Repository.zip \
-              Memo-Android-source.zip \
-              Memo-Android-Download-Fresh.zip; do
-
-              if [ -f "$candidate" ]; then
-                ARCHIVE="$candidate"
-                break
-              fi
-            done
-
-            if [ -z "$ARCHIVE" ]; then
-              echo "ERROR: Could not find Memo-Android/ or a supported source ZIP."
-              ls -lah
-              exit 1
-            fi
-
-            echo "Extracting source archive: $ARCHIVE"
-            unzip -t "$ARCHIVE"
-
-            rm -rf _memo_extract Memo-Android
-            mkdir -p _memo_extract
-            unzip -q "$ARCHIVE" -d _memo_extract
-
-            PROJECT_ROOT=""
-
-            while IFS= read -r settings_file; do
-              candidate="${settings_file%/settings.gradle}"
-
-              if [ -f "$candidate/app/build.gradle" ] && \
-                 [ -f "$candidate/app/src/main/AndroidManifest.xml" ]; then
-                PROJECT_ROOT="$candidate"
-                break
-              fi
-            done < <(
-              find _memo_extract -type f -name settings.gradle -print | sort
-            )
-
-            if [ -z "$PROJECT_ROOT" ]; then
-              echo "ERROR: No valid Android Gradle project was found in the archive."
-              find _memo_extract -maxdepth 8 -type f | sort | head -150
-              exit 1
-            fi
-
-            if [ "$PROJECT_ROOT" = "_memo_extract" ]; then
-              mv _memo_extract Memo-Android
-            else
-              mv "$PROJECT_ROOT" Memo-Android
-            fi
-
-            rm -rf _memo_extract
-            PROJECT_DIR="Memo-Android"
+            echo "ERROR: Memo Android Gradle project not found."
+            echo "Expected Memo-Android/settings.gradle or settings.gradle."
+            find . -maxdepth 4 -name settings.gradle -print
+            exit 1
           fi
 
           echo "MEMO_PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
-          echo "Using Memo project directory: $PROJECT_DIR"
 
-      - name: Verify project and Gradle version
+      - name: Verify Gradle and project
         shell: bash
         run: |
           set -euo pipefail
-
           cd "$MEMO_PROJECT_DIR"
 
           test -f settings.gradle
@@ -163,24 +102,19 @@ jobs:
             awk '/^Gradle / { print $2; exit }'
           )"
 
-          if [ "$ACTUAL_VERSION" != "8.14.6" ]; then
-            echo "ERROR: Expected Gradle 8.14.6, but found $ACTUAL_VERSION"
-            exit 1
-          fi
+          test "$ACTUAL_VERSION" = "8.14.6"
 
       - name: Test remote runner
         shell: bash
         run: |
           set -euo pipefail
-
           cd "$MEMO_PROJECT_DIR/remote-runner"
           python3 -m unittest discover -s tests -v
 
-      - name: Run Android unit tests, lint, and build APK
+      - name: Run Android tests, lint and build APK
         shell: bash
         run: |
           set -euo pipefail
-
           cd "$MEMO_PROJECT_DIR"
 
           "$PINNED_GRADLE" \
@@ -191,7 +125,7 @@ jobs:
             :app:lintDebug \
             :app:assembleDebug
 
-      - name: Verify APK and calculate checksum
+      - name: Verify APK
         shell: bash
         run: |
           set -euo pipefail
@@ -199,11 +133,9 @@ jobs:
           APK="$GITHUB_WORKSPACE/$MEMO_PROJECT_DIR/app/build/outputs/apk/debug/app-debug.apk"
 
           if [ ! -s "$APK" ]; then
-            echo "ERROR: APK was not created at: $APK"
-
+            echo "ERROR: APK was not created: $APK"
             find "$GITHUB_WORKSPACE/$MEMO_PROJECT_DIR/app/build/outputs" \
-              -maxdepth 6 -type f -print 2>/dev/null || true
-
+              -type f -print 2>/dev/null || true
             exit 1
           fi
 
@@ -218,3 +150,4 @@ jobs:
             memo-apk-sha256.txt
           if-no-files-found: error
           retention-days: 14
+          
