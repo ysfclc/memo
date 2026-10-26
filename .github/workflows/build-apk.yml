@@ -1,74 +1,119 @@
 
-name: Build Memo Android APK
+name: Build Memo APK
 
-on:
-  workflow_dispatch:
+"on":
   push:
-    paths:
-      - 'Memo-Android-source.zip'
-      - '.github/workflows/build-apk.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: memo-android-build-${{ github.ref }}
+  group: memo-android-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build:
-    name: Build debug APK
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
-      - name: Verify and extract source ZIP
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -f Memo-Android-source.zip
-          unzip -t Memo-Android-source.zip
-          mkdir -p _memo_source
-          unzip -q Memo-Android-source.zip -d _memo_source
-          test -f _memo_source/Memo-Android/app/build.gradle
-          test -f _memo_source/Memo-Android/settings.gradle
-          chmod +x _memo_source/Memo-Android/gradlew
-
-      - name: Set up Java 17
-        uses: actions/setup-java@v4
+      - name: Install Java
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK components
-        run: |
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
-          yes | sdkmanager --licenses >/dev/null || true
-
-      - name: Build APK
-        working-directory: _memo_source/Memo-Android
-        run: ./gradlew --no-daemon --stacktrace :app:assembleDebug
-
-      - name: Verify APK and create checksum
+      - name: Install Android SDK
         shell: bash
         run: |
           set -euo pipefail
-          APK="_memo_source/Memo-Android/app/build/outputs/apk/debug/app-debug.apk"
-          test -s "$APK"
-          sha256sum "$APK" > memo-apk-sha256.txt
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)"
+          if [ -z "$SDKMANAGER" ]; then
+            echo "Android SDK manager not found"
+            exit 1
+          fi
+          yes | "$SDKMANAGER" --licenses || true
+          "$SDKMANAGER" --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Install Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Verify source ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          ARCHIVE=""
+          for candidate in Memo-Android-Repository.zip Memo-Android-source.zip; do
+            if [ -f "$candidate" ]; then ARCHIVE="$candidate"; break; fi
+          done
+          if [ -z "$ARCHIVE" ]; then
+            echo "ERROR: Upload Memo-Android-Repository.zip or Memo-Android-source.zip to the repository root."
+            ls -lah
+            exit 1
+          fi
+          echo "Using $ARCHIVE ($(stat -c%s "$ARCHIVE") bytes)"
+          file "$ARCHIVE"
+          unzip -t "$ARCHIVE"
+          echo "MEMO_ARCHIVE=$ARCHIVE" >> "$GITHUB_ENV"
+
+      - name: Extract Memo source
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf _memo_extract Memo-Android
+          mkdir -p _memo_extract
+          unzip -o "$MEMO_ARCHIVE" -d _memo_extract
+
+          if [ -f "_memo_extract/Memo-Android/settings.gradle" ]; then
+            mv _memo_extract/Memo-Android ./Memo-Android
+          elif [ -f "_memo_extract/settings.gradle" ]; then
+            mv _memo_extract ./Memo-Android
+          else
+            echo "ERROR: ZIP extracted, but Android Gradle files were not found."
+            find _memo_extract -maxdepth 5 -type f | sort | head -100
+            exit 1
+          fi
+
+      - name: Verify Android project
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f Memo-Android/settings.gradle
+          test -f Memo-Android/build.gradle
+          test -f Memo-Android/app/build.gradle
+          test -f Memo-Android/app/src/main/AndroidManifest.xml
+          grep -qxF 'android.useAndroidX=true' Memo-Android/gradle.properties || \
+            echo 'android.useAndroidX=true' >> Memo-Android/gradle.properties
+
+      - name: Test and build APK
+        working-directory: Memo-Android
+        shell: bash
+        run: gradle --no-daemon --stacktrace :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+
+      - name: Verify APK and calculate checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="Memo-Android/app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK" || {
+            echo "ERROR: APK was not created."
+            find Memo-Android/app/build/outputs -maxdepth 6 -type f -print 2>/dev/null || true
+            exit 1
+          }
+          sha256sum "$APK" | tee memo-apk-sha256.txt
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: memo-android-debug-apk
           path: |
-            _memo_source/Memo-Android/app/build/outputs/apk/debug/app-debug.apk
+            Memo-Android/app/build/outputs/apk/debug/app-debug.apk
             memo-apk-sha256.txt
           if-no-files-found: error
           retention-days: 14
