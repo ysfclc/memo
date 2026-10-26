@@ -1,6 +1,6 @@
 name: Build Memo APK
 
-"on":
+on:
   push:
   workflow_dispatch:
 
@@ -14,97 +14,178 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 60
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
-      - name: Install Java
-        uses: actions/setup-java@v5
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Install Android SDK
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
         shell: bash
         run: |
           set -euo pipefail
-          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)"
-          if [ -z "$SDKMANAGER" ]; then
-            echo "Android SDK manager not found"
-            exit 1
-          fi
-          yes | "$SDKMANAGER" --licenses || true
-          "$SDKMANAGER" --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+          yes | sdkmanager --licenses >/dev/null || true
 
-      - name: Install Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.9'
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0"
 
-      - name: Verify source ZIP
+      - name: Install exact Gradle version (8.14.6)
         shell: bash
         run: |
           set -euo pipefail
-          ARCHIVE=""
-          for candidate in \
-            Memo-Android-Repository.zip \
-            Memo-Android-source.zip \
-            Memo-Android-Download-Fresh.zip; do
-            if [ -f "$candidate" ]; then
-              ARCHIVE="$candidate"
-              break
-            fi
-          done
-          if [ -z "$ARCHIVE" ]; then
-            echo "ERROR: No supported Memo ZIP found in the repository root."
-            echo "Expected one of:"
-            echo "  Memo-Android-Repository.zip"
-            echo "  Memo-Android-source.zip"
-            echo "  Memo-Android-Download-Fresh.zip"
-            ls -lah
-            exit 1
-          fi
-          echo "Using $ARCHIVE ($(stat -c%s "$ARCHIVE") bytes)"
-          file "$ARCHIVE"
-          unzip -t "$ARCHIVE"
-          echo "MEMO_ARCHIVE=$ARCHIVE" >> "$GITHUB_ENV"
 
-      - name: Extract Memo source
+          VERSION="8.14.6"
+          SHA256="7988ed071b2a07900e2ec715fca15c6ab72bce6db433af301fa7fa7e9407bd24"
+          ARCHIVE="$RUNNER_TEMP/gradle-${VERSION}-bin.zip"
+          URL="https://services.gradle.org/distributions/gradle-${VERSION}-bin.zip"
+
+          curl --fail --location --retry 3 --retry-delay 2 \
+            "$URL" --output "$ARCHIVE"
+
+          echo "${SHA256}  ${ARCHIVE}" | sha256sum --check
+
+          unzip -q "$ARCHIVE" -d "$RUNNER_TEMP"
+
+          echo "$RUNNER_TEMP/gradle-${VERSION}/bin" >> "$GITHUB_PATH"
+          echo "PINNED_GRADLE=$RUNNER_TEMP/gradle-${VERSION}/bin/gradle" \
+            >> "$GITHUB_ENV"
+
+      - name: Find or extract Memo Android project
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf _memo_extract Memo-Android
-          mkdir -p _memo_extract
-          unzip -o "$MEMO_ARCHIVE" -d _memo_extract
 
-          if [ -f "_memo_extract/Memo-Android/settings.gradle" ]; then
-            mv _memo_extract/Memo-Android ./Memo-Android
-          elif [ -f "_memo_extract/settings.gradle" ]; then
-            mv _memo_extract ./Memo-Android
+          PROJECT_DIR=""
+
+          # Preferred layout: repository root contains Memo-Android/.
+          if [ -f "Memo-Android/settings.gradle" ] && \
+             [ -f "Memo-Android/app/build.gradle" ] && \
+             [ -f "Memo-Android/app/src/main/AndroidManifest.xml" ]; then
+            PROJECT_DIR="Memo-Android"
+
+          # Also support a repository whose root is the Android project.
+          elif [ -f "settings.gradle" ] && \
+               [ -f "app/build.gradle" ] && \
+               [ -f "app/src/main/AndroidManifest.xml" ]; then
+            PROJECT_DIR="."
+
           else
-            echo "ERROR: ZIP extracted, but Android Gradle files were not found."
-            find _memo_extract -maxdepth 5 -type f | sort | head -100
-            exit 1
+            ARCHIVE=""
+
+            for candidate in \
+              Memo-Android-Repository.zip \
+              Memo-Android-source.zip \
+              Memo-Android-Download-Fresh.zip; do
+
+              if [ -f "$candidate" ]; then
+                ARCHIVE="$candidate"
+                break
+              fi
+            done
+
+            if [ -z "$ARCHIVE" ]; then
+              echo "ERROR: Could not find Memo-Android/ or a supported source ZIP."
+              ls -lah
+              exit 1
+            fi
+
+            echo "Extracting source archive: $ARCHIVE"
+            unzip -t "$ARCHIVE"
+
+            rm -rf _memo_extract Memo-Android
+            mkdir -p _memo_extract
+            unzip -q "$ARCHIVE" -d _memo_extract
+
+            PROJECT_ROOT=""
+
+            while IFS= read -r settings_file; do
+              candidate="${settings_file%/settings.gradle}"
+
+              if [ -f "$candidate/app/build.gradle" ] && \
+                 [ -f "$candidate/app/src/main/AndroidManifest.xml" ]; then
+                PROJECT_ROOT="$candidate"
+                break
+              fi
+            done < <(
+              find _memo_extract -type f -name settings.gradle -print | sort
+            )
+
+            if [ -z "$PROJECT_ROOT" ]; then
+              echo "ERROR: No valid Android Gradle project was found in the archive."
+              find _memo_extract -maxdepth 8 -type f | sort | head -150
+              exit 1
+            fi
+
+            if [ "$PROJECT_ROOT" = "_memo_extract" ]; then
+              mv _memo_extract Memo-Android
+            else
+              mv "$PROJECT_ROOT" Memo-Android
+            fi
+
+            rm -rf _memo_extract
+            PROJECT_DIR="Memo-Android"
           fi
 
-      - name: Verify Android project
+          echo "MEMO_PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+          echo "Using Memo project directory: $PROJECT_DIR"
+
+      - name: Verify project and Gradle version
         shell: bash
         run: |
           set -euo pipefail
-          test -f Memo-Android/settings.gradle
-          test -f Memo-Android/build.gradle
-          test -f Memo-Android/app/build.gradle
-          test -f Memo-Android/app/src/main/AndroidManifest.xml
-          grep -qxF 'android.useAndroidX=true' Memo-Android/gradle.properties || \
-            echo 'android.useAndroidX=true' >> Memo-Android/gradle.properties
 
-      - name: Test and build APK
-        working-directory: Memo-Android
+          cd "$MEMO_PROJECT_DIR"
+
+          test -f settings.gradle
+          test -f build.gradle
+          test -f app/build.gradle
+          test -f app/src/main/AndroidManifest.xml
+
+          grep -qxF 'android.useAndroidX=true' gradle.properties || \
+            echo 'android.useAndroidX=true' >> gradle.properties
+
+          "$PINNED_GRADLE" --version
+
+          ACTUAL_VERSION="$(
+            "$PINNED_GRADLE" --version |
+            awk '/^Gradle / { print $2; exit }'
+          )"
+
+          if [ "$ACTUAL_VERSION" != "8.14.6" ]; then
+            echo "ERROR: Expected Gradle 8.14.6, but found $ACTUAL_VERSION"
+            exit 1
+          fi
+
+      - name: Test remote runner
         shell: bash
         run: |
-          gradle --no-daemon --stacktrace \
+          set -euo pipefail
+
+          cd "$MEMO_PROJECT_DIR/remote-runner"
+          python3 -m unittest discover -s tests -v
+
+      - name: Run Android unit tests, lint, and build APK
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cd "$MEMO_PROJECT_DIR"
+
+          "$PINNED_GRADLE" \
+            --no-daemon \
+            --stacktrace \
+            --console=plain \
             :app:testDebugUnitTest \
             :app:lintDebug \
             :app:assembleDebug
@@ -113,20 +194,26 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          APK="Memo-Android/app/build/outputs/apk/debug/app-debug.apk"
-          test -s "$APK" || {
-            echo "ERROR: APK was not created."
-            find Memo-Android/app/build/outputs -maxdepth 6 -type f -print 2>/dev/null || true
-            exit 1
-          }
-          sha256sum "$APK" | tee memo-apk-sha256.txt
 
-      - name: Upload APK artifact
+          APK="$GITHUB_WORKSPACE/$MEMO_PROJECT_DIR/app/build/outputs/apk/debug/app-debug.apk"
+
+          if [ ! -s "$APK" ]; then
+            echo "ERROR: APK was not created at: $APK"
+
+            find "$GITHUB_WORKSPACE/$MEMO_PROJECT_DIR/app/build/outputs" \
+              -maxdepth 6 -type f -print 2>/dev/null || true
+
+            exit 1
+          fi
+
+          sha256sum "$APK" | tee "$GITHUB_WORKSPACE/memo-apk-sha256.txt"
+
+      - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: memo-android-debug-apk
           path: |
-            Memo-Android/app/build/outputs/apk/debug/app-debug.apk
+            ${{ env.MEMO_PROJECT_DIR }}/app/build/outputs/apk/debug/app-debug.apk
             memo-apk-sha256.txt
           if-no-files-found: error
           retention-days: 14
