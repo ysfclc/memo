@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Java
         uses: actions/setup-java@v5
@@ -27,13 +27,15 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          accept-android-sdk-licenses: true
+          packages: platform-tools
 
       - name: Install Android SDK packages
         shell: bash
         run: |
           set -euo pipefail
           sdkmanager --install \
-            "platform-tools" \
             "platforms;android-35" \
             "build-tools;35.0.0"
 
@@ -42,18 +44,22 @@ jobs:
         run: |
           set -euo pipefail
           ROOT="$RUNNER_TEMP/memo-source"
+          rm -rf "$ROOT"
           mkdir -p "$ROOT"
-          shopt -s nullglob
-          archives=( *.zip )
 
-          if (( ${#archives[@]} == 0 )); then
-            echo "::error::No ZIP archives found in repository root."
-            exit 1
-          fi
+          # Prefer the intended source archive.
+          candidates=(
+            "Memo-Android-Repository.zip"
+            "Memo-Android-Full-Fixed-v2.zip"
+            "Memo-Android-source.zip"
+            "Memo-Android-Download-Fresh.zip"
+          )
 
           SELECTED=""
-          for archive in "${archives[@]}"; do
+          for archive in "${candidates[@]}"; do
+            [[ -f "$archive" ]] || continue
             echo "Inspecting $archive"
+
             if ! unzip -tq "$archive" >/dev/null 2>&1; then
               echo "Skipping invalid ZIP: $archive"
               continue
@@ -69,8 +75,10 @@ jobs:
           done
 
           if [[ -z "$SELECTED" ]]; then
-            echo "::error::No ZIP contains a complete Gradle Android project."
-            for archive in "${archives[@]}"; do
+            echo "::error::No supported ZIP contains a complete Android Gradle project."
+            echo "Expected one of: ${candidates[*]}"
+            for archive in "${candidates[@]}"; do
+              [[ -f "$archive" ]] || continue
               echo "===== $archive ====="
               unzip -Z1 "$archive" 2>/dev/null | head -100 || true
             done
@@ -81,13 +89,19 @@ jobs:
           echo "Selected archive: $SELECTED"
           unzip -q "$SELECTED" -d "$ROOT"
 
-          SETTINGS="$(find "$ROOT" -type f \ \( -name settings.gradle -o -name settings.gradle.kts \) \ -not -path '*/.gradle/*' -print -quit)"
+          SETTINGS="$(
+            find "$ROOT" -type f \
+              \( -name settings.gradle -o -name settings.gradle.kts \) \
+              -not -path '*/.gradle/*' -print -quit
+          )"
+
           if [[ -z "$SETTINGS" ]]; then
             echo "::error::Gradle settings file missing after extraction."
             exit 1
           fi
 
           PROJECT_DIR="$(dirname "$SETTINGS")"
+
           if [[ ! -f "$PROJECT_DIR/gradlew" ]]; then
             echo "::error::gradlew must be alongside the Gradle settings file."
             find "$ROOT" -maxdepth 5 -type f | head -200
@@ -109,7 +123,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          chmod +x gradlew
+          chmod +x ./gradlew
           ./gradlew --no-daemon --stacktrace testDebugUnitTest lintDebug assembleDebug
 
       - name: Verify APK
@@ -118,11 +132,13 @@ jobs:
         run: |
           set -euo pipefail
           APK="app/build/outputs/apk/debug/app-debug.apk"
+
           if [[ ! -s "$APK" ]]; then
             echo "::error::APK was not generated. Available outputs:"
             find app/build/outputs -type f -print 2>/dev/null || true
             exit 1
           fi
+
           sha256sum "$APK"
           ls -lh "$APK"
 
