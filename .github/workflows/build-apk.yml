@@ -50,7 +50,7 @@ jobs:
           # Prefer the intended source archive.
           candidates=(
             "Memo-Android-Repository.zip"
-            "Memo-Android-Full-Fixed-v2.zip"
+            "Memo-Android-Full-Fixed-v2 (1).zip"
             "Memo-Android-source.zip"
             "Memo-Android-Download-Fresh.zip"
           )
