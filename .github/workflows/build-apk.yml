@@ -1,146 +1,135 @@
 name: Build Memo Android APK
 
-on:
-workflow_dispatch:
-push:
-paths:
-- '**.zip'
-- '.github/workflows/build-apk.yml'
+'on':
+  workflow_dispatch: {}
+  push:
+    paths:
+      - "*.zip"
+      - ".github/workflows/build-apk.yml"
 
 permissions:
-contents: read
+  contents: read
 
 jobs:
-build:
-runs-on: ubuntu-latest
-timeout-minutes: 90
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
 
-steps:
-  - name: Checkout repository
-    uses: actions/checkout@v4
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-  - name: Set up Java
-    uses: actions/setup-java@v5
-    with:
-      distribution: temurin
-      java-version: '17'
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
 
-  - name: Set up Android SDK
-    uses: android-actions/setup-android@v3
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
 
-  - name: Install Android SDK packages
-    run: |
-      set -euo pipefail
-      sdkmanager --install \
-        "platform-tools" \
-        "platforms;android-35" \
-        "build-tools;35.0.0"
+      - name: Install Android SDK packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0"
 
-  - name: Find and extract Android project
-    shell: bash
-    run: |
-      set -euo pipefail
+      - name: Find and extract Android project
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/memo-source"
+          mkdir -p "$ROOT"
+          shopt -s nullglob
+          archives=( *.zip )
 
-      ROOT="$RUNNER_TEMP/memo-source"
-      mkdir -p "$ROOT"
+          if (( ${#archives[@]} == 0 )); then
+            echo "::error::No ZIP archives found in repository root."
+            exit 1
+          fi
 
-      shopt -s nullglob
-      archives=( *.zip )
+          SELECTED=""
+          for archive in "${archives[@]}"; do
+            echo "Inspecting $archive"
+            if ! unzip -tq "$archive" >/dev/null 2>&1; then
+              echo "Skipping invalid ZIP: $archive"
+              continue
+            fi
 
-      if (( ${#archives[@]} == 0 )); then
-        echo "::error::No ZIP archives found in repository root."
-        exit 1
-      fi
+            listing="$(unzip -Z1 "$archive")"
+            if grep -Eq '(^|/)settings\.gradle(\.kts)?$' <<< "$listing" &&
+               grep -Eq '(^|/)app/build\.gradle(\.kts)?$' <<< "$listing" &&
+               grep -Eq '(^|/)gradlew$' <<< "$listing"; then
+              SELECTED="$archive"
+              break
+            fi
+          done
 
-      SELECTED=""
-      for archive in "${archives[@]}"; do
-        echo "Inspecting $archive"
+          if [[ -z "$SELECTED" ]]; then
+            echo "::error::No ZIP contains a complete Gradle Android project."
+            for archive in "${archives[@]}"; do
+              echo "===== $archive ====="
+              unzip -Z1 "$archive" 2>/dev/null | head -100 || true
+            done
+            echo "Required: settings.gradle or settings.gradle.kts, gradlew, and app/build.gradle or app/build.gradle.kts."
+            exit 1
+          fi
 
-        if ! unzip -tq "$archive" >/dev/null 2>&1; then
-          echo "Skipping invalid ZIP: $archive"
-          continue
-        fi
+          echo "Selected archive: $SELECTED"
+          unzip -q "$SELECTED" -d "$ROOT"
 
-        listing="$(unzip -Z1 "$archive")"
+          SETTINGS="$(find "$ROOT" -type f \ \( -name settings.gradle -o -name settings.gradle.kts \) \ -not -path '*/.gradle/*' -print -quit)"
+          if [[ -z "$SETTINGS" ]]; then
+            echo "::error::Gradle settings file missing after extraction."
+            exit 1
+          fi
 
-        if grep -Eq '(^|/)settings\.gradle(\.kts)?$' <<< "$listing" &&
-           grep -Eq '(^|/)app/build\.gradle(\.kts)?$' <<< "$listing" &&
-           grep -Eq '(^|/)gradlew$' <<< "$listing"; then
-          SELECTED="$archive"
-          break
-        fi
-      done
+          PROJECT_DIR="$(dirname "$SETTINGS")"
+          if [[ ! -f "$PROJECT_DIR/gradlew" ]]; then
+            echo "::error::gradlew must be alongside the Gradle settings file."
+            find "$ROOT" -maxdepth 5 -type f | head -200
+            exit 1
+          fi
 
-      if [[ -z "$SELECTED" ]]; then
-        echo "::error::No ZIP contains a complete Gradle Android project."
-        echo "ZIP contents for diagnosis:"
-        for archive in "${archives[@]}"; do
-          echo "===== $archive ====="
-          unzip -Z1 "$archive" 2>/dev/null | head -100 || true
-        done
-        echo "A valid source ZIP must include settings.gradle(.kts), gradlew, and app/build.gradle(.kts)."
-        exit 1
-      fi
+          if [[ ! -f "$PROJECT_DIR/app/build.gradle.kts" &&
+                ! -f "$PROJECT_DIR/app/build.gradle" ]]; then
+            echo "::error::The app Gradle build file is missing."
+            find "$ROOT" -maxdepth 5 -type f | head -200
+            exit 1
+          fi
 
-      echo "Selected archive: $SELECTED"
-      unzip -q "$SELECTED" -d "$ROOT"
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+          echo "Using project directory: $PROJECT_DIR"
 
-      SETTINGS="$(find "$ROOT" -type f \
-        \( -name settings.gradle -o -name settings.gradle.kts \) \
-        -not -path '*/.gradle/*' -print -quit)"
+      - name: Build and test APK
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew --no-daemon --stacktrace testDebugUnitTest lintDebug assembleDebug
 
-      if [[ -z "$SETTINGS" ]]; then
-        echo "::error::Gradle settings file missing after extraction."
-        exit 1
-      fi
+      - name: Verify APK
+        working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          if [[ ! -s "$APK" ]]; then
+            echo "::error::APK was not generated. Available outputs:"
+            find app/build/outputs -type f -print 2>/dev/null || true
+            exit 1
+          fi
+          sha256sum "$APK"
+          ls -lh "$APK"
 
-      PROJECT_DIR="$(dirname "$SETTINGS")"
-
-      if [[ ! -f "$PROJECT_DIR/gradlew" ]]; then
-        echo "::error::gradlew must be alongside the Gradle settings file."
-        find "$ROOT" -maxdepth 5 -type f | head -200
-        exit 1
-      fi
-
-      if [[ ! -f "$PROJECT_DIR/app/build.gradle.kts" &&
-            ! -f "$PROJECT_DIR/app/build.gradle" ]]; then
-        echo "::error::The app Gradle build file is missing."
-        find "$ROOT" -maxdepth 5 -type f | head -200
-        exit 1
-      fi
-
-      echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
-      echo "Using project directory: $PROJECT_DIR"
-
-  - name: Build and test APK
-    working-directory: ${{ env.PROJECT_DIR }}
-    shell: bash
-    run: |
-      set -euo pipefail
-      chmod +x gradlew
-      ./gradlew --no-daemon --stacktrace tasks --all
-      ./gradlew --no-daemon --stacktrace \
-        testDebugUnitTest lintDebug assembleDebug
-
-  - name: Verify APK
-    working-directory: ${{ env.PROJECT_DIR }}
-    run: |
-      set -euo pipefail
-      APK="app/build/outputs/apk/debug/app-debug.apk"
-
-      if [[ ! -s "$APK" ]]; then
-        echo "::error::APK was not generated."
-        find app/build/outputs -type f -print 2>/dev/null || true
-        exit 1
-      fi
-
-      sha256sum "$APK"
-      ls -lh "$APK"
-
-  - name: Upload APK
-    uses: actions/upload-artifact@v4
-    with:
-      name: memo-android-apk
-      path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/app-debug.apk
-      if-no-files-found: error
-      retention-days: 14
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: memo-android-apk
+          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
