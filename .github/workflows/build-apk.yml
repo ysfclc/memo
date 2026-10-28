@@ -1,4 +1,4 @@
-name: Build Memo APK
+name: Build Memo Android APK
 
 'on':
   push:
@@ -10,15 +10,19 @@ name: Build Memo APK
 permissions:
   contents: read
 
+concurrency:
+  group: memo-android-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
-    name: Test and build debug APK
+    name: Validate source, test, lint, and build APK
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 90
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Java 17
         uses: actions/setup-java@v5
@@ -26,97 +30,133 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Extract canonical source ZIP
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          ZIP_FILE="Memo-Android-Repository.zip"
-          if [ ! -f "$ZIP_FILE" ]; then
-            echo "::error::Missing $ZIP_FILE in the repository root."
-            ls -la
-            exit 1
-          fi
-
-          mkdir -p "$RUNNER_TEMP/memo-source"
-          unzip -q "$ZIP_FILE" -d "$RUNNER_TEMP/memo-source"
-
-          SETTINGS_FILE="$(find "$RUNNER_TEMP/memo-source" -type f \( -name settings.gradle -o -name settings.gradle.kts \) -print -quit)"
-          if [ -z "$SETTINGS_FILE" ]; then
-            echo "::error::The ZIP does not contain a Gradle settings file."
-            exit 1
-          fi
-
-          PROJECT_DIR="$(dirname "$SETTINGS_FILE")"
-          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
-          echo "Project directory: $PROJECT_DIR"
-
       - name: Install Android SDK packages
+        uses: android-actions/setup-android@v3
+        with:
+          accept-android-sdk-licenses: true
+          packages: |
+            platform-tools
+            platforms;android-35
+            build-tools;35.0.0
+
+      - name: Configure Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Validate and extract the canonical source ZIP
         shell: bash
         run: |
           set -euo pipefail
-
-          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
-          SDKMANAGER="$(find "$SDK/cmdline-tools" -type f -name sdkmanager -print -quit 2>/dev/null || true)"
-
-          if [ -z "$SDKMANAGER" ]; then
-            echo "::error::Could not find sdkmanager under $SDK/cmdline-tools."
+          ZIP_FILE="$GITHUB_WORKSPACE/Memo-Android-Repository.zip"
+          if [[ ! -s "$ZIP_FILE" ]]; then
+            echo "::error::The repository must contain Memo-Android-Repository.zip at its root."
+            ls -lah "$GITHUB_WORKSPACE"
             exit 1
           fi
 
-          yes | "$SDKMANAGER" --licenses >/dev/null || true
-          "$SDKMANAGER" --install \
-            "platform-tools" \
-            "platforms;android-35" \
-            "build-tools;35.0.0" \
-            "cmake;3.22.1" \
-            "ndk;27.2.12479018"
+          # Validate archive integrity and reject unsafe paths.
+          unzip -t "$ZIP_FILE"
+          if unzip -Z1 "$ZIP_FILE" | grep -E '(^/|(^|/)\.\.(/|$))' >/dev/null; then
+            echo "::error::The ZIP contains an unsafe absolute or parent-traversal path."
+            exit 1
+          fi
+          sha256sum "$ZIP_FILE" > "$GITHUB_WORKSPACE/_memo-source-archive.sha256"
 
-          echo "$SDK/cmake/3.22.1/bin" >> "$GITHUB_PATH"
+          EXTRACT_DIR="$GITHUB_WORKSPACE/_memo_source"
+          rm -rf "$EXTRACT_DIR"
+          mkdir -p "$EXTRACT_DIR"
+          unzip -q "$ZIP_FILE" -d "$EXTRACT_DIR"
 
-      - name: Verify project structure
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd "$PROJECT_DIR"
+          PROJECT_DIR=""
+          PROJECT_COUNT=0
+          while IFS= read -r settings_file; do
+            candidate="${settings_file%/settings.gradle}"
+            if [[ -f "$candidate/build.gradle" && \
+                  -f "$candidate/app/build.gradle" && \
+                  -f "$candidate/app/src/main/AndroidManifest.xml" ]]; then
+              PROJECT_DIR="$candidate"
+              PROJECT_COUNT=$((PROJECT_COUNT + 1))
+            fi
+          done < <(find "$EXTRACT_DIR" -type f -name settings.gradle -print | sort)
 
-          for file in gradlew settings.gradle.kts build.gradle.kts gradle.properties app/build.gradle.kts core/build.gradle.kts gradle/wrapper/gradle-wrapper.properties; do
-            if [ ! -f "$file" ]; then
-              echo "::error::Required file is missing: $file"
+          if [[ "$PROJECT_COUNT" -ne 1 || -z "$PROJECT_DIR" ]]; then
+            echo "::error::Expected exactly one Android Gradle project root in the canonical ZIP; found $PROJECT_COUNT."
+            find "$EXTRACT_DIR" -maxdepth 7 -type f | sort | head -200
+            exit 1
+          fi
+
+          # Memo must have one app Activity, not a duplicate legacy UI.
+          MANIFEST="$PROJECT_DIR/app/src/main/AndroidManifest.xml"
+          LAUNCHER_COUNT="$(grep -c 'android:name=".MainActivity"' "$MANIFEST" || true)"
+          if [[ "$LAUNCHER_COUNT" -ne 1 ]]; then
+            echo "::error::Expected exactly one Memo MainActivity declaration; found $LAUNCHER_COUNT."
+            exit 1
+          fi
+          if [[ -f "$PROJECT_DIR/app/src/main/java/com/synthos/runtime/MainActivity.java" ]]; then
+            echo "::error::A duplicate legacy Activity UI has reappeared in the source ZIP."
+            exit 1
+          fi
+
+          for required in \
+            "$PROJECT_DIR/gradlew" \
+            "$PROJECT_DIR/gradle/wrapper/gradle-wrapper.properties" \
+            "$PROJECT_DIR/TASKS.md" \
+            "$PROJECT_DIR/SOURCE_SHA256SUMS.txt" \
+            "$PROJECT_DIR/tools/verify_source.py"; do
+            if [[ ! -s "$required" ]]; then
+              echo "::error::Required source or product-contract file is missing: $required"
               exit 1
             fi
           done
 
-      - name: Run tests, lint, and build
+          (cd "$PROJECT_DIR" && sha256sum -c SOURCE_SHA256SUMS.txt)
+          echo "MEMO_PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+          echo "Validated source project and source manifest: $PROJECT_DIR"
+
+      - name: Run offline source and product-boundary checks
         shell: bash
         run: |
           set -euo pipefail
-          cd "$PROJECT_DIR"
-          chmod +x ./gradlew
+          cd "$MEMO_PROJECT_DIR"
+          python3 tools/verify_source.py
 
+      - name: Test optional remote runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$MEMO_PROJECT_DIR/remote-runner"
+          python3 -m unittest discover -s tests -v
+
+      - name: Run Android unit tests, lint, and assemble debug APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$MEMO_PROJECT_DIR"
+          chmod +x ./gradlew
           ./gradlew --no-daemon --stacktrace \
             :core:test \
-            testDebugUnitTest \
-            lintDebug \
-            assembleDebug
+            :app:testDebugUnitTest \
+            :app:lintDebug \
+            :app:assembleDebug
 
-      - name: Prepare APK and checksum
+      - name: Prepare APK and SHA-256 checksum
+        if: success()
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p delivery
-
-          APK_FILE="$(find "$PROJECT_DIR" -type f -path "*/build/outputs/apk/debug/*.apk" -print -quit)"
-          if [ -z "$APK_FILE" ]; then
-            echo "::error::The build did not produce a debug APK."
+          APK="$MEMO_PROJECT_DIR/app/build/outputs/apk/debug/app-debug.apk"
+          if [[ ! -s "$APK" ]]; then
+            echo "::error::Gradle completed without producing app-debug.apk."
+            find "$MEMO_PROJECT_DIR/app/build/outputs" -maxdepth 6 -type f -print 2>/dev/null || true
             exit 1
           fi
+          mkdir -p "$GITHUB_WORKSPACE/delivery"
+          cp "$APK" "$GITHUB_WORKSPACE/delivery/Memo-Android-debug.apk"
+          cp "$GITHUB_WORKSPACE/_memo-source-archive.sha256" "$GITHUB_WORKSPACE/delivery/Memo-Source-Archive-SHA256.txt"
+          (cd "$GITHUB_WORKSPACE/delivery" && sha256sum Memo-Android-debug.apk > SHA256SUMS.txt)
+          cat "$GITHUB_WORKSPACE/delivery/SHA256SUMS.txt"
+          cat "$GITHUB_WORKSPACE/delivery/Memo-Source-Archive-SHA256.txt"
 
-          cp "$APK_FILE" delivery/Memo-Android-debug.apk
-          sha256sum delivery/Memo-Android-debug.apk > delivery/SHA256SUMS.txt
-          cat delivery/SHA256SUMS.txt
-
-      - name: Upload APK artifact
+      - name: Upload debug APK and checksum
         uses: actions/upload-artifact@v4
         with:
           name: Memo-Android-debug-APK
@@ -125,13 +165,13 @@ jobs:
           compression-level: 0
           retention-days: 14
 
-      - name: Upload test and lint reports
+      - name: Preserve Android test and lint reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Memo-Build-Reports
+          name: Memo-Android-Build-Reports
           path: |
-            **/build/reports/**
-            **/build/test-results/**
+            _memo_source/**/build/reports/**
+            _memo_source/**/build/test-results/**
           if-no-files-found: ignore
           retention-days: 7
