@@ -1,121 +1,137 @@
 name: Build Memo APK
 
-on:
-push:
-paths:
-- "*.zip"
-- ".github/workflows/build-apk.yml"
-workflow_dispatch:
+'on':
+  push:
+    paths:
+      - "Memo-Android-Repository.zip"
+      - ".github/workflows/build-apk.yml"
+  workflow_dispatch:
 
 permissions:
-contents: read
+  contents: read
 
 jobs:
-build:
-runs-on: ubuntu-latest
+  build:
+    name: Test and build debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
 
-steps:
-  - name: Checkout repository
-    uses: actions/checkout@v4
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
 
-  - name: Set up Java
-    uses: actions/setup-java@v4
-    with:
-      distribution: temurin
-      java-version: "17"
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
 
-  - name: Find and extract Memo ZIP
-    shell: bash
-    run: |
-      set -euo pipefail
+      - name: Extract canonical source ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
 
-      ZIP_FILE=""
+          ZIP_FILE="Memo-Android-Repository.zip"
+          if [ ! -f "$ZIP_FILE" ]; then
+            echo "::error::Missing $ZIP_FILE in the repository root."
+            ls -la
+            exit 1
+          fi
 
-      for candidate in \
-        "Memo-Android-Repository (1).zip" \
-        "Memo-Android-Full-Fixed-v2 (1).zip" \
-        "Memo-Android-Full-Fixed-v2.zip"
-      do
-        if [ -f "$candidate" ]; then
-          ZIP_FILE="$candidate"
-          break
-        fi
-      done
+          mkdir -p "$RUNNER_TEMP/memo-source"
+          unzip -q "$ZIP_FILE" -d "$RUNNER_TEMP/memo-source"
 
-      if [ -z "$ZIP_FILE" ]; then
-        echo "ERROR: No expected Memo ZIP found in repository root."
-        echo "Available ZIP files:"
-        find . -maxdepth 1 -type f -name "*.zip" -print
-        exit 1
-      fi
+          SETTINGS_FILE="$(find "$RUNNER_TEMP/memo-source" -type f \( -name settings.gradle -o -name settings.gradle.kts \) -print -quit)"
+          if [ -z "$SETTINGS_FILE" ]; then
+            echo "::error::The ZIP does not contain a Gradle settings file."
+            exit 1
+          fi
 
-      echo "Using archive: $ZIP_FILE"
+          PROJECT_DIR="$(dirname "$SETTINGS_FILE")"
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+          echo "Project directory: $PROJECT_DIR"
 
-      mkdir -p "$RUNNER_TEMP/memo-source"
-      unzip -q "$ZIP_FILE" -d "$RUNNER_TEMP/memo-source"
+      - name: Install Android SDK packages
+        shell: bash
+        run: |
+          set -euo pipefail
 
-      GRADLE_FILE="$(find "$RUNNER_TEMP/memo-source" -type f \( -name settings.gradle -o -name settings.gradle.kts \) -print -quit)"
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$(find "$SDK/cmdline-tools" -type f -name sdkmanager -print -quit 2>/dev/null || true)"
 
-      if [ -z "$GRADLE_FILE" ]; then
-        echo "ERROR: No Gradle settings file found inside the ZIP."
-        exit 1
-      fi
+          if [ -z "$SDKMANAGER" ]; then
+            echo "::error::Could not find sdkmanager under $SDK/cmdline-tools."
+            exit 1
+          fi
 
-      PROJECT_DIR="$(dirname "$GRADLE_FILE")"
-      echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
-      echo "Memo project found at: $PROJECT_DIR"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" --install \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0" \
+            "cmake;3.22.1" \
+            "ndk;27.2.12479018"
 
-  - name: Set up Android SDK
-    uses: android-actions/setup-android@v3
+          echo "$SDK/cmake/3.22.1/bin" >> "$GITHUB_PATH"
 
-  - name: Install Android SDK packages
-    shell: bash
-    run: |
-      set -euo pipefail
-      sdkmanager --licenses < /dev/null || true
-      sdkmanager \
-        "platform-tools" \
-        "platforms;android-35" \
-        "build-tools;35.0.0" \
-        "cmake;3.22.1" \
-        "ndk;27.2.12479018"
+      - name: Verify project structure
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$PROJECT_DIR"
 
-  - name: Build and test Memo
-    shell: bash
-    run: |
-      set -euo pipefail
-      cd "$PROJECT_DIR"
+          for file in gradlew settings.gradle.kts build.gradle.kts gradle.properties app/build.gradle.kts core/build.gradle.kts gradle/wrapper/gradle-wrapper.properties; do
+            if [ ! -f "$file" ]; then
+              echo "::error::Required file is missing: $file"
+              exit 1
+            fi
+          done
 
-      chmod +x gradlew
+      - name: Run tests, lint, and build
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$PROJECT_DIR"
+          chmod +x ./gradlew
 
-      ./gradlew --no-daemon --stacktrace \
-        :core:test \
-        testDebugUnitTest \
-        lintDebug \
-        assembleDebug
+          ./gradlew --no-daemon --stacktrace \
+            :core:test \
+            testDebugUnitTest \
+            lintDebug \
+            assembleDebug
 
-  - name: Prepare APK
-    shell: bash
-    run: |
-      set -euo pipefail
+      - name: Prepare APK and checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p delivery
 
-      mkdir -p delivery
+          APK_FILE="$(find "$PROJECT_DIR" -type f -path "*/build/outputs/apk/debug/*.apk" -print -quit)"
+          if [ -z "$APK_FILE" ]; then
+            echo "::error::The build did not produce a debug APK."
+            exit 1
+          fi
 
-      APK_FILE="$(find "$PROJECT_DIR" -type f -path "*/build/outputs/apk/debug/*.apk" -print -quit)"
+          cp "$APK_FILE" delivery/Memo-Android-debug.apk
+          sha256sum delivery/Memo-Android-debug.apk > delivery/SHA256SUMS.txt
+          cat delivery/SHA256SUMS.txt
 
-      if [ -z "$APK_FILE" ]; then
-        echo "ERROR: Build finished without producing a debug APK."
-        exit 1
-      fi
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Memo-Android-debug-APK
+          path: delivery/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
 
-      cp "$APK_FILE" delivery/Memo-Android-debug.apk
-      sha256sum delivery/Memo-Android-debug.apk
-
-  - name: Upload APK
-    uses: actions/upload-artifact@v4
-    with:
-      name: Memo-Android-debug-APK
-      path: delivery/Memo-Android-debug.apk
-      if-no-files-found: error
-      compression-level: 0
-      retention-days: 14
+      - name: Upload test and lint reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Memo-Build-Reports
+          path: |
+            **/build/reports/**
+            **/build/test-results/**
+          if-no-files-found: ignore
+          retention-days: 7
