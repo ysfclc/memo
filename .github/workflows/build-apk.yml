@@ -32,7 +32,7 @@ steps:
       ZIP_FILE=""
 
       for candidate in \
-        "Memo-Android-Repository.zip" \
+        "Memo-Android-Repository (1).zip" \
         "Memo-Android-Full-Fixed-v2 (1).zip" \
         "Memo-Android-Full-Fixed-v2.zip"
       do
