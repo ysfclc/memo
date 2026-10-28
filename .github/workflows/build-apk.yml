@@ -187,4 +187,3 @@ steps:
         _memo_source/**/build/test-results/**
       if-no-files-found: ignore
       retention-days: 7
-```
