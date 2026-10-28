@@ -4,6 +4,7 @@ name: Build Memo Android APK
   push:
     paths:
       - "Memo-Android-Repository.zip"
+      - "memo1-task-runbook.zip"
       - ".github/workflows/build-apk.yml"
   workflow_dispatch:
 
@@ -30,14 +31,19 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Install Android SDK packages
+      - name: Set up Android SDK command-line tools
         uses: android-actions/setup-android@v3
         with:
           accept-android-sdk-licenses: true
-          packages: |
-            platform-tools
-            platforms;android-35
-            build-tools;35.0.0
+
+      - name: Install Android SDK packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0"
 
       - name: Configure Gradle cache
         uses: gradle/actions/setup-gradle@v4
@@ -53,14 +59,13 @@ jobs:
             exit 1
           fi
 
-          # Validate archive integrity and reject unsafe paths.
+          # Validate archive integrity and reject absolute/path-traversal entries before extracting.
           unzip -t "$ZIP_FILE"
           if unzip -Z1 "$ZIP_FILE" | grep -E '(^/|(^|/)\.\.(/|$))' >/dev/null; then
             echo "::error::The ZIP contains an unsafe absolute or parent-traversal path."
             exit 1
           fi
           sha256sum "$ZIP_FILE" > "$GITHUB_WORKSPACE/_memo-source-archive.sha256"
-
           EXTRACT_DIR="$GITHUB_WORKSPACE/_memo_source"
           rm -rf "$EXTRACT_DIR"
           mkdir -p "$EXTRACT_DIR"
@@ -84,7 +89,7 @@ jobs:
             exit 1
           fi
 
-          # Memo must have one app Activity, not a duplicate legacy UI.
+          # Regression guard: Memo must ship its own Compose Activity, not a second legacy Activity UI.
           MANIFEST="$PROJECT_DIR/app/src/main/AndroidManifest.xml"
           LAUNCHER_COUNT="$(grep -c 'android:name=".MainActivity"' "$MANIFEST" || true)"
           if [[ "$LAUNCHER_COUNT" -ne 1 ]]; then
@@ -95,7 +100,6 @@ jobs:
             echo "::error::A duplicate legacy Activity UI has reappeared in the source ZIP."
             exit 1
           fi
-
           for required in \
             "$PROJECT_DIR/gradlew" \
             "$PROJECT_DIR/gradle/wrapper/gradle-wrapper.properties" \
