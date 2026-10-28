@@ -1,151 +1,121 @@
-name: Build Memo Android APK
+name: Build Memo APK
 
-'on':
-  workflow_dispatch: {}
-  push:
-    paths:
-      - "*.zip"
-      - ".github/workflows/build-apk.yml"
+on:
+push:
+paths:
+- "*.zip"
+- ".github/workflows/build-apk.yml"
+workflow_dispatch:
 
 permissions:
-  contents: read
+contents: read
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
+build:
+runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
+steps:
+  - name: Checkout repository
+    uses: actions/checkout@v4
 
-      - name: Set up Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: "17"
+  - name: Set up Java
+    uses: actions/setup-java@v4
+    with:
+      distribution: temurin
+      java-version: "17"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          accept-android-sdk-licenses: true
-          packages: platform-tools
+  - name: Find and extract Memo ZIP
+    shell: bash
+    run: |
+      set -euo pipefail
 
-      - name: Install Android SDK packages
-        shell: bash
-        run: |
-          set -euo pipefail
-          sdkmanager --install \
-            "platforms;android-35" \
-            "build-tools;35.0.0"
+      ZIP_FILE=""
 
-      - name: Find and extract Android project
-        shell: bash
-        run: |
-          set -euo pipefail
-          ROOT="$RUNNER_TEMP/memo-source"
-          rm -rf "$ROOT"
-          mkdir -p "$ROOT"
+      for candidate in \
+        "Memo-Android-Repository.zip" \
+        "Memo-Android-Full-Fixed-v2 (1).zip" \
+        "Memo-Android-Full-Fixed-v2.zip"
+      do
+        if [ -f "$candidate" ]; then
+          ZIP_FILE="$candidate"
+          break
+        fi
+      done
 
-          # Prefer the intended source archive.
-          candidates=(
-            "Memo-Android-Repository.zip"
-            "Memo-Android-Full-Fixed-v2 (1).zip"
-            "Memo-Android-source.zip"
-            "Memo-Android-Download-Fresh.zip"
-          )
+      if [ -z "$ZIP_FILE" ]; then
+        echo "ERROR: No expected Memo ZIP found in repository root."
+        echo "Available ZIP files:"
+        find . -maxdepth 1 -type f -name "*.zip" -print
+        exit 1
+      fi
 
-          SELECTED=""
-          for archive in "${candidates[@]}"; do
-            [[ -f "$archive" ]] || continue
-            echo "Inspecting $archive"
+      echo "Using archive: $ZIP_FILE"
 
-            if ! unzip -tq "$archive" >/dev/null 2>&1; then
-              echo "Skipping invalid ZIP: $archive"
-              continue
-            fi
+      mkdir -p "$RUNNER_TEMP/memo-source"
+      unzip -q "$ZIP_FILE" -d "$RUNNER_TEMP/memo-source"
 
-            listing="$(unzip -Z1 "$archive")"
-            if grep -Eq '(^|/)settings\.gradle(\.kts)?$' <<< "$listing" &&
-               grep -Eq '(^|/)app/build\.gradle(\.kts)?$' <<< "$listing" &&
-               grep -Eq '(^|/)gradlew$' <<< "$listing"; then
-              SELECTED="$archive"
-              break
-            fi
-          done
+      GRADLE_FILE="$(find "$RUNNER_TEMP/memo-source" -type f \( -name settings.gradle -o -name settings.gradle.kts \) -print -quit)"
 
-          if [[ -z "$SELECTED" ]]; then
-            echo "::error::No supported ZIP contains a complete Android Gradle project."
-            echo "Expected one of: ${candidates[*]}"
-            for archive in "${candidates[@]}"; do
-              [[ -f "$archive" ]] || continue
-              echo "===== $archive ====="
-              unzip -Z1 "$archive" 2>/dev/null | head -100 || true
-            done
-            echo "Required: settings.gradle or settings.gradle.kts, gradlew, and app/build.gradle or app/build.gradle.kts."
-            exit 1
-          fi
+      if [ -z "$GRADLE_FILE" ]; then
+        echo "ERROR: No Gradle settings file found inside the ZIP."
+        exit 1
+      fi
 
-          echo "Selected archive: $SELECTED"
-          unzip -q "$SELECTED" -d "$ROOT"
+      PROJECT_DIR="$(dirname "$GRADLE_FILE")"
+      echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+      echo "Memo project found at: $PROJECT_DIR"
 
-          SETTINGS="$(
-            find "$ROOT" -type f \
-              \( -name settings.gradle -o -name settings.gradle.kts \) \
-              -not -path '*/.gradle/*' -print -quit
-          )"
+  - name: Set up Android SDK
+    uses: android-actions/setup-android@v3
 
-          if [[ -z "$SETTINGS" ]]; then
-            echo "::error::Gradle settings file missing after extraction."
-            exit 1
-          fi
+  - name: Install Android SDK packages
+    shell: bash
+    run: |
+      set -euo pipefail
+      sdkmanager --licenses < /dev/null || true
+      sdkmanager \
+        "platform-tools" \
+        "platforms;android-35" \
+        "build-tools;35.0.0" \
+        "cmake;3.22.1" \
+        "ndk;27.2.12479018"
 
-          PROJECT_DIR="$(dirname "$SETTINGS")"
+  - name: Build and test Memo
+    shell: bash
+    run: |
+      set -euo pipefail
+      cd "$PROJECT_DIR"
 
-          if [[ ! -f "$PROJECT_DIR/gradlew" ]]; then
-            echo "::error::gradlew must be alongside the Gradle settings file."
-            find "$ROOT" -maxdepth 5 -type f | head -200
-            exit 1
-          fi
+      chmod +x gradlew
 
-          if [[ ! -f "$PROJECT_DIR/app/build.gradle.kts" &&
-                ! -f "$PROJECT_DIR/app/build.gradle" ]]; then
-            echo "::error::The app Gradle build file is missing."
-            find "$ROOT" -maxdepth 5 -type f | head -200
-            exit 1
-          fi
+      ./gradlew --no-daemon --stacktrace \
+        :core:test \
+        testDebugUnitTest \
+        lintDebug \
+        assembleDebug
 
-          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
-          echo "Using project directory: $PROJECT_DIR"
+  - name: Prepare APK
+    shell: bash
+    run: |
+      set -euo pipefail
 
-      - name: Build and test APK
-        working-directory: ${{ env.PROJECT_DIR }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          chmod +x ./gradlew
-          ./gradlew --no-daemon --stacktrace testDebugUnitTest lintDebug assembleDebug
+      mkdir -p delivery
 
-      - name: Verify APK
-        working-directory: ${{ env.PROJECT_DIR }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          APK="app/build/outputs/apk/debug/app-debug.apk"
+      APK_FILE="$(find "$PROJECT_DIR" -type f -path "*/build/outputs/apk/debug/*.apk" -print -quit)"
 
-          if [[ ! -s "$APK" ]]; then
-            echo "::error::APK was not generated. Available outputs:"
-            find app/build/outputs -type f -print 2>/dev/null || true
-            exit 1
-          fi
+      if [ -z "$APK_FILE" ]; then
+        echo "ERROR: Build finished without producing a debug APK."
+        exit 1
+      fi
 
-          sha256sum "$APK"
-          ls -lh "$APK"
+      cp "$APK_FILE" delivery/Memo-Android-debug.apk
+      sha256sum delivery/Memo-Android-debug.apk
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: memo-android-apk
-          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-          retention-days: 14
+  - name: Upload APK
+    uses: actions/upload-artifact@v4
+    with:
+      name: Memo-Android-debug-APK
+      path: delivery/Memo-Android-debug.apk
+      if-no-files-found: error
+      compression-level: 0
+      retention-days: 14
