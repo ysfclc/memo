@@ -637,6 +637,12 @@ jobs:
               -alias "$MEMO_UPLOAD_KEY_ALIAS" >/dev/null
 
             {
+              # Names consumed directly by app/build.gradle for the debug APK signer.
+              echo "MEMO_KEYSTORE_FILE=$KEYSTORE_PATH"
+              echo "MEMO_KEYSTORE_PASSWORD=$MEMO_UPLOAD_STORE_PASSWORD"
+              echo "MEMO_KEY_ALIAS=$MEMO_UPLOAD_KEY_ALIAS"
+              echo "MEMO_KEY_PASSWORD=$MEMO_UPLOAD_KEY_PASSWORD"
+              # Retain the upload-prefixed aliases for compatible Gradle scripts.
               echo "MEMO_UPLOAD_KEYSTORE_FILE=$KEYSTORE_PATH"
               echo "MEMO_UPLOAD_STORE_PASSWORD=$MEMO_UPLOAD_STORE_PASSWORD"
               echo "MEMO_UPLOAD_KEY_ALIAS=$MEMO_UPLOAD_KEY_ALIAS"
@@ -645,6 +651,7 @@ jobs:
               echo "ORG_GRADLE_PROJECT_MEMO_UPLOAD_STORE_PASSWORD=$MEMO_UPLOAD_STORE_PASSWORD"
               echo "ORG_GRADLE_PROJECT_MEMO_UPLOAD_KEY_ALIAS=$MEMO_UPLOAD_KEY_ALIAS"
               echo "ORG_GRADLE_PROJECT_MEMO_UPLOAD_KEY_PASSWORD=$MEMO_UPLOAD_KEY_PASSWORD"
+              echo "MEMO_REQUIRE_STABLE_SIGNING=true"
             } >> "$GITHUB_ENV"
 
             echo "Persistent Memo signing key prepared and validated."
@@ -688,6 +695,93 @@ jobs:
             :app:testDebugUnitTest \
             :app:lintDebug \
             :app:assembleDebug 2>&1 | tee -a "$MEMO_BUILD_LOG"
+
+      - name: Verify debug APK package, version, and persistent signature
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$MEMO_PROJECT_DIR"
+
+          APK="$MEMO_PROJECT_DIR/app/build/outputs/apk/debug/app-debug.apk"
+          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
+          APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+          if [[ ! -s "$APK" ]]; then
+            echo "::error::Debug APK is missing; cannot verify the in-place update contract."
+            exit 1
+          fi
+          if [[ ! -x "$AAPT" || ! -x "$APKSIGNER" ]]; then
+            echo "::error::Android build-tools 35.0.0 aapt/apksigner are unavailable."
+            exit 1
+          fi
+          if [[ "${MEMO_REQUIRE_STABLE_SIGNING:-false}" != "true" ||
+                -z "${MEMO_KEYSTORE_FILE:-}" ||
+                -z "${MEMO_KEYSTORE_PASSWORD:-}" ||
+                -z "${MEMO_KEY_ALIAS:-}" ||
+                -z "${MEMO_KEY_PASSWORD:-}" ]]; then
+            echo "::error::Persistent signing environment is incomplete; refusing to publish an update APK."
+            exit 1
+          fi
+
+          BADGING="$("$AAPT" dump badging "$APK")"
+          PACKAGE_LINE="$(printf '%s\n' "$BADGING" | grep -m1 '^package:')"
+          if [[ ! "$PACKAGE_LINE" =~ name='app\.memo\.android\.debug' ]]; then
+            echo "::error::Unexpected Memo sideload package. Expected app.memo.android.debug."
+            printf '%s\n' "$PACKAGE_LINE"
+            exit 1
+          fi
+
+          EXPECTED_VERSION_METADATA="$(python3 - <<'PY'
+          import re
+          from pathlib import Path
+          source = Path("app/build.gradle").read_text(encoding="utf-8")
+          code = re.search(r"\bversionCode\s+(\d+)", source)
+          name = re.search(r"\bversionName\s+['\"]([^'\"]+)['\"]", source)
+          if not code or not name:
+              raise SystemExit("Could not read versionCode/versionName from app/build.gradle")
+          print(code.group(1))
+          print(name.group(1) + "-debug")
+          PY
+          )"
+          mapfile -t EXPECTED_VERSION_FIELDS <<< "$EXPECTED_VERSION_METADATA"
+          EXPECTED_VERSION_CODE="${EXPECTED_VERSION_FIELDS[0]:-}"
+          EXPECTED_VERSION_NAME="${EXPECTED_VERSION_FIELDS[1]:-}"
+          if [[ ! "$PACKAGE_LINE" =~ versionCode='([0-9]+)' ]]; then
+            echo "::error::APK metadata does not contain a numeric versionCode."
+            printf '%s\n' "$PACKAGE_LINE"
+            exit 1
+          fi
+          ACTUAL_VERSION_CODE="${BASH_REMATCH[1]}"
+          if [[ "$ACTUAL_VERSION_CODE" != "$EXPECTED_VERSION_CODE" ]]; then
+            echo "::error::APK versionCode $ACTUAL_VERSION_CODE does not match source versionCode $EXPECTED_VERSION_CODE."
+            exit 1
+          fi
+          ACTUAL_VERSION_NAME="$EXPECTED_VERSION_NAME"
+          if [[ "$PACKAGE_LINE" != *"versionName='$EXPECTED_VERSION_NAME'"* ]]; then
+            echo "::error::APK versionName does not match source versionName $EXPECTED_VERSION_NAME."
+            printf '%s\n' "$PACKAGE_LINE"
+            exit 1
+          fi
+
+          SIGNATURE_OUTPUT="$("$APKSIGNER" verify --verbose --print-certs "$APK" 2>&1)"
+          printf '%s\n' "$SIGNATURE_OUTPUT"
+          APK_CERT_SHA256="$(printf '%s\n' "$SIGNATURE_OUTPUT" | sed -nE 's/.*certificate SHA-256 digest: ([0-9a-fA-F]+).*/\1/p' | head -n1 | tr '[:upper:]' '[:lower:]')"
+          KEYTOOL_OUTPUT="$(keytool -list -v -keystore "$MEMO_KEYSTORE_FILE" -storepass "$MEMO_KEYSTORE_PASSWORD" -alias "$MEMO_KEY_ALIAS")"
+          KEY_CERT_SHA256="$(printf '%s\n' "$KEYTOOL_OUTPUT" | sed -nE 's/^[[:space:]]*SHA256:[[:space:]]*([0-9A-Fa-f:]+).*/\1/p' | head -n1 | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          if [[ -z "$APK_CERT_SHA256" || -z "$KEY_CERT_SHA256" || "$APK_CERT_SHA256" != "$KEY_CERT_SHA256" ]]; then
+            echo "::error::Debug APK signer certificate does not match the configured persistent Memo keystore."
+            echo "APK certificate SHA-256: ${APK_CERT_SHA256:-missing}"
+            echo "Keystore certificate SHA-256: ${KEY_CERT_SHA256:-missing}"
+            exit 1
+          fi
+
+          {
+            echo "Memo debug APK identity verification: PASS"
+            echo "Package: app.memo.android.debug"
+            echo "Version code: $ACTUAL_VERSION_CODE"
+            echo "Version name: $ACTUAL_VERSION_NAME"
+            echo "Signer certificate SHA-256: $APK_CERT_SHA256"
+            echo "Persistent signing key: verified against configured keystore alias $MEMO_KEY_ALIAS"
+          } | tee "$RUNNER_TEMP/Memo-APK-Identity-Verification.txt" | tee -a "$MEMO_BUILD_LOG"
 
       - name: Build optional signed release APK when configured
         id: release
