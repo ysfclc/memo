@@ -46,7 +46,20 @@ jobs:
           if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
             ARCHIVE_PATH="incoming/memo.zip"
           elif [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
-            ARCHIVE_PATH="$(python3 - "$GITHUB_EVENT_PATH" <<'PY_EVENT' import json, sys event = json.load(open(sys.argv[1], encoding="utf-8")) changed = set() for commit in event.get("commits", []): changed.update(commit.get("added", [])) changed.update(commit.get("modified", [])) changed.update(commit.get("removed", [])) if "incoming/memo.zip" in changed: print("incoming/memo.zip") elif "Memo-Android-Repository.zip" in changed or "memo1-task-runbook.zip" in changed: print("Memo-Android-Repository.zip") PY_EVENT )"
+            ARCHIVE_PATH="$(python3 - "$GITHUB_EVENT_PATH" <<'PY_EVENT'
+          import json, sys
+          event = json.load(open(sys.argv[1], encoding="utf-8"))
+          changed = set()
+          for commit in event.get("commits", []):
+              changed.update(commit.get("added", []))
+              changed.update(commit.get("modified", []))
+              changed.update(commit.get("removed", []))
+          if "incoming/memo.zip" in changed:
+              print("incoming/memo.zip")
+          elif "Memo-Android-Repository.zip" in changed or "memo1-task-runbook.zip" in changed:
+              print("Memo-Android-Repository.zip")
+          PY_EVENT
+          )"
           fi
 
           if [[ -z "$ARCHIVE_PATH" ]]; then
@@ -85,7 +98,17 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP"
-          cat > "$RUNNER_TEMP/Memo-Import-Preflight-Failure.md" <<NOTE # Memo ZIP import preflight failed - Repository: $GITHUB_REPOSITORY - Branch/ref: $GITHUB_REF - Trigger commit: $GITHUB_SHA - Event: $GITHUB_EVENT_NAME - Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID The uploaded ZIP could not be resolved or an upload revision could not be safely selected. No project files were extracted, integrated or committed by this run. NOTE
+          cat > "$RUNNER_TEMP/Memo-Import-Preflight-Failure.md" <<NOTE
+          # Memo ZIP import preflight failed
+
+          - Repository: $GITHUB_REPOSITORY
+          - Branch/ref: $GITHUB_REF
+          - Trigger commit: $GITHUB_SHA
+          - Event: $GITHUB_EVENT_NAME
+          - Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+
+          The uploaded ZIP could not be resolved or an upload revision could not be safely selected. No project files were extracted, integrated or committed by this run.
+          NOTE
           cat "$RUNNER_TEMP/Memo-Import-Preflight-Failure.md" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload preflight failure note
@@ -396,4 +419,581 @@ jobs:
                   fail(f"Unsafe path in SOURCE_SHA256SUMS.txt line {line_number}.")
               checksum_path = PurePosixPath(name)
               if any(part in ("", ".", "..") for part in checksum_path.parts):
- 
+                  fail(f"Unsafe path in SOURCE_SHA256SUMS.txt line {line_number}.")
+              actual_path = project.joinpath(*checksum_path.parts)
+              actual_resolved = actual_path.resolve()
+              if actual_resolved != project.resolve() and project.resolve() not in actual_resolved.parents:
+                  fail(f"Checksum path escapes the project root on line {line_number}.")
+              if not actual_path.is_file() or actual_path.is_symlink():
+                  fail(f"Checksum target is missing or not a regular file on line {line_number}: {name}")
+              actual = hashlib.sha256(actual_path.read_bytes()).hexdigest()
+              if actual.lower() != expected.lower():
+                  fail(f"Source checksum mismatch on line {line_number}: {name}")
+              checked += 1
+          if checked == 0:
+              fail("SOURCE_SHA256SUMS.txt contains no checksum entries.")
+
+          relative = project.relative_to(staging).as_posix()
+          if relative == ".":
+              relative = "."
+          (staging / "project-root.txt").write_text(relative + "\n", encoding="utf-8")
+          detection = [
+              "Memo ZIP import validation: PASS",
+              f"Archive: {archive.name}",
+              f"Archive bytes: {archive.stat().st_size}",
+              f"ZIP entries checked: {len(infos)}",
+              f"Regular files/directories extracted: {len(safe_entries)}",
+              f"Source manifest entries verified: {checked}",
+              f"Detected project root: {relative}",
+              f"Project markers: settings.gradle(.kts), gradlew, build.gradle(.kts), app/build.gradle(.kts), AndroidManifest.xml",
+              "Uploaded .github workflows will not replace the active repository workflows.",
+          ]
+          (staging / "Memo-Project-Root-Detection.txt").write_text("\n".join(detection) + "\n", encoding="utf-8")
+          print("\n".join(detection))
+          PY
+
+          PROJECT_RELATIVE="$(cat "$STAGING_DIR/project-root.txt")"
+          PROJECT_DIR="$STAGING_DIR/$PROJECT_RELATIVE"
+          if [[ ! -s "$PROJECT_DIR/gradlew" ]]; then
+            echo "::error::Root detection did not produce a usable Gradle wrapper."
+            exit 1
+          fi
+          echo "MEMO_STAGED_PROJECT=$PROJECT_DIR" >> "$GITHUB_ENV"
+          echo "Detected Memo project: $PROJECT_DIR" | tee -a "$MEMO_BUILD_LOG"
+
+      - name: Integrate validated project into this repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d "$MEMO_STAGED_PROJECT"
+          test -s "$MEMO_STAGED_PROJECT/settings.gradle" -o -s "$MEMO_STAGED_PROJECT/settings.gradle.kts"
+          test -s "$MEMO_STAGED_PROJECT/gradlew"
+
+          {
+            echo "Integrating validated Memo project into $GITHUB_WORKSPACE"
+            echo "Source project: $MEMO_STAGED_PROJECT"
+            echo "Preserved: .git/, .github/, incoming/"
+            echo "Excluded: build caches, local properties, environment files, and signing-key files"
+          } | tee -a "$MEMO_BUILD_LOG"
+
+          # The live Git database, active workflows, and uploaded source ZIP are protected.
+          # --delete removes obsolete project files only after the staged archive passed validation.
+          rsync -a --delete \
+            --exclude='/.git/' \
+            --exclude='/.github/' \
+            --exclude='/incoming/' \
+            --exclude='/notes/' \
+            --exclude='/.gradle/' \
+            --exclude='**/.gradle/' \
+            --exclude='**/build/' \
+            --exclude='**/__pycache__/' \
+            --exclude='**/.idea/' \
+            --exclude='**/.kotlin/' \
+            --exclude='**/.cxx/' \
+            --exclude='**/.externalNativeBuild/' \
+            --exclude='**/captures/' \
+            --exclude='**/local.properties' \
+            --exclude='**/.env' \
+            --exclude='**/.env.*' \
+            --exclude='**/*.jks' \
+            --exclude='**/*.keystore' \
+            --exclude='**/*.p12' \
+            --exclude='**/*.pfx' \
+            --exclude='**/*.pem' \
+            --exclude='**/*.key' \
+            --exclude='**/id_rsa*' \
+            --exclude='**/*signing*.properties' \
+            --exclude='**/*credentials*.json' \
+            --exclude='**/*secret*.json' \
+            --exclude='**/*token*.json' \
+            --exclude='**/service-account*.json' \
+            --exclude='**/Thumbs.db' \
+            --exclude='**/.DS_Store' \
+            --exclude='**/*.tmp' \
+            --exclude='**/*.log' \
+            --exclude='**/*.bak' \
+            --exclude='**/*.swp' \
+            --exclude='**/*~' \
+            "$MEMO_STAGED_PROJECT/" "$GITHUB_WORKSPACE/" 2>&1 | tee -a "$MEMO_BUILD_LOG"
+
+          # Keep generated files out of Git even when the uploaded .gitignore is incomplete.
+          GIT_EXCLUDE="$(git rev-parse --git-path info/exclude)"
+          cat >> "$GIT_EXCLUDE" <<'GIT_EXCLUDE_RULES'
+          /incoming/
+          /delivery/
+          /.gradle/
+          **/.gradle/
+          **/build/
+          **/__pycache__/
+          **/.idea/
+          **/.kotlin/
+          **/.cxx/
+          **/.externalNativeBuild/
+          **/captures/
+          **/local.properties
+          **/.env
+          **/.env.*
+          **/*.jks
+          **/*.keystore
+          **/*.p12
+          **/*.pfx
+          **/*.pem
+          **/*.key
+          **/*signing*.properties
+          **/*credentials*.json
+          **/*secret*.json
+          **/*token*.json
+          **/service-account*.json
+          **/*.tmp
+          **/*.log
+          **/*.bak
+          **/*.swp
+          **/*~
+          GIT_EXCLUDE_RULES
+
+          echo "MEMO_PROJECT_DIR=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+          echo "Project files integrated; active GitHub workflow was preserved." | tee -a "$MEMO_BUILD_LOG"
+
+      - name: Refresh integrated source checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$MEMO_PROJECT_DIR"
+
+          # The uploaded manifest was verified before integration. Rebuild it now so
+          # it accurately covers the integrated source and the protected active workflow.
+          find . -type f \
+            ! -path './.git/*' \
+            ! -path './incoming/*' \
+            ! -path './notes/*' \
+            ! -path '*/.gradle/*' \
+            ! -path '*/build/*' \
+            ! -path '*/__pycache__/*' \
+            ! -path '*/.idea/*' \
+            ! -path '*/.kotlin/*' \
+            ! -path '*/.cxx/*' \
+            ! -path '*/.externalNativeBuild/*' \
+            ! -path '*/captures/*' \
+            ! -name 'SOURCE_SHA256SUMS.txt' \
+            ! -name 'local.properties' \
+            ! -name '.env' \
+            ! -name '.env.*' \
+            ! -name '*.jks' \
+            ! -name '*.keystore' \
+            ! -name '*.p12' \
+            ! -name '*.pfx' \
+            ! -name '*.pem' \
+            ! -name '*.key' \
+            ! -name '*signing*.properties' \
+            ! -name '*credentials*.json' \
+            ! -name '*secret*.json' \
+            ! -name '*token*.json' \
+            ! -name 'service-account*.json' \
+            ! -name 'Thumbs.db' \
+            ! -name '.DS_Store' \
+            ! -name '*.tmp' \
+            ! -name '*.log' \
+            ! -name '*.bak' \
+            ! -name '*.swp' \
+            ! -name '*~' \
+            -print0 | sort -z | xargs -0 -r sha256sum > SOURCE_SHA256SUMS.txt
+
+          sha256sum -c SOURCE_SHA256SUMS.txt 2>&1 | tee -a "$MEMO_BUILD_LOG"
+          echo "Integrated source checksum manifest refreshed and verified." | tee -a "$MEMO_BUILD_LOG"
+
+      - name: Verify source boundaries and product invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$MEMO_PROJECT_DIR"
+          python3 tools/verify_source.py 2>&1 | tee -a "$MEMO_BUILD_LOG"
+
+      - name: Test optional remote runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$MEMO_PROJECT_DIR"
+          if [[ -d remote-runner/tests ]]; then
+            (cd remote-runner && python3 -m unittest discover -s tests -v) 2>&1 | tee -a "$MEMO_BUILD_LOG"
+          else
+            echo "No remote-runner/tests directory in this upload; skipping optional runner tests." | tee -a "$MEMO_BUILD_LOG"
+          fi
+
+      - name: Run Android tests, lint, and build debug APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$MEMO_PROJECT_DIR"
+          chmod +x ./gradlew
+          ./gradlew --no-daemon --stacktrace \
+            :core:test \
+            :app:testDebugUnitTest \
+            :app:lintDebug \
+            :app:assembleDebug 2>&1 | tee -a "$MEMO_BUILD_LOG"
+
+      - name: Build optional signed release APK when configured
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$MEMO_PROJECT_DIR"
+          RELEASE_CONFIGURED="false"
+
+          python3 - <<'PY' > "$RUNNER_TEMP/memo-release-signing-configured.txt"
+          import re
+          from pathlib import Path
+          for path in (Path("app/build.gradle"), Path("app/build.gradle.kts")):
+              if not path.is_file():
+                  continue
+              source = path.read_text(encoding="utf-8")
+              pattern = re.compile(r'(?:\brelease\b|getByName\s*\(\s*["\']release["\']\s*\)|create\s*\(\s*["\']release["\']\s*\))\s*\{')
+              for match in pattern.finditer(source):
+                  depth = 1
+                  pos = match.end()
+                  while pos < len(source) and depth:
+                      if source[pos] == "{":
+                          depth += 1
+                      elif source[pos] == "}":
+                          depth -= 1
+                      pos += 1
+                  block = source[match.end():pos - 1]
+                  if re.search(r'\bsigningConfig\b', block):
+                      print("true")
+                      raise SystemExit(0)
+          print("false")
+          PY
+          RELEASE_CONFIGURED="$(cat "$RUNNER_TEMP/memo-release-signing-configured.txt")"
+
+          ./gradlew --no-daemon :app:tasks --all > "$RUNNER_TEMP/memo-app-gradle-tasks.txt" 2>&1
+          if [[ "$RELEASE_CONFIGURED" == "true" ]] && grep -q 'assembleRelease' "$RUNNER_TEMP/memo-app-gradle-tasks.txt"; then
+            echo "A release signing configuration and assembleRelease task are present; attempting release build." | tee -a "$MEMO_BUILD_LOG"
+            if ./gradlew --no-daemon --stacktrace :app:assembleRelease 2>&1 | tee -a "$MEMO_BUILD_LOG"; then
+              echo "Release APK build completed." | tee -a "$MEMO_BUILD_LOG"
+            else
+              echo "::warning::Optional release APK build failed. The debug build remains the required delivery." 
+              echo "Optional release APK: build failed; debug build succeeded." > "$RUNNER_TEMP/Memo-Release-Build-Status.txt"
+            fi
+          else
+            echo "No explicit release signing configuration found; skipping optional release APK." | tee -a "$MEMO_BUILD_LOG"
+            echo "Optional release APK: skipped; no explicit release signing configuration." > "$RUNNER_TEMP/Memo-Release-Build-Status.txt"
+          fi
+
+      - name: Create a permanent note for this ZIP upload
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$GITHUB_WORKSPACE"
+
+          if [[ ! "$MEMO_UPLOAD_COMMIT" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Cannot create import note without a valid upload commit SHA."
+            exit 1
+          fi
+
+          NOTES_DIR="$GITHUB_WORKSPACE/notes/imports"
+          NOTE_FILE="$NOTES_DIR/$MEMO_UPLOAD_COMMIT.md"
+          mkdir -p "$NOTES_DIR"
+          if [[ -e "$NOTE_FILE" ]]; then
+            echo "::error::Import note already exists for $MEMO_UPLOAD_COMMIT; preflight should have skipped this run."
+            exit 1
+          fi
+
+          ARCHIVE_SHA="$(awk '{print $1}' "$RUNNER_TEMP/Memo-Source-Archive-SHA256.txt")"
+          ARCHIVE_DATE="$(git show -s --format=%cI "$MEMO_UPLOAD_COMMIT")"
+          PROJECT_ROOT="$(cat "$RUNNER_TEMP/memo-zip-staging/project-root.txt")"
+          if [[ -s "$MEMO_PROJECT_DIR/app/build/outputs/apk/release/app-release.apk" ]]; then
+            RELEASE_STATUS="built"
+          else
+            RELEASE_STATUS="$(cat "$RUNNER_TEMP/Memo-Release-Build-Status.txt" 2>/dev/null || echo "not configured")"
+          fi
+          SOURCE_FILE_COUNT="$(find "$MEMO_PROJECT_DIR" -type f \
+            ! -path '*/.git/*' ! -path '*/incoming/*' ! -path '*/notes/*' \
+            ! -path '*/.gradle/*' ! -path '*/build/*' ! -path '*/__pycache__/*' \
+            ! -path '*/.idea/*' ! -path '*/.kotlin/*' ! -path '*/.cxx/*' \
+            ! -path '*/.externalNativeBuild/*' ! -path '*/captures/*' \
+            ! -name 'local.properties' ! -name '.env' ! -name '.env.*' \
+            ! -name '*.jks' ! -name '*.keystore' ! -name '*.p12' ! -name '*.pfx' \
+            ! -name '*.pem' ! -name '*.key' ! -name '*.tmp' ! -name '*.log' \
+            -print | wc -l | tr -d ' ')"
+
+          cat > "$NOTE_FILE" <<NOTE
+          # Memo ZIP import
+
+          - Upload commit: \`$MEMO_UPLOAD_COMMIT\`
+          - Upload archive: \`$MEMO_UPLOAD_PATH\`
+          - Upload commit timestamp: $ARCHIVE_DATE
+          - Archive SHA-256: \`$ARCHIVE_SHA\`
+          - Detected project root inside ZIP: \`$PROJECT_ROOT\`
+          - Integrated source files: $SOURCE_FILE_COUNT
+          - Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          - Branch: \`$GITHUB_REF_NAME\`
+
+          ## Verification
+
+          - ZIP structure, CRC, path safety and extraction validation: passed
+          - Uploaded source SHA-256 manifest: passed
+          - Memo source verifier: passed
+          - Remote-runner unit tests: passed when present (otherwise explicitly skipped)
+          - Android core tests: passed
+          - Android app unit tests: passed
+          - Android lint: passed
+          - Debug APK assembly: passed
+          - Optional release APK: $RELEASE_STATUS
+
+          ## Integration policy
+
+          The complete uploaded project replaced the existing project source after validation. Existing GitHub Actions workflows, Git metadata, incoming ZIP history and prior import notes were preserved. Build caches, machine-local configuration and signing credentials were excluded. This import note is committed with the integrated source; inspect the commit that adds this file to identify the integration commit SHA.
+          NOTE
+
+          if [[ ! -s "$GITHUB_WORKSPACE/notes/README.md" ]]; then
+            cat > "$GITHUB_WORKSPACE/notes/README.md" <<'INDEX'
+          # Memo import history
+
+          One import note is committed for every successfully integrated ZIP upload. The original archive upload remains in Git history under `incoming/memo.zip`; the note records its upload commit and SHA-256.
+          INDEX
+          fi
+          printf '\n- [%s](imports/%s.md) — uploaded %s; archive SHA-256 `%s`\n' \
+            "${MEMO_UPLOAD_COMMIT:0:12}" "$MEMO_UPLOAD_COMMIT" "$ARCHIVE_DATE" "$ARCHIVE_SHA" \
+            >> "$GITHUB_WORKSPACE/notes/README.md"
+
+          echo "Created permanent ZIP import note: notes/imports/$MEMO_UPLOAD_COMMIT.md" | tee -a "$MEMO_BUILD_LOG"
+          echo "Memo import note: notes/imports/$MEMO_UPLOAD_COMMIT.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Prepare APKs and complete integrated repository ZIP
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$MEMO_PROJECT_DIR"
+          DELIVERY="$RUNNER_TEMP/memo-delivery"
+          mkdir -p "$DELIVERY"
+
+          DEBUG_APK="$MEMO_PROJECT_DIR/app/build/outputs/apk/debug/app-debug.apk"
+          if [[ ! -s "$DEBUG_APK" ]]; then
+            mapfile -t DEBUG_APKS < <(find "$MEMO_PROJECT_DIR/app/build/outputs/apk/debug" -type f -name '*.apk' -print 2>/dev/null | sort || true)
+            if [[ "${#DEBUG_APKS[@]}" -eq 1 ]]; then
+              DEBUG_APK="${DEBUG_APKS[0]}"
+            else
+              echo "::error::Expected app-debug.apk or exactly one debug APK; found ${#DEBUG_APKS[@]}."
+              find "$MEMO_PROJECT_DIR/app/build/outputs" -maxdepth 6 -type f -print 2>/dev/null || true
+              exit 1
+            fi
+          fi
+          test -s "$DEBUG_APK"
+          cp "$DEBUG_APK" "$DELIVERY/Memo-Android-debug.apk"
+
+          RELEASE_APK="$MEMO_PROJECT_DIR/app/build/outputs/apk/release/app-release.apk"
+          if [[ -s "$RELEASE_APK" ]]; then
+            cp "$RELEASE_APK" "$DELIVERY/Memo-Android-release.apk"
+          else
+            mapfile -t RELEASE_APKS < <(find "$MEMO_PROJECT_DIR/app/build/outputs/apk/release" -type f -name '*.apk' -print 2>/dev/null | sort || true)
+            if [[ "${#RELEASE_APKS[@]}" -eq 1 ]]; then
+              cp "${RELEASE_APKS[0]}" "$DELIVERY/Memo-Android-release.apk"
+            fi
+          fi
+
+          cp "$RUNNER_TEMP/Memo-Source-Archive-SHA256.txt" "$DELIVERY/Memo-Source-Archive-SHA256.txt"
+          cp "$RUNNER_TEMP/memo-zip-staging/Memo-Project-Root-Detection.txt" "$DELIVERY/Memo-Project-Root-Detection.txt"
+          if [[ -f "$RUNNER_TEMP/Memo-Release-Build-Status.txt" ]]; then
+            cp "$RUNNER_TEMP/Memo-Release-Build-Status.txt" "$DELIVERY/Memo-Release-Build-Status.txt"
+          else
+            echo "Optional release APK: built or not requested by the project." > "$DELIVERY/Memo-Release-Build-Status.txt"
+          fi
+
+          REPOSITORY_ZIP="$DELIVERY/Memo-Repository-Integrated.zip"
+          rm -f "$REPOSITORY_ZIP"
+          zip -qr "$REPOSITORY_ZIP" . \
+            -x './.git/*' \
+               './incoming/*' \
+               './.gradle/*' \
+               '*/.gradle/*' \
+               '*/build/*' \
+               '*/__pycache__/*' \
+               '*/.idea/*' \
+               '*/.kotlin/*' \
+               '*/.cxx/*' \
+               '*/.externalNativeBuild/*' \
+               '*/captures/*' \
+               './delivery/*' \
+               './local.properties' \
+               './.env' \
+               './.env.*' \
+               '*.jks' \
+               '*.keystore' \
+               '*.p12' \
+               '*.pfx' \
+               '*.pem' \
+               '*.key' \
+               '*signing*.properties' \
+               '*credentials*.json' \
+               '*secret*.json' \
+               '*token*.json' \
+               'service-account*.json' \
+               '*/Thumbs.db' \
+               '*/.DS_Store' \
+               '*.tmp' \
+               '*.log' \
+               '*.bak' \
+               '*.swp' \
+               '*~'
+
+          (
+            cd "$DELIVERY"
+            sha256sum Memo-Repository-Integrated.zip > Memo-Repository-Integrated.zip.sha256.txt
+            sha256sum Memo-Android-debug.apk Memo-Repository-Integrated.zip > SHA256SUMS.txt
+            if [[ -s Memo-Android-release.apk ]]; then
+              sha256sum Memo-Android-release.apk >> SHA256SUMS.txt
+            fi
+          )
+          ls -lh "$DELIVERY" | tee -a "$MEMO_BUILD_LOG"
+          echo "Prepared debug APK and integrated project ZIP." | tee -a "$MEMO_BUILD_LOG"
+
+      - name: Upload APKs
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Memo-Android-debug-APK
+          path: |
+            ${{ runner.temp }}/memo-delivery/Memo-Android-debug.apk
+            ${{ runner.temp }}/memo-delivery/Memo-Android-release.apk
+            ${{ runner.temp }}/memo-delivery/Memo-Source-Archive-SHA256.txt
+            ${{ runner.temp }}/memo-delivery/SHA256SUMS.txt
+            ${{ runner.temp }}/memo-delivery/Memo-Release-Build-Status.txt
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+      - name: Upload complete integrated repository ZIP
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Memo-Android-Integrated-Repository
+          path: |
+            ${{ runner.temp }}/memo-delivery/Memo-Repository-Integrated.zip
+            ${{ runner.temp }}/memo-delivery/Memo-Repository-Integrated.zip.sha256.txt
+            ${{ runner.temp }}/memo-delivery/Memo-Project-Root-Detection.txt
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+      - name: Commit integrated project after all required checks pass
+        if: success() && github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$GITHUB_WORKSPACE"
+
+          if [[ "$GITHUB_REF_TYPE" != "branch" ]]; then
+            echo "::error::Refusing to commit from a non-branch ref: $GITHUB_REF"
+            exit 1
+          fi
+
+          # Refuse a stale push instead of force-pushing over a newer upload or manual commit.
+          git fetch --no-tags origin "$GITHUB_REF_NAME"
+          REMOTE_SHA="$(git rev-parse FETCH_HEAD)"
+          if [[ "$REMOTE_SHA" != "$GITHUB_SHA" ]]; then
+            echo "::error::The branch advanced while this build was running. No commit was pushed; rerun the latest upload so it can be validated against the new branch head."
+            echo "Event SHA: $GITHUB_SHA" | tee -a "$MEMO_BUILD_LOG"
+            echo "Remote SHA: $REMOTE_SHA" | tee -a "$MEMO_BUILD_LOG"
+            exit 1
+          fi
+
+          git add -A
+          # The user-uploaded ZIP is an input artifact, not part of the integrated source commit.
+          git reset --quiet -- incoming/memo.zip || true
+
+          python3 - <<'PY'
+          import re
+          import subprocess
+          import sys
+
+          raw = subprocess.check_output(["git", "diff", "--cached", "--name-only", "-z"])
+          paths = [p.decode("utf-8", "surrogateescape") for p in raw.split(b"\0") if p]
+          unsafe_name = re.compile(r"(^|/)(?:\.env(?:\..*)?|local\.properties|[^/]*\.jks|[^/]*\.keystore|[^/]*\.p12|[^/]*\.pfx|[^/]*\.pem|[^/]*\.key|id_rsa[^/]*|[^/]*(?:signing|credentials)[^/]*\.properties)$", re.I)
+          bad = [p for p in paths if unsafe_name.search(p)]
+          if bad:
+              print("::error::Refusing to commit possible secret or signing material:", file=sys.stderr)
+              for path in bad:
+                  print(f" - {path}", file=sys.stderr)
+              raise SystemExit(1)
+
+          private_key = re.compile(rb"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----")
+          secret_assignment = re.compile(rb"(?im)^\s*(?:storePassword|keyPassword|signingPassword)\s*[=:]\s*\S+")
+          for path in paths:
+              try:
+                  content = subprocess.check_output(["git", "show", f":{path}"])
+              except subprocess.CalledProcessError:
+                  continue
+              if private_key.search(content) or secret_assignment.search(content):
+                  print(f"::error::Refusing to commit embedded private/signing credentials in {path}", file=sys.stderr)
+                  raise SystemExit(1)
+          print(f"Staged-path safety check passed for {len(paths)} file(s).")
+          PY
+
+          if ! git diff --cached --check; then
+            echo "::warning::The uploaded source contains whitespace-only formatting issues. They do not block an otherwise verified import."
+          fi
+          if git diff --cached --quiet; then
+            echo "::error::No integration changes were staged. The per-upload history note must create a commit even when source files are byte-for-byte identical."
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update Memo from uploaded ZIP (${MEMO_UPLOAD_COMMIT:0:12}) [skip ci]"
+          INTEGRATION_COMMIT="$(git rev-parse HEAD)"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+          {
+            echo "Integrated Memo project committed and pushed: $INTEGRATION_COMMIT"
+            echo "Upload commit: $MEMO_UPLOAD_COMMIT"
+            echo "Import note: notes/imports/$MEMO_UPLOAD_COMMIT.md"
+          } | tee -a "$MEMO_BUILD_LOG"
+          {
+            echo "## Memo ZIP import committed"
+            echo "- Upload commit: \`$MEMO_UPLOAD_COMMIT\`"
+            echo "- Integration commit: \`$INTEGRATION_COMMIT\`"
+            echo "- Import note: \`notes/imports/$MEMO_UPLOAD_COMMIT.md\`"
+            echo "- Source archive: \`$MEMO_UPLOAD_PATH\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+          printf 'Upload commit: %s\nIntegration commit: %s\nImport note: notes/imports/%s.md\n' \
+            "$MEMO_UPLOAD_COMMIT" "$INTEGRATION_COMMIT" "$MEMO_UPLOAD_COMMIT" \
+            > "$RUNNER_TEMP/memo-delivery/Memo-Import-Commit.txt"
+
+      - name: Record failed Memo ZIP import attempt
+        if: failure()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP"
+          ARCHIVE_SHA="unknown"
+          if [[ -s "$RUNNER_TEMP/Memo-Source-Archive-SHA256.txt" ]]; then
+            ARCHIVE_SHA="$(awk '{print $1}' "$RUNNER_TEMP/Memo-Source-Archive-SHA256.txt")"
+          fi
+          cat > "$RUNNER_TEMP/Memo-Import-Failure.md" <<NOTE
+          # Memo ZIP import failed validation or build
+
+          - Upload commit: ${MEMO_UPLOAD_COMMIT:-unresolved}
+          - Upload archive: ${MEMO_UPLOAD_PATH:-unresolved}
+          - Archive SHA-256: $ARCHIVE_SHA
+          - Branch: $GITHUB_REF_NAME
+          - Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+
+          No integrated source commit has been confirmed. Inspect the workflow log to distinguish ZIP validation, test, lint, debug-build, stale-branch or Git push failure. The original upload commit and ZIP remain in Git history for inspection or correction.
+          NOTE
+          cat "$RUNNER_TEMP/Memo-Import-Failure.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Preserve build, test, lint, and validation logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Memo-Android-Build-Reports
+          path: |
+            ${{ runner.temp }}/Memo-Build-Validation.log
+            ${{ runner.temp }}/memo-zip-staging/Memo-Project-Root-Detection.txt
+            ${{ runner.temp }}/memo-app-gradle-tasks.txt
+            ${{ runner.temp }}/memo-delivery/Memo-Import-Commit.txt
+            ${{ runner.temp }}/Memo-Import-Failure.md
+            ${{ github.workspace }}/notes/imports/*.md
+            ${{ github.workspace }}/**/build/reports/**
+            ${{ github.workspace }}/**/build/test-results/**
+          if-no-files-found: warn
+          retention-days: 7
