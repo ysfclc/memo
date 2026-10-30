@@ -610,12 +610,14 @@ jobs:
           MEMO_UPLOAD_KEY_ALIAS: ${{ secrets.MEMO_UPLOAD_KEY_ALIAS }}
           MEMO_UPLOAD_KEY_PASSWORD: ${{ secrets.MEMO_UPLOAD_KEY_PASSWORD }}
           MEMO_REQUIRE_STABLE_SIGNING: ${{ vars.MEMO_REQUIRE_STABLE_SIGNING }}
-        run: |
-          set -euo pipefail
+          run: |
+           set -euo pipefail
+           MEMO_REQUIRE_STABLE_SIGNING=true
+           export MEMO_REQUIRE_STABLE_SIGNING
 
-          KEYSTORE_PATH="$RUNNER_TEMP/memo-upload-signing.jks"
+           KEYSTORE_PATH="$RUNNER_TEMP/memo-upload-signing.jks"
 
-          if [[ -n "${MEMO_UPLOAD_KEYSTORE_BASE64:-}" ]]; then
+           if [[ -n "${MEMO_UPLOAD_KEYSTORE_BASE64:-}" ]]; then
             if [[ -z "${MEMO_UPLOAD_STORE_PASSWORD:-}" ||
                   -z "${MEMO_UPLOAD_KEY_ALIAS:-}" ||
                   -z "${MEMO_UPLOAD_KEY_PASSWORD:-}" ]]; then
@@ -648,7 +650,7 @@ jobs:
 
             echo "Persistent Memo signing key prepared and validated."
             echo "configured=true" >> "$GITHUB_OUTPUT"
-          else
+           else
             if [[ "${MEMO_REQUIRE_STABLE_SIGNING:-false}" == "true" ]]; then
               echo "::error::Stable Memo signing is required, but MEMO_UPLOAD_KEYSTORE_BASE64 is not configured."
               exit 1
