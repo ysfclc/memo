@@ -601,6 +601,63 @@ jobs:
           sha256sum -c SOURCE_SHA256SUMS.txt 2>&1 | tee -a "$MEMO_BUILD_LOG"
           echo "Integrated source checksum manifest refreshed and verified." | tee -a "$MEMO_BUILD_LOG"
 
+      - name: Prepare persistent Memo signing key
+        id: signing_key
+        shell: bash
+        env:
+          MEMO_UPLOAD_KEYSTORE_BASE64: ${{ secrets.MEMO_UPLOAD_KEYSTORE_BASE64 }}
+          MEMO_UPLOAD_STORE_PASSWORD: ${{ secrets.MEMO_UPLOAD_STORE_PASSWORD }}
+          MEMO_UPLOAD_KEY_ALIAS: ${{ secrets.MEMO_UPLOAD_KEY_ALIAS }}
+          MEMO_UPLOAD_KEY_PASSWORD: ${{ secrets.MEMO_UPLOAD_KEY_PASSWORD }}
+          MEMO_REQUIRE_STABLE_SIGNING: ${{ vars.MEMO_REQUIRE_STABLE_SIGNING }}
+        run: |
+          set -euo pipefail
+
+          KEYSTORE_PATH="$RUNNER_TEMP/memo-upload-signing.jks"
+
+          if [[ -n "${MEMO_UPLOAD_KEYSTORE_BASE64:-}" ]]; then
+            if [[ -z "${MEMO_UPLOAD_STORE_PASSWORD:-}" ||
+                  -z "${MEMO_UPLOAD_KEY_ALIAS:-}" ||
+                  -z "${MEMO_UPLOAD_KEY_PASSWORD:-}" ]]; then
+              echo "::error::Persistent Memo signing is partially configured. Set all four MEMO_UPLOAD_* signing secrets."
+              exit 1
+            fi
+
+            printf '%s' "$MEMO_UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
+
+            if [[ ! -s "$KEYSTORE_PATH" ]]; then
+              echo "::error::Persistent Memo signing keystore is empty."
+              exit 1
+            fi
+
+            keytool -list \
+              -keystore "$KEYSTORE_PATH" \
+              -storepass "$MEMO_UPLOAD_STORE_PASSWORD" \
+              -alias "$MEMO_UPLOAD_KEY_ALIAS" >/dev/null
+
+            {
+              echo "MEMO_UPLOAD_KEYSTORE_FILE=$KEYSTORE_PATH"
+              echo "MEMO_UPLOAD_STORE_PASSWORD=$MEMO_UPLOAD_STORE_PASSWORD"
+              echo "MEMO_UPLOAD_KEY_ALIAS=$MEMO_UPLOAD_KEY_ALIAS"
+              echo "MEMO_UPLOAD_KEY_PASSWORD=$MEMO_UPLOAD_KEY_PASSWORD"
+              echo "ORG_GRADLE_PROJECT_MEMO_UPLOAD_KEYSTORE_FILE=$KEYSTORE_PATH"
+              echo "ORG_GRADLE_PROJECT_MEMO_UPLOAD_STORE_PASSWORD=$MEMO_UPLOAD_STORE_PASSWORD"
+              echo "ORG_GRADLE_PROJECT_MEMO_UPLOAD_KEY_ALIAS=$MEMO_UPLOAD_KEY_ALIAS"
+              echo "ORG_GRADLE_PROJECT_MEMO_UPLOAD_KEY_PASSWORD=$MEMO_UPLOAD_KEY_PASSWORD"
+            } >> "$GITHUB_ENV"
+
+            echo "Persistent Memo signing key prepared and validated."
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            if [[ "${MEMO_REQUIRE_STABLE_SIGNING:-false}" == "true" ]]; then
+              echo "::error::Stable Memo signing is required, but MEMO_UPLOAD_KEYSTORE_BASE64 is not configured."
+              exit 1
+            fi
+
+            echo "::warning::Persistent signing is not configured. Debug APK delivery can continue; release signing remains unavailable."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          fi
+          
       - name: Verify source boundaries and product invariants
         shell: bash
         run: |
