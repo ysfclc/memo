@@ -174,7 +174,7 @@ jobs:
         run: |
           set -euo pipefail
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
-          sdkmanager --install 'platform-tools' 'platforms;android-35' 'build-tools;35.0.0' 2>&1 | tee -a "$MEMO_BUILD_LOG"
+          sdkmanager --install 'platform-tools' 'platforms;android-35' 'build-tools;35.0.0' 'emulator' 'system-images;android-35;google_apis;x86_64' 2>&1 | tee -a "$MEMO_BUILD_LOG"
 
       - name: Set up pinned Gradle 8.14.6
         uses: gradle/actions/setup-gradle@v4
@@ -600,6 +600,78 @@ jobs:
             echo "Certificate SHA-256: $CERT"
             echo "Signing mode: ${MEMO_SIGNING_MODE:-unknown}"
           } | tee "$RUNNER_TEMP/Memo-APK-Identity.txt" | tee -a "$MEMO_BUILD_LOG"
+
+      - name: Prove install-over-existing preserves app-private data
+        timeout-minutes: 20
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$MEMO_PROJECT_DIR"
+          APK="$MEMO_PROJECT_DIR/app/build/outputs/apk/debug/app-debug.apk"
+          CURRENT_APK="$RUNNER_TEMP/Memo-current.apk"
+          BASELINE_APK="$RUNNER_TEMP/Memo-baseline.apk"
+          cp "$APK" "$CURRENT_APK"
+          CURRENT_CODE="$GITHUB_RUN_NUMBER"
+          BASELINE_CODE="$((CURRENT_CODE - 1))"
+          if (( BASELINE_CODE < 1 )); then
+            echo '::error::Cannot create a lower-version install baseline.'
+            exit 1
+          fi
+
+          MEMO_VERSION_CODE="$BASELINE_CODE" gradle --no-daemon :app:assembleDebug 2>&1 | tee -a "$MEMO_BUILD_LOG"
+          cp "$APK" "$BASELINE_APK"
+          MEMO_VERSION_CODE="$CURRENT_CODE" gradle --no-daemon :app:assembleDebug 2>&1 | tee -a "$MEMO_BUILD_LOG"
+          cp "$CURRENT_APK" "$APK"
+
+          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
+          BASELINE_META="$("$AAPT" dump badging "$BASELINE_APK" | grep -m1 '^package:')"
+          CURRENT_META="$("$AAPT" dump badging "$CURRENT_APK" | grep -m1 '^package:')"
+          [[ "$BASELINE_META" == *"name='app.memo.android.debug'"* && "$CURRENT_META" == *"name='app.memo.android.debug'"* ]] || {
+            echo '::error::Install-upgrade package identity changed between builds.'
+            exit 1
+          }
+          [[ "$BASELINE_META" == *"versionCode='$BASELINE_CODE'"* && "$CURRENT_META" == *"versionCode='$CURRENT_CODE'"* ]] || {
+            echo '::error::Install-upgrade version codes are not strictly increasing.'
+            printf '%s\n%s\n' "$BASELINE_META" "$CURRENT_META"
+            exit 1
+          }
+
+          AVDMANAGER="$(command -v avdmanager || find "$ANDROID_HOME/cmdline-tools" -type f -name avdmanager -print -quit)"
+          EMULATOR="$ANDROID_HOME/emulator/emulator"
+          test -x "$EMULATOR" && test -n "$AVDMANAGER"
+          echo no | "$AVDMANAGER" create avd --force -n memo-api35 -k 'system-images;android-35;google_apis;x86_64' -d pixel_2 >/dev/null
+          "$EMULATOR" -avd memo-api35 -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -no-metrics > "$RUNNER_TEMP/memo-emulator.log" 2>&1 &
+          EMULATOR_PID=$!
+          cleanup() {
+            adb emu kill >/dev/null 2>&1 || true
+            kill "$EMULATOR_PID" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          adb wait-for-device
+          for attempt in $(seq 1 120); do
+            BOOTED="$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
+            [[ "$BOOTED" == '1' ]] && break
+            sleep 5
+          done
+          [[ "$(adb shell getprop sys.boot_completed | tr -d '\r')" == '1' ]] || {
+            cat "$RUNNER_TEMP/memo-emulator.log"
+            echo '::error::Android emulator did not finish booting.'
+            exit 1
+          }
+          adb shell settings put global window_animation_scale 0
+          adb shell settings put global transition_animation_scale 0
+          adb shell settings put global animator_duration_scale 0
+
+          adb install "$BASELINE_APK" 2>&1 | tee -a "$MEMO_BUILD_LOG"
+          adb shell run-as app.memo.android.debug mkdir -p files/.memo-upgrade-test
+          adb shell run-as app.memo.android.debug sh -c "printf 'memo-private-data-survives-update' > files/.memo-upgrade-test/sentinel"
+          adb install -r "$CURRENT_APK" 2>&1 | tee -a "$MEMO_BUILD_LOG"
+          PRESERVED="$(adb shell run-as app.memo.android.debug cat files/.memo-upgrade-test/sentinel | tr -d '\r')"
+          [[ "$PRESERVED" == 'memo-private-data-survives-update' ]] || {
+            echo '::error::App-private data did not survive the in-place APK update.'
+            exit 1
+          }
+          echo 'PASS: app.memo.android.debug upgraded with adb install -r; package identity, increasing versionCode and app-private data were preserved.' | tee -a "$MEMO_BUILD_LOG"
 
       - name: Update build status and create a permanent import note
         if: success()

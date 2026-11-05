@@ -232,7 +232,8 @@ data class AppSnapshot(
         require(conversations.all { it.messages.size <= MAX_MESSAGES_PER_CONVERSATION }) { "A conversation exceeds the 250-message backup limit." }
         require(entities.size <= MAX_ENTITIES) { "Workspace contains too many entities for a safe backup." }
         require(relationships.size <= MAX_RELATIONSHIPS) { "Workspace contains too many relationships for a safe backup." }
-        require(jobs.size <= MAX_JOBS && jobs.all { it.steps.size <= MAX_JOB_STEPS }) { "Workspace contains too many jobs or job steps for a safe backup." }
+        require(jobs.size <= MAX_JOBS && jobs.all { it.steps.size <= MAX_JOB_STEPS && it.workflowGraphJson.length <= 64_000 }) { "Workspace contains too many jobs, job steps or workflow graph data for a safe backup." }
+        jobs.forEach { job -> if (job.workflowGraphJson.isNotBlank()) app.memo.android.orchestration.WorkflowGraph.fromJson(job.workflowGraphJson) }
         require(actionApprovals.size <= MAX_ACTION_APPROVALS) { "Workspace contains too many action approval records for a safe backup." }
         require(actionAuditEvents.size <= MAX_ACTION_AUDIT_EVENTS) { "Workspace contains too many audit events for a safe backup." }
         require(ActionApprovalLedger.verifyLedger(this)) { "The action ledger or audit chain failed verification; export is blocked to preserve evidence of tampering." }
@@ -691,6 +692,13 @@ data class AppSnapshot(
                     createdAt = row.optLong("createdAt", nowMillis())
                 )
             }.filter { it.fromEntityId in entityIds && it.toEntityId in entityIds && it.fromEntityId != it.toEntityId }
+            if (schema >= 6) {
+                val jobRows = root.optJSONArray("jobs") ?: JSONArray()
+                for (index in 0 until jobRows.length()) {
+                    val graphJson = jobRows.optJSONObject(index)?.safeString("workflowGraphJson").orEmpty()
+                    if (graphJson.isNotBlank()) app.memo.android.orchestration.WorkflowGraph.fromJson(graphJson)
+                }
+            }
             val jobs = if (schema < 3) emptyList() else root.optJSONArray("jobs").toTypedRecords(MAX_JOBS) { row ->
                 val steps = row.optJSONArray("steps").toTypedRecords(MAX_JOB_STEPS) { step ->
                     JobStepRecord(
@@ -715,7 +723,7 @@ data class AppSnapshot(
                     resultSummary = row.safeString("resultSummary").take(4_000),
                     createdAt = row.optLong("createdAt", nowMillis()),
                     updatedAt = row.optLong("updatedAt", nowMillis()),
-                    workflowGraphJson = row.safeString("workflowGraphJson").take(64_000).also { graphJson -> if (graphJson.isNotBlank()) app.memo.android.orchestration.WorkflowGraph.fromJson(graphJson) }
+                    workflowGraphJson = row.safeString("workflowGraphJson").take(64_000)
                 )
             }
             val actionApprovals = if (schema < 4) emptyList() else root.optJSONArray("actionApprovals").toTypedRecords(MAX_ACTION_APPROVALS) { row ->

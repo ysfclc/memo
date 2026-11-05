@@ -3,6 +3,7 @@ package app.memo.android.orchestration
 import org.json.JSONArray
 import org.json.JSONObject
 import java.security.MessageDigest
+import java.util.UUID
 
 enum class WorkflowNodeKind { SCOPE, CONTEXT, DOMAIN_WORK, ARTIFACT, VERIFICATION, APPROVAL, REVIEW }
 enum class WorkflowParticipant { DETERMINISTIC, LOCAL_MODEL, FRONTIER_WEB, BROWSER, ANDROID_APP, USER }
@@ -165,8 +166,11 @@ object WorkflowGraphValidator {
             require(node.requiredCapabilities.size <= 20 && node.requiredCapabilities.all { it.matches(Regex("[a-z0-9._-]{1,120}")) }) { "Invalid workflow capability requirement." }
             require(node.timeoutMs in 1..600_000 && node.maxRetries in 0..3) { "Workflow node execution limits are outside safe bounds." }
             require(node.idempotencyKey.matches(Regex("[0-9a-f]{64}"))) { "Workflow node idempotency key is missing or invalid." }
-            if (node.externalWrite) require(node.requiresApproval && node.kind == WorkflowNodeKind.APPROVAL && node.maxRetries == 0) {
-                "External writes must be isolated behind a non-retrying approval checkpoint."
+            if (node.externalWrite) require(
+                node.requiresApproval && node.kind == WorkflowNodeKind.APPROVAL &&
+                    node.participant == WorkflowParticipant.USER && node.runtimeId == "app.approvals" && node.maxRetries == 0
+            ) {
+                "External writes must be isolated behind a non-retrying user approval checkpoint."
             }
         }
         require(graph.nodes.count { it.externalWrite } <= graph.budget.maxExternalWrites) { "Workflow external-write budget exceeded." }
@@ -176,7 +180,6 @@ object WorkflowGraphValidator {
 object WorkflowGraphCompiler {
     fun compile(plan: IntentPlan, manifest: CapabilityManifest): WorkflowGraph {
         val available = manifest.capabilities.map { it.capabilityId }.toSet()
-        fun selected(vararg ids: String) = ids.filter { it in available }
         val domainNode = when (plan.domain) {
             IntentDomain.RESEARCH -> node("domain", plan.steps.getOrNull(2)?.title ?: "Gather source evidence", WorkflowNodeKind.DOMAIN_WORK, WorkflowParticipant.BROWSER, "runtime.browser", listOf("browser.navigate_https", "browser.inspect_page", "browser.capture_evidence"), listOf("scope", "context"), "Intent and relevant context", "Sourced claims with URLs/excerpts", "Every retained claim has source evidence.")
             IntentDomain.BUILD -> node("domain", plan.steps.getOrNull(2)?.title ?: "Inspect and implement", WorkflowNodeKind.DOMAIN_WORK, WorkflowParticipant.LOCAL_MODEL, "app.models", listOf("model.list", "model.generate", "browser.navigate_https", "browser.inspect_page"), listOf("scope", "context"), "Goal, constraints, repository and existing tests", "Bounded implementation diff and regression tests", "The requested behavior exists in source and tests pass.")
@@ -190,12 +193,18 @@ object WorkflowGraphCompiler {
         val nodes = mutableListOf<WorkflowNodeSpec>()
         nodes += node("scope", "Frame the outcome and constraints", WorkflowNodeKind.SCOPE, WorkflowParticipant.DETERMINISTIC, "app.jobs", emptyList(), emptyList(), "Original user intent", "Outcome, constraints, deadline and definition of done", "Goal and material unknowns are explicit.")
         nodes += node("context", "Retrieve relevant Memo context", WorkflowNodeKind.CONTEXT, WorkflowParticipant.DETERMINISTIC, "app.entities", listOf("entity.propose"), emptyList(), "Goal and eligible workspace scope", "Relevant records with stable IDs and provenance", "Only permission-eligible records are included.")
-        nodes += domainNode.copy(requiredCapabilities = domainNode.requiredCapabilities.filter { it in available })
-        nodes += node("artifact", "Produce the working artifact or result", WorkflowNodeKind.ARTIFACT, if ("model.generate" in available) WorkflowParticipant.LOCAL_MODEL else WorkflowParticipant.USER, if ("model.generate" in available) "app.models" else "app.jobs", listOf("model.generate", "job.update_step").filter { it in available }, listOf("domain"), "Validated domain outputs", "Editable deliverable with provenance", "The actual artifact is saved; unavailable capabilities are reported.")
+        val routedDomainNode = when (domainNode.participant) {
+            WorkflowParticipant.BROWSER -> if ("browser.inspect_page" in available) domainNode else domainNode.copy(participant = WorkflowParticipant.USER, runtimeId = "app.jobs")
+            WorkflowParticipant.LOCAL_MODEL -> if ("model.generate" in available) domainNode else domainNode.copy(participant = WorkflowParticipant.USER, runtimeId = "app.jobs")
+            WorkflowParticipant.ANDROID_APP -> if ("android.observe_visible_labels" in available) domainNode else domainNode.copy(participant = WorkflowParticipant.USER, runtimeId = "app.jobs")
+            else -> domainNode
+        }
+        nodes += routedDomainNode
+        nodes += node("artifact", "Produce the working artifact or result", WorkflowNodeKind.ARTIFACT, if ("model.generate" in available) WorkflowParticipant.LOCAL_MODEL else WorkflowParticipant.USER, if ("model.generate" in available) "app.models" else "app.jobs", if ("model.generate" in available) listOf("model.generate", "job.update_step").filter { it in available } else emptyList(), listOf("domain"), "Validated domain outputs", "Editable deliverable with provenance", "The actual artifact is saved; unavailable capabilities are reported.")
         nodes += node("verify", "Verify the result against the goal", WorkflowNodeKind.VERIFICATION, WorkflowParticipant.DETERMINISTIC, "app.jobs", listOf("job.verify").filter { it in available }, listOf("artifact"), "Deliverable and acceptance conditions", "Verification report with observed evidence", "Each acceptance condition is checked against an observable result.")
         if (plan.requiresExternalApproval) {
             val approvalCapability = if (plan.domain == IntentDomain.AUTOMATION) "android.tap_exact_text" else "browser.prepare_prompt"
-            nodes += node("approval", "Review exact external action", WorkflowNodeKind.APPROVAL, WorkflowParticipant.USER, "app.approvals", listOf(approvalCapability).filter { it in available }, listOf("verify"), "Exact content, destination, capability and risk", "One-use approval bound to content hash and destination", "No external write occurs before explicit current approval.", approval = true, externalWrite = true)
+            nodes += node("approval", "Review exact external action", WorkflowNodeKind.APPROVAL, WorkflowParticipant.USER, "app.approvals", listOf(approvalCapability), listOf("verify"), "Exact content, destination, capability and risk", "One-use approval bound to content hash and destination", "No external write occurs before explicit current approval.", approval = true, externalWrite = true)
         }
         val reviewDependency = if (plan.requiresExternalApproval) listOf("approval") else listOf("verify")
         nodes += node("review", "Review, accept or revise", WorkflowNodeKind.REVIEW, WorkflowParticipant.USER, "app.jobs", emptyList(), reviewDependency, "Artifact, evidence and unresolved limitations", "User decision and follow-up work", "The user explicitly accepts, revises or defers the outcome.")
@@ -213,7 +222,7 @@ object WorkflowGraphCompiler {
         requiredCapabilities = required.distinct(), dependsOn = dependencies,
         inputContract = input.take(1_000), outputContract = output.take(1_000), postcondition = postcondition.take(1_000),
         requiresApproval = approval, externalWrite = externalWrite, timeoutMs = 120_000, maxRetries = 0,
-        idempotencyKey = sha256("$id|$title")
+        idempotencyKey = sha256("$id|$title|${UUID.randomUUID()}")
     )
 
     private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256")

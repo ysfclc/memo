@@ -136,7 +136,7 @@ class ActionApprovalLedgerTest {
         val record = assertNotNullAndReturn(proposal.action)
         val approved = ActionApprovalLedger.approve(proposal.snapshot, record.id, record.contentHash, now = 1_100L)
         val restored = AppSnapshot.fromJson(approved.snapshot.toJson())
-        assertEquals(5, org.json.JSONObject(approved.snapshot.toJson()).optInt("schemaVersion"))
+        assertEquals(6, org.json.JSONObject(approved.snapshot.toJson()).optInt("schemaVersion"))
         assertEquals("APPROVED", restored.actionApprovals.single().status)
         assertEquals(record.contentHash, restored.actionApprovals.single().contentHash)
         assertTrue(ActionApprovalLedger.verifyAuditChain(restored.actionAuditEvents))

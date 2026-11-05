@@ -27,7 +27,7 @@ class CouncilBackupTest {
         )
         val original = AppSnapshot(councilRuns = listOf(run))
         val restored = AppSnapshot.fromJson(original.toJson())
-        assertEquals(5, org.json.JSONObject(original.toJson()).optInt("schemaVersion"))
+        assertEquals(6, org.json.JSONObject(original.toJson()).optInt("schemaVersion"))
         assertEquals("Evaluate this proposal", restored.councilRuns.single().prompt)
         assertEquals("Verify the claim first.", restored.councilRuns.single().finalDecision)
         assertEquals("The claim needs a source.", restored.councilRuns.single().turns.single().response)
