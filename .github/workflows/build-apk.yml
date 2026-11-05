@@ -730,3 +730,5 @@ jobs:
             ${{ github.workspace }}/core/build/test-results/**
           if-no-files-found: ignore
           retention-days: 14
+
+# CI verification trigger: validate direct repository maintenance commits as well as ZIP imports.
