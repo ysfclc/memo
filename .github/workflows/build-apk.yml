@@ -807,3 +807,5 @@ jobs:
           retention-days: 14
 
 # CI verification trigger: validate direct repository maintenance commits as well as ZIP imports.
+
+# CI verification trigger: validate the latest chat-management and provenance safeguards.
