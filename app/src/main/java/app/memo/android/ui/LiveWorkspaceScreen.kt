@@ -78,7 +78,14 @@ fun LiveWorkspaceScreen(
                 OutlinedButton(onClick = onOpenApps, modifier = Modifier.weight(1f)) { Text("Phone apps") }
             }
             OutlinedButton(onClick = onOpenApprovals, modifier = Modifier.fillMaxWidth()) {
-                Text(if (reviewActions.isEmpty()) "Approval inbox" else "Review action(s) · ${reviewActions.size}")
+                if (reviewActions.isEmpty()) {
+                    Text("Approval inbox")
+                } else {
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("Review action(s)")
+                        Text(reviewActions.size.toString(), style = MaterialTheme.typography.labelLarge)
+                    }
+                }
             }
         }
         item {

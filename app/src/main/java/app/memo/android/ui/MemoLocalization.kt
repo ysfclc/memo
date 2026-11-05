@@ -32,6 +32,7 @@ object MemoLocalization {
         "See active work, browser sessions, checkpoints and decisions in one place. Memo only reports completion when it has an observable result." to ("Zobacz aktywne zadania, sesje przeglądarki, punkty kontrolne i decyzje w jednym miejscu. Memo zgłasza ukończenie tylko wtedy, gdy ma obserwowalny wynik." to "Etkin işleri, tarayıcı oturumlarını, kontrol noktalarını ve kararları tek yerde gör. Memo yalnızca gözlemlenebilir bir sonuç olduğunda tamamlandı der."),
         "Current participant" to ("Bieżący uczestnik" to "Geçerli katılımcı"),
         "Browser workflow" to ("Przepływ przeglądarki" to "Tarayıcı iş akışı"),
+        "Voice" to ("Głos" to "Ses"),
         "Talk" to ("Rozmowa" to "Sohbet"),
         "Live" to ("Na żywo" to "Canlı"),
         "Studio" to ("Studio" to "Stüdyo"),

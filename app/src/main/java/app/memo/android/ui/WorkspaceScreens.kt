@@ -286,7 +286,7 @@ fun ChatsWorkspaceScreen(
                 }
             } else {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
                     contentPadding = PaddingValues(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.xs),
                     verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)
                 ) {
