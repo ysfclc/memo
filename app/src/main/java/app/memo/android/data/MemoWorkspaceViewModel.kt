@@ -408,10 +408,13 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         return Result.success(saved.id)
     }
 
-    fun updateEntityDetails(entityId: String, title: String, description: String): String? {
+    fun updateEntityDetails(entityId: String, title: String, description: String, properties: Map<String, String>): String? {
         val cleanTitle = title.trim().take(240)
         val cleanDescription = description.trim().take(12_000)
         if (cleanTitle.isBlank()) return "Give the entity a name."
+        if (description.length > 12_000) return "The description is too long."
+        EntityEditPolicy.propertyValidationError(properties)?.let { return it }
+        val cleanProperties = properties.entries.associate { it.key.trim() to it.value.trim().take(2_000) }
         val current = _snapshot.value
         val entity = current.entities.firstOrNull { it.id == entityId } ?: return "Entity no longer exists."
         if (entity.type == "CONVERSATION") return "Rename this entity from AI Chats so the conversation and entity stay synchronized."
@@ -421,7 +424,7 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         }
         updateSnapshot { snapshot ->
             snapshot.copy(entities = snapshot.entities.map { candidate ->
-                if (candidate.id == entityId) candidate.copy(title = cleanTitle, description = cleanDescription, updatedAt = nowMillis()) else candidate
+                if (candidate.id == entityId) candidate.copy(title = cleanTitle, description = cleanDescription, properties = cleanProperties, updatedAt = nowMillis()) else candidate
             }).withActivity("Entity updated: ${entity.type} · $cleanTitle")
         }
         return null

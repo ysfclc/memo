@@ -81,6 +81,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -901,8 +902,8 @@ fun WorkWorkspaceScreen(
     if (editingEntity != null) EntityEditDialog(
         entity = editingEntity!!,
         onDismiss = { editingEntity = null },
-        onSave = { title, description ->
-            val error = viewModel.updateEntityDetails(editingEntity!!.id, title, description)
+        onSave = { title, description, properties ->
+            val error = viewModel.updateEntityDetails(editingEntity!!.id, title, description, properties)
             if (error == null) { editingEntity = null; onShowMessage("Entity updated.") } else onShowMessage(error)
         }
     )
@@ -1508,20 +1509,66 @@ private fun EntityMergeDialog(source: EntityRecord, targets: List<EntityRecord>,
 }
 
 @Composable
-private fun EntityEditDialog(entity: EntityRecord, onDismiss: () -> Unit, onSave: (String, String) -> Unit) {
+private fun EntityEditDialog(entity: EntityRecord, onDismiss: () -> Unit, onSave: (String, String, Map<String, String>) -> Unit) {
     var title by remember(entity.id) { mutableStateOf(entity.title) }
     var description by remember(entity.id) { mutableStateOf(entity.description) }
+    val propertyRows = remember(entity.id) {
+        mutableStateListOf<Pair<String, String>>().apply { addAll(entity.properties.entries.map { it.key to it.value }) }
+    }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Edit ${entity.type.lowercase(Locale.ROOT)}") },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("The entity ID, type, source excerpt and relationships remain unchanged.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Column(
+                modifier = Modifier.heightIn(max = 560.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text("Edit the record's details and structured properties. Its ID, source evidence and relationships remain unchanged.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedTextField(title, { title = it.take(240) }, label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(description, { if (it.length <= 12_000) description = it }, label = { Text("Description / context") }, minLines = 3, maxLines = 7, modifier = Modifier.fillMaxWidth())
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Properties", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                    Text("${propertyRows.size}/40", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    TextButton(onClick = { if (propertyRows.size < 40) propertyRows.add("" to "") }, enabled = propertyRows.size < 40) {
+                        Icon(Icons.Rounded.Add, null); Spacer(Modifier.width(4.dp)); Text("Add")
+                    }
+                }
+                if (propertyRows.isEmpty()) Text("No structured properties. Add a key/value pair when this record needs extra fields.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                propertyRows.forEachIndexed { index, entry ->
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("Field ${index + 1}", style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))
+                                IconButton(onClick = { propertyRows.removeAt(index) }, modifier = Modifier.size(34.dp)) {
+                                    Icon(Icons.Rounded.Delete, "Remove property")
+                                }
+                            }
+                            OutlinedTextField(
+                                value = entry.first,
+                                onValueChange = { propertyRows[index] = it.take(80) to entry.second },
+                                label = { Text("Key") }, singleLine = true, modifier = Modifier.fillMaxWidth()
+                            )
+                            OutlinedTextField(
+                                value = entry.second,
+                                onValueChange = { propertyRows[index] = entry.first to it.take(2_000) },
+                                label = { Text("Value") }, minLines = 1, maxLines = 3, modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                }
+                Text("Up to 40 fields. Keys must be unique; each value can contain up to 2,000 characters.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
-        confirmButton = { Button(onClick = { onSave(title, description) }, enabled = title.isNotBlank()) { Text("Save changes") } },
+        confirmButton = {
+            Button(
+                onClick = { onSave(title, description, propertyRows.filter { it.first.isNotBlank() }.associate { it.first.trim() to it.second }) },
+                enabled = title.isNotBlank() && propertyRows.filter { it.first.isNotBlank() }.all { it.first.trim().isNotEmpty() }
+            ) { Text("Save changes") }
+        },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }
