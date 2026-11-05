@@ -207,10 +207,7 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         val current = _snapshot.value
         val conversation = current.conversations.firstOrNull { it.id == conversationId } ?: return "Conversation no longer exists."
         val message = conversation.messages.firstOrNull { it.id == messageId } ?: return "Message no longer exists."
-        if (message.role !in setOf("USER", "ASSISTANT")) return "Imported source and system messages are read-only."
-        if (current.entities.any { it.sourceMessageId == messageId }) {
-            return "This message is cited by a workspace record. Keep its original wording so the record's provenance remains valid."
-        }
+        ConversationMutationPolicy.messageMutationBlockReason(message, current.entities)?.let { return it }
         if (message.content == cleanContent) return null
         updateSnapshot { snapshot ->
             snapshot.copy(conversations = snapshot.conversations.map { item ->
@@ -227,9 +224,8 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         val current = _snapshot.value
         val conversation = current.conversations.firstOrNull { it.id == conversationId } ?: return "Conversation no longer exists."
         val message = conversation.messages.firstOrNull { it.id == messageId } ?: return "Message no longer exists."
-        if (message.role !in setOf("USER", "ASSISTANT")) return "Imported source and system messages are read-only."
-        if (current.entities.any { it.sourceMessageId == messageId }) {
-            return "This message is cited by a workspace record. Remove or update that record's source link before deleting the message."
+        ConversationMutationPolicy.messageMutationBlockReason(message, current.entities)?.let { reason ->
+            return if (reason.contains("cited by")) "This message is cited by a workspace record. Remove or update that record's source link before deleting the message." else reason
         }
         updateSnapshot { snapshot ->
             snapshot.copy(conversations = snapshot.conversations.map { item ->
@@ -245,12 +241,9 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
     fun deleteConversation(conversationId: String): String? {
         val current = _snapshot.value
         val conversation = current.conversations.firstOrNull { it.id == conversationId } ?: return "Conversation no longer exists."
-        val linkedEntities = current.entities.filter { it.id != conversationId && it.sourceConversationId == conversationId }
-        val linkedJobs = current.jobs.filter { it.sourceConversationId == conversationId }
-        val linkedRelationships = current.relationships.filter {
-            it.sourceConversationId == conversationId || it.fromEntityId == conversationId || it.toEntityId == conversationId
-        }
-        val dependencies = linkedEntities.size + linkedJobs.size + linkedRelationships.size
+        val dependencies = ConversationMutationPolicy.conversationDependencyCount(
+            conversationId, current.entities, current.jobs, current.relationships
+        )
         if (dependencies > 0) {
             return "This conversation has $dependencies linked workspace record(s). Remove or reassign those links first; Memo will not orphan their provenance."
         }
