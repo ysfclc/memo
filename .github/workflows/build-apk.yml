@@ -175,12 +175,6 @@ jobs:
           gradle-version: '8.14.6'
           validate-wrappers: false
 
-      - name: Restore persistent CI debug signing key
-        uses: actions/cache@v4
-        with:
-          path: ~/.android/debug.keystore
-          key: memo-debug-keystore-v1-${{ github.ref_name }}
-
       - name: Validate ZIP and safely extract the complete Android project
         if: needs.preflight.outputs.source_only != 'true'
         id: extract
@@ -438,7 +432,7 @@ jobs:
           echo "MEMO_PROJECT_DIR=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
           echo 'Using the committed repository source directly; no stale upload ZIP was extracted.' | tee -a "$MEMO_BUILD_LOG"
 
-      - name: Configure optional persistent APK signing
+      - name: Configure persistent APK signing (private upload key or fixed debug key)
         shell: bash
         env:
           MEMO_UPLOAD_KEYSTORE_BASE64: ${{ secrets.MEMO_UPLOAD_KEYSTORE_BASE64 }}
@@ -468,17 +462,18 @@ jobs:
             } >> "$GITHUB_ENV"
             echo 'Persistent signing configured for a consistent APK certificate.' | tee -a "$MEMO_BUILD_LOG"
           else
-            KEYSTORE="$HOME/.android/debug.keystore"
-            mkdir -p "$(dirname "$KEYSTORE")"
-            if [[ ! -s "$KEYSTORE" ]]; then
-              keytool -genkeypair -noprompt -keystore "$KEYSTORE" -storetype JKS \
-                -storepass android -keypass android -alias androiddebugkey \
-                -keyalg RSA -keysize 2048 -validity 10000 \
-                -dname 'CN=Memo Development,O=Memo,C=PL'
-            fi
-            keytool -list -keystore "$KEYSTORE" -storepass android -alias androiddebugkey >/dev/null
-            echo 'MEMO_SIGNING_MODE=stable cached CI debug keystore' >> "$GITHUB_ENV"
-            echo 'Stable CI debug signing key is present; GitHub Actions cache will preserve it across builds.' | tee -a "$MEMO_BUILD_LOG"
+            KEYSTORE="$RUNNER_TEMP/memo-debug-signing.jks"
+            base64 --decode "$MEMO_PROJECT_DIR/tools/memo-debug-signing.jks.base64" > "$KEYSTORE"
+            test -s "$KEYSTORE"
+            keytool -list -keystore "$KEYSTORE" -storepass memo-debug-store -alias memo-debug >/dev/null
+            {
+              echo "MEMO_UPLOAD_KEYSTORE_FILE=$KEYSTORE"
+              echo 'MEMO_UPLOAD_STORE_PASSWORD=memo-debug-store'
+              echo 'MEMO_UPLOAD_KEY_ALIAS=memo-debug'
+              echo 'MEMO_UPLOAD_KEY_PASSWORD=memo-debug-key'
+              echo 'MEMO_SIGNING_MODE=stable repository debug keystore'
+            } >> "$GITHUB_ENV"
+            echo 'Stable repository debug signing identity configured for repeatable sideload updates (debug use only).' | tee -a "$MEMO_BUILD_LOG"
           fi
 
       - name: Refresh source checksum manifest
@@ -599,9 +594,9 @@ jobs:
           printf '%s\n' "$SIGNATURE" | tee -a "$MEMO_BUILD_LOG"
           CERT="$(printf '%s\n' "$SIGNATURE" | sed -nE 's/.*certificate SHA-256 digest: ([0-9a-fA-F]+).*/\1/p' | head -n1 | tr '[:upper:]' '[:lower:]')"
           test -n "$CERT" || { echo '::error::APK signing certificate could not be verified.'; exit 1; }
-          if [[ "${MEMO_SIGNING_MODE:-}" == 'stable cached CI debug keystore' ]]; then
-            EXPECTED_CERT="$(keytool -list -v -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey | sed -nE 's/^[[:space:]]*SHA256: ([0-9A-Fa-f:]+).*/\\1/p' | head -n1 | tr -d ':' | tr '[:upper:]' '[:lower:]')"
-            [[ -n "$EXPECTED_CERT" && "$CERT" == "$EXPECTED_CERT" ]] || { echo '::error::APK was not signed with the stable cached CI debug certificate.'; exit 1; }
+          if [[ -n "${MEMO_UPLOAD_KEYSTORE_FILE:-}" ]]; then
+            EXPECTED_CERT="$(keytool -list -v -keystore "$MEMO_UPLOAD_KEYSTORE_FILE" -storepass "$MEMO_UPLOAD_STORE_PASSWORD" -alias "$MEMO_UPLOAD_KEY_ALIAS" | awk -F': ' '/SHA256:/{print $2;exit}' | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+            [[ -n "$EXPECTED_CERT" && "$CERT" == "$EXPECTED_CERT" ]] || { echo '::error::APK signing certificate does not match the configured persistent keystore.'; exit 1; }
           fi
           {
             echo 'Memo APK identity verification: PASS'

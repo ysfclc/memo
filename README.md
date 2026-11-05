@@ -54,6 +54,14 @@ Memo now includes editable draft-to-checkpoint planning, deterministic capabilit
 - `:app` owns Android lifecycle/UI, encrypted persistence adapters, local model/provider adapters, visible browser sessions, notifications, and opt-in Android runtime integrations. The product shell is Memo's Compose UI; specialist runtimes do not create a second Activity tree.
 - The package keeps existing encrypted storage file names and Android Keystore aliases intact for compatibility. The separate workflow/run vault is documented as migration debt rather than silently replaced.
 
+## Sideload update compatibility
+
+GitHub Actions debug APKs use the same fixed development signing identity on every build, so Android can install a newer APK over the existing `app.memo.android.debug` installation. The CI workflow verifies that the APK certificate matches the configured keystore, and the CI run number supplies an increasing version code.
+
+The development signing key is intentionally included in this public repository and is **debug-only**. Never use it for a production release or Play Store distribution; configure a private upload/release keystore for that.
+
+If the app currently installed on the phone was signed by one of the old temporary CI keys, Android cannot update it with the new identity. That requires one final uninstall/reinstall to migrate; subsequent builds use the same certificate.
+
 ## Build it
 
 Requirements: JDK 17, Android SDK platform 35, Build Tools 35.0.0, Gradle 8.14.6 or the included wrapper, Android Gradle Plugin 8.13.0, Kotlin 2.4.21.
