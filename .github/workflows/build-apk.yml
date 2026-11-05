@@ -553,7 +553,7 @@ jobs:
               raise SystemExit('app/build.gradle(.kts) is missing')
           source = source_path.read_text(encoding='utf-8')
           code = re.search(r'\bversionCode\s*(?:=\s*)?(\d+)', source)
-          default_code = re.search(r"findProperty\(['"]memoVersionCode['"]\)\s*\?:\s*(\d+)", source)
+          default_code = re.search(r"""findProperty\(['"]memoVersionCode['"]\)\s*\?:\s*(\d+)""", source)
           name = re.search(r'\bversionName\s*(?:=\s*)?[\'"]([^\'"]+)[\'"]', source)
           if not (code or default_code) or not name:
               raise SystemExit('Could not read versionCode default/versionName from app Gradle file')
