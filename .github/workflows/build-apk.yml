@@ -638,14 +638,26 @@ jobs:
 
           AVDMANAGER="$(command -v avdmanager || find "$ANDROID_HOME/cmdline-tools" -type f -name avdmanager -print -quit)"
           EMULATOR="$ANDROID_HOME/emulator/emulator"
-          test -x "$EMULATOR" && test -n "$AVDMANAGER"
-          echo no | "$AVDMANAGER" create avd --force -n memo-api35 -k 'system-images;android-35;google_apis;x86_64' -d pixel_2 >/dev/null
+          test -x "$EMULATOR" && test -n "$AVDMANAGER" && test -x "$AVDMANAGER"
+
+          # avdmanager and the emulator must use the same AVD home. On hosted
+          # runners, an inherited SDK/user-home setting can otherwise make
+          # avdmanager report success while the emulator searches ~/.android/avd.
+          export ANDROID_USER_HOME="$HOME/.android"
+          export ANDROID_AVD_HOME="$ANDROID_USER_HOME/avd"
+          export ANDROID_SDK_HOME="$HOME"
+          mkdir -p "$ANDROID_AVD_HOME"
+          printf 'no\n' | "$AVDMANAGER" create avd --force --name memo-api35 \
+            --package 'system-images;android-35;google_apis;x86_64' --device pixel_2 2>&1 | tee -a "$MEMO_BUILD_LOG"
+          if [[ ! -s "$ANDROID_AVD_HOME/memo-api35.ini" ]]; then
+            echo '::error::avdmanager did not create memo-api35 in the configured AVD home.'
+            echo "Configured AVD home: $ANDROID_AVD_HOME"
+            find "$HOME/.android" -maxdepth 3 -type f -name '*.ini' -print 2>/dev/null || true
+            exit 1
+          fi
+          "$EMULATOR" -list-avds | tee -a "$MEMO_BUILD_LOG"
           "$EMULATOR" -avd memo-api35 -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -no-metrics > "$RUNNER_TEMP/memo-emulator.log" 2>&1 &
           EMULATOR_PID=$!
-          cleanup() {
-            adb emu kill >/dev/null 2>&1 || true
-            kill "$EMULATOR_PID" >/dev/null 2>&1 || true
-          }
           diagnose_emulator() {
             echo '--- Android emulator process diagnostics ---'
             adb devices -l || true
