@@ -35,6 +35,22 @@ class IntentPlannerTest {
         assertEquals(IntentDomain.CONTENT, IntentPlanner.plan("Prepare a LinkedIn post").domain)
     }
 
+    @Test fun oneEntryRouterSeparatesActionPlansFromConversation() {
+        assertTrue(IntentPlanner.shouldCreateWorkflow("Find me ten potential customers"))
+        assertTrue(IntentPlanner.shouldCreateWorkflow("Prepare my CV for a Customer Success role"))
+        assertTrue(IntentPlanner.shouldCreateWorkflow("Automate a sequence in my Android app"))
+        assertFalse(IntentPlanner.shouldCreateWorkflow("Brainstorm an idea with me"))
+        assertFalse(IntentPlanner.shouldCreateWorkflow("What does this error mean?"))
+        assertFalse(IntentPlanner.shouldCreateWorkflow("How can I find better job opportunities?"))
+    }
+
+    @Test fun oneEntryRouterRecognizesPolishAndTurkishActions() {
+        assertTrue(IntentPlanner.shouldCreateWorkflow("Przygotuj CV na stanowisko Customer Success"))
+        assertTrue(IntentPlanner.shouldCreateWorkflow("Bana on yeni müşteri bul"))
+        assertFalse(IntentPlanner.shouldCreateWorkflow("Jak działa ten proces?"))
+        assertFalse(IntentPlanner.shouldCreateWorkflow("Bu ne anlama geliyor?"))
+    }
+
     @Test fun shortOrBlankIntentsAreRejected() {
         assertTrue(runCatching { IntentPlanner.plan(" ") }.isFailure)
         assertTrue(runCatching { IntentPlanner.plan("abc") }.isFailure)

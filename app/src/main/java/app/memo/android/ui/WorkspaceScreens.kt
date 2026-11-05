@@ -758,7 +758,7 @@ fun WorkWorkspaceScreen(
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(selected = section == "ENTITIES", onClick = { section = "ENTITIES"; onSectionChanged("ENTITIES") }, label = { Text("Entities · ${snapshot.entities.count { it.reviewStatus !in setOf("REJECTED", "MERGED") }}") })
                 FilterChip(selected = section == "ARCHIVE", onClick = { section = "ARCHIVE"; onSectionChanged("ARCHIVE") }, label = { Text("Archive · ${snapshot.entities.count { it.reviewStatus in setOf("REJECTED", "MERGED") }}") })
-                FilterChip(selected = section == "JOBS", onClick = { section = "JOBS"; onSectionChanged("JOBS") }, label = { Text("Jobs · ${snapshot.jobs.size}") })
+                FilterChip(selected = section == "JOBS", onClick = { section = "JOBS"; onSectionChanged("JOBS") }, label = { Text("Plans · ${snapshot.jobs.size}") })
             }
         }
         if (section != "JOBS") {
@@ -804,7 +804,7 @@ fun WorkWorkspaceScreen(
             }
         } else {
             if (snapshot.jobs.isEmpty()) {
-                EmptyState("No jobs yet", "Run Extract outcomes from an AI conversation to see a real job trace here. Jobs record the selected runtime, step-by-step status, evidence and whether a human review is still required.")
+                EmptyState("No plans yet", "Action-oriented requests become editable plans here. Review each checkpoint and its requirements before starting; completed work needs a real outcome and evidence.")
             } else {
                 LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.sm), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
                     items(snapshot.jobs.sortedByDescending { it.updatedAt }, key = { it.id }) { job ->

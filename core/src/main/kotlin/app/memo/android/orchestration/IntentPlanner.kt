@@ -31,6 +31,14 @@ object IntentPlanner {
         "\\b(send|submit|publish|post|apply|delete|remove|buy|purchase|pay|transfer|invite|message|email|book|order|upload|share|zaplat|wyślij|wyslij|opublikuj|usuń|usun|kup|zastosuj|wyślij|gönder|gonder|yayınla|yayinla|sil|satın al|satin al|başvur|basvur|öde|ode)\\b",
         RegexOption.IGNORE_CASE
     )
+    private val conversationalLead = Regex(
+        "^(what|why|who|when|where|how|explain|define|tell me|brainstorm|let'?s think|co|dlaczego|jak|czy|kto|kiedy|gdzie|ne|neden|nasil|nicin|kim|nerede)\\b",
+        RegexOption.IGNORE_CASE
+    )
+    private val actionIntent = Regex(
+        "\\b(plan|organize|organise|schedule|prepare|create|make|find|look for|search for|build|fix|debug|automate|draft|write|apply|book|compare|research|analyze|analyse|discover|track|start|launch|set up|zaplanuj|zorganizuj|znajdz|szukaj|przygotuj|stworz|utworz|napisz|zbuduj|napraw|wyszukaj|zarezerwuj|hazirla|olustur|yaz|bul|ara|kur|duzenle)\\b",
+        RegexOption.IGNORE_CASE
+    )
 
     fun plan(rawIntent: String, language: String = "EN"): IntentPlan {
         val intent = rawIntent.trim().replace(Regex("\\s+"), " ").take(8_000)
@@ -92,6 +100,18 @@ object IntentPlanner {
             else -> " Interface language: English. User-authored intent is preserved."
         }
         return IntentPlan(title, intent, domain, reason + localeNote, steps, externalWrite)
+    }
+
+    /**
+     * Routes action-oriented intents to a durable draft workflow and open questions or
+     * brainstorming to Talk. This is a navigation decision only: it never starts a step.
+     */
+    fun shouldCreateWorkflow(rawIntent: String): Boolean {
+        val intent = rawIntent.trim().replace(Regex("\\s+"), " ").take(8_000)
+        if (intent.length < 4) return false
+        val normalized = normalize(intent)
+        if (conversationalLead.containsMatchIn(normalized)) return false
+        return classify(normalized) != IntentDomain.GENERAL || actionIntent.containsMatchIn(normalized)
     }
 
     private fun classify(text: String): IntentDomain = when {

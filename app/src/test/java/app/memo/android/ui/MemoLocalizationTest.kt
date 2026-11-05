@@ -1,6 +1,7 @@
 package app.memo.android.ui
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MemoLocalizationTest {
@@ -33,6 +34,20 @@ class MemoLocalizationTest {
         assertEquals("Stüdyo", MemoLocalization.translate("Studio", "TR"))
         assertEquals("Głos", MemoLocalization.translate("Voice", "PL"))
         assertEquals("Ses", MemoLocalization.translate("Voice", "TR"))
+    }
+
+    @Test
+    fun universalComposerExplainerTranslatesInPolishAndTurkish() {
+        assertEquals("Kontynuuj z Memo", MemoLocalization.translate("Continue with Memo", "PL"))
+        assertEquals("Memo ile devam et", MemoLocalization.translate("Continue with Memo", "TR"))
+        assertTrue(MemoLocalization.translate(
+            "Memo routes action requests into an editable plan and questions or brainstorming into Talk. Nothing external is sent or changed automatically.",
+            "PL"
+        ).contains("edytowalnego planu"))
+        assertTrue(MemoLocalization.translate(
+            "Memo routes action requests into an editable plan and questions or brainstorming into Talk. Nothing external is sent or changed automatically.",
+            "TR"
+        ).contains("düzenlenebilir bir plana"))
     }
 
     @Test

@@ -139,6 +139,7 @@ import app.memo.android.data.ActivityRecord
 import app.memo.android.data.EvidenceRecord
 import app.memo.android.data.MemoWorkspaceViewModel
 import app.memo.android.notifications.MemoNotificationCenter
+import app.memo.android.orchestration.IntentPlanner
 import com.synthos.runtime.engine.AutomationAccessibilityService
 import com.synthos.runtime.remote.RemoteRunnerClient
 import app.memo.android.data.TaskKind
@@ -201,7 +202,7 @@ fun MemoWorkspaceApp(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbarHost = remember { SnackbarHostState() }
-    var tab by remember { mutableStateOf(AppTab.CHATS) }
+    var tab by remember { mutableStateOf(AppTab.HOME) }
     var activeConversationId by remember { mutableStateOf<String?>(null) }
     var pendingChatPrompt by remember { mutableStateOf("") }
     var toolSection by remember { mutableStateOf(ToolSection.BROWSER) }
@@ -210,8 +211,9 @@ fun MemoWorkspaceApp(
         val destination = initialWorkspace?.trim()?.uppercase().orEmpty()
         if (destination.isNotBlank()) {
             tab = when (destination) {
-                "CHATS", "TALK" -> AppTab.CHATS
-                "LIVE", "HOME" -> AppTab.LIVE
+                "CHATS" -> AppTab.CHATS
+                "TALK", "HOME" -> AppTab.HOME
+                "LIVE" -> AppTab.LIVE
                 "WORK", "FLOWS", "RUNS", "RECORDS" -> AppTab.WORK
                 "STUDIO" -> AppTab.STUDIO
                 "APPS" -> AppTab.APPS
@@ -376,12 +378,12 @@ fun MemoWorkspaceApp(
         }
     }
 
-    BackHandler(enabled = tab != AppTab.CHATS || evidenceDetail != null || activeConversationId != null) {
+    BackHandler(enabled = tab != AppTab.HOME || evidenceDetail != null || (tab == AppTab.CHATS && activeConversationId != null)) {
         when {
             evidenceDetail != null -> evidenceDetail = null
             tab == AppTab.CHATS && activeConversationId != null -> activeConversationId = null
             tab in setOf(AppTab.BROWSER, AppTab.APPS, AppTab.APPROVALS) -> tab = AppTab.LIVE
-            tab != AppTab.CHATS -> tab = AppTab.CHATS
+            tab != AppTab.HOME -> { activeConversationId = null; tab = AppTab.HOME }
         }
     }
 
@@ -396,7 +398,7 @@ fun MemoWorkspaceApp(
                 windowInsets = WindowInsets.navigationBars
             ) {
                 val items = listOf(
-                    Triple(AppTab.CHATS, Icons.Rounded.ChatBubbleOutline, "Talk"),
+                    Triple(AppTab.HOME, Icons.Rounded.ChatBubbleOutline, "Talk"),
                     Triple(AppTab.LIVE, Icons.Rounded.Bolt, "Live"),
                     Triple(AppTab.WORK, Icons.Rounded.Hub, "Work"),
                     Triple(AppTab.STUDIO, Icons.Rounded.Article, "Studio")
@@ -404,13 +406,13 @@ fun MemoWorkspaceApp(
                 items.forEach { (dest, icon, label) ->
                     NavigationBarItem(
                         selected = when (dest) {
-                            AppTab.CHATS -> tab == AppTab.CHATS || tab == AppTab.COUNCIL
+                            AppTab.HOME -> tab in setOf(AppTab.HOME, AppTab.CHATS, AppTab.COUNCIL)
                             AppTab.LIVE -> tab in setOf(AppTab.LIVE, AppTab.BROWSER, AppTab.APPS, AppTab.APPROVALS)
                             AppTab.WORK -> tab == AppTab.WORK
                             AppTab.STUDIO -> tab == AppTab.STUDIO
                             else -> false
                         },
-                        onClick = { tab = dest },
+                        onClick = { if (dest == AppTab.HOME) activeConversationId = null; tab = dest },
                         icon = { Icon(icon, contentDescription = label, modifier = Modifier.size(22.dp)) },
                         label = { Text(label, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
                         alwaysShowLabel = true
@@ -444,18 +446,32 @@ fun MemoWorkspaceApp(
                         onCouncil = { tab = AppTab.COUNCIL },
                         onModels = { tab = AppTab.MODELS },
                         onTools = { tab = AppTab.LIVE },
-                        onChats = { tab = AppTab.CHATS },
+                        onChats = { activeConversationId = null; tab = AppTab.CHATS },
                         onWork = { workSectionRequest = "ENTITIES"; tab = AppTab.WORK },
                         onOpenStudio = { tab = AppTab.STUDIO },
-                        onPlanWork = { rawIntent ->
-                            viewModel.createIntentPlan(rawIntent, uiLanguage).fold(
-                                onSuccess = { jobId ->
-                                    workSectionRequest = "JOBS"
-                                    tab = AppTab.WORK
-                                    snack("Plan saved. ${viewModel.snapshot.value.jobs.firstOrNull { it.id == jobId }?.steps?.size ?: 0} checkpoints are ready; no external action has run.")
-                                },
-                                onFailure = { error -> snack(error.message ?: "Could not create the work plan.") }
-                            )
+                        onContinueWithMemo = { rawIntent ->
+                            val clean = rawIntent.trim().take(6_000)
+                            if (IntentPlanner.shouldCreateWorkflow(clean)) {
+                                viewModel.createIntentPlan(clean, uiLanguage).fold(
+                                    onSuccess = { jobId ->
+                                        workSectionRequest = "JOBS"
+                                        tab = AppTab.WORK
+                                        val checkpoints = viewModel.snapshot.value.jobs.firstOrNull { it.id == jobId }?.steps?.size ?: 0
+                                        snack("Draft plan created with $checkpoints checkpoints. Review it before starting; no external action has run.")
+                                    },
+                                    onFailure = { error -> snack(error.message ?: "Could not create the work plan.") }
+                                )
+                            } else {
+                                val title = clean.lineSequence().firstOrNull().orEmpty().take(64).ifBlank { "New conversation" }
+                                val id = viewModel.createConversation(title = title)
+                                if (id.isBlank()) {
+                                    snack("Memo reached its conversation limit. Export a backup before removing older records.")
+                                } else {
+                                    pendingChatPrompt = clean
+                                    activeConversationId = id
+                                    tab = AppTab.CHATS
+                                }
+                            }
                         },
                         onOpenConversation = { id -> activeConversationId = id; tab = AppTab.CHATS },
                         onOpenEvidence = { evidenceDetail = it },
@@ -860,7 +876,7 @@ private fun AppHeader(onLock: () -> Unit, onStop: () -> Unit, onMore: () -> Unit
             Spacer(Modifier.width(MemoTokens.Spacing.sm))
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
                 Text("MEMO", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, letterSpacing = 1.3.sp)
-                Text("CHATS / RUNTIMES / KNOWLEDGE", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("INTENT / WORK / EVIDENCE", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             IconButton(onClick = onMore, modifier = Modifier.size(MemoTokens.Spacing.minimumTouch)) {
                 Icon(Icons.Rounded.MoreHoriz, contentDescription = MemoLocalization.translate("More", language), tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -904,11 +920,10 @@ private fun HomeScreen(
     onChats: () -> Unit,
     onWork: () -> Unit,
     onOpenStudio: () -> Unit,
-    onPlanWork: (String) -> Unit,
+    onContinueWithMemo: (String) -> Unit,
     onOpenConversation: (String) -> Unit,
     onOpenEvidence: (EvidenceRecord) -> Unit,
     onOpenJob: (String) -> Unit,
-    onStartConversation: (String) -> Unit,
     onResumeTask: (TaskRecord) -> Unit
 ) {
     var captureDraft by remember { mutableStateOf("") }
@@ -1023,29 +1038,21 @@ private fun HomeScreen(
                     shape = RoundedCornerShape(18.dp)
                 )
                 Spacer(Modifier.height(MemoTokens.Spacing.xs))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    Button(
-                        onClick = { val intent = captureDraft.trim(); if (intent.isNotBlank()) { captureDraft = ""; onPlanWork(intent) } },
-                        enabled = captureDraft.isNotBlank(),
-                        modifier = Modifier.weight(1.15f).height(50.dp),
-                        contentPadding = PaddingValues(horizontal = 8.dp)
-                    ) {
-                        Icon(Icons.Rounded.Hub, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(5.dp))
-                        Text("Plan & start", maxLines = 1)
-                    }
-                    OutlinedButton(
-                        onClick = { val prompt = captureDraft.trim(); if (prompt.isNotBlank()) { captureDraft = ""; onStartConversation(prompt) } },
-                        enabled = captureDraft.isNotBlank(),
-                        modifier = Modifier.weight(1f).height(50.dp),
-                        contentPadding = PaddingValues(horizontal = 8.dp)
-                    ) {
-                        Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(5.dp))
-                        Text("Ask in chat", maxLines = 1)
-                    }
+                Button(
+                    onClick = { val intent = captureDraft.trim(); if (intent.isNotBlank()) { captureDraft = ""; onContinueWithMemo(intent) } },
+                    enabled = captureDraft.isNotBlank(),
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp)
+                ) {
+                    Icon(Icons.Rounded.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(7.dp))
+                    Text("Continue with Memo", maxLines = 1)
                 }
-                Text("Plan & start creates a durable, editable job with checkpoints. Memo will not perform external actions from the planner.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    "Memo routes action requests into an editable plan and questions or brainstorming into Talk. Nothing external is sent or changed automatically.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                     OutlinedButton(onClick = onChats, modifier = Modifier.weight(1f).height(44.dp)) {
                         Icon(Icons.Rounded.ChatBubbleOutline, contentDescription = null, modifier = Modifier.size(18.dp))
