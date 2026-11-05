@@ -496,19 +496,6 @@ fun MemoWorkspaceApp(
                         onOpenConversation = { id -> activeConversationId = id; tab = AppTab.CHATS },
                         onOpenEvidence = { evidenceDetail = it },
                         onOpenJob = { workSectionRequest = "JOBS"; tab = AppTab.WORK },
-                        onStartConversation = { prompt ->
-                            val clean = prompt.trim().take(6_000)
-                            if (clean.isNotBlank()) {
-                                val title = clean.lineSequence().firstOrNull().orEmpty().take(64).ifBlank { "New conversation" }
-                                val id = viewModel.createConversation(title = title)
-                                if (id.isBlank()) snack("Memo reached its conversation limit. Export a backup before removing older records.")
-                                else {
-                                    pendingChatPrompt = clean
-                                    activeConversationId = id
-                                    tab = AppTab.CHATS
-                                }
-                            }
-                        },
                         onResumeTask = { task -> runTask(task, browser, callbacks, onOpenBrowser = { tab = AppTab.BROWSER; toolSection = ToolSection.BROWSER }) }
                     )
                     AppTab.CHATS -> ChatsWorkspaceScreen(

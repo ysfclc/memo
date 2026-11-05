@@ -164,7 +164,7 @@ if "interface Listener" not in bridge.read_text() or "openForExternalCapture" no
     fail("Memo runtime bridge is missing listeners or capture entry points")
 home = (ROOT / "app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt").read_text()
 chat = (ROOT / "app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt").read_text()
-for marker in ("onContinueWithMemo", "IntentPlanner.shouldCreateWorkflow", "Make sense of what matters.", "Needs your decision"):
+for marker in ("onContinueWithMemo", "IntentPlanner.shouldCreateWorkflow", "RecognizerIntent.ACTION_RECOGNIZE_SPEECH", "speechResultLauncher", "Manifest.permission.RECORD_AUDIO", "Make sense of what matters.", "Needs your decision"):
     if marker not in home:
         fail(f"Memo-first home is missing product marker: {marker}")
 for marker in ("initialPrompt", "onInitialPromptConsumed", "draft = initialPrompt.take(6_000)"):
