@@ -220,7 +220,8 @@ fun MemoWorkspaceApp(
                 "LIBRARY", "EVIDENCE" -> { toolSection = ToolSection.EVIDENCE; AppTab.BROWSER }
                 "COUNCIL" -> AppTab.COUNCIL
                 "MODELS" -> AppTab.MODELS
-                "SETTINGS", "MORE" -> AppTab.MORE
+                "SETTINGS" -> AppTab.SETTINGS
+                "MORE" -> AppTab.MORE
                 else -> AppTab.CHATS
             }
             onInitialWorkspaceConsumed()

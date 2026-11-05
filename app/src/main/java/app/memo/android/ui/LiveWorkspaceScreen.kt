@@ -78,7 +78,7 @@ fun LiveWorkspaceScreen(
                 OutlinedButton(onClick = onOpenApps, modifier = Modifier.weight(1f)) { Text("Phone apps") }
             }
             OutlinedButton(onClick = onOpenApprovals, modifier = Modifier.fillMaxWidth()) {
-                Text(if (reviewActions.isEmpty()) "Approval inbox" else "Review ${reviewActions.size} action(s)")
+                Text(if (reviewActions.isEmpty()) "Approval inbox" else "Review action(s) · ${reviewActions.size}")
             }
         }
         item {
@@ -96,7 +96,10 @@ fun LiveWorkspaceScreen(
                         color = MaterialTheme.colorScheme.primary
                     )
                     if (browserState.currentProviderName.isNotBlank()) {
-                        Text("Current participant · ${browserState.currentProviderName}", style = MaterialTheme.typography.bodySmall)
+                        Row(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text("Current participant", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(browserState.currentProviderName, style = MaterialTheme.typography.bodySmall)
+                        }
                     }
                     Text(browserState.message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     TextButton(onClick = onOpenBrowser) { Text("Inspect live browser") }
@@ -133,7 +136,8 @@ fun LiveWorkspaceScreen(
                     }
                     val activeStep = job.steps.firstOrNull { it.status in setOf("RUNNING", "NEEDS_REVIEW") }
                     if (activeStep != null) {
-                        Text("Next checkpoint · ${activeStep.title}", style = MaterialTheme.typography.bodySmall)
+                        Text("Next checkpoint", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(activeStep.title, style = MaterialTheme.typography.bodySmall)
                         if (activeStep.detail.isNotBlank()) Text(activeStep.detail, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     if (job.sourceConversationId.isNotBlank()) {
