@@ -154,7 +154,7 @@ This is a source audit, not a device-acceptance claim.
 |---|---|
 | Four primary surfaces | The active bottom navigation is now Talk / Live / Work / Studio. Live provides an initial activity/work/approval view; Browser and Apps are secondary runtime routes. Studio has its own route but is still primarily Self Model and local artifact generation. The old Home composable remains legacy source, not a primary destination. |
 | One intent entry point | Talk now has one text/voice “Start with Memo” composer that opens a conversation draft. It does not yet interpret the intent into a dynamic workflow, attach files/images, or execute the full intent-to-outcome loop. The old split planner/chat Home implementation is no longer the primary entry. |
-| Dynamic workflow engine | `IntentPlanner` uses phrase matching and predefined step templates. `CapabilityCompiler` maps domains to static capability lists. No general cross-runtime DAG executor is integrated. |
+| Dynamic workflow engine | Work jobs now persist a versioned typed DAG proposal (schema v1) with parallel context/scope roots, explicit dependencies, participant/runtime/capability requirements, I/O contracts, postconditions, bounded budgets, idempotency keys and approval-isolated external-write nodes. The proposal is still generated from deterministic domain templates; there is no dynamic local-model planner or DAG executor yet. |
 | Live control | The first Live surface shows the current browser workflow state, active saved jobs/tasks, approval decisions and recent workspace activity; it links to Browser, Apps and Approvals. It is not yet a unified cross-runtime event journal with inline runtime panes, pause/resume/takeover or complete postcondition evidence. |
 | Frontier Council | Talk now exposes Council from the conversation list and conversation header, but Council still opens a separate route and does not yet share the Talk conversation's context and unified Live timeline end to end. |
 | Browser/app runtime | A provider-specific WebView browser workflow exists. Native Accessibility automation is bounded and permission-gated, with separate legacy persistence. Neither is a universal DOM/native capability system. |
@@ -168,7 +168,7 @@ The current build passing CI does not mean the product is complete. The source b
 
 ## 10. Build order and acceptance
 
-1. **Protect the foundation:** keep install/update identity stable; test install-over-existing and data preservation on a physical phone; consolidate persistence with migration tests.
+1. **Protect the foundation:** keep install/update identity stable; add automated emulator install-over-existing and app-private-data preservation tests, then confirm on a physical phone; consolidate persistence with migration tests.
 2. **Make Talk the real entry point:** unify capture and conversation, context selection, local/frontier routing, multi-chat and Council handoffs. A single intent must not force the user to choose “chat” versus “plan.”
 3. **Build the actual orchestrator:** typed TaskSpec and versioned workflow graph, dynamic capability assembly, runtime routing, budgets, checkpoints, cancellation, audit and postconditions. Replace keyword-only static planning as the execution brain.
 4. **Build Live:** one cross-runtime event timeline and visible browser/native sessions with pause, takeover, approval, resume and verification.

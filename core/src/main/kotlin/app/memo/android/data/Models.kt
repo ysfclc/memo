@@ -179,7 +179,8 @@ data class WorkJobRecord(
     val steps: List<JobStepRecord> = emptyList(),
     val resultSummary: String = "",
     val createdAt: Long = nowMillis(),
-    val updatedAt: Long = nowMillis()
+    val updatedAt: Long = nowMillis(),
+    val workflowGraphJson: String = ""
 )
 
 data class AppSnapshot(
@@ -298,7 +299,7 @@ data class AppSnapshot(
         }
         relationships.forEach { add(it.id); add(it.fromEntityId); add(it.toEntityId); add(it.relationType); add(it.sourceConversationId) }
         jobs.forEach { job ->
-            add(job.id); add(job.title); add(job.goal); add(job.status); add(job.runtimeId); add(job.sourceConversationId); add(job.resultSummary)
+            add(job.id); add(job.title); add(job.goal); add(job.status); add(job.runtimeId); add(job.sourceConversationId); add(job.resultSummary); add(job.workflowGraphJson)
             job.steps.forEach { add(it.id); add(it.title); add(it.detail); add(it.status); add(it.evidence) }
         }
         actionApprovals.forEach { action ->
@@ -325,9 +326,9 @@ data class AppSnapshot(
         councilRunLimit: Int
     ): String {
         val root = JSONObject()
-        root.put("schemaVersion", 5)
-        root.put("schemaSemver", "5.0.0")
-        root.put("minimumReaderVersion", 5)
+        root.put("schemaVersion", 6)
+        root.put("schemaSemver", "6.0.0")
+        root.put("minimumReaderVersion", 6)
         root.put("exportedAt", nowMillis())
         root.put("themeMode", themeMode)
         root.put("tasks", JSONArray().apply {
@@ -476,6 +477,7 @@ data class AppSnapshot(
                     put("runtimeId", job.runtimeId.take(80))
                     put("sourceConversationId", job.sourceConversationId.take(128))
                     put("resultSummary", job.resultSummary.take(4_000))
+                    put("workflowGraphJson", job.workflowGraphJson.take(64_000))
                     put("createdAt", job.createdAt)
                     put("updatedAt", job.updatedAt)
                     put("steps", JSONArray().apply {
@@ -547,13 +549,13 @@ data class AppSnapshot(
             require(raw.toByteArray(Charsets.UTF_8).size <= MAX_WORKSPACE_BACKUP_BYTES) { "Import file is larger than 40 MB." }
             val root = JSONObject(raw)
             val schema = root.optInt("schemaVersion", 0)
-            require(schema in 1..5) { "This backup format is not supported." }
+            require(schema in 1..6) { "This backup format is not supported." }
             val schemaSemver = root.safeString("schemaSemver")
             if (schemaSemver.isNotBlank()) {
                 val major = schemaSemver.substringBefore('.').toIntOrNull()
                 require(major == schema) { "Backup schema version metadata is inconsistent." }
             }
-            require(root.optInt("minimumReaderVersion", schema).coerceAtLeast(1) <= 5) { "This backup requires a newer Memo reader." }
+            require(root.optInt("minimumReaderVersion", schema).coerceAtLeast(1) <= 6) { "This backup requires a newer Memo reader." }
 
             val usedTaskIds = mutableSetOf<String>()
             val tasks = root.optJSONArray("tasks").toTypedRecords(MAX_TASKS) { row ->
@@ -712,7 +714,8 @@ data class AppSnapshot(
                     steps = steps,
                     resultSummary = row.safeString("resultSummary").take(4_000),
                     createdAt = row.optLong("createdAt", nowMillis()),
-                    updatedAt = row.optLong("updatedAt", nowMillis())
+                    updatedAt = row.optLong("updatedAt", nowMillis()),
+                    workflowGraphJson = row.safeString("workflowGraphJson").take(64_000).also { graphJson -> if (graphJson.isNotBlank()) app.memo.android.orchestration.WorkflowGraph.fromJson(graphJson) }
                 )
             }
             val actionApprovals = if (schema < 4) emptyList() else root.optJSONArray("actionApprovals").toTypedRecords(MAX_ACTION_APPROVALS) { row ->

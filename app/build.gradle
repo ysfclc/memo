@@ -4,7 +4,7 @@ plugins {
     id 'org.jetbrains.kotlin.plugin.compose'
 }
 
-def memoVersionCode = (System.getenv('GITHUB_RUN_NUMBER') ?: '40').toInteger()
+def memoVersionCode = (System.getenv('MEMO_VERSION_CODE') ?: System.getenv('GITHUB_RUN_NUMBER') ?: '40').toInteger()
 
 def memoUploadStoreFile = System.getenv('MEMO_UPLOAD_KEYSTORE_FILE')
 def memoUploadStorePassword = System.getenv('MEMO_UPLOAD_STORE_PASSWORD')

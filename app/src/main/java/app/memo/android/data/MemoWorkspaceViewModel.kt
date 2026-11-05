@@ -9,6 +9,7 @@ import app.memo.android.automation.TaskRules
 import app.memo.android.runtime.RuntimeRegistry
 import app.memo.android.orchestration.IntentPlanner
 import app.memo.android.orchestration.CapabilityCompiler
+import app.memo.android.orchestration.WorkflowGraphCompiler
 import org.json.JSONObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -589,7 +590,8 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             },
             resultSummary = "Plan created locally. No apps were controlled and no external action was executed.",
             createdAt = now,
-            updatedAt = now
+            updatedAt = now,
+            workflowGraphJson = WorkflowGraphCompiler.compile(plan, compiledCapabilities).toJson()
         )
         updateSnapshot { snapshot ->
             snapshot.copy(jobs = (listOf(job) + snapshot.jobs).take(240))
@@ -634,7 +636,8 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
                 )
             },
             resultSummary = "Draft plan revised locally at $now. No app was controlled and no external action was executed.",
-            updatedAt = now
+            updatedAt = now,
+            workflowGraphJson = WorkflowGraphCompiler.compile(revised, compiledCapabilities).toJson()
         )
         updateSnapshot { snapshot ->
             if (snapshot.jobs.none { it.id == jobId && it.status == "DRAFT" && it.steps.all { step -> step.status == "PENDING" } }) snapshot
