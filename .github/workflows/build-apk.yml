@@ -809,3 +809,5 @@ jobs:
 # CI verification trigger: validate direct repository maintenance commits as well as ZIP imports.
 
 # CI verification trigger: validate the latest chat-management and provenance safeguards.
+
+# CI verification trigger: include the new Polish and Turkish chat-control strings.
