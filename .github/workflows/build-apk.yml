@@ -11,6 +11,13 @@ name: Memo — Import source ZIP and build Android APK
       - 'core/**'
       - 'gradle/**'
       - 'tools/**'
+      - 'MEMO2_ALIGNMENT_MATRIX.md'
+      - 'PRODUCT_GAP_REGISTRY.md'
+      - 'FEATURE_AUDIT.md'
+      - 'ROADMAP.md'
+      - 'TASKS.md'
+      - 'README.md'
+      - 'docs/**'
       - '**/*.gradle'
       - '**/*.gradle.kts'
       - 'gradle.properties'
@@ -89,7 +96,7 @@ jobs:
             ALREADY_IMPORTED=true
             echo 'This exact archive upload commit already has an import note.'
           fi
-          if [[ "$ALREADY_IMPORTED" == true && "$GITHUB_EVENT_NAME" == "push" ]] && git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA" | grep -Eq '^(.github/workflows/build-apk.yml|app/|core/|gradle/|tools/|.*[.]gradle([.]kts)?$|gradle[.]properties$|settings[.]gradle([.]kts)?$)'; then
+          if [[ "$ALREADY_IMPORTED" == true && "$GITHUB_EVENT_NAME" == "push" ]] && git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA" | grep -Eq '^(.github/workflows/build-apk.yml|app/|core/|gradle/|tools/|docs/|README[.]md$|TASKS[.]md$|ROADMAP[.]md$|FEATURE_AUDIT[.]md$|PRODUCT_GAP_REGISTRY[.]md$|MEMO2_ALIGNMENT_MATRIX[.]md$|.*[.]gradle([.]kts)?$|gradle[.]properties$|settings[.]gradle([.]kts)?$)'; then
             SOURCE_ONLY=true
             ALREADY_IMPORTED=false
             UPLOAD_COMMIT="$GITHUB_SHA"

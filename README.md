@@ -2,6 +2,8 @@
 
 Memo is a local-first personal execution environment. Conversation is the easiest way in; durable records, relationships, source evidence, tasks and verified work live behind it. Browser sessions, local models and optional Android automation are capabilities around Memo—not separate sources of truth. Other project archives contribute bounded primitives only; they do not define Memo’s product shell. This archive is a development build, not a production-readiness claim.
 
+**Product direction:** [`docs/MEMO_PRODUCT_CONTRACT.md`](docs/MEMO_PRODUCT_CONTRACT.md) is the authoritative product contract. Memo's primary experience is Talk / Live / Work / Studio, connected by one orchestrator and one user-owned workspace. The source audit in that contract deliberately distinguishes current functionality from the intended product.
+
 ## What is implemented in this source tree
 
 ### Interface language

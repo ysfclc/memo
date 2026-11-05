@@ -40,6 +40,16 @@ These work packages are **partial source implementation**, not a claim that M0�
 
 See `IMPLEMENTATION_CONTRACT.md`, `MEMO2_ALIGNMENT_MATRIX.md`, and `IMPLEMENTATION_LOG.md` for gate rules, scope crosswalk, and evidence ledger.
 
+## Product reset — 5 November 2026
+
+The normative product direction has been reconciled in [`docs/MEMO_PRODUCT_CONTRACT.md`](docs/MEMO_PRODUCT_CONTRACT.md). The current UI and source are **not yet the intended product**. This reset is a correction of product scope, not a claim of completion.
+
+The primary surfaces are Talk / Live / Work / Studio. Browser and Android apps are task-bound runtimes inside Live; Council is a Talk workflow; Self Model is one evidence source for Studio. One universal intent composer must remove the current forced choice between “Plan & start” and “Ask in chat.”
+
+The current `IntentPlanner` is keyword/template based and `CapabilityCompiler` maps domains to static lists. They are useful prototypes, not the final dynamic planner or workflow engine. The current browser workflow is provider-specific; native app automation uses a separate legacy store; the primary workspace and native workflow store are not unified. Do not describe these as one integrated agent.
+
+**Next implementation order:** (1) preserve existing installation/data and design a safe single-store migration; (2) rebuild the navigation/entry shell around Talk / Live / Work / Studio; (3) implement typed TaskSpec + dynamic versioned DAG and shared runtime/policy contracts; (4) build the unified Live timeline; (5) complete end-to-end Brainstorm, CRM, Jobs, Content and arbitrary-work journeys. Do not spend the next increments polishing isolated entity CRUD while the central intent-to-outcome loop is missing.
+
 ## 1. Rules for using Memo 2's plan
 
 1. **Do not clone Memo 2.** Reuse requirements, engineering lessons, tested contracts, and task IDs where useful. Do not wholesale import its screens, Activity trees, persistence assumptions, UI structure, or platform coupling.
