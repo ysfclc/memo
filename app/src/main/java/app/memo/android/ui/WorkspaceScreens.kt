@@ -97,6 +97,7 @@ import app.memo.android.ai.ModelRuntimeUiState
 import app.memo.android.ai.REMOTE_MODEL_ID
 import app.memo.android.data.AppSnapshot
 import app.memo.android.data.ConversationRecord
+import app.memo.android.data.ChatMessageRecord
 import app.memo.android.data.EntityRecord
 import app.memo.android.data.EntityRelationship
 import app.memo.android.data.EvidenceRecord
@@ -137,6 +138,10 @@ fun ChatsWorkspaceScreen(
     var showImport by remember { mutableStateOf(false) }
     var renameTarget by remember { mutableStateOf<ConversationRecord?>(null) }
     var renameText by remember { mutableStateOf("") }
+    var conversationDeleteTarget by remember { mutableStateOf<ConversationRecord?>(null) }
+    var messageEditTarget by remember { mutableStateOf<ChatMessageRecord?>(null) }
+    var messageEditText by remember { mutableStateOf("") }
+    var messageDeleteTarget by remember { mutableStateOf<ChatMessageRecord?>(null) }
     var draft by remember(selectedConversationId) { mutableStateOf("") }
     LaunchedEffect(selectedConversationId, initialPrompt) {
         if (selectedConversationId != null && initialPrompt.isNotBlank()) {
@@ -267,6 +272,7 @@ fun ChatsWorkspaceScreen(
                                     Text(formatWorkspaceDate(conversation.updatedAt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                                 }
                                 IconButton(onClick = { renameTarget = conversation; renameText = conversation.title }) { Icon(Icons.Rounded.Edit, contentDescription = "Rename conversation") }
+                                IconButton(onClick = { conversationDeleteTarget = conversation }) { Icon(Icons.Rounded.Delete, contentDescription = "Delete conversation") }
                             }
                         }
                     }
@@ -283,6 +289,7 @@ fun ChatsWorkspaceScreen(
                         Text(if (selectedConversation.sourceType == "IMPORTED") "IMPORTED TRANSCRIPT · Source preserved" else "LOCAL WORKSPACE · ${selectedConversation.messages.size} messages", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     IconButton(onClick = { renameTarget = selectedConversation; renameText = selectedConversation.title }) { Icon(Icons.Rounded.Edit, contentDescription = "Rename conversation") }
+                    IconButton(onClick = { conversationDeleteTarget = selectedConversation }) { Icon(Icons.Rounded.Delete, contentDescription = "Delete conversation") }
                 }
                 if (modelOptions.isEmpty()) {
                     Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
@@ -364,6 +371,14 @@ fun ChatsWorkspaceScreen(
                                 Text(when (message.role) { "USER" -> "YOU"; "ASSISTANT" -> message.modelId.ifBlank { "MEMO AI" }; "SOURCE" -> "IMPORTED SOURCE"; else -> message.sourceType }, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold)
                                 Spacer(Modifier.weight(1f))
                                 Text(formatWorkspaceDate(message.createdAt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                if (message.role == "USER" || message.role == "ASSISTANT") {
+                                    IconButton(onClick = { messageEditTarget = message; messageEditText = message.content }, modifier = Modifier.size(30.dp)) {
+                                        Icon(Icons.Rounded.Edit, contentDescription = "Edit message", modifier = Modifier.size(17.dp))
+                                    }
+                                    IconButton(onClick = { messageDeleteTarget = message }, modifier = Modifier.size(30.dp)) {
+                                        Icon(Icons.Rounded.Delete, contentDescription = "Delete message", modifier = Modifier.size(17.dp))
+                                    }
+                                }
                             }
                             SelectionContainer { Text(message.content, style = MaterialTheme.typography.bodyMedium) }
                         }
@@ -579,6 +594,74 @@ fun ChatsWorkspaceScreen(
         )
     }
 }
+    if (conversationDeleteTarget != null) {
+        val target = conversationDeleteTarget!!
+        AlertDialog(
+            onDismissRequest = { conversationDeleteTarget = null },
+            title = { Text("Delete conversation?") },
+            text = {
+                Text("Delete \"${target.title}\" and its chat messages? Memo checks linked workspace records first and blocks deletion if it would orphan source evidence or job history.")
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val error = viewModel.deleteConversation(target.id)
+                    if (error != null) {
+                        onShowMessage(error)
+                    } else {
+                        if (selectedConversationId == target.id) onSelectConversation(null)
+                        conversationDeleteTarget = null
+                        onShowMessage("Conversation deleted.")
+                    }
+                }) { Text("Delete") }
+            },
+            dismissButton = { TextButton(onClick = { conversationDeleteTarget = null }) { Text("Keep") } }
+        )
+    }
+    if (messageEditTarget != null && selectedConversation != null) {
+        val target = messageEditTarget!!
+        AlertDialog(
+            onDismissRequest = { messageEditTarget = null },
+            title = { Text("Edit message") },
+            text = {
+                OutlinedTextField(
+                    value = messageEditText,
+                    onValueChange = { if (it.length <= 24_000) messageEditText = it },
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp, max = 360.dp),
+                    minLines = 4,
+                    maxLines = 12,
+                    label = { Text("Message content") }
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val error = viewModel.updateChatMessage(selectedConversation.id, target.id, messageEditText)
+                    if (error != null) onShowMessage(error) else {
+                        messageEditTarget = null
+                        onShowMessage("Message updated.")
+                    }
+                }, enabled = messageEditText.isNotBlank()) { Text("Save changes") }
+            },
+            dismissButton = { TextButton(onClick = { messageEditTarget = null }) { Text("Cancel") } }
+        )
+    }
+    if (messageDeleteTarget != null && selectedConversation != null) {
+        val target = messageDeleteTarget!!
+        AlertDialog(
+            onDismissRequest = { messageDeleteTarget = null },
+            title = { Text("Delete message?") },
+            text = { Text("This removes this message from the conversation. Messages used as evidence by saved workspace records are protected.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    val error = viewModel.deleteChatMessage(selectedConversation.id, target.id)
+                    if (error != null) onShowMessage(error) else {
+                        messageDeleteTarget = null
+                        onShowMessage("Message deleted.")
+                    }
+                }) { Text("Delete") }
+            },
+            dismissButton = { TextButton(onClick = { messageDeleteTarget = null }) { Text("Keep") } }
+        )
+    }
 
 @Composable
 private fun ImportConversationDialog(onDismiss: () -> Unit, onImport: (String, String, String) -> Unit) {
