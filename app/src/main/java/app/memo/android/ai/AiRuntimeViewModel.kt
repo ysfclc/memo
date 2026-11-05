@@ -30,6 +30,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import java.security.MessageDigest
 import java.net.HttpURLConnection
 import java.net.URI
 import java.net.URL
@@ -154,7 +155,11 @@ class AiRuntimeViewModel(application: Application) : AndroidViewModel(applicatio
                         "Not enough free storage. Keep at least ${(entry.expectedBytes + 180_000_000L) / 1_000_000} MB free before installing this model."
                     }
                     val destination = File(modelsDir, entry.fileName)
-                    if (destination.exists() && destination.length() >= entry.minimumBytes) return@withContext
+                    if (destination.exists()) {
+                        val existingHash = if (destination.length() >= entry.minimumBytes) sha256(destination) else ""
+                        if (existingHash.equals(entry.expectedSha256, ignoreCase = true)) return@withContext
+                        destination.delete()
+                    }
                     val partial = File(modelsDir, entry.fileName + ".partial")
                     partial.delete()
                     val url = URL(entry.downloadUrl)
@@ -199,6 +204,10 @@ class AiRuntimeViewModel(application: Application) : AndroidViewModel(applicatio
                         require(partial.length() >= entry.minimumBytes) {
                             "The downloaded model is too small (${partial.length() / 1_000_000} MB). The transfer may have been interrupted or the provider served an unexpected file."
                         }
+                        val actualHash = sha256(partial)
+                        require(actualHash.equals(entry.expectedSha256, ignoreCase = true)) {
+                            "Model integrity check failed. The downloaded file does not match the verified catalogue checksum; it was not installed."
+                        }
                         if (destination.exists()) destination.delete()
                         require(partial.renameTo(destination)) { "Downloaded model could not be moved into the installed-model folder." }
                     } finally {
@@ -221,6 +230,19 @@ class AiRuntimeViewModel(application: Application) : AndroidViewModel(applicatio
                 downloadJobs.remove(modelId)
             }
         }
+    }
+
+    private fun sha256(file: File): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        file.inputStream().buffered().use { input ->
+            val buffer = ByteArray(256 * 1024)
+            while (true) {
+                val count = input.read(buffer)
+                if (count < 0) break
+                digest.update(buffer, 0, count)
+            }
+        }
+        return digest.digest().joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
     }
 
     fun cancelModelDownload(modelId: String) { downloadJobs[modelId]?.cancel() }
