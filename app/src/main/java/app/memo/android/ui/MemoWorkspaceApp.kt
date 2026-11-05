@@ -157,7 +157,7 @@ import java.util.Date
 import java.util.Locale
 
 private enum class AppTab(val label: String) {
-    HOME("Home"), CHATS("Chats"), WORK("Work"), BROWSER("Browser"), MORE("More"), APPS("Apps"), APPROVALS("Approvals"), COUNCIL("Council"), MODELS("Models"), SETTINGS("Settings")
+    HOME("Home"), CHATS("Talk"), LIVE("Live"), WORK("Work"), STUDIO("Studio"), BROWSER("Browser"), MORE("More"), APPS("Apps"), APPROVALS("Approvals"), COUNCIL("Council"), MODELS("Models"), SETTINGS("Settings")
 }
 
 private enum class ToolSection(val label: String) { BROWSER("Browser"), WORKFLOWS("Workflows"), TASKS("Tasks"), EVIDENCE("Evidence") }
@@ -201,7 +201,7 @@ fun MemoWorkspaceApp(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbarHost = remember { SnackbarHostState() }
-    var tab by remember { mutableStateOf(AppTab.HOME) }
+    var tab by remember { mutableStateOf(AppTab.CHATS) }
     var activeConversationId by remember { mutableStateOf<String?>(null) }
     var pendingChatPrompt by remember { mutableStateOf("") }
     var toolSection by remember { mutableStateOf(ToolSection.BROWSER) }
@@ -210,16 +210,18 @@ fun MemoWorkspaceApp(
         val destination = initialWorkspace?.trim()?.uppercase().orEmpty()
         if (destination.isNotBlank()) {
             tab = when (destination) {
-                "CHATS" -> AppTab.CHATS
-                "WORK", "FLOWS", "RUNS", "RECORDS", "STUDIO" -> { if (destination == "STUDIO") workSectionRequest = "STUDIO"; AppTab.WORK }
+                "CHATS", "TALK" -> AppTab.CHATS
+                "LIVE", "HOME" -> AppTab.LIVE
+                "WORK", "FLOWS", "RUNS", "RECORDS" -> AppTab.WORK
+                "STUDIO" -> AppTab.STUDIO
                 "APPS" -> AppTab.APPS
                 "APPROVALS", "REVIEW" -> AppTab.APPROVALS
                 "BROWSER" -> AppTab.BROWSER
                 "LIBRARY", "EVIDENCE" -> { toolSection = ToolSection.EVIDENCE; AppTab.BROWSER }
                 "COUNCIL" -> AppTab.COUNCIL
                 "MODELS" -> AppTab.MODELS
-                "SETTINGS" -> AppTab.SETTINGS
-                else -> AppTab.HOME
+                "SETTINGS", "MORE" -> AppTab.MORE
+                else -> AppTab.CHATS
             }
             onInitialWorkspaceConsumed()
         }
@@ -373,17 +375,18 @@ fun MemoWorkspaceApp(
         }
     }
 
-    BackHandler(enabled = tab != AppTab.HOME || evidenceDetail != null || (tab == AppTab.CHATS && activeConversationId != null)) {
+    BackHandler(enabled = tab != AppTab.CHATS || evidenceDetail != null || activeConversationId != null) {
         when {
             evidenceDetail != null -> evidenceDetail = null
             tab == AppTab.CHATS && activeConversationId != null -> activeConversationId = null
-            tab != AppTab.HOME -> tab = AppTab.HOME
+            tab in setOf(AppTab.BROWSER, AppTab.APPS, AppTab.APPROVALS) -> tab = AppTab.LIVE
+            tab != AppTab.CHATS -> tab = AppTab.CHATS
         }
     }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = { AppHeader(onLock = lockWorkspace, onStop = ::stopActiveWork) },
+        topBar = { AppHeader(onLock = lockWorkspace, onStop = ::stopActiveWork, onMore = { tab = AppTab.MORE }) },
         snackbarHost = { SnackbarHost(snackbarHost) },
         bottomBar = {
             NavigationBar(
@@ -392,15 +395,20 @@ fun MemoWorkspaceApp(
                 windowInsets = WindowInsets.navigationBars
             ) {
                 val items = listOf(
-                    Triple(AppTab.HOME, Icons.Rounded.Home, "Home"),
-                    Triple(AppTab.CHATS, Icons.Rounded.ChatBubbleOutline, "Chats"),
+                    Triple(AppTab.CHATS, Icons.Rounded.ChatBubbleOutline, "Talk"),
+                    Triple(AppTab.LIVE, Icons.Rounded.Bolt, "Live"),
                     Triple(AppTab.WORK, Icons.Rounded.Hub, "Work"),
-                    Triple(AppTab.BROWSER, Icons.Rounded.Web, "Browser"),
-                    Triple(AppTab.MORE, Icons.Rounded.MoreHoriz, "More")
+                    Triple(AppTab.STUDIO, Icons.Rounded.Article, "Studio")
                 )
                 items.forEach { (dest, icon, label) ->
                     NavigationBarItem(
-                        selected = tab == dest || (dest == AppTab.MORE && tab in setOf(AppTab.COUNCIL, AppTab.MODELS, AppTab.SETTINGS, AppTab.APPS, AppTab.APPROVALS)),
+                        selected = when (dest) {
+                            AppTab.CHATS -> tab == AppTab.CHATS || tab == AppTab.COUNCIL
+                            AppTab.LIVE -> tab in setOf(AppTab.LIVE, AppTab.BROWSER, AppTab.APPS, AppTab.APPROVALS)
+                            AppTab.WORK -> tab == AppTab.WORK
+                            AppTab.STUDIO -> tab == AppTab.STUDIO
+                            else -> false
+                        },
                         onClick = { tab = dest },
                         icon = { Icon(icon, contentDescription = label, modifier = Modifier.size(22.dp)) },
                         label = { Text(label, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
@@ -434,10 +442,10 @@ fun MemoWorkspaceApp(
                         remoteConfigured = modelState.providerConfigured,
                         onCouncil = { tab = AppTab.COUNCIL },
                         onModels = { tab = AppTab.MODELS },
-                        onTools = { tab = AppTab.BROWSER },
+                        onTools = { tab = AppTab.LIVE },
                         onChats = { tab = AppTab.CHATS },
                         onWork = { workSectionRequest = "ENTITIES"; tab = AppTab.WORK },
-                        onOpenStudio = { workSectionRequest = "STUDIO"; tab = AppTab.WORK },
+                        onOpenStudio = { tab = AppTab.STUDIO },
                         onPlanWork = { rawIntent ->
                             viewModel.createIntentPlan(rawIntent, uiLanguage).fold(
                                 onSuccess = { jobId ->
@@ -477,6 +485,35 @@ fun MemoWorkspaceApp(
                         onInitialPromptConsumed = { pendingChatPrompt = "" },
                         onOpenModels = { tab = AppTab.MODELS },
                         onOpenWork = { tab = AppTab.WORK },
+                        onOpenCouncil = { tab = AppTab.COUNCIL },
+                        onStartConversation = { prompt ->
+                            val clean = prompt.trim().take(6_000)
+                            if (clean.isNotBlank()) {
+                                val title = clean.lineSequence().firstOrNull().orEmpty().take(64).ifBlank { "New conversation" }
+                                val id = viewModel.createConversation(title = title)
+                                if (id.isBlank()) snack("Memo reached its conversation limit. Export a backup before removing older records.")
+                                else { pendingChatPrompt = clean; activeConversationId = id }
+                            }
+                        },
+                        onShowMessage = ::snack
+                    )
+                    AppTab.LIVE -> LiveWorkspaceScreen(
+                        snapshot = snapshot,
+                        browserState = browser.workflowState,
+                        onOpenBrowser = { tab = AppTab.BROWSER; toolSection = ToolSection.BROWSER },
+                        onOpenApps = { tab = AppTab.APPS },
+                        onOpenApprovals = { tab = AppTab.APPROVALS },
+                        onOpenWork = { tab = AppTab.WORK },
+                        onOpenTalk = { id -> activeConversationId = id; tab = AppTab.CHATS },
+                        onResumeTask = { task -> runTask(task, browser, callbacks, onOpenBrowser = { tab = AppTab.BROWSER; toolSection = ToolSection.BROWSER }) }
+                    )
+                    AppTab.STUDIO -> SelfModelStudioScreen(
+                        snapshot = snapshot,
+                        viewModel = viewModel,
+                        runtime = aiRuntime,
+                        runtimeState = modelState,
+                        onOpenEvidence = { id -> evidenceDetail = viewModel.snapshot.value.evidence.firstOrNull { it.id == id } },
+                        onOpenModels = { tab = AppTab.MODELS },
                         onShowMessage = ::snack
                     )
                     AppTab.WORK -> WorkWorkspaceScreen(
@@ -806,7 +843,7 @@ private fun ToolsHubScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AppHeader(onLock: () -> Unit, onStop: () -> Unit) {
+private fun AppHeader(onLock: () -> Unit, onStop: () -> Unit, onMore: () -> Unit) {
     val language = LocalMemoLanguage.current
     Surface(color = MaterialTheme.colorScheme.background, tonalElevation = 0.dp) {
         Row(
@@ -823,6 +860,9 @@ private fun AppHeader(onLock: () -> Unit, onStop: () -> Unit) {
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
                 Text("MEMO", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, letterSpacing = 1.3.sp)
                 Text("CHATS / RUNTIMES / KNOWLEDGE", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            IconButton(onClick = onMore, modifier = Modifier.size(MemoTokens.Spacing.minimumTouch)) {
+                Icon(Icons.Rounded.MoreHoriz, contentDescription = MemoLocalization.translate("More", language), tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             IconButton(onClick = onStop, modifier = Modifier.size(MemoTokens.Spacing.minimumTouch)) {
                 Icon(Icons.Rounded.StopCircle, contentDescription = MemoLocalization.translate("Stop active work", language), tint = MaterialTheme.colorScheme.error)
