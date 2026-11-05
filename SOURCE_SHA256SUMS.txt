@@ -1,6 +1,6 @@
-9ffafc6bdfb5af5f2f98f430d51eaa847877817caf8cf15c8a3b625d45182c0e  ./.github/workflows/build-apk.yml
+bc5a536108e48a492bb644630e3d9cd076fbb627e3a654cb69a67f39d0cca9c7  ./.github/workflows/build-apk.yml
 35d51b623486a63a825aeffa712fe00e73c069ff4db4cb783affe14783203641  ./.gitignore
-da767d025a60973d362f182b3659e9e44d284ff350252b0250d84124262ec088  ./BUILD_STATUS.md
+b0a4138b0ee96e07e8c7e9b0695fb3d37492d223ba45c3525dc91d6acfdb88eb  ./BUILD_STATUS.md
 50de564f828c3a84a4d02f082590d7e3e60870ef47e5f156ab0df6bfebef4500  ./CHANGELOG.md
 27a75bf71bfa1da44ba4c0fcf483b010cab683e19f33f308a150a248cdae81aa  ./DEVICE_ACCEPTANCE_CHECKLIST.md
 24b6d7617b6f20b24a8fa2b375878af8ced6b99e3546fd63b53dc74b8bf7ffd7  ./FEATURE_AUDIT.md
@@ -11,7 +11,7 @@ dd455fac6e27fc3a4f55b917d345ce0bf7b523cf25cff35beaa85cb8d8d14886  ./IMPLEMENTATI
 d02e7d8d6d121f1058bc1e43df76fa521ef59f6ddc1e07ee2a69d92f8d76ba45  ./PRODUCT_GAP_REGISTRY.md
 dcd2650644e7052c795cf2b3a1a9c033cadcbfa81b35bcaf0cb32eab51aa3984  ./README.md
 ce2bcd53a712bd22e83da53d4a3961e3af299d3ee715e51f91898db29fa779c6  ./REMOTE_RUNNER_SETUP.md
-a8836912770340df8361eb53b85a526fac9fe70c7473f5cc37e7baf9e447f3c6  ./ROADMAP.md
+0eeba482f9361686dd8b7d12308b144f88b2f1c61b26a4f96409834fcfb4156c  ./ROADMAP.md
 95473f9ee5cc036507ac0cdf4066d8b3e2cdd0d974e2b0c4ccce5a820e52819c  ./TASKS.md
 e6600e1791663d409d87b2dd89c2e4d837b02ebafe4666fea2ed1ef1284b91ae  ./app/build.gradle
 cf9961550854acab5317b4efa543fb1657e49e39b5de3f4a363565f85e2f704a  ./app/proguard-rules.pro
@@ -26,17 +26,17 @@ a330e300b15c7d2166d057836ebe2bee26cedfdaea45f30fb33a186bd75cad1f  ./app/src/main
 7d6f79794264bb01258230c830bf729ad7037a0321f8545273fb7176ff5751e1  ./app/src/main/java/app/memo/android/browser/BrowserSession.kt
 1cfc5334fc1c4da3afe944e915b2370b1f8ec65c7496ef5dd1f2cbf98b50cd33  ./app/src/main/java/app/memo/android/browser/BrowserWorkflow.kt
 c8a0d15ed15e81d649fc433407f234152d8c2fa7fb9a67365ca6278eb8f4bae5  ./app/src/main/java/app/memo/android/data/EncryptedVault.kt
-3db2a54fdfc9f9638d1bcc817e77f2354603dc0d81a4f916df359b34bf742ac7  ./app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt
+73feea411dc5080024aa000143efa403da7ebc4623a8035ad3f02706325942c3  ./app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt
 f608bddf49f49c35679c84ac52d1fef8e66363af0ab6f00005adaccc87a36363  ./app/src/main/java/app/memo/android/notifications/MemoNotificationCenter.kt
 5becd4fe59b752a4390ad8dbc245574774cbf15fbe64fc9e5e4b43237a8315c1  ./app/src/main/java/app/memo/android/runtime/MemoRuntimeBridge.java
 b25b80d9ecff0b166d50cb205fa783597209d77ad5d993335bf880bfeaef1cc4  ./app/src/main/java/app/memo/android/ui/ActionApprovalInboxScreen.kt
 c183dc442f015a51390223e80258a5d6e09baefaa1054e3f1ddb931bfebae5d3  ./app/src/main/java/app/memo/android/ui/AiScreens.kt
 f9167b7d743e284028f605b4b421b4c9b18c8bde299dd9aed0d6e51af7157216  ./app/src/main/java/app/memo/android/ui/AppsWorkspaceScreen.kt
 c23d9d73f947dca41834299207c98cb522fbcf627615454078dc3d0bd22b645f  ./app/src/main/java/app/memo/android/ui/BrowserWorkflowScreen.kt
-330ebf4bc3e5be9f897896e6cdbcd90cc0273d2bc753674687abf1698ccd4621  ./app/src/main/java/app/memo/android/ui/MemoLocalization.kt
+319ab8951c69dd429af794fbc2c87919f8179455da9bf8e9a716837c833c83c1  ./app/src/main/java/app/memo/android/ui/MemoLocalization.kt
 25fd0b5bd82b5894f4c76c289627058320d6d0188d39dd1d465d4fcc820d4e75  ./app/src/main/java/app/memo/android/ui/MemoTheme.kt
 79aae57f513be9803a3e62e038c1f8de47af847e09d0f3127591f2742cf34e14  ./app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt
-a7320b8f79d86709622a7f5947336dce7d66520ba43f093fb629e9528493387e  ./app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt
+3ee3458b657cfca1c61cef59c93e954c5dfea327ea6d3ceeaec9bacaef92765d  ./app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt
 f78be77d6fa771c78d14e15a0e2e1e1bad49d384637546ee596e47941b251472  ./app/src/main/java/app/memo/android/ui/components/Primitives.kt
 128544949e1092389370b43128707cf0c985f5531bd7d6c2dff832ede64e3184  ./app/src/main/java/com/synthos/runtime/ai/JobCompiler.java
 8951a538775e3afaaac1c00396cbaeb2b80593fd235d5be1ef1fcc4686d07851  ./app/src/main/java/com/synthos/runtime/ai/LocalModelRuntime.kt
@@ -74,6 +74,7 @@ b2a1bd5e918a0d0c153153bb0c707e2414bc5c1a2fcd8eeedca801d86bdf8a3b  ./app/src/test
 71bead65b0eb040e63e6cc17e4e0001b03cd0d570222127d294f35cda8d00b2a  ./core/src/main/kotlin/app/memo/android/automation/TaskRules.kt
 ff0fd84c7c2854420f9d0744a68ff223b96ff28f5bf08a6ee004cdd176064784  ./core/src/main/kotlin/app/memo/android/context/WorkspaceContextRetriever.kt
 9e83b69b59d9b25ff7d1fa4a8f369920a215f16d142c3c01b7bf17ec2abc3372  ./core/src/main/kotlin/app/memo/android/data/ActionApprovalLedger.kt
+49827ac39e51371790441c2862d579b73c56c9c85ea47a1dc4924d6ba3846020  ./core/src/main/kotlin/app/memo/android/data/ConversationMutationPolicy.kt
 68f92f98b3b26405168c5c0fffb5a9ec42181c95b5ff721e30990c554bf7e87f  ./core/src/main/kotlin/app/memo/android/data/EncryptedBackupCodec.kt
 a4ec2c564a19f2fa2c56f613460e659dad8c638ab85910de265f97cec850aecb  ./core/src/main/kotlin/app/memo/android/data/FollowUpTaskFactory.kt
 a0303933c6a934b67c2b10a003755baea70957d0a12011958dc38519c04f04ed  ./core/src/main/kotlin/app/memo/android/data/Models.kt
@@ -85,6 +86,7 @@ fd700964cc04f59ff2b6e363a7da42423cc31f827a7340642bf1a80854ab298d  ./core/src/mai
 3f4508c62a971ff19642f8d402b6085b242f5f2717a56f5c4082049011645489  ./core/src/test/kotlin/app/memo/android/automation/TaskRulesTest.kt
 bba2c2a4e5760e31fcf4fc1f675be0d1ac8f20c42fb8f0bb2f03b9fafa938eca  ./core/src/test/kotlin/app/memo/android/context/WorkspaceContextRetrieverTest.kt
 9d3110079a41a6f91a4388782bbc4a4ae86083d96d6ccb10de96ee9f615dea88  ./core/src/test/kotlin/app/memo/android/data/ActionApprovalLedgerTest.kt
+9b2a21f893bff9efa603f01178fbc95b5e75b2dd3ffd064d69c6080fd66d97f3  ./core/src/test/kotlin/app/memo/android/data/ConversationMutationPolicyTest.kt
 b0e2823ff9f387a46cf628303233f7c61243b5a1d14f892d8545d67c2101829a  ./core/src/test/kotlin/app/memo/android/data/CouncilBackupTest.kt
 71de8840406ad5ae191b0495a6a97c14fe7789710279153d39edbdd5d4630a9e  ./core/src/test/kotlin/app/memo/android/data/EncryptedBackupCodecTest.kt
 a3cdf0d39f49d50767062bae0b1e6360346c78d5c32ea033fbb8411a98d34d1f  ./core/src/test/kotlin/app/memo/android/data/FollowUpTaskFactoryTest.kt
