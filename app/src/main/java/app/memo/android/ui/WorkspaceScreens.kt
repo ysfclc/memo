@@ -593,7 +593,6 @@ fun ChatsWorkspaceScreen(
             dismissButton = { TextButton(onClick = { renameTarget = null }) { Text("Cancel") } }
         )
     }
-}
     if (conversationDeleteTarget != null) {
         val target = conversationDeleteTarget!!
         AlertDialog(
@@ -662,6 +661,7 @@ fun ChatsWorkspaceScreen(
             dismissButton = { TextButton(onClick = { messageDeleteTarget = null }) { Text("Keep") } }
         )
     }
+}
 
 @Composable
 private fun ImportConversationDialog(onDismiss: () -> Unit, onImport: (String, String, String) -> Unit) {
