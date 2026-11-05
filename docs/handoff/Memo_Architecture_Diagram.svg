@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="830" viewBox="0 0 1500 830">
+<defs>
+  <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M1,1 L11,6 L1,11 Z" fill="#547267"/></marker>
+  <marker id="arrowAmber" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M1,1 L11,6 L1,11 Z" fill="#A96A26"/></marker>
+  <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="#20362c" flood-opacity=".08"/></filter>
+</defs>
+<rect width="1500" height="830" rx="28" fill="#F4F7F3"/>
+<text x="70" y="65" font-family="Arial, sans-serif" font-size="31" font-weight="700" fill="#18352A">Memo architecture</text>
+<text x="70" y="102" font-family="Arial, sans-serif" font-size="18" fill="#587066">One durable local workspace; models propose, policy gates actions, evidence verifies outcomes.</text>
+<!-- main lane boxes -->
+<g filter="url(#shadow)">
+ <rect x="55" y="175" width="230" height="185" rx="20" fill="#FFFFFF" stroke="#CDDAD2" stroke-width="2"/>
+ <rect x="325" y="175" width="260" height="185" rx="20" fill="#173D30" stroke="#173D30" stroke-width="2"/>
+ <rect x="625" y="175" width="245" height="185" rx="20" fill="#FFFFFF" stroke="#D5C8B3" stroke-width="2"/>
+ <rect x="910" y="175" width="245" height="185" rx="20" fill="#FFFFFF" stroke="#CDDAD2" stroke-width="2"/>
+ <rect x="1195" y="175" width="250" height="185" rx="20" fill="#FFFFFF" stroke="#CDDAD2" stroke-width="2"/>
+</g>
+<!-- box content -->
+<g font-family="Arial, sans-serif">
+ <text x="78" y="218" font-size="16" font-weight="700" letter-spacing="1.2" fill="#35654F">01 · CLIENT</text>
+ <text x="78" y="255" font-size="23" font-weight="700" fill="#1B2F27">Mobile UI</text>
+ <text x="78" y="291" font-size="17" fill="#5F756B">Talk · Work</text>
+ <text x="78" y="318" font-size="17" fill="#5F756B">Browser · Library</text>
+
+ <text x="349" y="218" font-size="16" font-weight="700" letter-spacing="1.2" fill="#83D8B0">02 · DOMAIN</text>
+ <text x="349" y="255" font-size="23" font-weight="700" fill="#FFFFFF">Memo Core</text>
+ <text x="349" y="291" font-size="17" fill="#E3EEE8">Typed commands</text>
+ <text x="349" y="318" font-size="17" fill="#E3EEE8">Context · identity · links</text>
+
+ <text x="649" y="218" font-size="16" font-weight="700" letter-spacing="1.2" fill="#A66C2D">03 · GOVERNANCE</text>
+ <text x="649" y="255" font-size="22" font-weight="700" fill="#1B2F27">Policy + approval</text>
+ <text x="649" y="291" font-size="16" fill="#5F756B">Schema / risk checks</text>
+ <text x="649" y="318" font-size="16" fill="#5F756B">Consent-bound payload</text>
+
+ <text x="934" y="218" font-size="16" font-weight="700" letter-spacing="1.2" fill="#35654F">04 · EXECUTION</text>
+ <text x="934" y="255" font-size="22" font-weight="700" fill="#1B2F27">Capability runtimes</text>
+ <text x="934" y="291" font-size="16" fill="#5F756B">Browser · share/capture</text>
+ <text x="934" y="318" font-size="16" fill="#5F756B">Reminders · connectors</text>
+
+ <text x="1219" y="218" font-size="16" font-weight="700" letter-spacing="1.2" fill="#35654F">05 · PROOF</text>
+ <text x="1219" y="255" font-size="21" font-weight="700" fill="#1B2F27">Verify + journal</text>
+ <text x="1219" y="291" font-size="16" fill="#5F756B">Observations / postconditions</text>
+ <text x="1219" y="318" font-size="16" fill="#5F756B">Checkpoint / recovery</text>
+</g>
+<!-- main arrows -->
+<g fill="none" stroke="#547267" stroke-width="4" marker-end="url(#arrow)">
+ <path d="M285 267 H318"/><path d="M585 267 H618"/><path d="M870 267 H903"/><path d="M1155 267 H1188"/>
+</g>
+<!-- lower layer boxes -->
+<g filter="url(#shadow)">
+ <rect x="245" y="440" width="440" height="170" rx="20" fill="#E7F1EA" stroke="#B9D1C1" stroke-width="2"/>
+ <rect x="735" y="440" width="330" height="170" rx="20" fill="#FFFFFF" stroke="#CDDAD2" stroke-width="2"/>
+ <rect x="1105" y="440" width="340" height="170" rx="20" fill="#FFF5E6" stroke="#E7CBA6" stroke-width="2"/>
+</g>
+<g font-family="Arial, sans-serif">
+ <text x="270" y="480" font-size="16" font-weight="700" letter-spacing="1.2" fill="#35654F">DURABLE LOCAL STATE</text>
+ <text x="270" y="520" font-size="23" font-weight="700" fill="#1B2F27">SQLCipher vault</text>
+ <text x="270" y="554" font-size="17" fill="#466458">Records · sources · relationships</text>
+ <text x="270" y="580" font-size="17" fill="#466458">Tasks · context manifests · journal</text>
+
+ <text x="760" y="480" font-size="16" font-weight="700" letter-spacing="1.2" fill="#35654F">MODEL ADAPTERS</text>
+ <text x="760" y="520" font-size="22" font-weight="700" fill="#1B2F27">Local first</text>
+ <text x="760" y="554" font-size="16" fill="#5F756B">LiteRT-LM native adapter</text>
+ <text x="760" y="580" font-size="16" fill="#5F756B">Remote only with per-request consent</text>
+
+ <text x="1130" y="480" font-size="16" font-weight="700" letter-spacing="1.2" fill="#9A5B1C">OPTIONAL · LATER</text>
+ <text x="1130" y="520" font-size="22" font-weight="700" fill="#633B15">Memo Relay</text>
+ <text x="1130" y="554" font-size="16" fill="#815D37">Only for opted-in sync, connectors</text>
+ <text x="1130" y="580" font-size="16" fill="#815D37">or delegated long-running tasks</text>
+</g>
+<!-- vertical relationships -->
+<g fill="none" stroke="#547267" stroke-width="3.5" marker-end="url(#arrow)">
+ <path d="M455 360 V425"/><path d="M510 440 V372"/>
+ <path d="M790 360 V425"/><path d="M840 440 V372"/>
+ <path d="M1320 360 V425"/><path d="M1270 440 V372"/>
+</g>
+<!-- consent path from policy to relay -->
+<path d="M747 360 V400 H1080 V525 H1098" fill="none" stroke="#A96A26" stroke-width="3" stroke-dasharray="9 7" marker-end="url(#arrowAmber)"/>
+<!-- footer -->
+<text x="70" y="670" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#18352A">Invariant</text>
+<text x="70" y="704" font-family="Arial, sans-serif" font-size="17" fill="#587066">Model text is not execution proof. The verifier and journal own the final state.</text>
+<text x="70" y="735" font-family="Arial, sans-serif" font-size="16" fill="#9A5B1C">Remote boundary: only an explicitly approved, task-scoped payload may reach Memo Relay.</text>
+<text x="70" y="775" font-family="Arial, sans-serif" font-size="14" fill="#7B8D84">Memo · Architecture review draft · 26 Oct 2026</text>
+</svg>

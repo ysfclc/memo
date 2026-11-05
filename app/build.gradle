@@ -1,0 +1,92 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'org.jetbrains.kotlin.plugin.compose'
+}
+
+def memoUploadStoreFile = System.getenv('MEMO_UPLOAD_KEYSTORE_FILE')
+def memoUploadStorePassword = System.getenv('MEMO_UPLOAD_STORE_PASSWORD')
+def memoUploadKeyAlias = System.getenv('MEMO_UPLOAD_KEY_ALIAS')
+def memoUploadKeyPassword = System.getenv('MEMO_UPLOAD_KEY_PASSWORD')
+def memoHasUploadSigning = [memoUploadStoreFile, memoUploadStorePassword, memoUploadKeyAlias, memoUploadKeyPassword].every { it != null && !it.trim().isEmpty() }
+
+android {
+    signingConfigs {
+        if (memoHasUploadSigning) {
+            memoUpload {
+                storeFile file(memoUploadStoreFile)
+                storePassword memoUploadStorePassword
+                keyAlias memoUploadKeyAlias
+                keyPassword memoUploadKeyPassword
+            }
+        }
+    }
+    namespace 'app.memo.android'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'app.memo.android'
+        minSdk 29
+        targetSdk 35
+        versionCode 40
+        versionName '4.0.0-memo'
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix '.debug'
+            versionNameSuffix '-debug'
+            if (memoHasUploadSigning) {
+                signingConfig signingConfigs.memoUpload
+            }
+        }
+        release {
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // Sideload/test signing only. Configure a private release key before store distribution.
+            if (memoHasUploadSigning) {
+                signingConfig signingConfigs.memoUpload
+            } else {
+                signingConfig signingConfigs.debug
+            }
+        }
+    }
+
+    buildFeatures { compose true }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    testOptions { unitTests.includeAndroidResources = true }
+    kotlinOptions { jvmTarget = '17' }
+    packaging { resources.excludes += ['/META-INF/AL2.0', '/META-INF/LGPL2.1'] }
+}
+
+
+dependencies {
+    implementation project(':core')
+    implementation 'androidx.core:core-ktx:1.15.0'
+    implementation 'androidx.activity:activity-compose:1.9.3'
+    implementation 'androidx.activity:activity-ktx:1.9.3'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.7'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7'
+    implementation 'androidx.biometric:biometric:1.1.0'
+    implementation 'com.google.ai.edge.litertlm:litertlm-android:0.18.0'
+
+    implementation platform('androidx.compose:compose-bom:2024.12.01')
+    implementation 'androidx.compose.ui:ui'
+    implementation 'androidx.compose.ui:ui-graphics'
+    implementation 'androidx.compose.ui:ui-tooling-preview'
+    implementation 'androidx.compose.material3:material3'
+    implementation 'androidx.compose.material:material-icons-extended'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0'
+
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.json:json:20240303'
+    testImplementation 'org.jetbrains.kotlin:kotlin-test:2.4.21'
+    debugImplementation 'androidx.compose.ui:ui-tooling'
+    debugImplementation 'androidx.compose.ui:ui-test-manifest'
+}

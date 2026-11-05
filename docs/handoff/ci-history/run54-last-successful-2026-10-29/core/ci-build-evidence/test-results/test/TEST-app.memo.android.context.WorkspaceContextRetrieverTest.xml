@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.memo.android.context.WorkspaceContextRetrieverTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-29T19:46:36.224Z" hostname="runnervm48cm3" time="0.067">
+  <properties/>
+  <testcase name="ranksRelevantTitleAndBodyAndPreservesSourceAttribution" classname="app.memo.android.context.WorkspaceContextRetrieverTest" time="0.048"/>
+  <testcase name="emptyOrGenericQueriesDoNotLeakWholeWorkspace" classname="app.memo.android.context.WorkspaceContextRetrieverTest" time="0.001"/>
+  <testcase name="handlesPolishTurkishAccentsAndUsesSnippetsRatherThanFullDocuments" classname="app.memo.android.context.WorkspaceContextRetrieverTest" time="0.0"/>
+  <testcase name="retrievalIsBoundedAndDeterministic" classname="app.memo.android.context.WorkspaceContextRetrieverTest" time="0.017"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

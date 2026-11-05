@@ -1,0 +1,48 @@
+package app.memo.android.ui
+
+import org.junit.Assert.assertEquals
+import org.junit.Test
+
+class MemoLocalizationTest {
+    @Test
+    fun englishIsTheSourceLanguageAndPassesThrough() {
+        assertEquals("Settings", MemoLocalization.translate("Settings", "EN"))
+    }
+
+    @Test
+    fun polishTranslatesCoreNavigationAndSettings() {
+        assertEquals("Ustawienia", MemoLocalization.translate("Settings", "PL"))
+        assertEquals("Język", MemoLocalization.translate("Language", "PL"))
+        assertEquals("Strona główna", MemoLocalization.translate("Home", "PL"))
+    }
+
+    @Test
+    fun turkishTranslatesCoreNavigationAndSettings() {
+        assertEquals("Ayarlar", MemoLocalization.translate("Settings", "TR"))
+        assertEquals("Dil", MemoLocalization.translate("Language", "TR"))
+        assertEquals("Ana sayfa", MemoLocalization.translate("Home", "TR"))
+    }
+
+    @Test
+    fun userContentAndUnknownStringsRemainUntouched() {
+        val userText = "I met a person called Deniz at the event."
+        assertEquals(userText, MemoLocalization.translate(userText, "TR"))
+    }
+
+    @Test
+    fun voiceAndNotificationControlsTranslateInPolishAndTurkish() {
+        assertEquals("Wprowadzanie głosowe", MemoLocalization.translate("Voice input", "PL"))
+        assertEquals("Sesle giriş", MemoLocalization.translate("Voice input", "TR"))
+        assertEquals("Powiadomienia i przypomnienia", MemoLocalization.translate("Notifications & reminders", "PL"))
+        assertEquals("Bildirimler ve hatırlatıcılar", MemoLocalization.translate("Notifications & reminders", "TR"))
+        assertEquals("Wybierz godzinę przypomnienia", MemoLocalization.translate("Choose reminder time", "PL"))
+        assertEquals("Hatırlatma saatini seç", MemoLocalization.translate("Choose reminder time", "TR"))
+        assertEquals("Włączono powiadomienia o przepływach pracy.", MemoLocalization.translate("Workflow notifications enabled.", "PL"))
+        assertEquals("İş akışı bildirimleri etkinleştirildi.", MemoLocalization.translate("Workflow notifications enabled.", "TR"))
+    }
+
+    @Test
+    fun unsupportedLanguageFallsBackToOriginalText() {
+        assertEquals("Settings", MemoLocalization.translate("Settings", "XX"))
+    }
+}

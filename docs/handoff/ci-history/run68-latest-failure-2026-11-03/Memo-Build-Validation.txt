@@ -1,0 +1,646 @@
+Memo ZIP import started: 2026-11-03T22:04:11Z
+Repository: ysfclc/memo
+Ref: refs/heads/ysfclc-patch-1
+Event: workflow_dispatch
+Commit: 05fb6b8607203b7c8269e42568249c1704cd15c5
+Loading package information...                                                  Loading local repository...                                                     [                                       ] 3% Loading local repository...        [                                       ] 3% Fetch remote repository...         [=                                      ] 3% Fetch remote repository...         [=                                      ] 4% Fetch remote repository...         [=                                      ] 5% Fetch remote repository...         [==                                     ] 5% Fetch remote repository...         [==                                     ] 6% Fetch remote repository...         [==                                     ] 7% Fetch remote repository...         [==                                     ] 7% Computing updates...               [===                                    ] 8% Computing updates...               [===                                    ] 10% Computing updates...              [=======================================] 100% Computing updates...             
+
+Selected source ZIP: incoming/memo.zip
+Source upload commit: 9e7ac4ac20af8aa0b5e3f48563e8a746c6658670
+eb1786ec1db02afd74ecb688bc3bf3d943a15c0a6ab3a295c110fd1b46a7429f  /home/runner/work/memo/memo/incoming/memo.zip
+Memo ZIP import validation: PASS
+Archive: memo.zip
+Archive bytes: 381525
+ZIP entries checked: 178
+Regular files/directories extracted: 178
+Source manifest entries verified: 104
+Detected project root: Memo-Android
+Project markers: settings.gradle(.kts), gradlew, build.gradle(.kts), app/build.gradle(.kts), AndroidManifest.xml
+Uploaded .github workflows will not replace the active repository workflows.
+Detected Memo project: /home/runner/work/_temp/memo-zip-staging/Memo-Android
+Canonical baseline validated: 474821 bytes, 198 ZIP entries, 121 source checksums, root Memo-Android
+Integrating validated Memo update into /home/runner/work/memo/memo
+Staged update: /home/runner/work/_temp/memo-zip-staging/Memo-Android
+Baseline: Memo-Android-Repository.zip (run #54 last-green source)
+Baseline ZIP SHA-256: 336829196e03837e3073be0b8b831a90d3091fbe078595a2200a7e25cf4c021a
+Preserved: .git/, .github/, incoming/, notes/, root ZIP archives and existing source files
+Merge policy: update matching paths; absent ZIP entries are not interpreted as deletions
+Excluded: build caches, local properties, environment files, and signing-key files
+Project files integrated; active GitHub workflow was preserved.
+./.github/workflows/build-apk.yml: OK
+./.gitignore: OK
+./AGENTS.md: OK
+./BUILD_STATUS.md: OK
+./CHANGELOG.md: OK
+./DEVICE_ACCEPTANCE_CHECKLIST.md: OK
+./FEATURE_AUDIT.md: OK
+./IMPLEMENTATION_CONTRACT.md: OK
+./IMPLEMENTATION_LOG.md: OK
+./MEMO-PATCH1-AUDIT.md: OK
+./MEMO2_ALIGNMENT_MATRIX.md: OK
+./PRODUCT_GAP_REGISTRY.md: OK
+./README.md: OK
+./REMOTE_RUNNER_SETUP.md: OK
+./TASKS.md: OK
+./app/build.gradle: OK
+./app/proguard-rules.pro: OK
+./app/src/main/AndroidManifest.xml: OK
+./app/src/main/java/app/memo/android/MainActivity.kt: OK
+./app/src/main/java/app/memo/android/ai/AiRuntimeViewModel.kt: OK
+./app/src/main/java/app/memo/android/ai/LocalModelRunner.kt: OK
+./app/src/main/java/app/memo/android/ai/ModelCatalog.kt: OK
+./app/src/main/java/app/memo/android/ai/OpenAiCompatibleClient.kt: OK
+./app/src/main/java/app/memo/android/ai/ProviderSettingsStore.kt: OK
+./app/src/main/java/app/memo/android/browser/BrowserScripts.kt: OK
+./app/src/main/java/app/memo/android/browser/BrowserSession.kt: OK
+./app/src/main/java/app/memo/android/browser/BrowserWorkflow.kt: OK
+./app/src/main/java/app/memo/android/data/EncryptedVault.kt: OK
+./app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt: OK
+./app/src/main/java/app/memo/android/notifications/MemoNotificationCenter.kt: OK
+./app/src/main/java/app/memo/android/runtime/MemoRuntimeBridge.java: OK
+./app/src/main/java/app/memo/android/ui/ActionApprovalInboxScreen.kt: OK
+./app/src/main/java/app/memo/android/ui/AiScreens.kt: OK
+./app/src/main/java/app/memo/android/ui/AppsWorkspaceScreen.kt: OK
+./app/src/main/java/app/memo/android/ui/BrowserWorkflowScreen.kt: OK
+./app/src/main/java/app/memo/android/ui/MemoLocalization.kt: OK
+./app/src/main/java/app/memo/android/ui/MemoTheme.kt: OK
+./app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt: OK
+./app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt: OK
+./app/src/main/java/app/memo/android/ui/components/Primitives.kt: OK
+./app/src/main/java/com/synthos/runtime/ai/JobCompiler.java: OK
+./app/src/main/java/com/synthos/runtime/ai/LocalModelRuntime.kt: OK
+./app/src/main/java/com/synthos/runtime/ai/PlanProposalParser.java: OK
+./app/src/main/java/com/synthos/runtime/ai/SkillRegistry.java: OK
+./app/src/main/java/com/synthos/runtime/data/AppCapability.java: OK
+./app/src/main/java/com/synthos/runtime/data/CaptureRecord.java: OK
+./app/src/main/java/com/synthos/runtime/data/ChatMessage.java: OK
+./app/src/main/java/com/synthos/runtime/data/DeviceAiScanner.java: OK
+./app/src/main/java/com/synthos/runtime/data/JobRecord.java: OK
+./app/src/main/java/com/synthos/runtime/data/MemoRecord.java: OK
+./app/src/main/java/com/synthos/runtime/data/RunRecord.java: OK
+./app/src/main/java/com/synthos/runtime/data/SynthStore.java: OK
+./app/src/main/java/com/synthos/runtime/data/TaskRecord.java: OK
+./app/src/main/java/com/synthos/runtime/data/Workflow.java: OK
+./app/src/main/java/com/synthos/runtime/data/WorkflowStep.java: OK
+./app/src/main/java/com/synthos/runtime/engine/AutomationAccessibilityService.java: OK
+./app/src/main/java/com/synthos/runtime/engine/WorkflowPolicy.java: OK
+./app/src/main/java/com/synthos/runtime/remote/RemoteRunnerClient.java: OK
+./app/src/main/res/drawable/ic_launcher.xml: OK
+./app/src/main/res/drawable/ic_memo.xml: OK
+./app/src/main/res/drawable/ic_notification.xml: OK
+./app/src/main/res/values-pl/strings.xml: OK
+./app/src/main/res/values-tr/strings.xml: OK
+./app/src/main/res/values/strings.xml: OK
+./app/src/main/res/values/styles.xml: OK
+./app/src/main/res/xml/accessibility_service_config.xml: OK
+./app/src/main/res/xml/data_extraction_rules.xml: OK
+./app/src/test/java/app/memo/android/browser/BrowserWorkflowPromptsTest.kt: OK
+./app/src/test/java/app/memo/android/ui/MemoLocalizationTest.kt: OK
+./app/src/test/java/com/synthos/runtime/engine/WorkflowPolicyTest.java: OK
+./build.gradle: OK
+./core/build.gradle: OK
+./core/src/main/kotlin/app/memo/android/automation/TaskRules.kt: OK
+./core/src/main/kotlin/app/memo/android/context/TextSourcePolicy.kt: OK
+./core/src/main/kotlin/app/memo/android/context/WorkspaceContextRetriever.kt: OK
+./core/src/main/kotlin/app/memo/android/data/ActionApprovalLedger.kt: OK
+./core/src/main/kotlin/app/memo/android/data/EncryptedBackupCodec.kt: OK
+./core/src/main/kotlin/app/memo/android/data/FollowUpTaskFactory.kt: OK
+./core/src/main/kotlin/app/memo/android/data/Models.kt: OK
+./core/src/main/kotlin/app/memo/android/data/OutcomeParser.kt: OK
+./core/src/main/kotlin/app/memo/android/data/SelfModelFactualityGuard.kt: OK
+./core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt: OK
+./core/src/main/kotlin/app/memo/android/orchestration/CapabilityCompiler.kt: OK
+./core/src/main/kotlin/app/memo/android/orchestration/DiscoveredCapabilitySchema.kt: OK
+./core/src/main/kotlin/app/memo/android/orchestration/IntentPlanner.kt: OK
+./core/src/main/kotlin/app/memo/android/orchestration/LearnedWorkflowRecipe.kt: OK
+./core/src/main/kotlin/app/memo/android/orchestration/PageSchemaInterpretation.kt: OK
+./core/src/main/kotlin/app/memo/android/orchestration/WorkflowGraphPolicy.kt: OK
+./core/src/main/kotlin/app/memo/android/runtime/RuntimeContracts.kt: OK
+./core/src/test/kotlin/app/memo/android/automation/TaskRulesTest.kt: OK
+./core/src/test/kotlin/app/memo/android/context/TextSourcePolicyTest.kt: OK
+./core/src/test/kotlin/app/memo/android/context/WorkspaceContextRetrieverTest.kt: OK
+./core/src/test/kotlin/app/memo/android/data/ActionApprovalLedgerTest.kt: OK
+./core/src/test/kotlin/app/memo/android/data/CouncilBackupTest.kt: OK
+./core/src/test/kotlin/app/memo/android/data/EncryptedBackupCodecTest.kt: OK
+./core/src/test/kotlin/app/memo/android/data/FollowUpTaskFactoryTest.kt: OK
+./core/src/test/kotlin/app/memo/android/data/InterruptedTaskRecoveryTest.kt: OK
+./core/src/test/kotlin/app/memo/android/data/OutcomeParserTest.kt: OK
+./core/src/test/kotlin/app/memo/android/data/SelfModelFactualityGuardTest.kt: OK
+./core/src/test/kotlin/app/memo/android/data/WorkflowExecutionEngineTest.kt: OK
+./core/src/test/kotlin/app/memo/android/data/WorkspaceSchemaV3Test.kt: OK
+./core/src/test/kotlin/app/memo/android/orchestration/CapabilityCompilerTest.kt: OK
+./core/src/test/kotlin/app/memo/android/orchestration/DiscoveredCapabilitySchemaTest.kt: OK
+./core/src/test/kotlin/app/memo/android/orchestration/IntentPlannerTest.kt: OK
+./core/src/test/kotlin/app/memo/android/orchestration/LearnedWorkflowRecipeTest.kt: OK
+./core/src/test/kotlin/app/memo/android/orchestration/PageSchemaInterpretationParserTest.kt: OK
+./core/src/test/kotlin/app/memo/android/orchestration/WorkflowGraphPolicyTest.kt: OK
+./core/src/test/kotlin/app/memo/android/runtime/RuntimeRegistryTest.kt: OK
+./docs/MEMO1-SOURCE-INVENTORY.txt: OK
+./docs/MEMO1-SOURCE-RECONCILIATION.md: OK
+./docs/SESSION_CHECKPOINT.md: OK
+./gradle.properties: OK
+./gradle/wrapper/gradle-wrapper.properties: OK
+./gradlew: OK
+./gradlew.bat: OK
+./remote-runner/.gitignore: OK
+./remote-runner/server.py: OK
+./remote-runner/tests/test_runner.py: OK
+./settings.gradle: OK
+./tools/test_dom_discovery.js: OK
+./tools/verify_source.py: OK
+Integrated source checksum manifest refreshed and verified.
+PASS: 32 required integration files exist
+PASS: platform-independent domain module is isolated from Android framework imports
+PASS: exact-content action ledger, regression tests, visible prompt gate and evidence completion are wired in source
+PASS: central approval inbox is integrated; stale proposals cannot be approved from history; live rejection stops the awaiting workflow
+PASS: top-level stop requests local AI/browser/native cancellation, marks uncertain external actions for review, and reports remote cancellation honestly
+PASS: 10 Android XML files parse
+PASS: microphone/notification/boot permissions and notification receivers are declared
+PASS: exactly one Memo launcher Activity is declared
+PASS: local reminder scheduling/cancellation, monochrome notification icon, private lock-screen visibility, and opt-in workflow alerts are present
+PASS: English, Polish, Turkish and voice/notification translations are represented
+PASS: one Memo Activity, narrow runtime bridge, conversation-first home, and safe draft handoff
+PASS: stable sideload package/signing contract, incremented version, no private key in source, and focused chat disclosure
+PASS: 363/363 static UI Text literals requiring translation are present in the catalog (450 literals scanned; URLs/placeholders excluded)
+PASS: CI builds only the canonical ZIP, verifies its source manifest, checks the one-Activity boundary, and runs Android unit tests/lint/APK assembly
+PASS: remote runner test suite is present (1 test module(s)); run it separately with unittest
+NOTE: This script does not compile Kotlin, run Gradle, prove Android runtime behavior, or verify a device.
+test_api_rejects_unapproved_submission (test_runner.RunnerTests.test_api_rejects_unapproved_submission) ... ok
+test_api_requires_bearer_token_and_supports_health (test_runner.RunnerTests.test_api_requires_bearer_token_and_supports_health) ... ok
+test_health_declares_local_only (test_runner.RunnerTests.test_health_declares_local_only) ... ok
+test_job_survives_store_restart_and_running_is_interrupted (test_runner.RunnerTests.test_job_survives_store_restart_and_running_is_interrupted) ... ok
+test_missing_postcondition_is_unverified (test_runner.RunnerTests.test_missing_postcondition_is_unverified) ... ok
+test_rejects_missing_postcondition (test_runner.RunnerTests.test_rejects_missing_postcondition) ... ok
+test_rejects_sensitive_text (test_runner.RunnerTests.test_rejects_sensitive_text) ... ok
+test_rejects_shell_or_unknown_step (test_runner.RunnerTests.test_rejects_shell_or_unknown_step) ... ok
+test_rejects_too_many_steps (test_runner.RunnerTests.test_rejects_too_many_steps) ... ok
+test_requires_explicit_approval_and_connected_guest (test_runner.RunnerTests.test_requires_explicit_approval_and_connected_guest) ... ok
+test_valid_workflow_is_bounded_and_normalized (test_runner.RunnerTests.test_valid_workflow_is_bounded_and_normalized) ... ok
+test_verified_only_after_final_text_observed (test_runner.RunnerTests.test_verified_only_after_final_text_observed) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 1.072s
+
+OK
+Downloading verified Gradle 8.14.6 distribution…
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   169  100   169    0     0   5050      0 --:--:-- --:--:-- --:--:--  5121
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+100  132M  100  132M    0     0   174M      0 --:--:-- --:--:-- --:--:--  174M
+
+Welcome to Gradle 8.14.6!
+
+Here are the highlights of this release:
+ - Java 24 support
+ - GraalVM Native Image toolchain selection
+ - Enhancements to test reporting
+ - Build Authoring improvements
+
+For more details see https://docs.gradle.org/8.14.6/release-notes.html
+
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.14.6/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :core:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :core:processResources NO-SOURCE
+> Task :core:processTestResources NO-SOURCE
+> Task :app:checkDebugAarMetadata
+> Task :app:processDebugNavigationResources
+> Task :app:compileDebugNavigationResources
+> Task :app:generateDebugResValues
+> Task :app:mapDebugSourceSetPaths
+> Task :app:generateDebugResources
+> Task :app:packageDebugResources
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug
+> Task :app:mergeDebugResources
+> Task :app:parseDebugLocalResources
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :app:processDebugManifestForPackage
+> Task :app:javaPreCompileDebug
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileDebugUnitTest FROM-CACHE
+> Task :app:mergeDebugShaders
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets
+> Task :app:processDebugUnitTestManifest
+> Task :app:preDebugAndroidTestBuild SKIPPED
+> Task :app:generateDebugAndroidTestResValues FROM-CACHE
+> Task :app:extractProguardFiles
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:compressDebugAssets
+> Task :app:desugarDebugFileDependencies
+> Task :app:processDebugResources
+> Task :app:packageDebugUnitTestForUnitTest
+> Task :app:generateDebugUnitTestConfig
+> Task :app:mergeDebugJniLibFolders
+> Task :app:validateSigningDebug
+> Task :app:writeDebugAppMetadata
+> Task :app:checkDebugDuplicateClasses
+> Task :app:writeDebugSigningConfigVersions
+> Task :core:compileKotlin
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:48:22 Unresolved reference 'workflowAuditEvents' on receiver of type 'AppSnapshot'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:57:18 Unresolved reference 'conditionExpression' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:62:29 Unresolved reference 'attemptCount' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:64:73 Unresolved reference 'timeoutMillis' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:67:13 No parameter with name 'executionToken' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:68:13 No parameter with name 'attemptCount' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:69:13 No parameter with name 'startedAt' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:70:13 No parameter with name 'deadlineAt' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:71:13 No parameter with name 'lastError' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:98:22 Unresolved reference 'workflowAuditEvents' on receiver of type 'AppSnapshot'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:103:64 Unresolved reference 'executionToken' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:106:18 Unresolved reference 'deadlineAt' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:106:47 Unresolved reference 'deadlineAt' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:112:13 No parameter with name 'executionToken' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:113:13 No parameter with name 'deadlineAt' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:114:13 No parameter with name 'startedAt' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:115:13 No parameter with name 'lastError' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:148:22 Unresolved reference 'workflowAuditEvents' on receiver of type 'AppSnapshot'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:151:92 Unresolved reference 'executionToken' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:155:18 Unresolved reference 'deadlineAt' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:155:48 Unresolved reference 'deadlineAt' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:168:13 No parameter with name 'executionToken' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:169:13 No parameter with name 'deadlineAt' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:170:13 No parameter with name 'startedAt' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:171:13 No parameter with name 'lastError' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:201:92 Unresolved reference 'executionToken' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:204:18 Unresolved reference 'deadlineAt' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:204:47 Unresolved reference 'deadlineAt' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:208:22 Unresolved reference 'workflowAuditEvents' on receiver of type 'AppSnapshot'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:218:13 No parameter with name 'executionToken' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:219:13 No parameter with name 'deadlineAt' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:220:13 No parameter with name 'startedAt' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:221:13 No parameter with name 'lastError' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:250:22 Unresolved reference 'workflowAuditEvents' on receiver of type 'AppSnapshot'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:253:92 Unresolved reference 'executionToken' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:256:39 Unresolved reference 'attemptCount' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:256:60 Unresolved reference 'maxRetries' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:261:13 No parameter with name 'executionToken' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:262:13 No parameter with name 'deadlineAt' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:263:13 No parameter with name 'startedAt' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:264:13 No parameter with name 'lastError' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:280:105 Unresolved reference 'deadlineAt' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:280:133 Unresolved reference 'deadlineAt' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:297:22 Unresolved reference 'workflowAuditEvents' on receiver of type 'AppSnapshot'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:297:66 'operator' modifier is required on 'fun <T> Comparable<T>.compareTo(other: T): Int'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:302:66 No parameter with name 'executionToken' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:302:87 No parameter with name 'deadlineAt' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:302:104 No parameter with name 'startedAt' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:302:120 No parameter with name 'lastError' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:303:64 No parameter with name 'executionToken' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:303:85 No parameter with name 'deadlineAt' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:303:102 No parameter with name 'startedAt' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:330:58 Unresolved reference 'workflowAuditEvents' on receiver of type 'AppSnapshot'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:330:112 'operator' modifier is required on 'fun <T> Comparable<T>.compareTo(other: T): Int'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:338:70 No parameter with name 'executionToken' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:338:91 No parameter with name 'deadlineAt' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:338:108 No parameter with name 'startedAt' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:338:124 No parameter with name 'lastError' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:339:68 No parameter with name 'executionToken' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:339:89 No parameter with name 'deadlineAt' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:339:106 No parameter with name 'startedAt' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:376:22 Unresolved reference 'workflowAuditEvents' on receiver of type 'AppSnapshot'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:392:50 Unresolved reference 'workflowAuditEvents' on receiver of type 'AppSnapshot'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:392:100 'operator' modifier is required on 'fun <T> Comparable<T>.compareTo(other: T): Int'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:414:31 Unresolved reference 'workflowAuditEvents' on receiver of type 'AppSnapshot'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:419:23 Method 'iterator()' is ambiguous for this expression. Applicable candidates:
+fun <T> Enumeration<T>.iterator(): Iterator<T>
+fun <T> Iterator<T>.iterator(): Iterator<T>
+fun <K, V> Map<out K, V>.iterator(): Iterator<Map.Entry<K, V>>
+fun <K, V> MutableMap<K, V>.iterator(): MutableIterator<MutableMap.MutableEntry<K, V>>
+fun CharSequence.iterator(): CharIterator
+fun BufferedInputStream.iterator(): ByteIterator
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:423:40 Argument type mismatch: actual type is 'Map.Entry<uninferred K (of fun <K, V> Map.Entry<K, V>.copy), uninferred V (of fun <K, V> Map.Entry<K, V>.copy)>', but 'WorkflowAuditEvent' was expected.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:423:46 Cannot infer type for type parameter 'K'. Specify it explicitly.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:423:46 Cannot infer type for type parameter 'V'. Specify it explicitly.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:423:46 This declaration needs opt-in. Its usage must be marked with '@kotlin.ExperimentalStdlibApi' or '@OptIn(kotlin.ExperimentalStdlibApi::class)'
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:432:22 Unresolved reference 'workflowAuditEvents' on receiver of type 'AppSnapshot'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:433:46 Unresolved reference 'deadlineAt' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:433:78 Unresolved reference 'deadlineAt' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:434:26 Unresolved reference 'attemptCount' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:434:47 Unresolved reference 'maxRetries' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:438:13 No parameter with name 'lastError' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:439:13 No parameter with name 'executionToken' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:440:13 No parameter with name 'deadlineAt' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:441:13 No parameter with name 'startedAt' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:448:157 Unresolved reference 'deadlineAt' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:471:31 Unresolved reference 'workflowAuditEvents' on receiver of type 'AppSnapshot'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:473:45 Unresolved reference 'eventHash'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:475:46 Unresolved reference 'sequence'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/data/WorkflowExecutionEngine.kt:487:30 No parameter with name 'workflowAuditEvents' found.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/orchestration/WorkflowGraphPolicy.kt:12:17 Unresolved reference 'graphVersion' on receiver of type 'WorkJobRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/orchestration/WorkflowGraphPolicy.kt:14:17 Unresolved reference 'triggerType' on receiver of type 'WorkJobRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/orchestration/WorkflowGraphPolicy.kt:15:17 Unresolved reference 'triggerEnabled' on receiver of type 'WorkJobRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/orchestration/WorkflowGraphPolicy.kt:15:39 Unresolved reference 'triggerType' on receiver of type 'WorkJobRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/orchestration/WorkflowGraphPolicy.kt:16:17 Unresolved reference 'triggerEnabled' on receiver of type 'WorkJobRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/orchestration/WorkflowGraphPolicy.kt:16:39 Unresolved reference 'triggerConfig' on receiver of type 'WorkJobRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/orchestration/WorkflowGraphPolicy.kt:21:22 Unresolved reference 'dependsOn' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/orchestration/WorkflowGraphPolicy.kt:21:51 Unresolved reference 'dependsOn' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/orchestration/WorkflowGraphPolicy.kt:21:72 Unresolved reference 'size'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/orchestration/WorkflowGraphPolicy.kt:21:85 Unresolved reference 'dependsOn' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/orchestration/WorkflowGraphPolicy.kt:22:33 Unresolved reference 'dependsOn' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/orchestration/WorkflowGraphPolicy.kt:23:22 Unresolved reference 'dependsOn' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/orchestration/WorkflowGraphPolicy.kt:23:38 Unresolved reference 'it'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/orchestration/WorkflowGraphPolicy.kt:24:22 Unresolved reference 'maxRetries' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/orchestration/WorkflowGraphPolicy.kt:25:22 Unresolved reference 'timeoutMillis' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/orchestration/WorkflowGraphPolicy.kt:26:22 Unresolved reference 'outputType' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/orchestration/WorkflowGraphPolicy.kt:26:95 Unresolved reference 'outputType' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/orchestration/WorkflowGraphPolicy.kt:27:22 Unresolved reference 'conditionExpression' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/orchestration/WorkflowGraphPolicy.kt:37:50 Method 'iterator()' is ambiguous for this expression. Applicable candidates:
+fun <T> Enumeration<T>.iterator(): Iterator<T>
+fun <T> Iterator<T>.iterator(): Iterator<T>
+fun <K, V> Map<out K, V>.iterator(): Iterator<Map.Entry<K, V>>
+fun <K, V> MutableMap<K, V>.iterator(): MutableIterator<MutableMap.MutableEntry<K, V>>
+fun CharSequence.iterator(): CharIterator
+fun BufferedInputStream.iterator(): ByteIterator
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/orchestration/WorkflowGraphPolicy.kt:37:50 Unresolved reference 'dependsOn' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/orchestration/WorkflowGraphPolicy.kt:48:32 Unresolved reference 'dependsOn' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/orchestration/WorkflowGraphPolicy.kt:48:70 Unresolved reference 'dependsOn' on receiver of type 'JobStepRecord'.
+e: file:///home/runner/work/memo/memo/core/src/main/kotlin/app/memo/android/orchestration/WorkflowGraphPolicy.kt:58:18 Unresolved reference 'conditionExpression' on receiver of type 'JobStepRecord'.
+
+> Task :core:compileKotlin FAILED
+> Task :app:mergeExtDexDebug
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/__run_7-1793743479302.json
+
+[Incubating] Problems report is available at: file:///home/runner/work/memo/memo/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':core:compileKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.btapi.BuildToolsApiCompilationWork
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+* Exception is:
+org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':core:compileKotlin'.
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.lambda$executeIfValid$1(ExecuteActionsTaskExecuter.java:130)
+	at org.gradle.internal.Try$Failure.ifSuccessfulOrElse(Try.java:293)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:128)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:116)
+	at org.gradle.api.internal.tasks.execution.ProblemsTaskPathTrackingTaskExecuter.execute(ProblemsTaskPathTrackingTaskExecuter.java:41)
+	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+	at org.gradle.execution.plan.LocalTaskNodeExecutor.execute(LocalTaskNodeExecutor.java:42)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:331)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:318)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:314)
+	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:314)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:303)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+	at org.gradle.execution.plan.DefaultPlanExecutor.process(DefaultPlanExecutor.java:111)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph.executeWithServices(DefaultTaskExecutionGraph.java:138)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph.execute(DefaultTaskExecutionGraph.java:123)
+	at org.gradle.execution.SelectedTaskExecutionAction.execute(SelectedTaskExecutionAction.java:35)
+	at org.gradle.execution.DryRunBuildExecutionAction.execute(DryRunBuildExecutionAction.java:51)
+	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor$ExecuteTasks.call(BuildOperationFiringBuildWorkerExecutor.java:54)
+	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor$ExecuteTasks.call(BuildOperationFiringBuildWorkerExecutor.java:43)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor.execute(BuildOperationFiringBuildWorkerExecutor.java:40)
+	at org.gradle.internal.build.DefaultBuildLifecycleController.lambda$executeTasks$10(DefaultBuildLifecycleController.java:313)
+	at org.gradle.internal.model.StateTransitionController.doTransition(StateTransitionController.java:266)
+	at org.gradle.internal.model.StateTransitionController.lambda$tryTransition$8(StateTransitionController.java:177)
+	at org.gradle.internal.work.DefaultSynchronizer.withLock(DefaultSynchronizer.java:46)
+	at org.gradle.internal.model.StateTransitionController.tryTransition(StateTransitionController.java:177)
+	at org.gradle.internal.build.DefaultBuildLifecycleController.executeTasks(DefaultBuildLifecycleController.java:304)
+	at org.gradle.internal.build.DefaultBuildWorkGraphController$DefaultBuildWorkGraph.runWork(DefaultBuildWorkGraphController.java:220)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:263)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:127)
+	at org.gradle.composite.internal.DefaultBuildController.doRun(DefaultBuildController.java:181)
+	at org.gradle.composite.internal.DefaultBuildController.access$000(DefaultBuildController.java:50)
+	at org.gradle.composite.internal.DefaultBuildController$BuildOpRunnable.lambda$run$0(DefaultBuildController.java:198)
+	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
+	at org.gradle.composite.internal.DefaultBuildController$BuildOpRunnable.run(DefaultBuildController.java:198)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+Caused by: org.gradle.workers.internal.DefaultWorkerExecutor$WorkExecutionException: A failure occurred while executing org.jetbrains.kotlin.compilerRunner.btapi.BuildToolsApiCompilationWork
+	at org.gradle.workers.internal.DefaultWorkerExecutor$WorkItemExecution.waitForCompletion(DefaultWorkerExecutor.java:287)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.lambda$waitForItemsAndGatherFailures$2(DefaultAsyncWorkTracker.java:130)
+	at org.gradle.internal.Factories$1.create(Factories.java:31)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:335)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:318)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLock(DefaultWorkerLeaseService.java:323)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForItemsAndGatherFailures(DefaultAsyncWorkTracker.java:126)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForItemsAndGatherFailures(DefaultAsyncWorkTracker.java:92)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForAll(DefaultAsyncWorkTracker.java:78)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForCompletion(DefaultAsyncWorkTracker.java:66)
+	at org.gradle.api.internal.tasks.execution.TaskExecution$3.run(TaskExecution.java:252)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:30)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:27)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.run(DefaultBuildOperationRunner.java:48)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.executeAction(TaskExecution.java:229)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.executeActions(TaskExecution.java:212)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.executeWithPreviousOutputFiles(TaskExecution.java:195)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.execute(TaskExecution.java:162)
+	at org.gradle.internal.execution.steps.ExecuteStep.executeInternal(ExecuteStep.java:105)
+	at org.gradle.internal.execution.steps.ExecuteStep.access$000(ExecuteStep.java:44)
+	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:59)
+	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:56)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:56)
+	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:44)
+	at org.gradle.internal.execution.steps.CancelExecutionStep.execute(CancelExecutionStep.java:42)
+	at org.gradle.internal.execution.steps.TimeoutStep.executeWithoutTimeout(TimeoutStep.java:75)
+	at org.gradle.internal.execution.steps.TimeoutStep.execute(TimeoutStep.java:55)
+	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:50)
+	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:28)
+	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.execute(RemovePreviousOutputsStep.java:67)
+	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.execute(RemovePreviousOutputsStep.java:37)
+	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:61)
+	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:26)
+	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:69)
+	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:46)
+	at org.gradle.internal.execution.steps.ResolveInputChangesStep.execute(ResolveInputChangesStep.java:40)
+	at org.gradle.internal.execution.steps.ResolveInputChangesStep.execute(ResolveInputChangesStep.java:29)
+	at org.gradle.internal.execution.steps.BuildCacheStep.executeWithoutCache(BuildCacheStep.java:189)
+	at org.gradle.internal.execution.steps.BuildCacheStep.executeAndStoreInCache(BuildCacheStep.java:145)
+	at org.gradle.internal.execution.steps.BuildCacheStep.lambda$executeWithCache$4(BuildCacheStep.java:101)
+	at org.gradle.internal.execution.steps.BuildCacheStep.lambda$executeWithCache$5(BuildCacheStep.java:101)
+	at org.gradle.internal.Try$Success.map(Try.java:175)
+	at org.gradle.internal.execution.steps.BuildCacheStep.executeWithCache(BuildCacheStep.java:85)
+	at org.gradle.internal.execution.steps.BuildCacheStep.lambda$execute$0(BuildCacheStep.java:74)
+	at org.gradle.internal.Either$Left.fold(Either.java:115)
+	at org.gradle.internal.execution.caching.CachingState.fold(CachingState.java:62)
+	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:73)
+	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:48)
+	at org.gradle.internal.execution.steps.StoreExecutionStateStep.execute(StoreExecutionStateStep.java:46)
+	at org.gradle.internal.execution.steps.StoreExecutionStateStep.execute(StoreExecutionStateStep.java:35)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.executeBecause(SkipUpToDateStep.java:75)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.lambda$execute$2(SkipUpToDateStep.java:53)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:53)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:35)
+	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:37)
+	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:27)
+	at org.gradle.internal.execution.steps.ResolveIncrementalCachingStateStep.executeDelegate(ResolveIncrementalCachingStateStep.java:49)
+	at org.gradle.internal.execution.steps.ResolveIncrementalCachingStateStep.executeDelegate(ResolveIncrementalCachingStateStep.java:27)
+	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:71)
+	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:39)
+	at org.gradle.internal.execution.steps.ResolveChangesStep.execute(ResolveChangesStep.java:65)
+	at org.gradle.internal.execution.steps.ResolveChangesStep.execute(ResolveChangesStep.java:36)
+	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:107)
+	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:56)
+	at org.gradle.internal.execution.steps.AbstractCaptureStateBeforeExecutionStep.execute(AbstractCaptureStateBeforeExecutionStep.java:64)
+	at org.gradle.internal.execution.steps.AbstractCaptureStateBeforeExecutionStep.execute(AbstractCaptureStateBeforeExecutionStep.java:43)
+	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.executeWithNonEmptySources(AbstractSkipEmptyWorkStep.java:125)
+	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.execute(AbstractSkipEmptyWorkStep.java:61)
+	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.execute(AbstractSkipEmptyWorkStep.java:36)
+	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsStartedStep.execute(MarkSnapshottingInputsStartedStep.java:38)
+	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.execute(LoadPreviousExecutionStateStep.java:36)
+	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.execute(LoadPreviousExecutionStateStep.java:23)
+	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.execute(HandleStaleOutputsStep.java:75)
+	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.execute(HandleStaleOutputsStep.java:41)
+	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.lambda$execute$0(AssignMutableWorkspaceStep.java:35)
+	at org.gradle.api.internal.tasks.execution.TaskExecution$4.withWorkspace(TaskExecution.java:289)
+	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.execute(AssignMutableWorkspaceStep.java:31)
+	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.execute(AssignMutableWorkspaceStep.java:22)
+	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:40)
+	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:23)
+	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.lambda$execute$2(ExecuteWorkBuildOperationFiringStep.java:67)
+	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:67)
+	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:39)
+	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:46)
+	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:34)
+	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:48)
+	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:35)
+	at org.gradle.internal.execution.impl.DefaultExecutionEngine$1.execute(DefaultExecutionEngine.java:64)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:127)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:116)
+	at org.gradle.api.internal.tasks.execution.ProblemsTaskPathTrackingTaskExecuter.execute(ProblemsTaskPathTrackingTaskExecuter.java:41)
+	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+	at org.gradle.execution.plan.LocalTaskNodeExecutor.execute(LocalTaskNodeExecutor.java:42)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:331)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:318)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:314)
+	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:314)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:303)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+	at org.gradle.execution.plan.DefaultPlanExecutor.process(DefaultPlanExecutor.java:111)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph.executeWithServices(DefaultTaskExecutionGraph.java:138)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph.execute(DefaultTaskExecutionGraph.java:123)
+	at org.gradle.execution.SelectedTaskExecutionAction.execute(SelectedTaskExecutionAction.java:35)
+	at org.gradle.execution.DryRunBuildExecutionAction.execute(DryRunBuildExecutionAction.java:51)
+	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor$ExecuteTasks.call(BuildOperationFiringBuildWorkerExecutor.java:54)
+	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor$ExecuteTasks.call(BuildOperationFiringBuildWorkerExecutor.java:43)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.execution.BuildOperationFiringBuildWorkerExecutor.execute(BuildOperationFiringBuildWorkerExecutor.java:40)
+	at org.gradle.internal.build.DefaultBuildLifecycleController.lambda$executeTasks$10(DefaultBuildLifecycleController.java:313)
+	at org.gradle.internal.model.StateTransitionController.doTransition(StateTransitionController.java:266)
+	at org.gradle.internal.model.StateTransitionController.lambda$tryTransition$8(StateTransitionController.java:177)
+	at org.gradle.internal.work.DefaultSynchronizer.withLock(DefaultSynchronizer.java:46)
+	at org.gradle.internal.model.StateTransitionController.tryTransition(StateTransitionController.java:177)
+	at org.gradle.internal.build.DefaultBuildLifecycleController.executeTasks(DefaultBuildLifecycleController.java:304)
+	at org.gradle.internal.build.DefaultBuildWorkGraphController$DefaultBuildWorkGraph.runWork(DefaultBuildWorkGraphController.java:220)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:263)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:127)
+	at org.gradle.composite.internal.DefaultBuildController.doRun(DefaultBuildController.java:181)
+	at org.gradle.composite.internal.DefaultBuildController.access$000(DefaultBuildController.java:50)
+	at org.gradle.composite.internal.DefaultBuildController$BuildOpRunnable.lambda$run$0(DefaultBuildController.java:198)
+	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
+	at org.gradle.composite.internal.DefaultBuildController$BuildOpRunnable.run(DefaultBuildController.java:198)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+Caused by: org.jetbrains.kotlin.gradle.tasks.CompilationErrorException: Compilation error. See log for more details
+	at org.jetbrains.kotlin.gradle.tasks.TasksUtilsKt.throwExceptionIfCompilationFailed(tasksUtils.kt:21)
+	at org.jetbrains.kotlin.compilerRunner.btapi.BuildToolsApiCompilationWork.execute(BuildToolsApiCompilationWork.kt:214)
+	at org.gradle.workers.internal.DefaultWorkerServer.execute(DefaultWorkerServer.java:63)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:66)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:62)
+	at org.gradle.internal.classloader.ClassLoaderUtils.executeInClassloader(ClassLoaderUtils.java:100)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.lambda$execute$0(NoIsolationWorkerFactory.java:62)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:44)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:41)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.workers.internal.AbstractWorker.executeWrappedInBuildOperation(AbstractWorker.java:41)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.execute(NoIsolationWorkerFactory.java:59)
+	at org.gradle.workers.internal.DefaultWorkerExecutor.lambda$submitWork$0(DefaultWorkerExecutor.java:174)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runExecution(DefaultConditionalExecutionQueue.java:194)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.access$700(DefaultConditionalExecutionQueue.java:127)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner$1.run(DefaultConditionalExecutionQueue.java:169)
+	at org.gradle.internal.Factories$1.create(Factories.java:31)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:263)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:127)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:132)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runBatch(DefaultConditionalExecutionQueue.java:164)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.run(DefaultConditionalExecutionQueue.java:133)
+	... 2 more
+
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.14.6/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 2m 33s
+33 actionable tasks: 31 executed, 2 from cache

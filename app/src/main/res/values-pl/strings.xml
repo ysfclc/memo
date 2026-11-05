@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Memo</string>
+    <string name="accessibility_service_description">Umożliwia akcje między aplikacjami zlecone przez użytkownika: odczytuje widoczne etykiety interfejsu inne niż edytowalne i wykonuje jawnie wybrane czynności. Przechwytywanie jest inicjowane przez użytkownika i nie obejmuje haseł ani wartości pól edycji.</string>
+</resources>

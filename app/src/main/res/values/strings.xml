@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Memo</string>
+    <string name="accessibility_service_description">Allows user-requested Memo cross-app actions: read visible, non-editable UI labels and perform explicitly selected controls. Capture is user-triggered and excludes password and editable field values.</string>
+</resources>

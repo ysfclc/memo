@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.memo.android.data.WorkspaceSchemaV3Test" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-29T19:46:37.373Z" hostname="runnervm48cm3" time="0.013">
+  <properties/>
+  <testcase name="interruptedJobsAreRecoveredIntoReviewState" classname="app.memo.android.data.WorkspaceSchemaV3Test" time="0.0"/>
+  <testcase name="v4BackupMigratesAdditiveCheckpointFieldsAndSemver" classname="app.memo.android.data.WorkspaceSchemaV3Test" time="0.005"/>
+  <testcase name="inconsistentSemverAndUnknownFutureSchemaAreRejected" classname="app.memo.android.data.WorkspaceSchemaV3Test" time="0.001"/>
+  <testcase name="conversationsEntitiesRelationshipsAndJobsRoundTrip" classname="app.memo.android.data.WorkspaceSchemaV3Test" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
