@@ -21,6 +21,18 @@ class IntentPlannerTest {
         assertTrue(plan.steps.any { it.title.contains("Verify", true) })
     }
 
+    @Test fun jobSearchUsesBrowserResearchInsteadOfCareerArtifactGeneration() {
+        val english = IntentPlanner.plan("Find me ten job openings in Krakow")
+        assertEquals(IntentDomain.RESEARCH, english.domain)
+        assertTrue(english.steps.any { it.title == "Find current job opportunities" })
+        assertTrue(english.steps.any { it.instruction.contains("source URL") })
+        assertFalse(english.requiresExternalApproval)
+
+        assertEquals(IntentDomain.RESEARCH, IntentPlanner.plan("Znajdź oferty pracy zdalnej").domain)
+        assertEquals(IntentDomain.RESEARCH, IntentPlanner.plan("İş ilanları bul").domain)
+        assertEquals(IntentDomain.CAREER, IntentPlanner.plan("Prepare my CV for Customer Success").domain)
+    }
+
     @Test fun externalWriteIntentCreatesNonExecutableApprovalCheckpoint() {
         val plan = IntentPlanner.plan("Publish this post to LinkedIn")
         assertTrue(plan.requiresExternalApproval)

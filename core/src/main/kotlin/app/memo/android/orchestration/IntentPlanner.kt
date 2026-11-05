@@ -31,6 +31,15 @@ object IntentPlanner {
         "\\b(send|submit|publish|post|apply|delete|remove|buy|purchase|pay|transfer|invite|message|email|book|order|upload|share|zaplat|wyślij|wyslij|opublikuj|usuń|usun|kup|zastosuj|wyślij|gönder|gonder|yayınla|yayinla|sil|satın al|satin al|başvur|basvur|öde|ode)\\b",
         RegexOption.IGNORE_CASE
     )
+    private val jobSearchTerms = listOf(
+        "job search", "search for jobs", "find jobs", "find a job", "find me a job",
+        "job opening", "job vacancy", "job listing", "job offer", "employment opportunity",
+        "looking for a job", "looking for jobs",
+        "oferty pracy", "szukam pracy", "szukaj pracy", "znajdź pracę", "znajdz prace",
+        "ogłoszenia o pracę", "ogloszenia o prace",
+        "iş arıyorum", "is ariyorum", "iş ilanı", "is ilani", "iş ilanları", "is ilanlari",
+        "iş bul", "is bul", "iş fırsatları", "is firsatlari"
+    )
     private val conversationalLead = Regex(
         "^(what|why|who|when|where|how|explain|define|tell me|brainstorm|let'?s think|co|dlaczego|jak|czy|kto|kiedy|gdzie|ne|neden|nasil|nicin|kim|nerede)\\b",
         RegexOption.IGNORE_CASE
@@ -57,7 +66,14 @@ object IntentPlanner {
             "Review matching local projects, conversations, notes, entities, prior jobs and saved evidence. Record which sources were actually inspected and their timestamps; do not treat missing context as a fact."
         )
         when (domain) {
-            IntentDomain.RESEARCH -> steps += PlannedStep("Gather and compare source evidence", "Collect source material through an available, user-authorized channel. Separate sourced facts, model inferences, opinions and unresolved questions. Save source URLs or excerpts for important claims.")
+            IntentDomain.RESEARCH -> if (isJobSearchIntent(normalized)) {
+                steps += PlannedStep(
+                    "Find current job opportunities",
+                    "Use Memo's visible browser runtime to research current vacancies from employer and job-board pages. Capture the exact title, employer, location, work mode, stated salary, posting date and source URL. Keep unverified fields unknown, deduplicate repeated listings, and distinguish an active posting from an expired or inaccessible page. Do not apply, contact recruiters or submit personal data."
+                )
+            } else {
+                steps += PlannedStep("Gather and compare source evidence", "Collect source material through an available, user-authorized channel. Separate sourced facts, model inferences, opinions and unresolved questions. Save source URLs or excerpts for important claims.")
+            }
             IntentDomain.BUILD -> {
                 steps += PlannedStep("Inspect the current implementation", "Read the actual source and existing acceptance criteria before editing. Identify dependencies, ownership boundaries and regression risks.")
                 steps += PlannedStep("Implement a coherent vertical slice", "Change working behavior rather than adding a mock screen. Keep the diff bounded, add tests for critical logic, and preserve existing data and interfaces.")
@@ -85,7 +101,11 @@ object IntentPlanner {
             checkpointKind = "HUMAN_REVIEW"
         )
         val reason = when (domain) {
-            IntentDomain.RESEARCH -> "Research signals detected; the plan prioritizes source quality and claim verification."
+            IntentDomain.RESEARCH -> if (isJobSearchIntent(normalized)) {
+                "Job-search signals detected; the plan routes current vacancy discovery to the registered browser runtime and requires source-backed listing details."
+            } else {
+                "Research signals detected; the plan prioritizes source quality and claim verification."
+            }
             IntentDomain.BUILD -> "Build signals detected; the plan starts with source inspection and a tested implementation slice."
             IntentDomain.CAREER -> "Career-document signals detected; factual accuracy and user-owned claims are explicit checkpoints."
             IntentDomain.CONTENT -> "Content signals detected; draft and review precede any external distribution."
@@ -114,6 +134,8 @@ object IntentPlanner {
         return classify(normalized) != IntentDomain.GENERAL || actionIntent.containsMatchIn(normalized)
     }
 
+    private fun isJobSearchIntent(text: String): Boolean = containsAny(text, *jobSearchTerms.toTypedArray())
+
     private fun classify(text: String): IntentDomain = when {
         // Explicit automation verbs must outrank the generic "app"/"code" BUILD signals.
         // Keep broader terms such as "browser" and "workflow" below BUILD so a request
@@ -123,6 +145,7 @@ object IntentPlanner {
             "automate", "automating", "automated", "automatyz", "otomatikleştir", "otomatiklestir",
             "click through", "tap through", "fill out this form", "operate the app", "control the app"
         ) -> IntentDomain.AUTOMATION
+        isJobSearchIntent(text) -> IntentDomain.RESEARCH
         containsAny(text, "cv", "resume", "cover letter", "job search", "job offer", "interview", "career", "recruiter", "praca", "życiorys", "zyciorys", "list motywacyjny", "kariera", "iş", "is ilan", "özgeçmiş", "ozgecmis", "kariyer") -> IntentDomain.CAREER
         containsAny(text, "linkedin post", "content", "social media", "carousel", "newsletter", "article", "post idea", "publish content", "post na linkedin", "treść", "tresc", "wpis", "içerik", "icerik", "sosyal medya") -> IntentDomain.CONTENT
         containsAny(text, "crm", "contact", "person", "company", "met at", "lead", "follow-up", "kontakt", "firma", "klient", "osobę", "osobe", "kişi", "kisi", "şirket", "sirket", "takip") -> IntentDomain.CRM

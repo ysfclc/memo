@@ -21,6 +21,16 @@ class CapabilityCompilerTest {
         assertTrue(first.manifestSha256.matches(Regex("[a-f0-9]{64}")))
     }
 
+    @Test fun jobSearchSelectsBrowserResearchButDoesNotSelectExternalWrite() {
+        val plan = IntentPlanner.plan("Find current job openings and compare salary ranges")
+        val manifest = CapabilityCompiler.compile(plan, registry.listRuntimes())
+        assertEquals(IntentDomain.RESEARCH, plan.domain)
+        assertTrue(manifest.capabilities.any { it.capabilityId == "browser.navigate_https" })
+        assertTrue(manifest.capabilities.any { it.capabilityId == "browser.capture_evidence" })
+        assertFalse(manifest.requiresUserApproval)
+        assertFalse(manifest.capabilities.any { it.capabilityId == "browser.prepare_prompt" })
+    }
+
     @Test fun externalWriteRequiresApprovalAndApprovalCapability() {
         val plan = IntentPlanner.plan("Publish this post to LinkedIn")
         val manifest = CapabilityCompiler.compile(plan, registry.listRuntimes())

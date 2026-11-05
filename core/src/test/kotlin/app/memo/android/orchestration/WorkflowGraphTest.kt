@@ -17,6 +17,22 @@ class WorkflowGraphTest {
         assertTrue(graph.nodes.any { it.kind == WorkflowNodeKind.VERIFICATION && it.postcondition.isNotBlank() })
     }
 
+    @Test fun jobSearchDomainUsesRegisteredBrowserRuntimeAndEvidenceCapabilities() {
+        val plan = IntentPlanner.plan("Find current job offers in Krakow")
+        val runtimes = app.memo.android.runtime.RuntimeRegistry().listRuntimes()
+        val manifest = CapabilityCompiler.compile(plan, runtimes)
+        val graph = WorkflowGraphCompiler.compile(plan, manifest)
+        val domain = graph.nodes.single { it.id == "domain" }
+
+        assertEquals(IntentDomain.RESEARCH, plan.domain)
+        assertEquals(WorkflowParticipant.BROWSER, domain.participant)
+        assertEquals("runtime.browser", domain.runtimeId)
+        assertTrue(manifest.capabilities.any { it.capabilityId == "browser.navigate_https" })
+        assertTrue(manifest.capabilities.any { it.capabilityId == "browser.inspect_page" })
+        assertTrue(manifest.capabilities.any { it.capabilityId == "browser.capture_evidence" })
+        assertFalse(plan.requiresExternalApproval)
+    }
+
     @Test fun externalWriteIsAnIsolatedApprovalCheckpoint() {
         val plan = IntentPlanner.plan("Publish this post to LinkedIn")
         val manifest = CapabilityCompiler.compile(plan, app.memo.android.runtime.RuntimeRegistry().listRuntimes())
