@@ -28,7 +28,7 @@ android {
         applicationId 'app.memo.android'
         minSdk 29
         targetSdk 35
-        versionCode 40
+        versionCode (project.findProperty('memoVersionCode') ?: 40).toString().toInteger()
         versionName '4.0.0-memo'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
