@@ -131,6 +131,8 @@ fun ChatsWorkspaceScreen(
     onInitialPromptConsumed: () -> Unit = {},
     onOpenModels: () -> Unit,
     onOpenWork: () -> Unit,
+    onOpenCouncil: () -> Unit,
+    onStartConversation: (String) -> Unit,
     onShowMessage: (String) -> Unit
 ) {
     val conversations = snapshot.conversations.sortedByDescending { it.updatedAt }
@@ -233,8 +235,36 @@ fun ChatsWorkspaceScreen(
                     }, modifier = Modifier.weight(1f).height(48.dp)) {
                         Icon(Icons.Rounded.Add, contentDescription = null); Spacer(Modifier.width(7.dp)); Text("New chat")
                     }
+                    OutlinedButton(onClick = onOpenCouncil, modifier = Modifier.height(48.dp)) {
+                        Icon(Icons.Rounded.Hub, contentDescription = null); Spacer(Modifier.width(7.dp)); Text("Council")
+                    }
                     OutlinedButton(onClick = { showImport = true }, modifier = Modifier.height(48.dp)) {
                         Icon(Icons.Rounded.ImportExport, contentDescription = null); Spacer(Modifier.width(7.dp)); Text("Import")
+                    }
+                }
+                SurfaceCard {
+                    Text("Start with Memo", style = MaterialTheme.typography.titleMedium)
+                    Text("Describe what you want to think through or get done. Add voice now; other inputs will join this same flow.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    OutlinedTextField(
+                        value = draft,
+                        onValueChange = { if (it.length <= 6_000) draft = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("What do you want Memo to help you accomplish?") },
+                        minLines = 2,
+                        maxLines = 4,
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        OutlinedButton(onClick = { speechPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO) }) {
+                            Icon(Icons.Rounded.Mic, contentDescription = null); Spacer(Modifier.width(6.dp)); Text("Voice")
+                        }
+                        Button(
+                            onClick = { val intent = draft.trim(); if (intent.isNotBlank()) { draft = ""; onStartConversation(intent) } },
+                            enabled = draft.isNotBlank(),
+                            modifier = Modifier.weight(1f).height(48.dp)
+                        ) {
+                            Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = null); Spacer(Modifier.width(7.dp)); Text("Continue in Talk")
+                        }
                     }
                 }
                 OutlinedTextField(
@@ -290,6 +320,7 @@ fun ChatsWorkspaceScreen(
                         Text(if (selectedConversation.sourceType == "IMPORTED") "IMPORTED TRANSCRIPT · Source preserved" else "LOCAL WORKSPACE · ${selectedConversation.messages.size} messages", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     IconButton(onClick = { renameTarget = selectedConversation; renameText = selectedConversation.title }) { Icon(Icons.Rounded.Edit, contentDescription = "Rename conversation") }
+                    IconButton(onClick = onOpenCouncil) { Icon(Icons.Rounded.Hub, contentDescription = "Open Council") }
                     IconButton(onClick = { conversationDeleteTarget = selectedConversation }) { Icon(Icons.Rounded.Delete, contentDescription = "Delete conversation") }
                 }
                 if (modelOptions.isEmpty()) {
@@ -728,21 +759,9 @@ fun WorkWorkspaceScreen(
                 FilterChip(selected = section == "ENTITIES", onClick = { section = "ENTITIES"; onSectionChanged("ENTITIES") }, label = { Text("Entities · ${snapshot.entities.count { it.reviewStatus !in setOf("REJECTED", "MERGED") }}") })
                 FilterChip(selected = section == "ARCHIVE", onClick = { section = "ARCHIVE"; onSectionChanged("ARCHIVE") }, label = { Text("Archive · ${snapshot.entities.count { it.reviewStatus in setOf("REJECTED", "MERGED") }}") })
                 FilterChip(selected = section == "JOBS", onClick = { section = "JOBS"; onSectionChanged("JOBS") }, label = { Text("Jobs · ${snapshot.jobs.size}") })
-                FilterChip(selected = section == "STUDIO", onClick = { section = "STUDIO"; onSectionChanged("STUDIO") }, label = { Text("Self Model · Studio") })
             }
         }
-        if (section == "STUDIO") {
-            SelfModelStudioScreen(
-                snapshot = snapshot,
-                viewModel = viewModel,
-                runtime = runtime,
-                runtimeState = runtimeState,
-                onOpenEvidence = onOpenEvidence,
-                onOpenModels = onOpenModels,
-                onShowMessage = onShowMessage,
-                modifier = Modifier.weight(1f)
-            )
-        } else if (section != "JOBS") {
+        if (section != "JOBS") {
             Row(Modifier.padding(horizontal = MemoTokens.Spacing.pageMargin), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = search, onValueChange = { search = it }, modifier = Modifier.weight(1f),
