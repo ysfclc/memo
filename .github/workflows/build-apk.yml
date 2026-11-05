@@ -175,6 +175,12 @@ jobs:
           gradle-version: '8.14.6'
           validate-wrappers: false
 
+      - name: Restore persistent CI debug signing key
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: memo-debug-keystore-v1-${{ github.ref_name }}
+
       - name: Validate ZIP and safely extract the complete Android project
         if: needs.preflight.outputs.source_only != 'true'
         id: extract
@@ -462,8 +468,17 @@ jobs:
             } >> "$GITHUB_ENV"
             echo 'Persistent signing configured for a consistent APK certificate.' | tee -a "$MEMO_BUILD_LOG"
           else
-            echo 'MEMO_SIGNING_MODE=ephemeral CI debug keystore' >> "$GITHUB_ENV"
-            echo 'No persistent signing secrets found; using the Android Gradle debug key. Reinstall may be required if its certificate changes.' | tee -a "$MEMO_BUILD_LOG"
+            KEYSTORE="$HOME/.android/debug.keystore"
+            mkdir -p "$(dirname "$KEYSTORE")"
+            if [[ ! -s "$KEYSTORE" ]]; then
+              keytool -genkeypair -noprompt -keystore "$KEYSTORE" -storetype JKS \
+                -storepass android -keypass android -alias androiddebugkey \
+                -keyalg RSA -keysize 2048 -validity 10000 \
+                -dname 'CN=Memo Development,O=Memo,C=PL'
+            fi
+            keytool -list -keystore "$KEYSTORE" -storepass android -alias androiddebugkey >/dev/null
+            echo 'MEMO_SIGNING_MODE=stable cached CI debug keystore' >> "$GITHUB_ENV"
+            echo 'Stable CI debug signing key is present; GitHub Actions cache will preserve it across builds.' | tee -a "$MEMO_BUILD_LOG"
           fi
 
       - name: Refresh source checksum manifest
@@ -584,6 +599,10 @@ jobs:
           printf '%s\n' "$SIGNATURE" | tee -a "$MEMO_BUILD_LOG"
           CERT="$(printf '%s\n' "$SIGNATURE" | sed -nE 's/.*certificate SHA-256 digest: ([0-9a-fA-F]+).*/\1/p' | head -n1 | tr '[:upper:]' '[:lower:]')"
           test -n "$CERT" || { echo '::error::APK signing certificate could not be verified.'; exit 1; }
+          if [[ "${MEMO_SIGNING_MODE:-}" == 'stable cached CI debug keystore' ]]; then
+            EXPECTED_CERT="$(keytool -list -v -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey | sed -nE 's/^[[:space:]]*SHA256: ([0-9A-Fa-f:]+).*/\\1/p' | head -n1 | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+            [[ -n "$EXPECTED_CERT" && "$CERT" == "$EXPECTED_CERT" ]] || { echo '::error::APK was not signed with the stable cached CI debug certificate.'; exit 1; }
+          fi
           {
             echo 'Memo APK identity verification: PASS'
             echo 'Package: app.memo.android.debug'
