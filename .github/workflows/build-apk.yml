@@ -6,6 +6,7 @@ name: Memo — Import source ZIP and build Android APK
       - ysfclc-patch-1
     paths:
       - 'incoming/memo.zip'
+      - '.github/workflows/build-apk.yml'
   workflow_dispatch:
 
 permissions:
