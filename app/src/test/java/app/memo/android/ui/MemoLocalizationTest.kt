@@ -30,6 +30,8 @@ class MemoLocalizationTest {
         assertEquals("Sohbet", MemoLocalization.translate("Talk", "TR"))
         assertEquals("Na żywo", MemoLocalization.translate("Live", "PL"))
         assertEquals("Canlı", MemoLocalization.translate("Live", "TR"))
+        assertEquals("ZAMIAR / PRACA / DOWODY", MemoLocalization.translate("INTENT / WORK / EVIDENCE", "PL"))
+        assertEquals("NİYET / İŞ / KANIT", MemoLocalization.translate("INTENT / WORK / EVIDENCE", "TR"))
         assertEquals("Studio", MemoLocalization.translate("Studio", "PL"))
         assertEquals("Stüdyo", MemoLocalization.translate("Studio", "TR"))
         assertEquals("Głos", MemoLocalization.translate("Voice", "PL"))

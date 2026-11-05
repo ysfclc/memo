@@ -443,6 +443,7 @@ object MemoLocalization {
         "APPROVAL" to ("ZATWIERDZENIE" to "ONAY"),
         "Ask in chat" to ("Zapytaj na czacie" to "Sohbette sor"),
         "Continue with Memo" to ("Kontynuuj z Memo" to "Memo ile devam et"),
+        "INTENT / WORK / EVIDENCE" to ("ZAMIAR / PRACA / DOWODY" to "NİYET / İŞ / KANIT"),
         "No plans yet" to ("Brak planów" to "Henüz plan yok"),
         "Action-oriented requests become editable plans here. Review each checkpoint and its requirements before starting; completed work needs a real outcome and evidence." to ("Prośby o wykonanie zadania tworzą tutaj edytowalne plany. Przed rozpoczęciem sprawdź każdy punkt kontrolny i jego wymagania; ukończona praca wymaga rzeczywistego wyniku i dowodów." to "Eylem odaklı istekler burada düzenlenebilir planlara dönüşür. Başlatmadan önce her kontrol noktasını ve gereksinimlerini gözden geçir; tamamlanan iş gerçek bir sonuç ve kanıt gerektirir."),
         "Memo routes action requests into an editable plan and questions or brainstorming into Talk. Nothing external is sent or changed automatically." to ("Memo kieruje prośby o działanie do edytowalnego planu, a pytania i burze mózgów do rozmowy. Żadne działanie zewnętrzne nie zostanie wykonane automatycznie." to "Memo, eylem isteklerini düzenlenebilir bir plana; soruları ve beyin fırtınasını ise sohbete yönlendirir. Harici hiçbir işlem otomatik olarak gönderilmez veya değiştirilmez."),
