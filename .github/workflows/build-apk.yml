@@ -462,6 +462,30 @@ jobs:
         run: |
           set -euo pipefail
           cd "$MEMO_PROJECT_DIR"
+          cat > .gitignore <<'IGNORE'
+          **/build/
+          **/.gradle/
+          **/__pycache__/
+          **/.kotlin/
+          **/.cxx/
+          **/.externalNativeBuild/
+          **/captures/
+          **/.venv/
+          **/venv/
+          **/node_modules/
+          **/.idea/
+          **/local.properties
+          **/*.apk
+          **/*.aab
+          **/*.class
+          **/*.pyc
+          **/*.pyo
+          **/*.log
+          **/*.tmp
+          **/*.swp
+          **/*.bak
+          **/*~
+          IGNORE
           find . -type f \
             ! -path './.git/*' ! -path './incoming/*' ! -path './notes/*' \
             ! -path '*/.gradle/*' ! -path '*/build/*' ! -path '*/__pycache__/*' \
@@ -504,7 +528,7 @@ jobs:
         run: |
           set -euo pipefail
           cd "$MEMO_PROJECT_DIR"
-          gradle --no-daemon --stacktrace \
+          gradle --no-daemon --stacktrace -PmemoVersionCode="$GITHUB_RUN_NUMBER" \
             :core:test \
             :app:testDebugUnitTest \
             :app:lintDebug \
@@ -522,17 +546,18 @@ jobs:
           test -s "$APK" || { echo '::error::Debug APK was not produced.'; exit 1; }
           test -x "$AAPT" && test -x "$APKSIGNER" || { echo '::error::Android APK tools are unavailable.'; exit 1; }
           VERSION_FIELDS="$(python3 - <<'PY'
-          import re
+          import os, re
           from pathlib import Path
           source_path = next((p for p in (Path('app/build.gradle'), Path('app/build.gradle.kts')) if p.is_file()), None)
           if source_path is None:
               raise SystemExit('app/build.gradle(.kts) is missing')
           source = source_path.read_text(encoding='utf-8')
           code = re.search(r'\bversionCode\s*(?:=\s*)?(\d+)', source)
+          default_code = re.search(r"\bmemoVersionCode\s*=.*?\?:\s*(\d+)", source)
           name = re.search(r'\bversionName\s*(?:=\s*)?[\'"]([^\'"]+)[\'"]', source)
-          if not code or not name:
-              raise SystemExit('Could not read versionCode/versionName from app Gradle file')
-          print(code.group(1))
+          if not (code or default_code) or not name:
+              raise SystemExit('Could not read versionCode default/versionName from app Gradle file')
+          print(os.environ.get('GITHUB_RUN_NUMBER') or (code or default_code).group(1))
           print(name.group(1) + '-debug')
           PY
           )"
@@ -682,7 +707,27 @@ jobs:
             exit 1
           fi
 
-          git add -A
+          # Explicit exclusions are a second line of defence even if a generated file is already staged.
+          git add -A -- . \
+            ':(exclude,glob)**/build/**' \
+            ':(exclude,glob)**/.gradle/**' \
+            ':(exclude,glob)**/__pycache__/**' \
+            ':(exclude,glob)**/.kotlin/**' \
+            ':(exclude,glob)**/.cxx/**' \
+            ':(exclude,glob)**/.externalNativeBuild/**' \
+            ':(exclude,glob)**/captures/**' \
+            ':(exclude,glob)**/node_modules/**' \
+            ':(exclude,glob)**/.idea/**' \
+            ':(exclude,glob)**/*.apk' \
+            ':(exclude,glob)**/*.aab' \
+            ':(exclude,glob)**/*.class' \
+            ':(exclude,glob)**/*.pyc' \
+            ':(exclude,glob)**/*.log' \
+            ':(exclude,glob)**/*.tmp' \
+            ':(exclude,glob)**/*.swp' \
+            ':(exclude,glob)**/*.bak' \
+            ':(exclude,glob)**/*~' \
+            ':(exclude,glob)incoming/memo.zip'
           # The uploaded source ZIP remains the immutable input commit, not part of the integration commit.
           git reset --quiet -- incoming/memo.zip || true
 
