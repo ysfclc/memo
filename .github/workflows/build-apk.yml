@@ -123,6 +123,7 @@ jobs:
           echo "Branch: $GITHUB_REF_NAME" | tee -a "$RUNNER_TEMP/Memo-Build.log"
           echo "Upload commit: $MEMO_UPLOAD_COMMIT" | tee -a "$RUNNER_TEMP/Memo-Build.log"
           echo "Archive SHA-256: $MEMO_ARCHIVE_SHA" | tee -a "$RUNNER_TEMP/Memo-Build.log"
+          printf '%s  incoming/memo.zip\n' "$MEMO_ARCHIVE_SHA" > "$RUNNER_TEMP/Memo-Source-SHA256.txt"
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -507,7 +508,7 @@ jobs:
           mapfile -t VERSION_PARTS <<< "$VERSION_FIELDS"
           BADGING="$("$AAPT" dump badging "$APK")"
           PACKAGE_LINE="$(printf '%s\n' "$BADGING" | grep -m1 '^package:')"
-          if [[ ! "$PACKAGE_LINE" =~ name='app\.memo\.android\.debug' ]]; then
+          if [[ "$PACKAGE_LINE" != *"name='app.memo.android.debug'"* ]]; then
             echo '::error::APK application ID changed; expected app.memo.android.debug.'
             printf '%s\n' "$PACKAGE_LINE"
             exit 1
