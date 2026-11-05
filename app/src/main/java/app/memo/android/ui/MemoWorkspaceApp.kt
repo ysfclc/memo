@@ -1,6 +1,7 @@
 package app.memo.android.ui
 
 import android.Manifest
+import android.app.Activity
 import android.app.TimePickerDialog
 import android.content.ContentResolver
 import android.content.ClipboardManager
@@ -11,6 +12,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
 import android.net.Uri
+import android.speech.RecognizerIntent
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -67,6 +69,7 @@ import androidx.compose.material.icons.rounded.ChatBubbleOutline
 import androidx.compose.material.icons.rounded.Hub
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.MoreHoriz
 import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.Person
@@ -489,6 +492,7 @@ fun MemoWorkspaceApp(
                                 }
                             }
                         },
+                        onShowMessage = ::snack,
                         onOpenConversation = { id -> activeConversationId = id; tab = AppTab.CHATS },
                         onOpenEvidence = { evidenceDetail = it },
                         onOpenJob = { workSectionRequest = "JOBS"; tab = AppTab.WORK },
@@ -937,6 +941,7 @@ private fun HomeScreen(
     onWork: () -> Unit,
     onOpenStudio: () -> Unit,
     onContinueWithMemo: (String) -> Unit,
+    onShowMessage: (String) -> Unit,
     onOpenConversation: (String) -> Unit,
     onOpenEvidence: (EvidenceRecord) -> Unit,
     onOpenJob: (String) -> Unit,
@@ -944,6 +949,36 @@ private fun HomeScreen(
 ) {
     var captureDraft by remember { mutableStateOf("") }
     var workspaceSearch by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    val uiLanguage = LocalMemoLanguage.current
+    val speechResultLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val spoken = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull().orEmpty().trim()
+            if (spoken.isNotBlank()) {
+                captureDraft = listOf(captureDraft.trim(), spoken).filter { it.isNotBlank() }.joinToString(" ").take(6_000)
+            } else {
+                onShowMessage(MemoLocalization.translate("No speech was recognized. Try again or type your message.", uiLanguage))
+            }
+        }
+    }
+    val voiceIntent = {
+        Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, when (uiLanguage) { "PL" -> "pl-PL"; "TR" -> "tr-TR"; else -> "en-US" })
+            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false)
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+            putExtra(RecognizerIntent.EXTRA_PROMPT, MemoLocalization.translate("Speak your message to Memo", uiLanguage))
+        }
+    }
+    val speechPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) {
+            runCatching { speechResultLauncher.launch(voiceIntent()) }
+                .onFailure { onShowMessage(MemoLocalization.translate("Voice input is unavailable. Try typing or check your Android speech service.", uiLanguage)) }
+        } else {
+            onShowMessage(MemoLocalization.translate("Microphone permission is needed for voice input.", uiLanguage))
+        }
+    }
     val reviewEntities = snapshot.entities.count { it.reviewStatus == "PROPOSED" }
     val reviewJobs = snapshot.jobs.count { it.status in setOf("WAITING_FOR_USER", "NEEDS_REVIEW", "FAILED") }
     val reviewTasks = snapshot.tasks.count { it.status in setOf(TaskStatus.NEEDS_REVIEW, TaskStatus.FAILED, TaskStatus.BLOCKED) }
@@ -1051,7 +1086,21 @@ private fun HomeScreen(
                     placeholder = { Text("Ask a question, capture an idea, or describe the outcome you want…") },
                     minLines = 2,
                     maxLines = 5,
-                    shape = RoundedCornerShape(18.dp)
+                    shape = RoundedCornerShape(18.dp),
+                    trailingIcon = {
+                        IconButton(
+                            onClick = {
+                                if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                                    runCatching { speechResultLauncher.launch(voiceIntent()) }
+                                        .onFailure { onShowMessage(MemoLocalization.translate("Voice input is unavailable. Try typing or check your Android speech service.", uiLanguage)) }
+                                } else {
+                                    speechPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                }
+                            }
+                        ) {
+                            Icon(Icons.Rounded.Mic, contentDescription = MemoLocalization.translate("Voice input", uiLanguage), tint = MaterialTheme.colorScheme.primary)
+                        }
+                    }
                 )
                 Spacer(Modifier.height(MemoTokens.Spacing.xs))
                 Button(
