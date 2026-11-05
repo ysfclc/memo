@@ -25,6 +25,7 @@ jobs:
       already_imported: ${{ steps.resolve.outputs.already_imported }}
       upload_commit: ${{ steps.resolve.outputs.upload_commit }}
       archive_sha: ${{ steps.resolve.outputs.archive_sha }}
+      source_only: ${{ steps.resolve.outputs.source_only }}
     steps:
       - name: Check out the triggering revision
         uses: actions/checkout@v5
@@ -51,6 +52,7 @@ jobs:
                 echo 'already_imported=false'
                 echo 'upload_commit='
                 echo 'archive_sha='
+              echo 'source_only=false'
               } >> "$GITHUB_OUTPUT"
               exit 0
             fi
@@ -73,15 +75,24 @@ jobs:
           git fetch --no-tags origin "$GITHUB_REF_NAME"
           NOTE_PATH="notes/imports/${UPLOAD_COMMIT}.md"
           ALREADY_IMPORTED=false
+          SOURCE_ONLY=false
           if git cat-file -e "FETCH_HEAD:$NOTE_PATH" 2>/dev/null; then
             ALREADY_IMPORTED=true
-            echo 'This exact archive upload commit already has an import note; skipping duplicate integration.'
+            echo 'This exact archive upload commit already has an import note.'
+          fi
+          if [[ "$ALREADY_IMPORTED" == true && "$GITHUB_EVENT_NAME" == "push" ]] && git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA" | grep -Fxq '.github/workflows/build-apk.yml'; then
+            SOURCE_ONLY=true
+            ALREADY_IMPORTED=false
+            UPLOAD_COMMIT="$GITHUB_SHA"
+            ARCHIVE_SHA="$(sha256sum SOURCE_SHA256SUMS.txt | awk '{print $1}')"
+            echo 'Direct source verification requested by a workflow maintenance commit; building the checked-out source without re-extracting the old ZIP.'
           fi
           {
             echo 'skip_no_upload=false'
             echo "already_imported=$ALREADY_IMPORTED"
             echo "upload_commit=$UPLOAD_COMMIT"
             echo "archive_sha=$ARCHIVE_SHA"
+            echo "source_only=$SOURCE_ONLY"
           } >> "$GITHUB_OUTPUT"
 
       - name: Summarize preflight failure
@@ -107,6 +118,7 @@ jobs:
     env:
       MEMO_UPLOAD_COMMIT: ${{ needs.preflight.outputs.upload_commit }}
       MEMO_ARCHIVE_SHA: ${{ needs.preflight.outputs.archive_sha }}
+      MEMO_SOURCE_ONLY: ${{ needs.preflight.outputs.source_only }}
     steps:
       - name: Check out the exact upload revision
         uses: actions/checkout@v5
@@ -124,7 +136,11 @@ jobs:
           echo "Branch: $GITHUB_REF_NAME" | tee -a "$RUNNER_TEMP/Memo-Build.log"
           echo "Upload commit: $MEMO_UPLOAD_COMMIT" | tee -a "$RUNNER_TEMP/Memo-Build.log"
           echo "Archive SHA-256: $MEMO_ARCHIVE_SHA" | tee -a "$RUNNER_TEMP/Memo-Build.log"
-          printf '%s  incoming/memo.zip\n' "$MEMO_ARCHIVE_SHA" > "$RUNNER_TEMP/Memo-Source-SHA256.txt"
+          if [[ "$MEMO_SOURCE_ONLY" == 'true' ]]; then
+            printf '%s  SOURCE_SHA256SUMS.txt (source-only verification fingerprint)\n' "$MEMO_ARCHIVE_SHA" > "$RUNNER_TEMP/Memo-Source-SHA256.txt"
+          else
+            printf '%s  incoming/memo.zip\n' "$MEMO_ARCHIVE_SHA" > "$RUNNER_TEMP/Memo-Source-SHA256.txt"
+          fi
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -151,6 +167,7 @@ jobs:
           validate-wrappers: false
 
       - name: Validate ZIP and safely extract the complete Android project
+        if: needs.preflight.outputs.source_only != 'true'
         id: extract
         shell: bash
         run: |
@@ -319,6 +336,7 @@ jobs:
           echo "Detected source root: $PROJECT_ROOT" | tee -a "$MEMO_BUILD_LOG"
 
       - name: Replace the repository project tree with the ZIP snapshot
+        if: needs.preflight.outputs.source_only != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -392,6 +410,18 @@ jobs:
           **/service-account*.json
           EXCLUDES
           echo "MEMO_PROJECT_DIR=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+
+      - name: Use checked-out repository source for direct verification
+        if: needs.preflight.outputs.source_only == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s settings.gradle || test -s settings.gradle.kts
+          test -s app/src/main/AndroidManifest.xml
+          test -s TASKS.md
+          test -s tools/verify_source.py
+          echo "MEMO_PROJECT_DIR=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
+          echo 'Using the committed repository source directly; no stale upload ZIP was extracted.' | tee -a "$MEMO_BUILD_LOG"
 
       - name: Configure optional persistent APK signing
         shell: bash
@@ -543,7 +573,7 @@ jobs:
 
           - Upload commit: \`$MEMO_UPLOAD_COMMIT\`
           - Input: \`incoming/memo.zip\`
-          - Archive SHA-256: \`$MEMO_ARCHIVE_SHA\`
+          - Source fingerprint SHA-256: \`$MEMO_ARCHIVE_SHA\`
           - Integration date: $DATE_UTC
           - Branch: \`$GITHUB_REF_NAME\`
           - Workflow run: $MEMO_RUN_URL
@@ -681,7 +711,7 @@ jobs:
             echo '## Memo import complete'
             echo
             echo "- Upload commit: \`$MEMO_UPLOAD_COMMIT\`"
-            echo "- Archive SHA-256: \`$MEMO_ARCHIVE_SHA\`"
+            echo "- Source fingerprint SHA-256: \`$MEMO_ARCHIVE_SHA\`"
             echo '- Source mirror, handoff notes, checksum manifest and build status committed.'
             echo "- APK artifact: **Memo-Android-debug-APK**"
             echo "- Integrated repository artifact: **Memo-Android-Integrated-Repository**"
