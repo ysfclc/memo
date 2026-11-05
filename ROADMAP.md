@@ -27,8 +27,11 @@ This is CI evidence only. It is not a real-device acceptance claim. The new mode
 
 ### P1 — One coherent, user-owned workspace
 - [ ] Consolidate Home, Chats, Work, Browser and More into one consistent navigation and visual system.
-- [ ] Complete CRUD for conversations, messages, entities, relationships, tasks, plans, evidence and provider profiles.
-- [ ] Add undo/recovery and impact previews for destructive actions; no silent cascade deletion.
+- [x] Add edit/delete controls for user and assistant chat messages; imported/system messages stay read-only.
+- [x] Protect messages cited by saved entities from edits/deletion so source provenance cannot silently change.
+- [x] Add conversation deletion with dependency checks for linked entities, jobs and relationships; block orphaning rather than cascade-delete.
+- [ ] Complete CRUD for entities, relationships, tasks, plans, evidence and provider profiles.
+- [ ] Add undo/recovery and richer impact previews for destructive actions; no silent cascade deletion.
 - [ ] Make every visible action real, stateful, accessible and covered by UI/domain tests.
 - [ ] Add revision history and compare/restore for user-edited artifacts.
 - [ ] Add encrypted backup/restore validation and a clear storage/retention panel.
