@@ -1303,8 +1303,8 @@ fun SelfModelStudioScreen(
     if (editingFact != null) EntityEditDialog(
         entity = editingFact!!,
         onDismiss = { editingFact = null },
-        onSave = { title, description ->
-            val error = viewModel.updateEntityDetails(editingFact!!.id, title, description)
+        onSave = { title, description, properties ->
+            val error = viewModel.updateEntityDetails(editingFact!!.id, title, description, properties)
             if (error == null) { editingFact = null; onShowMessage("Self Model fact updated.") } else onShowMessage(error)
         }
     )
