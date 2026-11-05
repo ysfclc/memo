@@ -811,3 +811,5 @@ jobs:
 # CI verification trigger: validate the latest chat-management and provenance safeguards.
 
 # CI verification trigger: include the new Polish and Turkish chat-control strings.
+
+# CI verification trigger: compile and test chat mutation policy and UI controls.
