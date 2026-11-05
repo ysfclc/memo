@@ -22,7 +22,7 @@ This is not a browser-first app, chatbot skin, static planner or disconnected da
 
 ## Product reality check
 
-The current app still exposes Home / Chats / Work / Browser / More, splits the main entry into “Plan & start” versus “Ask in chat,” uses keyword-selected static plan templates, keeps browser and app automation in specialist areas, and has no universal cross-runtime DAG or single Live timeline. Studio is currently mostly Self Model fact extraction and local artifact generation. See the full source-to-vision matrix in the product contract.
+The active shell is now Talk / Live / Work / Studio. Talk has one text/voice entry composer and Council entry points. Live summarizes browser state, active saved work, approvals and activity, with Browser and Apps reachable as secondary routes. Studio has its own destination. This is a first shell slice, not the finished agent: the Talk composer currently opens a draft, the planner remains keyword/template based, Council is still a separate route, runtime panes are not inline, and the cross-runtime DAG/event journal is not implemented. Studio remains mostly Self Model and local artifact generation. See the source-to-vision matrix in the product contract.
 
 ## Ordered delivery plan
 
@@ -34,11 +34,11 @@ The current app still exposes Home / Chats / Work / Browser / More, splits the m
 - [ ] APK size/native dependency budget and device resource baseline.
 
 ### P1 — Restore the intended product shell
-- [ ] Replace Home / Chats / Work / Browser / More as primary navigation with **Talk / Live / Work / Studio**.
-- [ ] Put one universal composer/intent entry point at the centre; do not ask users to choose chat versus plan.
-- [ ] Move browser and native-app sessions into Live as task-bound runtime panes; keep their identity/session controls visible.
-- [ ] Integrate Council into Talk conversations, with visible sequential frontier participants, role/turn history, disagreements and synthesis.
-- [ ] Give Studio its own artifact workspace; Self Model is a source of approved facts inside Studio, not the whole Studio.
+- [~] Replace Home / Chats / Work / Browser / More as primary navigation with **Talk / Live / Work / Studio**. First four-surface navigation is in source and CI #99 passed; the old Home composable still exists as legacy code and physical-device UX acceptance is open.
+- [~] Put one universal composer/intent entry point at the centre; Talk now has a single text/voice composer, but attachments, selected context and dynamic intent-to-workflow routing remain open.
+- [~] Move browser and native-app sessions into Live as task-bound runtime panes; Browser, Apps and Approvals are now reached from Live, but still open as secondary screens rather than inline panes.
+- [~] Integrate Council into Talk conversations; Talk now exposes Council entry points, but shared conversation context and one Live execution timeline are not integrated yet.
+- [~] Give Studio its own artifact workspace; Studio is a primary destination, but currently remains mostly Self Model and local artifact generation.
 - [ ] Keep model, capability, permission and diagnostics management in supporting settings, not primary navigation.
 
 ### P2 — Implement the real orchestrator
@@ -55,6 +55,7 @@ The current app still exposes Home / Chats / Work / Browser / More, splits the m
 - [ ] Frontier Council as a selectable workflow, not a separate toy screen or hidden parallelism.
 - [ ] Voice input/output and fast capture from share sheet, notification and launcher entry points.
 - [ ] GGUF/llama.cpp backend and broader compatible model discovery after runtime interfaces are stable.
+- [ ] Add voice/URL/file/image/share-sheet inputs to the same Talk composer; do not create separate specialist entry points.
 
 ### P4 — Make Live the control room
 - [ ] Unified chronological event stream across all workflow steps and runtimes.
@@ -66,6 +67,7 @@ The current app still exposes Home / Chats / Work / Browser / More, splits the m
 ### P5 — Make Work the user's operating graph
 - [ ] Canonical versioned records for projects, tasks, contacts, people, organizations, opportunities, jobs, applications, decisions, sources, evidence and relationships.
 - [ ] Full create/read/update/archive/delete with provenance, revisions, undo and dependency-aware destructive previews.
+- [ ] Today view with MUST / SHOULD / COULD / NOT TODAY, outcome-based tasks, reminders, timers, alarms, camera/share capture, contacts and driving mode.
 - [ ] End-to-end CRM capture and sourced enrichment.
 - [ ] End-to-end job discovery, ranking, factual tailoring, approval-backed apply and verified application tracking.
 - [ ] Search, deduplication, safe merge and graph navigation.

@@ -24,6 +24,18 @@ class MemoLocalizationTest {
     }
 
     @Test
+    fun memoPrimarySurfacesAndVoiceActionTranslate() {
+        assertEquals("Rozmowa", MemoLocalization.translate("Talk", "PL"))
+        assertEquals("Sohbet", MemoLocalization.translate("Talk", "TR"))
+        assertEquals("Na żywo", MemoLocalization.translate("Live", "PL"))
+        assertEquals("Canlı", MemoLocalization.translate("Live", "TR"))
+        assertEquals("Studio", MemoLocalization.translate("Studio", "PL"))
+        assertEquals("Stüdyo", MemoLocalization.translate("Studio", "TR"))
+        assertEquals("Głos", MemoLocalization.translate("Voice", "PL"))
+        assertEquals("Ses", MemoLocalization.translate("Voice", "TR"))
+    }
+
+    @Test
     fun userContentAndUnknownStringsRemainUntouched() {
         val userText = "I met a person called Deniz at the event."
         assertEquals(userText, MemoLocalization.translate(userText, "TR"))

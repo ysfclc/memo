@@ -44,11 +44,25 @@ See `IMPLEMENTATION_CONTRACT.md`, `MEMO2_ALIGNMENT_MATRIX.md`, and `IMPLEMENTATI
 
 The normative product direction has been reconciled in [`docs/MEMO_PRODUCT_CONTRACT.md`](docs/MEMO_PRODUCT_CONTRACT.md). The current UI and source are **not yet the intended product**. This reset is a correction of product scope, not a claim of completion.
 
-The primary surfaces are Talk / Live / Work / Studio. Browser and Android apps are task-bound runtimes inside Live; Council is a Talk workflow; Self Model is one evidence source for Studio. One universal intent composer must remove the current forced choice between “Plan & start” and “Ask in chat.”
+The primary surfaces are now Talk / Live / Work / Studio in source and CI #99. Talk has one text/voice composer and Council entry points. Live summarizes browser state, active saved work, approvals and activity, and routes to Browser and Apps. Studio is a separate primary destination. This is a first shell correction, not acceptance of the complete product.
 
-The current `IntentPlanner` is keyword/template based and `CapabilityCompiler` maps domains to static lists. They are useful prototypes, not the final dynamic planner or workflow engine. The current browser workflow is provider-specific; native app automation uses a separate legacy store; the primary workspace and native workflow store are not unified. Do not describe these as one integrated agent.
+The current Talk composer opens a conversation draft; it does not yet parse an intent into a dynamic workflow. `IntentPlanner` is keyword/template based and `CapabilityCompiler` maps domains to static lists. They are useful prototypes, not the final dynamic planner or workflow engine. Council is still a separate route. The browser workflow is provider-specific; native app automation uses a separate legacy store; the primary workspace and native workflow store are not unified. Do not describe these as one integrated agent.
 
-**Next implementation order:** (1) preserve existing installation/data and design a safe single-store migration; (2) rebuild the navigation/entry shell around Talk / Live / Work / Studio; (3) implement typed TaskSpec + dynamic versioned DAG and shared runtime/policy contracts; (4) build the unified Live timeline; (5) complete end-to-end Brainstorm, CRM, Jobs, Content and arbitrary-work journeys. Do not spend the next increments polishing isolated entity CRUD while the central intent-to-outcome loop is missing.
+**Next implementation order:** (1) physical install-over-existing and data-preservation acceptance, then safe single-store migration; (2) typed TaskSpec + dynamic versioned DAG and shared runtime/policy contracts; (3) make the Talk composer produce an inspectable workflow draft and route to the correct capability; (4) unify Live events and attach visible browser/native runtime panes; (5) integrate Council with Talk context; (6) complete end-to-end Brainstorm, CRM, Jobs, Content and arbitrary-work journeys; (7) add Today priorities and everyday voice/capture utilities. Do not spend the next increments polishing isolated entity CRUD while the central intent-to-outcome loop is missing.
+
+## 5 November 2026 — Talk / Live / Work / Studio shell increment
+
+- Product contract: `docs/MEMO_PRODUCT_CONTRACT.md` now records the recovered brainstorms, user goals, architecture decisions, non-goals, safety boundaries, acceptance criteria and honest source-to-vision audit.
+- UI: primary bottom navigation is Talk / Live / Work / Studio; More moved to the top bar.
+- Talk: one text/voice intent composer creates a conversation draft; Council is reachable from the conversation list and active conversation header.
+- Live: first workspace view reads actual browser workflow state, saved jobs/tasks, approval ledger and activity records; Browser, Apps and Approvals are secondary routes.
+- Work: Self Model/Studio removed from the Work section.
+- Studio: Self Model and local artifact workflow now has a primary destination.
+- Validation: CI #99 passed source invariants, remote-runner tests, Android unit tests, lint, debug APK assembly and package/signature identity checks. This is not physical-device acceptance.
+- Source commit: `d11b83ad13e731e851d6e169662d0a3c91ddb2a6`
+- CI run: https://github.com/ysfclc/memo/actions/runs/42081787582
+- CI handoff head: `f3b1a9950241b6db051bb794e1fb7d761f7e8d13`
+- Next product slice: typed workflow graph + dynamic intent planning; do not return to isolated CRUD polish.
 
 ## 1. Rules for using Memo 2's plan
 

@@ -14,6 +14,12 @@ Memo is not a chatbot skin, generic browser, CRM clone, static task manager, app
 
 Conversation is the easiest interface. It is not the database. Browser sessions, local models, frontier AI websites, native apps and automation services are replaceable capabilities—not separate products and never competing sources of truth.
 
+## Personal value filter
+
+Memo exists to turn thoughts into real progress, not to give the user another system to maintain. It should understand active goals and obligations, remember unfinished work, surface concrete next actions, and help the user decide what matters today.
+
+The daily execution view should classify work as **MUST / SHOULD / COULD / NOT TODAY**. Tasks need a concrete outcome and a clear done condition, not vague entries such as "work on project." Memo should protect time for urgent commitments, paid work, job opportunities and customer acquisition before optional creation or endless configuration. It should support a practical shutdown and weekly review without turning those rituals into another administrative burden.
+
 ## 2. The user's intended experience
 
 The user should be able to open Memo and immediately say, type, share or attach what is on their mind. They should not need to decide in advance whether a request belongs in a chat, a planner, a browser, a CRM or an automation screen.
@@ -65,7 +71,7 @@ One local-first, searchable, typed and versioned graph for:
 - workflows, skills, capabilities, prompts, providers and execution history;
 - artifacts and their revisions.
 
-Job search and CRM are workflows/views over this shared graph, not separate databases. Records retain stable IDs, timestamps, provenance, source excerpts, confidence/review state and relationships. Duplicate resolution and destructive changes must be reviewable and reversible where possible.
+Job search and CRM are workflows/views over this shared graph, not separate databases. Records retain stable IDs, timestamps, provenance, source excerpts, confidence/review state and relationships. Duplicate resolution and destructive changes must be reviewable and reversible where possible. Work also owns a practical Today view, reminders, timers, alarms, camera/share capture, contacts and driving mode. These are everyday entry points into the same context and workflow graph, not disconnected utility screens. Today uses MUST / SHOULD / COULD / NOT TODAY and outcome-based tasks.
 
 ### Studio — create real deliverables
 
@@ -146,14 +152,14 @@ This is a source audit, not a device-acceptance claim.
 
 | Intended capability | Current Memo 1 source reality |
 |---|---|
-| Four primary surfaces | Current bottom navigation is Home / Chats / Work / Browser / More. Talk, Live and Studio are not yet coherent primary surfaces. |
-| One intent entry point | Home offers two separate actions: “Plan & start” and “Ask in chat.” The first saves a keyword-classified, mostly static plan; the second sends a normal model prompt. They are not one orchestration flow. |
+| Four primary surfaces | The active bottom navigation is now Talk / Live / Work / Studio. Live provides an initial activity/work/approval view; Browser and Apps are secondary runtime routes. Studio has its own route but is still primarily Self Model and local artifact generation. The old Home composable remains legacy source, not a primary destination. |
+| One intent entry point | Talk now has one text/voice “Start with Memo” composer that opens a conversation draft. It does not yet interpret the intent into a dynamic workflow, attach files/images, or execute the full intent-to-outcome loop. The old split planner/chat Home implementation is no longer the primary entry. |
 | Dynamic workflow engine | `IntentPlanner` uses phrase matching and predefined step templates. `CapabilityCompiler` maps domains to static capability lists. No general cross-runtime DAG executor is integrated. |
-| Live control | Header Stop and browser/native run traces exist in separate areas. There is no single chronological Live surface joining agents, browser/app actions, checkpoints, evidence and takeovers. |
-| Frontier Council | Visible sequential provider website workflows and a separate Council/model route exist. They are not yet one integrated Talk Council workflow with a shared execution timeline. |
+| Live control | The first Live surface shows the current browser workflow state, active saved jobs/tasks, approval decisions and recent workspace activity; it links to Browser, Apps and Approvals. It is not yet a unified cross-runtime event journal with inline runtime panes, pause/resume/takeover or complete postcondition evidence. |
+| Frontier Council | Talk now exposes Council from the conversation list and conversation header, but Council still opens a separate route and does not yet share the Talk conversation's context and unified Live timeline end to end. |
 | Browser/app runtime | A provider-specific WebView browser workflow exists. Native Accessibility automation is bounded and permission-gated, with separate legacy persistence. Neither is a universal DOM/native capability system. |
 | Work graph | Conversations, entities, jobs, tasks and evidence exist. Full project/contact/opportunity/application CRUD and cross-runtime provenance are incomplete. |
-| Studio | Self Model fact extraction and local-model CV-style artifact generation exist. A general artifact editor/versioning/export and publishing/metrics workflow is incomplete. |
+| Studio | Studio now has a primary destination, but the screen is still primarily Self Model fact extraction and local-model CV-style artifact generation. General artifact editing/versioning/export and publishing/metrics remain incomplete. |
 | Voice | Chat tap-to-talk delegates to Android speech recognition. Full local ASR/TTS, always-on voice and dependable lock-screen command execution are not implemented. |
 | Model platform | Curated LiteRT-LM catalogue and optional API-compatible provider exist. GGUF/llama.cpp and device-wide model discovery are not integrated. |
 | Data layer | Primary Compose vault and native workflow `SynthStore` remain separate. This violates the target single-store boundary and requires a safe migration. |

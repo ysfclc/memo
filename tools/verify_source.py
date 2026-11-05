@@ -30,6 +30,7 @@ REQUIRED = [
     "app/src/main/res/drawable/ic_notification.xml",
     "app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt",
     "app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt",
+    "app/src/main/java/app/memo/android/ui/LiveWorkspaceScreen.kt",
     "app/src/main/java/app/memo/android/ui/MemoTheme.kt",
     "app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt",
     "app/src/main/java/app/memo/android/runtime/MemoRuntimeBridge.java",
@@ -171,7 +172,22 @@ for marker in ("initialPrompt", "onInitialPromptConsumed", "draft = initialPromp
         fail(f"home-to-chat draft handoff is missing marker: {marker}")
 if "MainActivity.notifyRuntimeChanged" in (ROOT / "app/src/main/java/com/synthos/runtime/engine/AutomationAccessibilityService.java").read_text():
     fail("accessibility runtime still targets legacy Activity helpers")
-print("PASS: one Memo Activity, narrow runtime bridge, conversation-first home, and safe draft handoff")
+for marker in (
+    'Triple(AppTab.CHATS, Icons.Rounded.ChatBubbleOutline, "Talk")',
+    'Triple(AppTab.LIVE, Icons.Rounded.Bolt, "Live")',
+    'Triple(AppTab.WORK, Icons.Rounded.Hub, "Work")',
+    'Triple(AppTab.STUDIO, Icons.Rounded.Article, "Studio")',
+    "AppTab.LIVE -> LiveWorkspaceScreen(",
+    "AppTab.STUDIO -> SelfModelStudioScreen(",
+):
+    if marker not in home:
+        fail(f"Memo four-surface shell is missing: {marker}")
+if 'Triple(AppTab.BROWSER' in home:
+    fail("Browser must remain a runtime route, not a primary navigation destination")
+for marker in ("Start with Memo", "Continue in Talk", "onOpenCouncil", "onStartConversation"):
+    if marker not in chat:
+        fail(f"Talk entry/composer is missing: {marker}")
+print("PASS: one Memo Activity, Talk / Live / Work / Studio shell, Talk intent entry, and safe draft handoff")
 
 # Estimate coverage of the static string literals passed to the custom UI Text wrapper.
 # URLs and empty placeholders are intentionally not translations. Dynamic/interpolated
@@ -180,7 +196,7 @@ ui_dir = ROOT / "app/src/main/java/app/memo/android/ui"
 localization_sources = (ui_dir / "MemoLocalization.kt").read_text()
 translation_keys = set(re.findall(r'^\s*"((?:[^"\\]|\\.)*)"\s+to\s+\(', localization_sources, re.M))
 scanned = []
-for ui_file in ("MemoWorkspaceApp.kt", "WorkspaceScreens.kt", "AppsWorkspaceScreen.kt", "BrowserWorkflowScreen.kt", "AiScreens.kt", "ActionApprovalInboxScreen.kt"):
+for ui_file in ("MemoWorkspaceApp.kt", "WorkspaceScreens.kt", "LiveWorkspaceScreen.kt", "AppsWorkspaceScreen.kt", "BrowserWorkflowScreen.kt", "AiScreens.kt", "ActionApprovalInboxScreen.kt"):
     source = (ui_dir / ui_file).read_text()
     scanned.extend(re.findall(r'\bText\(\s*"((?:[^"\\]|\\.)*)"', source))
 translatable = [value for value in scanned if len(value.strip()) > 1 and "$" not in value and "\\n" not in value and not value.startswith(("https://", "http://"))]
