@@ -78,7 +78,7 @@ fun LiveWorkspaceScreen(
                 OutlinedButton(onClick = onOpenApps, modifier = Modifier.weight(1f)) { Text("Phone apps") }
             }
             OutlinedButton(onClick = onOpenApprovals, modifier = Modifier.fillMaxWidth()) {
-                Text(if (reviewActions.isEmpty()) "Approval inbox" else "Review \${reviewActions.size} action(s)")
+                Text(if (reviewActions.isEmpty()) "Approval inbox" else "Review ${reviewActions.size} action(s)")
             }
         }
         item {
@@ -91,12 +91,12 @@ fun LiveWorkspaceScreen(
                         style = MaterialTheme.typography.titleMedium
                     )
                     Text(
-                        "\${browserState.status.name.replace('_', ' ')} · \${browserState.currentStep.coerceAtLeast(0)}/\${browserState.totalSteps}",
+                        "${browserState.status.name.replace('_', ' ')} · ${browserState.currentStep.coerceAtLeast(0)}/${browserState.totalSteps}",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
                     if (browserState.currentProviderName.isNotBlank()) {
-                        Text("Current participant · \${browserState.currentProviderName}", style = MaterialTheme.typography.bodySmall)
+                        Text("Current participant · ${browserState.currentProviderName}", style = MaterialTheme.typography.bodySmall)
                     }
                     Text(browserState.message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     TextButton(onClick = onOpenBrowser) { Text("Inspect live browser") }
@@ -117,14 +117,14 @@ fun LiveWorkspaceScreen(
                 )
             }
         } else {
-            items(activeJobs.take(6), key = { "job-\${it.id}" }) { job ->
+            items(activeJobs.take(6), key = { "job-${it.id}" }) { job ->
                 SurfaceCard(modifier = Modifier.clickable(onClick = onOpenWork)) {
                     Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(job.title, style = MaterialTheme.typography.titleMedium)
-                            Text(job.goal.substringBefore("\\n\\nMemo route:").take(180), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(job.goal.substringBefore("\n\nMemo route:").take(180), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(
-                                "\${job.status.lowercase().replace('_', ' ')} · \${job.steps.count { it.status == "COMPLETED" }}/\${job.steps.size} checkpoints",
+                                "${job.status.lowercase().replace('_', ' ')} · ${job.steps.count { it.status == "COMPLETED" }}/${job.steps.size} checkpoints",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -133,7 +133,7 @@ fun LiveWorkspaceScreen(
                     }
                     val activeStep = job.steps.firstOrNull { it.status in setOf("RUNNING", "NEEDS_REVIEW") }
                     if (activeStep != null) {
-                        Text("Next checkpoint · \${activeStep.title}", style = MaterialTheme.typography.bodySmall)
+                        Text("Next checkpoint · ${activeStep.title}", style = MaterialTheme.typography.bodySmall)
                         if (activeStep.detail.isNotBlank()) Text(activeStep.detail, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     if (job.sourceConversationId.isNotBlank()) {
@@ -141,7 +141,7 @@ fun LiveWorkspaceScreen(
                     }
                 }
             }
-            items(attentionTasks.take(6), key = { "task-\${it.id}" }) { task ->
+            items(attentionTasks.take(6), key = { "task-${it.id}" }) { task ->
                 SurfaceCard {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -194,7 +194,7 @@ private fun ActionSummary(action: ActionApprovalRecord, onOpen: () -> Unit) {
     Column(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
         Text(action.title, style = MaterialTheme.typography.titleSmall)
         Text(action.destination, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
-        Text("\${action.status.replace('_', ' ')} · \${action.runtimeId} · \${action.capabilityId}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+        Text("${action.status.replace('_', ' ')} · ${action.runtimeId} · ${action.capabilityId}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
         TextButton(onClick = onOpen) { Text("Review exact action") }
     }
 }

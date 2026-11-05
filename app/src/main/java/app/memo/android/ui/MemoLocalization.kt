@@ -29,11 +29,14 @@ object MemoLocalization {
 
     private val translations: Map<String, Pair<String, String>> = mapOf(
 
+        "See active work, browser sessions, checkpoints and decisions in one place. Memo only reports completion when it has an observable result." to ("Zobacz aktywne zadania, sesje przeglądarki, punkty kontrolne i decyzje w jednym miejscu. Memo zgłasza ukończenie tylko wtedy, gdy ma obserwowalny wynik." to "Etkin işleri, tarayıcı oturumlarını, kontrol noktalarını ve kararları tek yerde gör. Memo yalnızca gözlemlenebilir bir sonuç olduğunda tamamlandı der."),
+        "Current participant" to ("Bieżący uczestnik" to "Geçerli katılımcı"),
+        "Browser workflow" to ("Przepływ przeglądarki" to "Tarayıcı iş akışı"),
         "Talk" to ("Rozmowa" to "Sohbet"),
         "Live" to ("Na żywo" to "Canlı"),
         "Studio" to ("Studio" to "Stüdyo"),
         "Start with Memo" to ("Zacznij z Memo" to "Memo ile başla"),
-        "Describe what you want to think through or get done. Add voice now; other inputs will join this same flow." to ("Opisz, co chcesz przemyśleć lub zrobić. Teraz możesz użyć głosu; pozostałe rodzaje danych wejściowych dołączą do tego samego przepływu." to "Ne düşünmek veya başarmak istediğini anlat. Şimdilik ses kullanabilirsin; diğer giriş türleri aynı akışa eklenecek."),
+        "Start with a thought, question or task. Memo keeps the conversation and its related work together." to ("Zacznij od pomysłu, pytania lub zadania. Memo łączy rozmowę z powiązaną pracą." to "Bir fikir, soru veya görevle başla. Memo sohbeti ve ilgili işleri birlikte tutar."),
         "What do you want Memo to help you accomplish?" to ("Co chcesz osiągnąć z pomocą Memo?" to "Memo'nun neyi başarmana yardım etmesini istiyorsun?"),
         "Continue in Talk" to ("Kontynuuj w Rozmowie" to "Sohbette devam et"),
         "MEMO / LIVE CONTROL" to ("MEMO / KONTROLA NA ŻYWO" to "MEMO / CANLI KONTROL"),

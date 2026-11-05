@@ -244,7 +244,7 @@ fun ChatsWorkspaceScreen(
                 }
                 SurfaceCard {
                     Text("Start with Memo", style = MaterialTheme.typography.titleMedium)
-                    Text("Describe what you want to think through or get done. Add voice now; other inputs will join this same flow.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Start with a thought, question or task. Memo keeps the conversation and its related work together.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     OutlinedTextField(
                         value = draft,
                         onValueChange = { if (it.length <= 6_000) draft = it },
