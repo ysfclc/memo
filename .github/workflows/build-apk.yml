@@ -89,7 +89,7 @@ jobs:
             ALREADY_IMPORTED=true
             echo 'This exact archive upload commit already has an import note.'
           fi
-          if [[ "$ALREADY_IMPORTED" == true && "$GITHUB_EVENT_NAME" == "push" ]] && git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA" | grep -Eq '^(\\.github/workflows/build-apk\\.yml|app/|core/|gradle/|tools/|.*\\.gradle(\\.kts)?$|gradle\\.properties$|settings\\.gradle(\\.kts)?$)'; then
+          if [[ "$ALREADY_IMPORTED" == true && "$GITHUB_EVENT_NAME" == "push" ]] && git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA" | grep -Eq '^(.github/workflows/build-apk.yml|app/|core/|gradle/|tools/|.*[.]gradle([.]kts)?$|gradle[.]properties$|settings[.]gradle([.]kts)?$)'; then
             SOURCE_ONLY=true
             ALREADY_IMPORTED=false
             UPLOAD_COMMIT="$GITHUB_SHA"
