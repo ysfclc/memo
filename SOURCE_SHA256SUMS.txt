@@ -1,6 +1,6 @@
-8cb0e1697f779e9a5ea6392b6e88996eebdca45b2d5d9a88105f01d7c3e25c9d  ./.github/workflows/build-apk.yml
+e93c76525c8025430a7500ac61b45e30231c55443caee541229158bea7ae2b03  ./.github/workflows/build-apk.yml
 35d51b623486a63a825aeffa712fe00e73c069ff4db4cb783affe14783203641  ./.gitignore
-4fce6611e2c2143cf0ee8d0ae6e658e2df6f92670405e60b2dd5f545d5061d35  ./BUILD_STATUS.md
+e213fd91508403ee7f5c5a0ad51878af08e90aa65a613cbc8922dd75a3ae749c  ./BUILD_STATUS.md
 50de564f828c3a84a4d02f082590d7e3e60870ef47e5f156ab0df6bfebef4500  ./CHANGELOG.md
 27a75bf71bfa1da44ba4c0fcf483b010cab683e19f33f308a150a248cdae81aa  ./DEVICE_ACCEPTANCE_CHECKLIST.md
 24b6d7617b6f20b24a8fa2b375878af8ced6b99e3546fd63b53dc74b8bf7ffd7  ./FEATURE_AUDIT.md
@@ -9,10 +9,10 @@ dd455fac6e27fc3a4f55b917d345ce0bf7b523cf25cff35beaa85cb8d8d14886  ./IMPLEMENTATI
 413fe1482fb424a3676febd4acedabb3c671e9bc45a034abdf899ac097eb45f0  ./MEMO-PATCH1-AUDIT.md
 918ac512072584dabb677b559a0e54f353b42c94d0e1607e07e9abeef8e8937f  ./MEMO2_ALIGNMENT_MATRIX.md
 d02e7d8d6d121f1058bc1e43df76fa521ef59f6ddc1e07ee2a69d92f8d76ba45  ./PRODUCT_GAP_REGISTRY.md
-dcd2650644e7052c795cf2b3a1a9c033cadcbfa81b35bcaf0cb32eab51aa3984  ./README.md
+f4163833232be58e399ecf84484edab74a94997301937c510caba4617942cdea  ./README.md
 ce2bcd53a712bd22e83da53d4a3961e3af299d3ee715e51f91898db29fa779c6  ./REMOTE_RUNNER_SETUP.md
-0eeba482f9361686dd8b7d12308b144f88b2f1c61b26a4f96409834fcfb4156c  ./ROADMAP.md
-95473f9ee5cc036507ac0cdf4066d8b3e2cdd0d974e2b0c4ccce5a820e52819c  ./TASKS.md
+7ad22ffe94a7e83503fe1c8c1edfef511cfdca066b4adb2d8961081de8f11ce5  ./ROADMAP.md
+f8059809ddcf7cac0dfc180a832fcfd39c1d1a131d82f5f230bb22f011156f16  ./TASKS.md
 e6600e1791663d409d87b2dd89c2e4d837b02ebafe4666fea2ed1ef1284b91ae  ./app/build.gradle
 cf9961550854acab5317b4efa543fb1657e49e39b5de3f4a363565f85e2f704a  ./app/proguard-rules.pro
 a5e79842ebe67ebc05c611b64e1a48a8a7e18f96dbd86bdaf40227dc68ba7413  ./app/src/main/AndroidManifest.xml
@@ -33,10 +33,11 @@ b25b80d9ecff0b166d50cb205fa783597209d77ad5d993335bf880bfeaef1cc4  ./app/src/main
 c183dc442f015a51390223e80258a5d6e09baefaa1054e3f1ddb931bfebae5d3  ./app/src/main/java/app/memo/android/ui/AiScreens.kt
 f9167b7d743e284028f605b4b421b4c9b18c8bde299dd9aed0d6e51af7157216  ./app/src/main/java/app/memo/android/ui/AppsWorkspaceScreen.kt
 c23d9d73f947dca41834299207c98cb522fbcf627615454078dc3d0bd22b645f  ./app/src/main/java/app/memo/android/ui/BrowserWorkflowScreen.kt
-1a6647e42f889888ee2cc22c8894b8d9fb163f8194c1a7799ba95439417750b3  ./app/src/main/java/app/memo/android/ui/MemoLocalization.kt
+0423c02009fd362358c065a1597cf97e300a8acf793602e9401dc156d8aade3a  ./app/src/main/java/app/memo/android/ui/LiveWorkspaceScreen.kt
+045e41a7781dbe2e8bb7123f7b402d722e4284616bfe87dab277e0437be048d2  ./app/src/main/java/app/memo/android/ui/MemoLocalization.kt
 25fd0b5bd82b5894f4c76c289627058320d6d0188d39dd1d465d4fcc820d4e75  ./app/src/main/java/app/memo/android/ui/MemoTheme.kt
-79aae57f513be9803a3e62e038c1f8de47af847e09d0f3127591f2742cf34e14  ./app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt
-75abab59f6f011ffaeb3879e4c788396558621243b4e0b3a45697f82500c6d1a  ./app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt
+4bd55c9dbbc4acadbbaff1d45116173880284ac241ee07b11751550e9a73ffc9  ./app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt
+69815845d950a755ba248151048f3b5d21901131d42a10e63b4ea291cb14db84  ./app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt
 f78be77d6fa771c78d14e15a0e2e1e1bad49d384637546ee596e47941b251472  ./app/src/main/java/app/memo/android/ui/components/Primitives.kt
 128544949e1092389370b43128707cf0c985f5531bd7d6c2dff832ede64e3184  ./app/src/main/java/com/synthos/runtime/ai/JobCompiler.java
 8951a538775e3afaaac1c00396cbaeb2b80593fd235d5be1ef1fcc4686d07851  ./app/src/main/java/com/synthos/runtime/ai/LocalModelRuntime.kt
@@ -99,6 +100,7 @@ ad22bcc9a3e3b652cf217d9d4624c1c3b0db385b77515f83532d21cafbd1e2f6  ./core/src/tes
 27a545dc889c049f85955915f0c69baaeba1c0f0478e57d88dc859aa6decc8d7  ./core/src/test/kotlin/app/memo/android/orchestration/CapabilityCompilerTest.kt
 09a9c7e23cf8fdd528352e368e37b1c11b6f1292a8d67e428a795a7d7651d740  ./core/src/test/kotlin/app/memo/android/orchestration/IntentPlannerTest.kt
 14e8284bf20d1a6cf25ab7f66b4844d5501f2eb7b3d968d4d5da5f4a0350f16b  ./core/src/test/kotlin/app/memo/android/runtime/RuntimeRegistryTest.kt
+0b341989d27956c6cb7a62a8c5c60705881dc645c9bf0831c4a53af6ca81c5bf  ./docs/MEMO_PRODUCT_CONTRACT.md
 5f7153e3754b4ea93592601adbaf11b71b3bff0f0dfa21930ddd9c4d0cd80629  ./docs/handoff/MEMO-FRESH-START-MASTER-LEDGER.md
 46c91211bdbb83187f2c2c15bf764547bebd9af9f578ba21bf5643bfdfb057ec  ./docs/handoff/Memo-Phase-1-CI-Diagnostics.md
 94daec0157ccec62aab788b26ab89031504c217a5e8cab5a54cec95a331657ba  ./docs/handoff/Memo-Signing-Setup.md
