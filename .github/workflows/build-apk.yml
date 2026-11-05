@@ -656,7 +656,20 @@ jobs:
             exit 1
           fi
           "$EMULATOR" -list-avds | tee -a "$MEMO_BUILD_LOG"
-          "$EMULATOR" -avd memo-api35 -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -no-metrics > "$RUNNER_TEMP/memo-emulator.log" 2>&1 &
+          if [[ ! -e /dev/kvm ]]; then
+            echo '::error::The hosted runner does not expose /dev/kvm; the x86_64 Android emulator cannot run.'
+            exit 1
+          fi
+          # The ephemeral hosted-runner user is not always in the kvm group.
+          # Restrict this permission change to the disposable CI VM.
+          sudo chmod 666 /dev/kvm
+          if [[ ! -r /dev/kvm || ! -w /dev/kvm ]]; then
+            echo '::error::The runner still cannot read/write /dev/kvm after permission setup.'
+            ls -l /dev/kvm || true
+            exit 1
+          fi
+          ls -l /dev/kvm | tee -a "$MEMO_BUILD_LOG"
+          "$EMULATOR" -avd memo-api35 -accel on -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot -no-metrics > "$RUNNER_TEMP/memo-emulator.log" 2>&1 &
           EMULATOR_PID=$!
           diagnose_emulator() {
             echo '--- Android emulator process diagnostics ---'

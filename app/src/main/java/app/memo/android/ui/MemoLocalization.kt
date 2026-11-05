@@ -443,6 +443,8 @@ object MemoLocalization {
         "APPROVAL" to ("ZATWIERDZENIE" to "ONAY"),
         "Ask in chat" to ("Zapytaj na czacie" to "Sohbette sor"),
         "Continue with Memo" to ("Kontynuuj z Memo" to "Memo ile devam et"),
+        "No plans yet" to ("Brak planów" to "Henüz plan yok"),
+        "Action-oriented requests become editable plans here. Review each checkpoint and its requirements before starting; completed work needs a real outcome and evidence." to ("Prośby o wykonanie zadania tworzą tutaj edytowalne plany. Przed rozpoczęciem sprawdź każdy punkt kontrolny i jego wymagania; ukończona praca wymaga rzeczywistego wyniku i dowodów." to "Eylem odaklı istekler burada düzenlenebilir planlara dönüşür. Başlatmadan önce her kontrol noktasını ve gereksinimlerini gözden geçir; tamamlanan iş gerçek bir sonuç ve kanıt gerektirir."),
         "Memo routes action requests into an editable plan and questions or brainstorming into Talk. Nothing external is sent or changed automatically." to ("Memo kieruje prośby o działanie do edytowalnego planu, a pytania i burze mózgów do rozmowy. Żadne działanie zewnętrzne nie zostanie wykonane automatycznie." to "Memo, eylem isteklerini düzenlenebilir bir plana; soruları ve beyin fırtınasını ise sohbete yönlendirir. Harici hiçbir işlem otomatik olarak gönderilmez veya değiştirilmez."),
         "Describe what you actually produced or observed. Memo records this as your report, not independent verification." to ("Opisz, co faktycznie utworzono lub zaobserwowano. Memo zapisuje to jako Twoją relację, a nie niezależną weryfikację." to "Gerçekte ne ürettiğinizi veya gözlemlediğinizi anlatın. Memo bunu bağımsız doğrulama değil, sizin bildiriminiz olarak kaydeder."),
         "Live response" to ("Odpowiedź na żywo" to "Canlı yanıt"),
@@ -537,6 +539,14 @@ object MemoLocalization {
         }
         if (text.startsWith("Relationships (") && text.endsWith(")")) {
             return if (normalized == "PL") text.replaceFirst("Relationships", "Relacje") else if (normalized == "TR") text.replaceFirst("Relationships", "İlişkiler") else text
+        }
+        if (text.startsWith("Plans · ")) {
+            val count = text.removePrefix("Plans · ")
+            return when (normalized) {
+                "PL" -> "Plany · $count"
+                "TR" -> "Planlar · $count"
+                else -> text
+            }
         }
         if (text.startsWith("Target: ")) {
             val suffix = text.removePrefix("Target: ")

@@ -557,12 +557,20 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
     }
 
     /** Turn an unstructured request into a persistent, editable, checkpoint-driven Memo job. This creates a plan only; it never executes external effects. */
-    fun createIntentPlan(rawIntent: String, language: String = _uiLanguage.value): Result<String> {
+    fun createIntentPlan(
+        rawIntent: String,
+        language: String = _uiLanguage.value,
+        sourceConversationId: String = ""
+    ): Result<String> {
         if (!_vaultReady.value) return Result.failure(IllegalStateException("Unlock the workspace before creating work."))
         if (_vaultError.value != null) return Result.failure(IllegalStateException("Workspace persistence is unavailable. Resolve the workspace issue before creating work."))
         val plan = runCatching { IntentPlanner.plan(rawIntent, language) }
             .getOrElse { return Result.failure(it) }
         val current = _snapshot.value
+        val sourceId = sourceConversationId.trim().take(128)
+        if (sourceId.isNotBlank() && current.conversations.none { it.id == sourceId }) {
+            return Result.failure(IllegalArgumentException("The source conversation no longer exists."))
+        }
         if (current.jobs.size >= 240) return Result.failure(IllegalStateException("The 240-job limit has been reached. Export a backup before removing older jobs."))
         val compiledCapabilities = CapabilityCompiler.compile(plan, runtimeRegistry.listRuntimes(), plan.goal)
         val capabilitySummary = compiledCapabilities.capabilities.joinToString(", ") { capability ->
@@ -578,6 +586,7 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             goal = plan.goal + "\n\nMemo route: ${plan.domain.label}. ${plan.rationale}\nExternal approval required: ${plan.requiresExternalApproval}." + capabilityRecord,
             status = "DRAFT",
             runtimeId = "app.jobs",
+            sourceConversationId = sourceId,
             steps = plan.steps.map { step ->
                 JobStepRecord(
                     title = step.title,

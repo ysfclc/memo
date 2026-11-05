@@ -48,6 +48,10 @@ class MemoLocalizationTest {
             "Memo routes action requests into an editable plan and questions or brainstorming into Talk. Nothing external is sent or changed automatically.",
             "TR"
         ).contains("düzenlenebilir bir plana"))
+        assertEquals("Plany · 3", MemoLocalization.translate("Plans · 3", "PL"))
+        assertEquals("Planlar · 3", MemoLocalization.translate("Plans · 3", "TR"))
+        assertEquals("Brak planów", MemoLocalization.translate("No plans yet", "PL"))
+        assertEquals("Henüz plan yok", MemoLocalization.translate("No plans yet", "TR"))
     }
 
     @Test
