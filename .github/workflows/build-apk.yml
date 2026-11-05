@@ -448,23 +448,22 @@ jobs:
             echo '::error::Memo signing secrets are partially configured. Set all four signing secrets or remove all four.'
             exit 1
           fi
-          if [[ "$nonempty" -eq 4 ]]; then
-            KEYSTORE="$RUNNER_TEMP/memo-upload-signing.jks"
-            printf '%s' "$MEMO_UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
-            test -s "$KEYSTORE"
-            keytool -list -keystore "$KEYSTORE" -storepass "$MEMO_UPLOAD_STORE_PASSWORD" -alias "$MEMO_UPLOAD_KEY_ALIAS" >/dev/null
-            {
-              echo "MEMO_UPLOAD_KEYSTORE_FILE=$KEYSTORE"
-              echo "MEMO_UPLOAD_STORE_PASSWORD=$MEMO_UPLOAD_STORE_PASSWORD"
-              echo "MEMO_UPLOAD_KEY_ALIAS=$MEMO_UPLOAD_KEY_ALIAS"
-              echo "MEMO_UPLOAD_KEY_PASSWORD=$MEMO_UPLOAD_KEY_PASSWORD"
-              echo 'MEMO_SIGNING_MODE=persistent upload keystore'
-            } >> "$GITHUB_ENV"
-            echo 'Persistent signing configured for a consistent APK certificate.' | tee -a "$MEMO_BUILD_LOG"
-          else
-            echo 'MEMO_SIGNING_MODE=ephemeral CI debug keystore' >> "$GITHUB_ENV"
-            echo 'No persistent signing secrets found; using the Android Gradle debug key. Reinstall may be required if its certificate changes.' | tee -a "$MEMO_BUILD_LOG"
+          if [[ "$nonempty" -ne 4 ]]; then
+            echo '::error::Persistent Memo signing is mandatory. Refusing to create an APK with a temporary or different certificate.'
+            exit 1
           fi
+          KEYSTORE="$RUNNER_TEMP/memo-upload-signing.jks"
+          printf '%s' "$MEMO_UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
+          test -s "$KEYSTORE"
+          keytool -list -keystore "$KEYSTORE" -storepass "$MEMO_UPLOAD_STORE_PASSWORD" -alias "$MEMO_UPLOAD_KEY_ALIAS" >/dev/null
+          {
+            echo "MEMO_UPLOAD_KEYSTORE_FILE=$KEYSTORE"
+            echo "MEMO_UPLOAD_STORE_PASSWORD=$MEMO_UPLOAD_STORE_PASSWORD"
+            echo "MEMO_UPLOAD_KEY_ALIAS=$MEMO_UPLOAD_KEY_ALIAS"
+            echo "MEMO_UPLOAD_KEY_PASSWORD=$MEMO_UPLOAD_KEY_PASSWORD"
+            echo 'MEMO_SIGNING_MODE=pinned persistent upload keystore'
+          } >> "$GITHUB_ENV"
+          echo 'Pinned persistent signing configured; temporary debug signing is disabled.' | tee -a "$MEMO_BUILD_LOG"
 
       - name: Refresh source checksum manifest
         shell: bash
@@ -584,6 +583,8 @@ jobs:
           printf '%s\n' "$SIGNATURE" | tee -a "$MEMO_BUILD_LOG"
           CERT="$(printf '%s\n' "$SIGNATURE" | sed -nE 's/.*certificate SHA-256 digest: ([0-9a-fA-F]+).*/\1/p' | head -n1 | tr '[:upper:]' '[:lower:]')"
           test -n "$CERT" || { echo '::error::APK signing certificate could not be verified.'; exit 1; }
+          EXPECTED_MEMO_CERT_SHA256='a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a'
+          [[ "$CERT" == "$EXPECTED_MEMO_CERT_SHA256" ]] || { echo '::error::Memo signing certificate changed. Refusing to publish an APK that may require uninstalling the installed app.'; exit 1; }
           {
             echo 'Memo APK identity verification: PASS'
             echo 'Package: app.memo.android.debug'
