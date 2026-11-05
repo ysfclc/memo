@@ -155,7 +155,7 @@ if not localization_test.exists():
     fail("MemoLocalization JVM unit test file missing")
 print("PASS: English, Polish, Turkish and voice/notification translations are represented")
 
-# Memo product-specific regressions: no second legacy Activity UI, and the home prompt remains an unsent draft.
+# Memo product-specific regressions: one Talk entry point, safe intent routing, and no second legacy Activity UI.
 legacy_activity = ROOT / "app/src/main/java/com/synthos/runtime/MainActivity.java"
 if legacy_activity.exists():
     fail("legacy duplicate SynthOS Activity still exists; runtime UI must route through MemoRuntimeBridge")
@@ -164,7 +164,7 @@ if "interface Listener" not in bridge.read_text() or "openForExternalCapture" no
     fail("Memo runtime bridge is missing listeners or capture entry points")
 home = (ROOT / "app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt").read_text()
 chat = (ROOT / "app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt").read_text()
-for marker in ("onStartConversation", "Make sense of what matters.", "Needs your decision"):
+for marker in ("onContinueWithMemo", "IntentPlanner.shouldCreateWorkflow", "Make sense of what matters.", "Needs your decision"):
     if marker not in home:
         fail(f"Memo-first home is missing product marker: {marker}")
 for marker in ("initialPrompt", "onInitialPromptConsumed", "draft = initialPrompt.take(6_000)"):
@@ -172,8 +172,10 @@ for marker in ("initialPrompt", "onInitialPromptConsumed", "draft = initialPromp
         fail(f"home-to-chat draft handoff is missing marker: {marker}")
 if "MainActivity.notifyRuntimeChanged" in (ROOT / "app/src/main/java/com/synthos/runtime/engine/AutomationAccessibilityService.java").read_text():
     fail("accessibility runtime still targets legacy Activity helpers")
+if "var tab by remember { mutableStateOf(AppTab.HOME) }" not in home:
+    fail("Memo must open on the universal Talk intent entry point")
 for marker in (
-    'Triple(AppTab.CHATS, Icons.Rounded.ChatBubbleOutline, "Talk")',
+    'Triple(AppTab.HOME, Icons.Rounded.ChatBubbleOutline, "Talk")',
     'Triple(AppTab.LIVE, Icons.Rounded.Bolt, "Live")',
     'Triple(AppTab.WORK, Icons.Rounded.Hub, "Work")',
     'Triple(AppTab.STUDIO, Icons.Rounded.Article, "Studio")',
@@ -184,10 +186,14 @@ for marker in (
         fail(f"Memo four-surface shell is missing: {marker}")
 if 'Triple(AppTab.BROWSER' in home:
     fail("Browser must remain a runtime route, not a primary navigation destination")
+view_model = (ROOT / "app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt").read_text()
+for marker in ('sourceConversationId: String = ""', 'sourceConversationId = sourceId'):
+    if marker not in view_model:
+        fail(f"Work-plan source conversation linkage is missing: {marker}")
 for marker in ("Start with Memo", "Continue in Talk", "onOpenCouncil", "onStartConversation"):
     if marker not in chat:
         fail(f"Talk entry/composer is missing: {marker}")
-print("PASS: one Memo Activity, Talk / Live / Work / Studio shell, Talk intent entry, and safe draft handoff")
+print("PASS: one Memo Activity, universal Talk intent router, linked source conversations, four product surfaces, and safe draft handoff")
 
 # Estimate coverage of the static string literals passed to the custom UI Text wrapper.
 # URLs and empty placeholders are intentionally not translations. Dynamic/interpolated
