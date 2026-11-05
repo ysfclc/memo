@@ -602,7 +602,7 @@ jobs:
           } | tee "$RUNNER_TEMP/Memo-APK-Identity.txt" | tee -a "$MEMO_BUILD_LOG"
 
       - name: Prove install-over-existing preserves app-private data
-        timeout-minutes: 20
+        timeout-minutes: 8
         shell: bash
         run: |
           set -euo pipefail
@@ -646,16 +646,29 @@ jobs:
             adb emu kill >/dev/null 2>&1 || true
             kill "$EMULATOR_PID" >/dev/null 2>&1 || true
           }
-          trap cleanup EXIT
-          adb wait-for-device
-          for attempt in $(seq 1 120); do
-            BOOTED="$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
+          diagnose_emulator() {
+            echo '--- Android emulator process diagnostics ---'
+            adb devices -l || true
+            if [[ -f "$RUNNER_TEMP/memo-emulator.log" ]]; then
+              tail -n 160 "$RUNNER_TEMP/memo-emulator.log"
+            fi
+          }
+          cleanup() {
+            adb emu kill >/dev/null 2>&1 || true
+            kill "$EMULATOR_PID" >/dev/null 2>&1 || true
+          }
+          trap 'status=$?; if (( status != 0 )); then diagnose_emulator; fi; cleanup; exit "$status"' EXIT
+          echo 'Waiting up to 120 seconds for the Android emulator transport.'
+          timeout 120s adb wait-for-device
+          echo 'Waiting up to 180 seconds for Android framework boot.'
+          BOOTED=''
+          for attempt in $(seq 1 60); do
+            BOOTED="$(timeout 8s adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
             [[ "$BOOTED" == '1' ]] && break
-            sleep 5
+            sleep 3
           done
-          [[ "$(adb shell getprop sys.boot_completed | tr -d '\r')" == '1' ]] || {
-            cat "$RUNNER_TEMP/memo-emulator.log"
-            echo '::error::Android emulator did not finish booting.'
+          [[ "$BOOTED" == '1' ]] || {
+            echo '::error::Android emulator did not finish booting within 3 minutes.'
             exit 1
           }
           adb shell settings put global window_animation_scale 0
