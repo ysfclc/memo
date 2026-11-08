@@ -252,7 +252,7 @@ if "sha256sum -c SOURCE_SHA256SUMS.txt" not in workflow or "Memo-Source-Archive-
 workspace_vault = (ROOT / "app/src/main/java/app/memo/android/data/EncryptedVault.kt").read_text()
 native_store = (ROOT / "app/src/main/java/com/synthos/runtime/data/SynthStore.java").read_text()
 upgrade_test = (ROOT / "app/src/androidTest/java/app/memo/android/data/EncryptedStoreUpgradeTest.kt").read_text()
-for marker in ("memo-workspace-vault.bin", "synthos-vault.bin", "synthos_fieldwork_vault_v1", "Memo-Android:v1", "getExistingKey()", "copyLegacyWorkspaceAtomically", 'keyStore.getKey("synthos.runtime.store.v1", null)', "cipher.doFinal(encrypted)", "damaged SYV1 header"):
+for marker in ("memo-workspace-vault.bin", "synthos-vault.bin", "synthos_fieldwork_vault_v1", "Memo-Android:v1", "getExistingKey()", "copyLegacyWorkspaceAtomically", "canonicalBase.path + ".bak"", "atomicFile.openRead()", 'keyStore.getKey("synthos.runtime.store.v1", null)', "cipher.doFinal(encrypted)", "damaged SYV1 header"):
     if marker not in workspace_vault:
         fail(f"primary encrypted workspace migration contract is missing: {marker}")
 for marker in ("memo-native-workflows.bin", "synthos-vault.bin", "synthos.runtime.store.v1", "getExistingKey()", "writePayloadAtomically(legacyPayload)"):
@@ -268,7 +268,7 @@ if workspace_vault.index("AppSnapshot.fromJson(decrypt(legacyBytes)") > workspac
     fail("primary legacy ciphertext must be authenticated before it is copied")
 if native_store.index("decryptPayload(legacyPayload)") > native_store.index("writePayloadAtomically(legacyPayload)"):
     fail("native legacy ciphertext must be authenticated before it is copied")
-for marker in ("phase=seed", "phase=verify", "memo-storage-upgrade-acceptance", "File(target.filesDir, TEST_DIRECTORY)", "legacyWorkspace.writeBytes(workspace.readBytes())", "First launch after the in-place update", "Corrupt primary", "Unknown formats"):
+for marker in ("phase=seed", "phase=verify", "memo-storage-upgrade-acceptance", "File(target.filesDir, TEST_DIRECTORY)", "legacyWorkspace.writeBytes(workspace.readBytes())", "First launch after the in-place update", "AtomicFile backup was not restored", "Corrupt primary", "Unknown formats"):
     if marker not in upgrade_test:
         fail(f"encrypted-store upgrade instrumentation coverage is missing: {marker}")
 for marker in ("app-debug-androidTest.apk", "run_store_acceptance_phase seed", "run_store_acceptance_phase verify", 'adb install -r "$CURRENT_APK"'):
