@@ -6,6 +6,7 @@ name: Build Memo Android APK
       - "incoming/memo.zip"
       - "Memo-Android-Repository.zip"
       - "memo1-task-runbook.zip"
+      - ".github/workflows/build-apk.yml"
   workflow_dispatch:
 
 permissions:
@@ -57,6 +58,10 @@ jobs:
           if "incoming/memo.zip" in changed:
               print("incoming/memo.zip")
           elif "Memo-Android-Repository.zip" in changed or "memo1-task-runbook.zip" in changed:
+              print("Memo-Android-Repository.zip")
+          elif ".github/workflows/build-apk.yml" in changed:
+              # Re-import the already-committed canonical source archive when
+              # deliberately repairing or bootstrapping this workflow.
               print("Memo-Android-Repository.zip")
           PY_EVENT
           )"
