@@ -100,6 +100,20 @@ class EncryptedStoreUpgradeTest {
         assertArrayEquals("Native migration must preserve the original legacy bytes.", nativeBytes, legacy.readBytes())
         assertArrayEquals(nativeBytes, native.readBytes())
 
+        // Both canonical stores now coexist. Writes to either must not alter the other ciphertext.
+        EncryptedVault(context).write(sampleSnapshot())
+        val workspaceBeforeNativeWrite = workspace.readBytes()
+        migratedNativeStore.saveWorkflow(
+            Workflow("Second isolated workflow", "com.android.settings", "Settings").apply {
+                id = "upgrade-workflow-second"
+            }
+        )
+        assertArrayEquals(workspaceBeforeNativeWrite, workspace.readBytes())
+        assertWorkspaceContent(EncryptedVault(context).read())
+        assertEquals(WORKFLOW_NAME, SynthStore(context).getWorkflow(WORKFLOW_ID)?.name)
+        assertEquals("Second isolated workflow", SynthStore(context).getWorkflow("upgrade-workflow-second")?.name)
+        assertTrue(workspace.isFile && native.isFile)
+
         // Corrupted primary data must fail closed without being overwritten by the other store.
         assertTrue(native.delete())
         val corruptPrimary = workspaceBytes.copyOf().apply {
