@@ -203,7 +203,9 @@ class EncryptedStoreUpgradeTest {
 
     private fun isolatedContext(): Context {
         val target = InstrumentationRegistry.getInstrumentation().targetContext
-        val directory = File(target.cacheDir, TEST_DIRECTORY)
+        // This is an isolated child of private filesDir (not the real root vault and not cacheDir,
+        // which the platform may evict independently during an app update).
+        val directory = File(target.filesDir, TEST_DIRECTORY)
         if (InstrumentationRegistry.getArguments().getString("phase") == "seed") {
             check(directory.deleteRecursively() || !directory.exists()) {
                 "Could not reset the isolated Memo storage-test directory."
