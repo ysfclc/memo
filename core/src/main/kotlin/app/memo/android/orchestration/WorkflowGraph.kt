@@ -208,10 +208,14 @@ object WorkflowGraphCompiler {
             "The capability manifest contains unresolved requirements; the workflow cannot be compiled."
         }
         require(tasks.isNotEmpty()) { "A workflow needs at least one task." }
-        val available = manifest.capabilities.map { it.runtimeId to it.capabilityId }.toSet()
+        val capabilitiesByRuntime = manifest.capabilities.associateBy { it.runtimeId to it.capabilityId }
         tasks.forEach { task ->
-            require(task.requiredCapabilities.all { capability -> (task.runtimeId to capability) in available }) {
-                "Task '${task.id}' requires a capability that is not registered on runtime '${task.runtimeId}'."
+            task.requiredCapabilities.forEach { capabilityId ->
+                val capability = capabilitiesByRuntime[task.runtimeId to capabilityId]
+                    ?: throw IllegalArgumentException("Task '${task.id}' requires a capability that is not registered on runtime '${task.runtimeId}'.")
+                require(!capability.requiresUserApproval || task.requiresApproval) {
+                    "Task '${task.id}' uses approval-gated capability '${capabilityId}' without an explicit approval checkpoint."
+                }
             }
             when (task.participant) {
                 WorkflowParticipant.LOCAL_MODEL -> require(task.runtimeId == "app.models") {
@@ -223,8 +227,11 @@ object WorkflowGraphCompiler {
                 WorkflowParticipant.ANDROID_APP -> require(task.runtimeId == "runtime.android.accessibility") {
                     "Android-app tasks must target the accessibility runtime."
                 }
-                WorkflowParticipant.DETERMINISTIC, WorkflowParticipant.USER -> require(task.runtimeId.startsWith("app.")) {
-                    "Deterministic and user tasks must target a Memo app runtime."
+                WorkflowParticipant.DETERMINISTIC -> require(task.runtimeId.startsWith("app.")) {
+                    "Deterministic tasks must target a Memo app runtime."
+                }
+                WorkflowParticipant.USER -> require(task.runtimeId in setOf("app.jobs", "app.approvals")) {
+                    "User checkpoints must target the Memo job or approval runtime."
                 }
             }
         }
