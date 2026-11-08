@@ -278,6 +278,29 @@ for marker in ("app-debug-androidTest.apk", "run_store_acceptance_phase seed", "
         fail(f"CI does not execute the encrypted-store in-place upgrade test: {marker}")
 print("PASS: encrypted workspace/native store separation, authenticate-before-copy migration, legacy preservation, and in-place upgrade instrumentation are wired")
 
+task_spec_source = (ROOT / "core/src/main/kotlin/app/memo/android/orchestration/WorkflowGraph.kt").read_text()
+capability_source = (ROOT / "core/src/main/kotlin/app/memo/android/orchestration/CapabilityCompiler.kt").read_text()
+proposal_parser = (ROOT / "core/src/main/kotlin/app/memo/android/orchestration/WorkflowTaskProposalParser.kt").read_text()
+task_graph_tests = (ROOT / "core/src/test/kotlin/app/memo/android/orchestration/WorkflowGraphTest.kt").read_text()
+proposal_tests = (ROOT / "core/src/test/kotlin/app/memo/android/orchestration/WorkflowTaskProposalParserTest.kt").read_text()
+for marker in ("data class TaskSpec(", "typealias WorkflowNodeSpec = TaskSpec", "fun compile(\n        goal: String", "Workflow model-call budget exceeded", "Workflow total timeout exceeds"):
+    if marker not in task_spec_source:
+        fail(f"typed dynamic workflow graph contract is missing: {marker}")
+for marker in ("fun compileForTasks(", "task.runtimeId to it", "unresolvedRequirements = missing", "mode=task-spec"):
+    if marker not in capability_source:
+        fail(f"dynamic capability assembly is missing: {marker}")
+for marker in ("MAX_RAW_CHARS = 64_000", "UUID.randomUUID()", "CapabilityCompiler.compileForTasks", "WorkflowGraphCompiler.compile", "private fun integer("):
+    if marker not in proposal_parser:
+        fail(f"untrusted TaskSpec proposal parser is missing: {marker}")
+for marker in ("dynamicTaskSpecsCompileIntoAValidatedFanOutAndJoinDag", "NeverBorrowsAnIdenticallyNamedCapability", "dynamicGraphRejectsModelAndDurationBudgetOverruns"):
+    if marker not in task_graph_tests:
+        fail(f"dynamic workflow graph regression coverage is missing: {marker}")
+for marker in ("parsesDynamicTaskSpecsAndCreatesFreshAppOwnedIdempotencyKeys", "rejectsCapabilitiesThatExistOnlyOnAnotherRuntime", "rejectsCyclesAndUnapprovedExternalWrites", "rejectsMalformedAndOversizedTaskFields"):
+    if marker not in proposal_tests:
+        fail(f"TaskSpec proposal parser regression coverage is missing: {marker}")
+print("PASS: typed TaskSpec proposals compile into bounded DAGs with exact-runtime capability resolution and fail-closed validation")
+
+
 print("PASS: CI safely handles canonical ZIP imports and checked-out direct-source builds, verifies source integrity, and runs Android unit tests/lint/APK assembly")
 
 runner_tests = list((ROOT / "remote-runner/tests").glob("test_*.py"))
