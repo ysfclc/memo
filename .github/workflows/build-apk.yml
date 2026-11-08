@@ -97,8 +97,17 @@ jobs:
             echo 'This exact archive upload commit already has an import note.'
           fi
           CHANGED_FILES="$(git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA")"
-          DIRECT_SOURCE_CHANGE="$(printf '%s\\n' "$CHANGED_FILES" | grep -Ec '^(.github/workflows/build-apk.yml|app/|core/|gradle/|tools/|docs/|README[.]md$|TASKS[.]md$|ROADMAP[.]md$|FEATURE_AUDIT[.]md$|PRODUCT_GAP_REGISTRY[.]md$|MEMO2_ALIGNMENT_MATRIX[.]md$|.*[.]gradle([.]kts)?$|gradle[.]properties$|settings[.]gradle([.]kts)?$)' || true)"
-          INCOMING_ARCHIVE_CHANGE="$(printf '%s\\n' "$CHANGED_FILES" | grep -Ec '^incoming/memo[.]zip
+          DIRECT_SOURCE_CHANGE="$(printf '%s\n' "$CHANGED_FILES" | grep -Ec '^(.github/workflows/build-apk.yml|app/|core/|gradle/|tools/|docs/|README[.]md$|TASKS[.]md$|ROADMAP[.]md$|FEATURE_AUDIT[.]md$|PRODUCT_GAP_REGISTRY[.]md$|MEMO2_ALIGNMENT_MATRIX[.]md$|.*[.]gradle([.]kts)?$|gradle[.]properties$|settings[.]gradle([.]kts)?$)' || true)"
+          INCOMING_ARCHIVE_CHANGE="$(printf '%s\n' "$CHANGED_FILES" | grep -Ec '^incoming/memo[.]zip$' || true)"
+          if [[ "$GITHUB_EVENT_NAME" == "push" && "$DIRECT_SOURCE_CHANGE" -gt 0 && "$INCOMING_ARCHIVE_CHANGE" -eq 0 ]]; then
+            # Direct source changes must always build the checked-out revision. The historical
+            # upload ZIP is immutable and may be older; do not re-extract it over newer source.
+            SOURCE_ONLY=true
+            ALREADY_IMPORTED=false
+            UPLOAD_COMMIT="$GITHUB_SHA"
+            ARCHIVE_SHA="$(sha256sum SOURCE_SHA256SUMS.txt | awk '{print $1}')"
+            echo 'Direct source verification requested; building the checked-out source without re-extracting the historical ZIP.'
+          fi
           {
             echo 'skip_no_upload=false'
             echo "already_imported=$ALREADY_IMPORTED"
