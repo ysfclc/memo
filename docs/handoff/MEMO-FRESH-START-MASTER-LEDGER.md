@@ -384,3 +384,11 @@ Inspected source head at this checkpoint: 42779b33a4f522e31b2d6f47a393557c3880d7
 Status: source implementation [~]; automated acceptance [ ]; physical-device acceptance [ ]. Keep M0.C1/M0.C2 open until a real CI run passes and the phone test is recorded. Eventual single-store transaction/event unification remains a later task; do not merge or delete either data set as part of this slice.
 
 Next after this P0 gate: implement the roadmap's typed TaskSpec, dynamic versioned dependency DAG, and shared runtime/policy contracts. Only then connect Talk's composer to an inspectable workflow draft and route it through the correct capability.
+
+
+### Follow-up — recovery gate and actual pre-update legacy fixture
+
+- The upgrade test now stages the primary encrypted workspace under the original synthos-vault.bin path **before** the signed install update, removes only the fixture's new canonical file, and then requires the first post-update read to migrate/decrypt it with the unchanged Keystore key. The native workflow record remains in its independent canonical file and is reopened after the upgrade.
+- The fixture is stored in a dedicated persistent app-private filesDir child, not cacheDir, and never touches the real root vault files.
+- The vault-error screen now exposes both plain JSON restore and the existing passphrase-encrypted backup restore. Android share-sheet content is not imported until vaultError is clear. The source verifier enforces these recovery invariants.
+- CI source checks were locally exercised for direct source edits versus incoming ZIP uploads; shell syntax and routing results passed. This is a static preflight check only, not an Android build/test.
