@@ -83,6 +83,14 @@ class WorkflowTaskProposalParserTest {
         assertTrue(runCatching {
             WorkflowTaskProposalParser.parse(approvalFlagWithoutGate, "Submit a provider prompt", runtimes)
         }.isFailure)
+        val retryableSensitiveAction = proposal(listOf(
+            task("approval", "USER", "app.approvals", kind = "APPROVAL", externalWrite = true, requiresApproval = true),
+            task("submit", "BROWSER", "runtime.browser", listOf("browser.submit_prompt"), listOf("approval"), requiresApproval = true)
+                .put("maxRetries", 1)
+        ))
+        assertTrue(runCatching {
+            WorkflowTaskProposalParser.parse(retryableSensitiveAction, "Submit a provider prompt", runtimes)
+        }.isFailure)
 
         val approvedFlow = proposal(listOf(
             task("draft", "DETERMINISTIC", "app.jobs", kind = "ARTIFACT"),
