@@ -350,7 +350,7 @@ Before adding more orchestration behavior, separate the two encrypted stores wit
 ## 2026-11-08 — Storage isolation implementation committed; acceptance pending
 
 Implementation branch: ysfclc-patch-1  
-Inspected source head at this checkpoint: 42779b33a4f522e31b2d6f47a393557c3880d713
+Inspected source head at this checkpoint: 6be11dec1c71f51421b295c20a8056a767cd73e0 (including the subsequent storage recovery UI and instrumented test follow-up commits listed below).
 
 ### Source changes
 
@@ -390,5 +390,6 @@ Next after this P0 gate: implement the roadmap's typed TaskSpec, dynamic version
 
 - The upgrade test now stages the primary encrypted workspace under the original synthos-vault.bin path **before** the signed install update, removes only the fixture's new canonical file, and then requires the first post-update read to migrate/decrypt it with the unchanged Keystore key. The native workflow record remains in its independent canonical file and is reopened after the upgrade.
 - The fixture is stored in a dedicated persistent app-private filesDir child, not cacheDir, and never touches the real root vault files.
+- Follow-up implementation commits: 41106d53da8962242f87e7d8c7bf1297bb0fafcd and 9f89b22932af0f983ae7e98535a7aebb0cc1be62 / 56ce8f443e430b9180f61b85f36dc54ba051515a — encrypted restore action and share-intake guard with EN/PL/TR copy; 92ba95427933f6dd401d10dd4bd73b4a00425dcb and 5e88745f08a3fb09a5c1a114dfcb02ccc16934ba — legacy data staged before upgrade and persistent isolated test directory; 23fa2ec6e39670a0c2e750628c55362f54b6bdb6 and 6be11dec1c71f51421b295c20a8056a767cd73e0 — source-verifier enforcement.
 - The vault-error screen now exposes both plain JSON restore and the existing passphrase-encrypted backup restore. Android share-sheet content is not imported until vaultError is clear. The source verifier enforces these recovery invariants.
 - CI source checks were locally exercised for direct source edits versus incoming ZIP uploads; shell syntax and routing results passed. This is a static preflight check only, not an Android build/test.
