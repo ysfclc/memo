@@ -48,7 +48,7 @@ The primary surfaces are now Talk / Live / Work / Studio in source and CI #99. T
 
 The current Talk composer opens a conversation draft; it does not yet parse an intent into a dynamic workflow. `IntentPlanner` is keyword/template based and `CapabilityCompiler` maps domains to static lists. They are useful prototypes, not the final dynamic planner or workflow engine. Council is still a separate route. The browser workflow is provider-specific; native app automation uses a separate legacy store; the primary workspace and native workflow store are not unified. Do not describe these as one integrated agent.
 
-**Next implementation order:** (1) physical install-over-existing and data-preservation acceptance, then safe single-store migration; (2) typed TaskSpec + dynamic versioned DAG and shared runtime/policy contracts; (3) make the Talk composer produce an inspectable workflow draft and route to the correct capability; (4) unify Live events and attach visible browser/native runtime panes; (5) integrate Council with Talk context; (6) complete end-to-end Brainstorm, CRM, Jobs, Content and arbitrary-work journeys; (7) add Today priorities and everyday voice/capture utilities. Do not spend the next increments polishing isolated entity CRUD while the central intent-to-outcome loop is missing.
+**Next implementation order:** (1) complete real encrypted-store emulator upgrade/migration acceptance, then physical-phone install-over-existing and data-preservation acceptance; design the later single-store consolidation only after both stores are safely isolated; (2) typed TaskSpec + dynamic versioned DAG and shared runtime/policy contracts; (3) make the Talk composer produce an inspectable workflow draft and route to the correct capability; (4) unify Live events and attach visible browser/native runtime panes; (5) integrate Council with Talk context; (6) complete end-to-end Brainstorm, CRM, Jobs, Content and arbitrary-work journeys; (7) add Today priorities and everyday voice/capture utilities. Do not spend the next increments polishing isolated entity CRUD while the central intent-to-outcome loop is missing.
 
 ## 5 November 2026 — Talk / Live / Work / Studio shell increment
 
@@ -143,8 +143,8 @@ The following keeps Claude's task families and ordering while requiring Memo 1-s
 - [ ] **M0.A7** Define platform interfaces for LLM, speech, vault, browser, app automation, package discovery, scheduler and notifier; keep pure core free of Android imports.
 - [ ] **M0.A8** Resolve hidden/ignored core test failures and add regression coverage for all fixes.
 - [ ] **M0.B1** Stabilize Android/dependency/native infrastructure, pinned toolchain and repeatable CI build.
-- [ ] **M0.C1** Harden encrypted vault, key lifecycle, auth binding and secret-safe diagnostics.
-- [ ] **M0.C2** Move persistence/runtime onto the vault while preserving existing Memo 1 data and key/file compatibility; test migration and recovery.
+- [~] **M0.C1** Harden encrypted vault, key lifecycle, auth binding and secret-safe diagnostics. The primary workspace and native workflow stores now have separate canonical files; legacy payloads are authenticated before atomic copy, old aliases/formats are retained, and reads no longer create replacement keys. CI and device acceptance remain pending.
+- [~] **M0.C2** Preserve Memo 1 data and key/file compatibility across the current primary/native store boundary. Store isolation and both legacy migration paths are implemented with an isolated Android instrumentation acceptance test; CI/device proof and the later single-store transaction/event boundary remain open.
 - [ ] **M0.F1** Fix engine safety invariants: gates bind to content hash, retries are bounded, vetoes dominate, cancellations stop work, postconditions determine success.
 - [ ] **M0.F2** Review/fix app integration and UI assumptions against core contracts.
 - [ ] **M0.F3** Independently review core logic and resolve findings with tests.
@@ -395,3 +395,12 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - **Files added/changed in this slice:** `app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt`, `tools/verify_source.py`, `PRODUCT_GAP_REGISTRY.md`, `FEATURE_AUDIT.md`, `TASKS.md`, `CHANGELOG.md`, `BUILD_STATUS.md`, `SOURCE_SHA256SUMS.txt`.
 - **Verification:** structural source verifier and 12/12 guest-runner Python tests pass. UI stop behavior, Kotlin/Compose build, race/timeout cases and device behavior remain unverified.
 - **Commit:** none; GitHub write integration is still blocked. Full M0 and product definition remain open.
+
+## 2026-11-08 — Encrypted storage isolation slice
+
+- **Task status:** M0.C1 / M0.C2 `[~]`. This is a data-integrity prerequisite, not completion of the vault or the product-wide persistence boundary.
+- **Change:** `EncryptedVault` now uses `memo-workspace-vault.bin`; `SynthStore` now uses `memo-native-workflows.bin`. The original `synthos-vault.bin` path is treated as a read-only migration source. Existing Keystore aliases, AES-GCM parameters, the `SYV1` primary format/AAD and native JSON schema v1 are retained.
+- **Safety:** existing ciphertext is authenticated with the existing key before an atomic copy; the source file is never deleted or overwritten. Unknown, corrupt or unauthenticated payloads fail closed. Reads do not generate a replacement key. The old shared file could contain only the last store to write; earlier overwritten bytes cannot be reconstructed.
+- **Acceptance added:** `EncryptedStoreUpgradeTest` seeds both real encrypted stores, verifies decryption after a version-increasing signed `adb install -r`, tests both legacy-format migration directions, tests corruption/unknown-format preservation, and uses an isolated app-private test directory so it cannot mutate the actual user workspace. The CI workflow now builds and runs this test on API 35.
+- **Verification state:** source edits are committed on `ysfclc-patch-1`. Android Gradle compilation, lint, instrumentation/emulator results and physical-device acceptance are not yet confirmed. Do not mark this slice complete until the CI run is inspected; do not claim phone acceptance from emulator evidence.
+- **Remaining:** confirm CI; complete physical install-over-existing on the user's phone; later design and test a single authoritative transaction/event boundary without deleting or silently merging either store.
