@@ -223,6 +223,8 @@ for marker in (
 ):
     if marker not in workspace_app:
         fail(f"vault recovery UI is missing a safe recovery gate: {marker}")
+if "Restore encrypted backup" not in localization_sources:
+    fail("encrypted backup recovery action is missing from the English/Polish/Turkish catalog")
 if "plain JSON or passphrase-encrypted" not in workspace_app:
     fail("vault recovery UI must explain both supported backup formats")
 print("PASS: vault failure blocks share capture and keeps encrypted-backup recovery available")
@@ -266,7 +268,7 @@ if workspace_vault.index("AppSnapshot.fromJson(decrypt(legacyBytes)") > workspac
     fail("primary legacy ciphertext must be authenticated before it is copied")
 if native_store.index("decryptPayload(legacyPayload)") > native_store.index("writePayloadAtomically(legacyPayload)"):
     fail("native legacy ciphertext must be authenticated before it is copied")
-for marker in ("phase=seed", "phase=verify", "memo-storage-upgrade-acceptance", "Corrupt primary", "Unknown formats"):
+for marker in ("phase=seed", "phase=verify", "memo-storage-upgrade-acceptance", "legacyWorkspace.writeBytes(workspace.readBytes())", "First launch after the in-place update", "Corrupt primary", "Unknown formats"):
     if marker not in upgrade_test:
         fail(f"encrypted-store upgrade instrumentation coverage is missing: {marker}")
 for marker in ("app-debug-androidTest.apk", "run_store_acceptance_phase seed", "run_store_acceptance_phase verify", 'adb install -r "$CURRENT_APK"'):
