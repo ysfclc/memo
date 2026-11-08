@@ -297,3 +297,49 @@ No task is marked complete solely because a screen, button, source file, prior g
 This ledger is a review draft and a proposed execution contract. **No code, workflow, branch, issue, PR, or repository setting has been changed.**
 
 To begin Phase 3, approve this ledger (or specify changes). The first execution action after approval is source reconciliation—not feature coding—and the first implementation task after the P1-0 gate is `BUILD-01`.
+
+
+---
+
+## 2026-11-08 — Fresh Start continuation: storage integrity checkpoint
+
+**User direction:** continue the existing Memo product plan and roadmap; do not substitute a new interpretation or a cosmetic feature. This checkpoint is committed before source implementation.
+
+### Repository and source authority
+
+- Working branch: `ysfclc-patch-1`. Current inspected branch head: `ff4d6637e1f86dcd26849989defa8427804a3111` (`Route job vacancy searches through browser research`).
+- Branch comparison against `main`: working branch is 111 commits ahead and 3 commits behind. The working branch contains the Android source tree, the 5 November product contract, roadmap, task ledger and CI records. `main` remains an older archive/bootstrap branch and is not the implementation target.
+- Product authority: `docs/MEMO_PRODUCT_CONTRACT.md`; engineering order: `TASKS.md` and `ROADMAP.md`. No framework rewrite, Memo 2 screen import, or isolated CRUD polish is authorized.
+- Latest documented integrated source build: CI run #99 (`d11b83ad13e731e851d6e169662d0a3c91ddb2a6`, 5 November 2026) passed source checks, remote-runner tests, core/app JVM tests, lint, debug APK assembly and APK identity/signature checks. Its recorded job steps did not include an install-over-existing test. The current workflow's existing emulator step checks only a plaintext sandbox sentinel; it does not exercise the real encrypted stores or their Keystore keys.
+- No application source change has been made in this checkpoint.
+
+### Confirmed storage compatibility finding
+
+Two active implementations currently use the same private file path:
+
+| Component | Call site / owner | File | Keystore alias | On-disk format |
+|---|---|---|---|---|
+| Primary Compose workspace | `MemoWorkspaceViewModel` → `EncryptedVault` | `filesDir/synthos-vault.bin` | `synthos_fieldwork_vault_v1` | `SYV1` magic + 12-byte IV + AES-GCM ciphertext; AAD `Memo-Android:v1`; written through `AtomicFile` |
+| Legacy native workflow/run store | `AutomationAccessibilityService` → `SynthStore.shared()` | `filesDir/synthos-vault.bin` | `synthos.runtime.store.v1` | IV-length byte + IV + AES-GCM ciphertext; JSON schema version 1; written through a temporary file and rename |
+
+Both constructors and persistence paths are present in the active app. The formats and keys are incompatible. This is a confirmed file-namespace collision and a data-integrity risk; it is **not evidence that any particular user's data has already been lost**.
+
+### Selected implementation task — P0 storage isolation and legacy preservation
+
+Before adding more orchestration behavior, separate the two encrypted stores without dropping either format:
+
+1. Give the primary workspace and native workflow store distinct, stable canonical filenames.
+2. Detect the exact legacy format before migration. Reuse each existing Keystore alias and format/AAD; do not generate a replacement key to make old ciphertext appear readable.
+3. Copy the legacy payload to its new store-specific file atomically, then decrypt and validate it before considering migration successful. Keep the original `synthos-vault.bin` untouched as a recovery source; never overwrite it during migration.
+4. If the file is unknown, corrupt, unauthenticated or cannot be opened with its existing key, fail closed and preserve it. Do not silently initialize an empty workspace over it.
+5. Prove that both stores can coexist and independently round-trip real records. Prove that the encrypted workspace and native workflow records remain readable after a signed, version-increasing `adb install -r` update.
+
+### Acceptance gates
+
+- Instrumented Android test uses the actual `EncryptedVault`, `SynthStore`, Android Keystore aliases and application-private files; no plaintext sentinel-only substitute.
+- Test legacy primary-vault migration, legacy native-store migration, cross-store isolation, tamper/unknown-format preservation, and the seed-before-update / verify-after-update sequence.
+- CI builds the instrumentation APK, runs the tests on the existing API 35 emulator, and retains the result in its build diagnostics.
+- Keep the existing application ID, persistent signing certificate, Keystore aliases, encryption parameters, and old source file. Run core tests, app unit tests, lint, debug APK build, APK identity checks and emulator upgrade acceptance.
+- Physical-device install-over-existing and user-data confirmation remain open until tested on the user's phone. CI/emulator success must not be described as physical-device acceptance.
+
+**Status:** selected; implementation not started. Do not advance to single-store consolidation or the typed dynamic orchestrator until this data-safety slice is green and its evidence is recorded.
