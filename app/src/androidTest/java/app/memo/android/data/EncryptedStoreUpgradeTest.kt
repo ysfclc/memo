@@ -48,9 +48,15 @@ class EncryptedStoreUpgradeTest {
         }
         SynthStore(context).saveWorkflow(workflow)
 
-        assertTrue(files.resolve(WORKSPACE_FILE).isFile)
+        val legacyWorkspace = files.resolve(LEGACY_FILE)
+        val workspace = files.resolve(WORKSPACE_FILE)
+        assertTrue(workspace.isFile)
         assertTrue(files.resolve(NATIVE_FILE).isFile)
-        assertFalse(files.resolve(LEGACY_FILE).exists())
+        // Simulate an install from the old shared-file layout: workspace ciphertext remains
+        // under synthos-vault.bin, while the native record is retained independently for this fixture.
+        legacyWorkspace.writeBytes(workspace.readBytes())
+        assertTrue("Could not stage the pre-update legacy workspace fixture.", workspace.delete())
+        assertTrue(legacyWorkspace.isFile)
     }
 
     private suspend fun verifyAndExerciseLegacyRecovery(context: Context) {
@@ -59,18 +65,25 @@ class EncryptedStoreUpgradeTest {
         val native = files.resolve(NATIVE_FILE)
         val legacy = files.resolve(LEGACY_FILE)
 
-        assertTrue("Primary encrypted workspace missing after APK update.", workspace.isFile)
+        assertFalse("The primary workspace fixture should still be under its old filename before migration.", workspace.exists())
+        assertTrue("Legacy workspace data missing after APK update.", legacy.isFile)
         assertTrue("Native workflow store missing after APK update.", native.isFile)
-        val workspaceBytes = workspace.readBytes()
+        val legacyWorkspaceBytes = legacy.readBytes()
         val nativeBytes = native.readBytes()
-        assertFalse("The two stores must not share ciphertext.", workspaceBytes.contentEquals(nativeBytes))
 
-        // Authentication with the existing Android Keystore aliases proves the keys remained usable.
+        // First launch after the in-place update must migrate the old primary file with its old key.
         assertWorkspaceContent(EncryptedVault(context).read())
+        assertTrue("Primary encrypted workspace was not migrated after APK update.", workspace.isFile)
+        assertArrayEquals("Legacy bytes must remain available after update migration.", legacyWorkspaceBytes, legacy.readBytes())
+        assertArrayEquals("Migrated primary ciphertext must remain byte-identical.", legacyWorkspaceBytes, workspace.readBytes())
+
+        // Native workflow storage remained independent and can still decrypt with its own key.
         assertEquals(
             WORKFLOW_NAME,
             SynthStore(context).getWorkflow(WORKFLOW_ID)?.name
         )
+        val workspaceBytes = workspace.readBytes()
+        assertFalse("The two stores must not share ciphertext.", workspaceBytes.contentEquals(nativeBytes))
 
         // Historical primary-vault file: the native store must recognize it as foreign and leave it alone.
         assertTrue(workspace.delete())
