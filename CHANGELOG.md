@@ -6,6 +6,7 @@
 - Legacy payloads are identified by their existing format, decrypted with the existing Android Keystore alias and validated before atomic copy. Unknown/corrupt data is not overwritten; read paths no longer generate replacement keys.
 - Added an Android instrumentation test that seeds both encrypted stores, verifies them after a signed/version-increasing in-place update, exercises both legacy migration directions and checks tamper/unknown-format preservation in isolated app-private storage.
 - Wired instrumentation APK assembly and pre-/post-upgrade test phases into the API 35 emulator workflow. CI, APK build, lint and device results remain unverified until the run is observed; the separate-store architecture is transitional, not the final single-store boundary.
+- Hardened the recovery screen so users can restore either plain JSON or passphrase-encrypted backups after a vault error; deferred pending share-sheet imports until the vault is healthy. The instrumented upgrade fixture uses a persistent isolated app-private directory.
 ## 28 October 2026 — exact-content external prompt approval
 
 - Added pure-core `ActionApprovalLedger` with runtime/capability/destination/payload hash binding, expiring one-use approval, mismatch invalidation, audit-chain verification, process-death recovery and evidence-backed completion.
