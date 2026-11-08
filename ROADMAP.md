@@ -42,7 +42,7 @@ The active shell is now Talk / Live / Work / Studio. Talk has one text/voice ent
 - [ ] Keep model, capability, permission and diagnostics management in supporting settings, not primary navigation.
 
 ### P2 — Implement the real orchestrator
-- [ ] Typed TaskSpec and versioned workflow DAG; no keyword-only planning as the execution brain.
+- [~] Typed TaskSpec proposal contract, exact-runtime capability assembly and bounded dynamic DAG validation are in core with parser/tests; Talk still uses the deterministic domain-template planner and no DAG executor is wired.
 - [ ] Dynamic capability assembly from a versioned registry; inspectable manifest, gaps, trust, runtime readiness and budgets.
 - [ ] Unified runtime routing for deterministic tools, local model, frontier website/app sessions, browser, native app and human checkpoints.
 - [ ] Shared durable run state/event journal with pause, resume, cancellation, process-death recovery and idempotency.
