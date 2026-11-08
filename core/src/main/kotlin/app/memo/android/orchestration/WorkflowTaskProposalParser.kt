@@ -51,8 +51,10 @@ object WorkflowTaskProposalParser {
             val inputContract = boundedString(row, "inputContract", 1_000)
             val outputContract = boundedString(row, "outputContract", 1_000)
             val postcondition = boundedString(row, "postcondition", 1_000)
-            val timeoutMs = number(row, "timeoutMs").toLong()
-            val maxRetries = number(row, "maxRetries").toInt()
+            val timeoutMs = integer(row, "timeoutMs")
+            val maxRetriesValue = integer(row, "maxRetries")
+            require(maxRetriesValue in 0..3) { "Task field 'maxRetries' must be between 0 and 3." }
+            val maxRetries = maxRetriesValue.toInt()
             val requiresApproval = boolean(row, "requiresApproval")
             val externalWrite = boolean(row, "externalWrite")
             val keyMaterial = listOf(
@@ -107,10 +109,14 @@ object WorkflowTaskProposalParser {
         }
     }
 
-    private fun number(row: JSONObject, key: String): Number {
+    private fun integer(row: JSONObject, key: String): Long {
         val value = row.opt(key)
         require(value is Number) { "Task field '$key' must be numeric." }
-        return value
+        val numeric = value.toDouble()
+        require(numeric.isFinite() && numeric % 1.0 == 0.0 &&
+            numeric >= Long.MIN_VALUE.toDouble() && numeric <= Long.MAX_VALUE.toDouble()
+        ) { "Task field '$key' must be a whole number." }
+        return value.toLong()
     }
 
     private fun boolean(row: JSONObject, key: String): Boolean {
