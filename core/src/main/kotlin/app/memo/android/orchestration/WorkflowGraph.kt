@@ -223,8 +223,15 @@ object WorkflowGraphCompiler {
         }
         require(tasks.isNotEmpty()) { "A workflow needs at least one task." }
         val capabilitiesByRuntime = manifest.capabilities.associateBy { it.runtimeId to it.capabilityId }
-        val tasksById = tasks.associateBy { it.id }
-        tasks.forEach { task ->
+        // Side-effect classification is derived from the trusted runtime registry, never from model JSON.
+        val resolvedTasks = tasks.map { task ->
+            val externalSideEffect = task.requiredCapabilities.any { capabilityId ->
+                capabilitiesByRuntime[task.runtimeId to capabilityId]?.externalSideEffect == true
+            }
+            task.copy(externalSideEffect = externalSideEffect)
+        }
+        val tasksById = resolvedTasks.associateBy { it.id }
+        resolvedTasks.forEach { task ->
             require(task.runtimeId in manifest.registeredRuntimeIds) {
                 "Task '${task.id}' targets an unregistered runtime '${task.runtimeId}'."
             }
@@ -236,6 +243,11 @@ object WorkflowGraphCompiler {
                         "Task '${task.id}' uses approval-gated capability '${capabilityId}' without an explicit approval checkpoint."
                     }
                 }
+                if (capability.externalSideEffect) {
+                    require(task.requiresApproval) {
+                        "External side-effect task '${task.id}' must require explicit approval."
+                    }
+                }
             }
             if (task.requiresApproval && task.kind != WorkflowNodeKind.APPROVAL) {
                 require(task.maxRetries == 0) {
@@ -243,7 +255,8 @@ object WorkflowGraphCompiler {
                 }
                 require(task.dependsOn.any { dependency ->
                     val gate = tasksById[dependency]
-                    gate?.kind == WorkflowNodeKind.APPROVAL && gate.externalWrite &&
+                    gate?.kind == WorkflowNodeKind.APPROVAL && gate.requiresApproval &&
+                        gate.externalWrite == task.externalSideEffect &&
                         gate.participant == WorkflowParticipant.USER && gate.runtimeId == "app.approvals" && gate.maxRetries == 0
                 }) {
                     "Task '${task.id}' must depend on a dedicated approval checkpoint before execution."
@@ -267,7 +280,7 @@ object WorkflowGraphCompiler {
                 }
             }
         }
-        val graph = WorkflowGraph(goal = goal, nodes = tasks, budget = budget)
+        val graph = WorkflowGraph(goal = goal, nodes = resolvedTasks, budget = budget)
         WorkflowGraphValidator.validate(graph)
         return graph
     }
