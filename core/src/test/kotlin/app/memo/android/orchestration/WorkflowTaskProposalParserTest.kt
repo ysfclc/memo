@@ -111,6 +111,7 @@ class WorkflowTaskProposalParserTest {
         ))
         val graph = WorkflowTaskProposalParser.parse(approvedFlow, "Submit a provider prompt", runtimes)
         assertTrue(graph.nodes.single { it.id == "submit" }.requiresApproval)
+        assertTrue(graph.nodes.single { it.id == "submit" }.externalSideEffect)
         assertEquals(listOf("approval"), graph.nodes.single { it.id == "submit" }.dependsOn)
         assertTrue(graph.nodes.single { it.id == "approval" }.externalWrite)
         val tampered = graph.copy(nodes = graph.nodes.map { node ->
