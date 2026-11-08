@@ -41,6 +41,7 @@ class WorkflowGraphTest {
         assertEquals(WorkflowNodeKind.APPROVAL, approval.kind)
         assertTrue(approval.requiresApproval)
         assertEquals(0, approval.maxRetries)
+        assertTrue(approval.requiredCapabilities.isEmpty())
         assertEquals(listOf("verify"), approval.dependsOn)
         assertEquals(listOf("approval"), graph.nodes.single { it.id == "review" }.dependsOn)
     }
