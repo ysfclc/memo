@@ -15,7 +15,13 @@ data class WorkflowBudget(
     val maxExternalWrites: Int = 1
 )
 
-data class WorkflowNodeSpec(
+/**
+ * One bounded unit of work in a Memo workflow.
+ *
+ * This is a proposal contract, not an executable command. Runtime dispatch, permission checks,
+ * approvals and postcondition verification remain separate deterministic boundaries.
+ */
+data class TaskSpec(
     val id: String,
     val title: String,
     val kind: WorkflowNodeKind,
@@ -32,6 +38,9 @@ data class WorkflowNodeSpec(
     val maxRetries: Int = 0,
     val idempotencyKey: String
 )
+
+/** Source compatibility for existing v1 graph readers and callers. */
+typealias WorkflowNodeSpec = TaskSpec
 
 data class WorkflowGraph(
     val schemaVersion: Int = 1,
@@ -155,13 +164,18 @@ object WorkflowGraphValidator {
         require(graph.nodes.size in 1..graph.budget.maxNodes && graph.budget.maxNodes in 1..40) { "Workflow node budget exceeded." }
         require(graph.budget.maxDurationMs in 1..3_600_000) { "Workflow time budget is outside safe bounds." }
         require(graph.budget.maxModelCalls in 0..40 && graph.budget.maxExternalWrites in 0..5) { "Workflow call budget is outside safe bounds." }
+        val modelCalls = graph.nodes.count { it.participant == WorkflowParticipant.LOCAL_MODEL || it.participant == WorkflowParticipant.FRONTIER_WEB }
+        require(modelCalls <= graph.budget.maxModelCalls) { "Workflow model-call budget exceeded." }
+        require(graph.nodes.sumOf { it.timeoutMs } <= graph.budget.maxDurationMs) { "Workflow total timeout exceeds its duration budget." }
         val ids = graph.nodes.map { it.id }
         require(ids.distinct().size == ids.size) { "Workflow node IDs must be unique." }
         val known = ids.toSet()
         graph.nodes.forEach { node ->
             require(node.id.matches(Regex("[a-z0-9][a-z0-9._-]{0,63}"))) { "Invalid workflow node ID." }
             require(node.title.isNotBlank() && node.title.length <= 240) { "Workflow node title is missing or too long." }
-            require(node.inputContract.length <= 1_000 && node.outputContract.length <= 1_000 && node.postcondition.isNotBlank() && node.postcondition.length <= 1_000) { "Workflow contracts or postcondition are missing or too long." }
+            require(node.runtimeId.matches(Regex("[a-z0-9][a-z0-9._-]{0,119}"))) { "Workflow task runtime is missing or invalid." }
+            require(node.inputContract.isNotBlank() && node.outputContract.isNotBlank() && node.inputContract.length <= 1_000 && node.outputContract.length <= 1_000 && node.postcondition.isNotBlank() && node.postcondition.length <= 1_000) { "Workflow task input, output and postcondition contracts are required and bounded." }
+            require(node.requiredCapabilities.distinct().size == node.requiredCapabilities.size) { "Workflow task capability requirements must be unique." }
             require(node.dependsOn.distinct().size == node.dependsOn.size && node.id !in node.dependsOn && node.dependsOn.all { it in known }) { "Workflow dependencies contain an unknown, duplicate or self reference." }
             require(node.requiredCapabilities.size <= 20 && node.requiredCapabilities.all { it.matches(Regex("[a-z0-9._-]{1,120}")) }) { "Invalid workflow capability requirement." }
             require(node.timeoutMs in 1..600_000 && node.maxRetries in 0..3) { "Workflow node execution limits are outside safe bounds." }
@@ -178,6 +192,47 @@ object WorkflowGraphValidator {
 }
 
 object WorkflowGraphCompiler {
+    /**
+     * Compile a planner-proposed task list into a validated dependency graph.
+     *
+     * Capability IDs are checked against the exact runtime that will execute each task.
+     * A matching capability on a different runtime is not interchangeable.
+     */
+    fun compile(
+        goal: String,
+        tasks: List<TaskSpec>,
+        manifest: CapabilityManifest,
+        budget: WorkflowBudget = WorkflowBudget()
+    ): WorkflowGraph {
+        require(manifest.unresolvedRequirements.isEmpty()) {
+            "The capability manifest contains unresolved requirements; the workflow cannot be compiled."
+        }
+        require(tasks.isNotEmpty()) { "A workflow needs at least one task." }
+        val available = manifest.capabilities.map { it.runtimeId to it.capabilityId }.toSet()
+        tasks.forEach { task ->
+            require(task.requiredCapabilities.all { capability -> task.runtimeId to capability in available }) {
+                "Task '${task.id}' requires a capability that is not registered on runtime '${task.runtimeId}'."
+            }
+            when (task.participant) {
+                WorkflowParticipant.LOCAL_MODEL -> require(task.runtimeId == "app.models") {
+                    "Local-model tasks must target the registered app.models runtime."
+                }
+                WorkflowParticipant.FRONTIER_WEB, WorkflowParticipant.BROWSER -> require(task.runtimeId == "runtime.browser") {
+                    "Browser and frontier-web tasks must target runtime.browser."
+                }
+                WorkflowParticipant.ANDROID_APP -> require(task.runtimeId == "runtime.android.accessibility") {
+                    "Android-app tasks must target the accessibility runtime."
+                }
+                WorkflowParticipant.DETERMINISTIC, WorkflowParticipant.USER -> require(task.runtimeId.startsWith("app.")) {
+                    "Deterministic and user tasks must target a Memo app runtime."
+                }
+            }
+        }
+        val graph = WorkflowGraph(goal = goal, nodes = tasks, budget = budget)
+        WorkflowGraphValidator.validate(graph)
+        return graph
+    }
+
     fun compile(plan: IntentPlan, manifest: CapabilityManifest): WorkflowGraph {
         val available = manifest.capabilities.map { it.capabilityId }.toSet()
         val domainNode = when (plan.domain) {
