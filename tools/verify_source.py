@@ -283,6 +283,13 @@ capability_source = (ROOT / "core/src/main/kotlin/app/memo/android/orchestration
 proposal_parser = (ROOT / "core/src/main/kotlin/app/memo/android/orchestration/WorkflowTaskProposalParser.kt").read_text()
 task_graph_tests = (ROOT / "core/src/test/kotlin/app/memo/android/orchestration/WorkflowGraphTest.kt").read_text()
 proposal_tests = (ROOT / "core/src/test/kotlin/app/memo/android/orchestration/WorkflowTaskProposalParserTest.kt").read_text()
+runtime_registry = (ROOT / "core/src/main/kotlin/app/memo/android/runtime/RuntimeContracts.kt").read_text()
+runtime_registry_tests = (ROOT / "core/src/test/kotlin/app/memo/android/runtime/RuntimeRegistryTest.kt").read_text()
+for marker in ("RuntimeDescriptor(\"app.approvals\"", "approval.approve_exact", "approval.reject"):
+    if marker not in runtime_registry:
+        fail(f"human approval runtime contract is missing: {marker}")
+if "humanApprovalInboxIsARegisteredRuntimeDistinctFromTheJobWorkbench" not in runtime_registry_tests:
+    fail("human approval runtime isolation test is missing")
 for marker in ("data class TaskSpec(", "typealias WorkflowNodeSpec = TaskSpec", "fun compile(\n        goal: String", "Workflow model-call budget exceeded", "Workflow total timeout exceeds", "approval-gated capability", "dedicated approval checkpoint", "cannot be automatically retried", "User checkpoints must target"):
     if marker not in task_spec_source:
         fail(f"typed dynamic workflow graph contract is missing: {marker}")
