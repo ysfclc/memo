@@ -34,6 +34,8 @@ data class TaskSpec(
     val postcondition: String,
     val requiresApproval: Boolean = false,
     val externalWrite: Boolean = false,
+    /** Derived by the compiler from registered runtime policy; never trusted from model JSON. */
+    val externalSideEffect: Boolean = false,
     val timeoutMs: Long = 120_000,
     val maxRetries: Int = 0,
     val idempotencyKey: String
@@ -74,6 +76,7 @@ data class WorkflowGraph(
                         put("postcondition", node.postcondition)
                         put("requiresApproval", node.requiresApproval)
                         put("externalWrite", node.externalWrite)
+                        put("externalSideEffect", node.externalSideEffect)
                         put("timeoutMs", node.timeoutMs)
                         put("maxRetries", node.maxRetries)
                         put("idempotencyKey", node.idempotencyKey)
@@ -110,6 +113,7 @@ data class WorkflowGraph(
                     postcondition = row.optString("postcondition", "").take(1_000),
                     requiresApproval = row.optBoolean("requiresApproval", false),
                     externalWrite = row.optBoolean("externalWrite", false),
+                    externalSideEffect = row.optBoolean("externalSideEffect", false),
                     timeoutMs = row.optLong("timeoutMs", 120_000),
                     maxRetries = row.optInt("maxRetries", 0),
                     idempotencyKey = row.optString("idempotencyKey", "").take(64)
