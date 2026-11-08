@@ -127,6 +127,18 @@ class EncryptedStoreUpgradeTest {
         assertTrue("Corrupt primary ciphertext must not be accepted.", primaryRejectedCorruption)
         assertArrayEquals(corruptPrimary, legacy.readBytes())
 
+        // Even a damaged SYV1 magic header must not be misclassified as an empty native store.
+        val damagedPrimaryHeader = workspaceBytes.copyOf().apply {
+            this[0] = 12 // A plausible native IV-length byte, but it cannot authenticate as native data.
+        }
+        legacy.writeBytes(damagedPrimaryHeader)
+        val damagedHeaderRejected = runCatching { EncryptedVault(context).read() }.isFailure
+        assertTrue("A damaged primary header must fail closed, not look like an empty workspace.", damagedHeaderRejected)
+        assertTrue(runCatching { SynthStore(context) }.isFailure)
+        assertFalse(workspace.exists())
+        assertFalse(native.exists())
+        assertArrayEquals(damagedPrimaryHeader, legacy.readBytes())
+
         // Corrupted native data is recognized as native, but authentication must reject it.
         val corruptNative = nativeBytes.copyOf().apply {
             this[this.lastIndex] = (this[this.lastIndex].toInt() xor 0x01).toByte()
