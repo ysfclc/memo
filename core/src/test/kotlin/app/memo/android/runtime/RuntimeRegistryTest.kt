@@ -25,6 +25,14 @@ class RuntimeRegistryTest {
         assertTrue(registry.can("app.jobs", "job.verify"))
         assertFalse(registry.can("app.entities", "browser.navigate_https"))
     }
+    @Test fun localInferenceAndRemoteProviderConsentAreDifferentCapabilities() {
+        val models = RuntimeRegistry().resolve("app.models")!!
+        val local = models.capabilities.first { it.id == "model.generate" }
+        val remote = models.capabilities.first { it.id == "model.generate_remote" }
+        assertFalse(local.requiresUserApproval)
+        assertTrue(remote.requiresUserApproval)
+    }
+
     @Test fun humanApprovalInboxIsARegisteredRuntimeDistinctFromTheJobWorkbench() {
         val registry = RuntimeRegistry()
         val approvals = registry.resolve("app.approvals")
