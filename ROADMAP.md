@@ -30,7 +30,7 @@ The active shell is now Talk / Live / Work / Studio. Talk has one text/voice ent
 - [x] Repeatable branch-only GitHub Actions build pipeline.
 - [x] Persistent APK signing identity and fail-closed certificate check.
 - [ ] Physical-device install-over-existing test, including confirmation that existing encrypted workspace data survives.
-- [ ] Migration design and tests to unify primary encrypted workspace and legacy native workflow/run store without data loss.
+- [~] Isolate the primary encrypted workspace and native workflow/run store into distinct files, preserving and authenticating either legacy payload before atomic migration. API 35 instrumentation now covers both migration directions and an in-place APK upgrade; single-store consolidation and physical-device acceptance remain open.
 - [ ] APK size/native dependency budget and device resource baseline.
 
 ### P1 — Restore the intended product shell
