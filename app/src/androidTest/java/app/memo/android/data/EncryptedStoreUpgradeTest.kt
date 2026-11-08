@@ -115,6 +115,7 @@ class EncryptedStoreUpgradeTest {
         assertTrue(workspace.isFile && native.isFile)
 
         // Corrupted primary data must fail closed without being overwritten by the other store.
+        assertTrue(workspace.delete())
         assertTrue(native.delete())
         val corruptPrimary = workspaceBytes.copyOf().apply {
             this[this.lastIndex] = (this[this.lastIndex].toInt() xor 0x01).toByte()
