@@ -45,7 +45,8 @@ class RuntimeRegistry {
         )),
         RuntimeDescriptor("app.models", "Models", RuntimeKind.APP, "Manage installed local models and explicitly configured providers.", listOf(
             RuntimeCapability("model.list", "List models", "Read currently configured model availability."),
-            RuntimeCapability("model.generate", "Generate response", "Generate through a selected model and its configured permissions.", true)
+            RuntimeCapability("model.generate", "Generate response", "Run an explicitly selected local model. Local inference is initiated by the user and does not need a second approval prompt."),
+            RuntimeCapability("model.generate_remote", "Generate with remote provider", "Use an explicitly configured remote model provider after per-request user consent.", true)
         )),
         RuntimeDescriptor("app.council", "Council", RuntimeKind.APP, "Traceable multi-model analysis and retained disagreement.", listOf(
             RuntimeCapability("council.run", "Run Council", "Execute a selected model workflow with per-run remote consent.", true)
