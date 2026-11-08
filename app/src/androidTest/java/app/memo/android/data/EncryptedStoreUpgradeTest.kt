@@ -101,7 +101,7 @@ class EncryptedStoreUpgradeTest {
 
         // Historical native-store file: EncryptedVault must leave it for SynthStore to adopt.
         assertTrue(workspace.delete())
-        assertTrue(native.delete())
+        assertFalse("Native store must remain absent until its legacy payload is restored.", native.exists())
         legacy.writeBytes(nativeBytes)
         assertNull(EncryptedVault(context).read())
         assertFalse("A native-store payload must not create a workspace file.", workspace.exists())
