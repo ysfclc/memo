@@ -252,7 +252,7 @@ if "sha256sum -c SOURCE_SHA256SUMS.txt" not in workflow or "Memo-Source-Archive-
 workspace_vault = (ROOT / "app/src/main/java/app/memo/android/data/EncryptedVault.kt").read_text()
 native_store = (ROOT / "app/src/main/java/com/synthos/runtime/data/SynthStore.java").read_text()
 upgrade_test = (ROOT / "app/src/androidTest/java/app/memo/android/data/EncryptedStoreUpgradeTest.kt").read_text()
-for marker in ("memo-workspace-vault.bin", "synthos-vault.bin", "synthos_fieldwork_vault_v1", "Memo-Android:v1", "getExistingKey()", "copyLegacyWorkspaceAtomically", "canonicalBase.path + ".bak"", "atomicFile.openRead()", 'keyStore.getKey("synthos.runtime.store.v1", null)', "cipher.doFinal(encrypted)", "damaged SYV1 header"):
+for marker in ("memo-workspace-vault.bin", "synthos-vault.bin", "synthos_fieldwork_vault_v1", "Memo-Android:v1", "getExistingKey()", "copyLegacyWorkspaceAtomically", 'canonicalBase.path + ".bak"', "atomicFile.openRead()", 'keyStore.getKey("synthos.runtime.store.v1", null)', "cipher.doFinal(encrypted)", "damaged SYV1 header"):
     if marker not in workspace_vault:
         fail(f"primary encrypted workspace migration contract is missing: {marker}")
 for marker in ("memo-native-workflows.bin", "synthos-vault.bin", "synthos.runtime.store.v1", "getExistingKey()", "writePayloadAtomically(legacyPayload)"):
