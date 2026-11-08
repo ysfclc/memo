@@ -31,6 +31,9 @@ class RuntimeRegistryTest {
         val remote = models.capabilities.first { it.id == "model.generate_remote" }
         assertFalse(local.requiresUserApproval)
         assertTrue(remote.requiresUserApproval)
+        assertFalse(remote.externalSideEffect)
+        assertTrue(RuntimeRegistry().browser().capabilities.first { it.id == "browser.submit_prompt" }.externalSideEffect)
+        assertFalse(RuntimeRegistry().browser().capabilities.first { it.id == "browser.prepare_prompt" }.externalSideEffect)
     }
 
     @Test fun humanApprovalInboxIsARegisteredRuntimeDistinctFromTheJobWorkbench() {
