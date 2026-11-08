@@ -218,6 +218,9 @@ object WorkflowGraphCompiler {
                     require(task.requiresApproval) {
                         "Task '${task.id}' uses approval-gated capability '${capabilityId}' without an explicit approval checkpoint."
                     }
+                    require(task.maxRetries == 0) {
+                        "Approval-gated task '${task.id}' cannot be automatically retried."
+                    }
                     require(task.dependsOn.any { dependency ->
                         val gate = tasksById[dependency]
                         gate?.kind == WorkflowNodeKind.APPROVAL && gate.externalWrite &&
