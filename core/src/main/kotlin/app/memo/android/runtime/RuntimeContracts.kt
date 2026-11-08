@@ -38,6 +38,11 @@ class RuntimeRegistry {
             RuntimeCapability("job.update_step", "Update step", "Record an observed step transition."),
             RuntimeCapability("job.verify", "Record verification", "Save the basis for a verified result.")
         )),
+        RuntimeDescriptor("app.approvals", "Action approvals", RuntimeKind.APP, "Human review of exact-content action proposals, one-use approval and rejection history.", listOf(
+            RuntimeCapability("approval.inspect", "Inspect approval", "Display the exact action payload, destination, scope and audit context."),
+            RuntimeCapability("approval.approve_exact", "Approve exact action", "Create a one-use approval bound to the displayed content hash."),
+            RuntimeCapability("approval.reject", "Reject action", "Reject a pending action proposal and record the decision.")
+        )),
         RuntimeDescriptor("app.models", "Models", RuntimeKind.APP, "Manage installed local models and explicitly configured providers.", listOf(
             RuntimeCapability("model.list", "List models", "Read currently configured model availability."),
             RuntimeCapability("model.generate", "Generate response", "Generate through a selected model and its configured permissions.", true)
