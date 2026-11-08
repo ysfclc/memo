@@ -266,7 +266,8 @@ object WorkflowGraphCompiler {
         nodes += node("verify", "Verify the result against the goal", WorkflowNodeKind.VERIFICATION, WorkflowParticipant.DETERMINISTIC, "app.jobs", listOf("job.verify").filter { it in available }, listOf("artifact"), "Deliverable and acceptance conditions", "Verification report with observed evidence", "Each acceptance condition is checked against an observable result.")
         if (plan.requiresExternalApproval) {
             val approvalCapability = if (plan.domain == IntentDomain.AUTOMATION) "android.tap_exact_text" else "browser.prepare_prompt"
-            nodes += node("approval", "Review exact external action", WorkflowNodeKind.APPROVAL, WorkflowParticipant.USER, "app.approvals", listOf(approvalCapability), listOf("verify"), "Exact content, destination, capability and risk", "One-use approval bound to content hash and destination", "No external write occurs before explicit current approval.", approval = true, externalWrite = true)
+            // The capability belongs to the external runtime in the manifest, not to the human approval inbox.
+            nodes += node("approval", "Review exact external action", WorkflowNodeKind.APPROVAL, WorkflowParticipant.USER, "app.approvals", emptyList(), listOf("verify"), "Exact content, destination, capability and risk", "One-use approval bound to content hash and destination", "No external write occurs before explicit current approval.", approval = true, externalWrite = true)
         }
         val reviewDependency = if (plan.requiresExternalApproval) listOf("approval") else listOf("verify")
         nodes += node("review", "Review, accept or revise", WorkflowNodeKind.REVIEW, WorkflowParticipant.USER, "app.jobs", emptyList(), reviewDependency, "Artifact, evidence and unresolved limitations", "User decision and follow-up work", "The user explicitly accepts, revises or defers the outcome.")
