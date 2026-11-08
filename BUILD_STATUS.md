@@ -1,3 +1,23 @@
+# Build and verification status — 8 November 2026
+
+## Current source increment — encrypted storage isolation (acceptance pending)
+
+- Working branch: `ysfclc-patch-1`; inspected application source head before this status update: `42779b33a4f522e31b2d6f47a393557c3880d713`.
+- `EncryptedVault` and `SynthStore` now use separate canonical files while preserving their original Android Keystore aliases, encryption envelopes and schema. The old `synthos-vault.bin` remains untouched as a migration source.
+- Legacy ciphertext must authenticate with the corresponding existing key before it is copied. Corrupt, unknown or damaged-header payloads fail closed. AtomicFile workspace backup recovery is handled.
+- Added Android instrumentation coverage for real encrypted workspace and native workflow records, version-increasing signed install-over-existing, both legacy migration paths, independent writes, corruption, damaged headers and unknown formats. The test uses isolated private storage to avoid touching user data.
+- CI has been updated to build the instrumentation APK and run seed / verify around `adb install -r` on an API 35 emulator. Direct source changes use the checked-out branch source; the historical ZIP is not re-extracted over newer source.
+
+### Verification not yet confirmed
+
+- **GitHub Actions:** the connected repository status/run lookup returned no checks or workflow-run records for the inspected source commit. This is not a passing result and does not establish whether Actions started. Inspect the workflow run and its artifacts before treating the increment as verified.
+- **Android build:** Kotlin/Java compilation, `:core:test`, `:app:testDebugUnitTest`, lint, APK assembly, instrumentation execution and emulator upgrade acceptance have not been observed for this increment.
+- **Local environment:** no usable Gradle installation or Android SDK is available to execute the Android build here.
+- **Physical device:** no install-over-existing test has been performed on the user's phone. Emulator success, when obtained, is not a substitute for this gate.
+- The 5 November run #99 and its APK remain historical evidence for the then-current source; they do not prove this 8 November change.
+
+**Status: source implementation committed; CI/device acceptance open. Do not distribute a new APK or mark M0.C1/M0.C2 complete until the exact branch revision passes the full workflow and the physical-device checklist is recorded.**
+
 # Build and verification status — 28 October 2026
 
 ## Verified in the current source workspace
