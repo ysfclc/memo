@@ -29,10 +29,12 @@ import java.util.UUID;
 /** Encrypted, offline-first store. The AES-GCM key is generated and retained by Android Keystore. */
 public final class SynthStore {
     private static final String KEY_ALIAS = "synthos.runtime.store.v1";
-    private static final String FILE_NAME = "synthos-vault.bin";
+    private static final String FILE_NAME = "memo-native-workflows.bin";
+    private static final String LEGACY_SHARED_FILE_NAME = "synthos-vault.bin";
     private static volatile SynthStore sharedInstance;
     private final Context appContext;
     private final File storeFile;
+    private final File legacySharedFile;
     private JSONObject cached;
 
     public static synchronized SynthStore shared(Context context) throws IOException {
@@ -43,6 +45,7 @@ public final class SynthStore {
     public SynthStore(Context context) throws IOException {
         appContext = context.getApplicationContext();
         storeFile = new File(appContext.getFilesDir(), FILE_NAME);
+        legacySharedFile = new File(appContext.getFilesDir(), LEGACY_SHARED_FILE_NAME);
         synchronized (this) { cached = readFile(); }
     }
 
@@ -70,28 +73,120 @@ public final class SynthStore {
         return generator.generateKey();
     }
 
+    /**
+     * Loads the canonical native-workflow file or adopts the old shared file only when its
+     * IV-length envelope identifies SynthStore's format and its existing Keystore key authenticates
+     * the contents. A primary SYV1 workspace is left for EncryptedVault to migrate.
+     */
     private JSONObject readFile() throws IOException {
-        if (!storeFile.exists()) return emptyData();
-        try (FileInputStream in = new FileInputStream(storeFile); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            byte[] buffer = new byte[4096]; int n; while ((n = in.read(buffer)) >= 0) out.write(buffer, 0, n);
-            byte[] payload = out.toByteArray();
-            if (payload.length < 14) throw new IOException("Encrypted workspace is incomplete.");
-            int ivLength = payload[0] & 0xff;
-            if (ivLength < 12 || ivLength > 16 || payload.length <= ivLength + 1) throw new IOException("Encrypted workspace has an invalid header.");
-            byte[] iv = new byte[ivLength]; System.arraycopy(payload, 1, iv, 0, ivLength);
-            byte[] cipherText = new byte[payload.length - 1 - ivLength]; System.arraycopy(payload, 1 + ivLength, cipherText, 0, cipherText.length);
-            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding"); cipher.init(Cipher.DECRYPT_MODE, getOrCreateKey(), new GCMParameterSpec(128, iv));
-            byte[] plain = cipher.doFinal(cipherText);
-            JSONObject result = new JSONObject(new String(plain, StandardCharsets.UTF_8));
-            if (result.optInt("schemaVersion", 0) != 1) throw new IOException("Unsupported workspace schema version.");
+        if (storeFile.exists()) return readEncryptedFile(storeFile);
+        if (!legacySharedFile.exists()) return emptyData();
+
+        byte[] legacyPayload = readBytes(legacySharedFile);
+        if (hasPrimaryWorkspaceHeader(legacyPayload)) {
+            // The legacy path belongs to EncryptedVault. Do not read, rewrite, or delete it here.
+            return emptyData();
+        }
+        if (!isNativeStoreEnvelope(legacyPayload)) {
+            throw new IOException("The legacy Memo vault has an unknown format. It was not changed; recovery is required.");
+        }
+
+        // Verify decryption and schema before copying any legacy bytes.
+        decryptPayload(legacyPayload);
+        writePayloadAtomically(legacyPayload);
+        // Read back from the new location. A failed read leaves the legacy source untouched.
+        return readEncryptedFile(storeFile);
+    }
+
+    private JSONObject readEncryptedFile(File source) throws IOException {
+        try {
+            byte[] payload = readBytes(source);
+            JSONObject result = decryptPayload(payload);
+            if (result.optInt("schemaVersion", 0) != 1) {
+                throw new IOException("Unsupported native workflow store schema version.");
+            }
             if (!result.has("workflowVersions")) result.put("workflowVersions", new JSONArray());
             if (!result.has("captures")) result.put("captures", new JSONArray());
             if (!result.has("records")) result.put("records", new JSONArray());
             if (!result.has("surfaceSchemas")) result.put("surfaceSchemas", new JSONArray());
             if (!result.has("surfaceSchemaVersions")) result.put("surfaceSchemaVersions", new JSONArray());
             return result;
-        } catch (IOException e) { throw e; }
-        catch (Exception e) { throw new IOException("Could not decrypt workspace. It was not overwritten; export or restore a valid backup if available.", e); }
+        } catch (IOException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IOException("Could not decrypt the native workflow store. The original file was not overwritten.", e);
+        }
+    }
+
+    private JSONObject decryptPayload(byte[] payload) throws Exception {
+        if (payload.length < 29) throw new IOException("Encrypted native workflow store is incomplete.");
+        int ivLength = payload[0] & 0xff;
+        if (ivLength < 12 || ivLength > 16 || payload.length <= 1 + ivLength + 16) {
+            throw new IOException("Encrypted native workflow store has an invalid header.");
+        }
+        byte[] iv = new byte[ivLength];
+        System.arraycopy(payload, 1, iv, 0, ivLength);
+        byte[] cipherText = new byte[payload.length - 1 - ivLength];
+        System.arraycopy(payload, 1 + ivLength, cipherText, 0, cipherText.length);
+        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        // Never generate a replacement key while trying to read existing ciphertext.
+        cipher.init(Cipher.DECRYPT_MODE, getExistingKey(), new GCMParameterSpec(128, iv));
+        JSONObject result = new JSONObject(new String(cipher.doFinal(cipherText), StandardCharsets.UTF_8));
+        if (result.optInt("schemaVersion", 0) != 1) {
+            throw new IOException("Unsupported native workflow store schema version.");
+        }
+        return result;
+    }
+
+    private byte[] readBytes(File source) throws IOException {
+        if (!source.exists()) throw new IOException("Encrypted native workflow store is missing.");
+        if (source.length() > 40L * 1024L * 1024L) {
+            throw new IOException("Encrypted native workflow store exceeds the supported size limit.");
+        }
+        try (FileInputStream in = new FileInputStream(source);
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            byte[] buffer = new byte[4096];
+            int n;
+            while ((n = in.read(buffer)) >= 0) out.write(buffer, 0, n);
+            return out.toByteArray();
+        }
+    }
+
+    private void writePayloadAtomically(byte[] payload) throws IOException {
+        if (storeFile.exists()) return;
+        File temp = new File(storeFile.getParentFile(), FILE_NAME + ".tmp");
+        try (FileOutputStream out = new FileOutputStream(temp)) {
+            out.write(payload);
+            out.flush();
+            out.getFD().sync();
+        }
+        try {
+            android.system.Os.rename(temp.getAbsolutePath(), storeFile.getAbsolutePath());
+        } catch (Exception e) {
+            // The temporary copy may be discarded; the legacy source remains the recovery copy.
+            if (temp.exists()) temp.delete();
+            throw new IOException("Could not atomically migrate the native workflow store.", e);
+        }
+    }
+
+    private boolean hasPrimaryWorkspaceHeader(byte[] payload) {
+        return payload.length >= 4 &&
+                payload[0] == 'S' && payload[1] == 'Y' &&
+                payload[2] == 'V' && payload[3] == '1';
+    }
+
+    private boolean isNativeStoreEnvelope(byte[] payload) {
+        if (payload.length < 29) return false;
+        int ivLength = payload[0] & 0xff;
+        return ivLength >= 12 && ivLength <= 16 && payload.length > 1 + ivLength + 16;
+    }
+
+    private SecretKey getExistingKey() throws Exception {
+        KeyStore ks = KeyStore.getInstance("AndroidKeyStore");
+        ks.load(null);
+        java.security.Key existing = ks.getKey(KEY_ALIAS, null);
+        if (existing instanceof SecretKey) return (SecretKey) existing;
+        throw new IOException("The existing native workflow encryption key is unavailable. The encrypted file was preserved.");
     }
 
     private void persist() throws IOException {
