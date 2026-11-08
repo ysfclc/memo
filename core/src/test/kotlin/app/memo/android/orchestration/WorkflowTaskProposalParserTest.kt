@@ -77,13 +77,22 @@ class WorkflowTaskProposalParserTest {
             WorkflowTaskProposalParser.parse(missingApproval, "Submit a provider prompt", runtimes)
         }.isFailure)
 
+        val approvalFlagWithoutGate = proposal(listOf(
+            task("submit", "BROWSER", "runtime.browser", listOf("browser.submit_prompt"), requiresApproval = true)
+        ))
+        assertTrue(runCatching {
+            WorkflowTaskProposalParser.parse(approvalFlagWithoutGate, "Submit a provider prompt", runtimes)
+        }.isFailure)
+
         val approvedFlow = proposal(listOf(
-            task("prepare", "BROWSER", "runtime.browser", listOf("browser.submit_prompt"), requiresApproval = true),
-            task("approval", "USER", "app.approvals", dependsOn = listOf("prepare"), kind = "APPROVAL", externalWrite = true, requiresApproval = true),
-            task("review", "USER", "app.jobs", dependsOn = listOf("approval"), kind = "REVIEW")
+            task("draft", "DETERMINISTIC", "app.jobs", kind = "ARTIFACT"),
+            task("approval", "USER", "app.approvals", dependsOn = listOf("draft"), kind = "APPROVAL", externalWrite = true, requiresApproval = true),
+            task("submit", "BROWSER", "runtime.browser", listOf("browser.submit_prompt"), dependsOn = listOf("approval"), requiresApproval = true),
+            task("review", "USER", "app.jobs", dependsOn = listOf("submit"), kind = "REVIEW")
         ))
         val graph = WorkflowTaskProposalParser.parse(approvedFlow, "Submit a provider prompt", runtimes)
-        assertTrue(graph.nodes.single { it.id == "prepare" }.requiresApproval)
+        assertTrue(graph.nodes.single { it.id == "submit" }.requiresApproval)
+        assertEquals(listOf("approval"), graph.nodes.single { it.id == "submit" }.dependsOn)
         assertTrue(graph.nodes.single { it.id == "approval" }.externalWrite)
     }
 
