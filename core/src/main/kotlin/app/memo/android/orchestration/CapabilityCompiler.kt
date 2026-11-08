@@ -82,9 +82,9 @@ object CapabilityCompiler {
             append("schema=1\nmode=task-spec\nsource=").append(sourceHash).append('\n')
             chosen.forEach { capability ->
                 append(capability.runtimeId).append('|').append(capability.capabilityId).append('|')
-                    .append(capability.requiresUserApproval).append('|').append(capability.runtimeStatus).append('\\n')
+                    .append(capability.requiresUserApproval).append('|').append(capability.runtimeStatus).append('\n')
             }
-            missing.forEach { append("missing|").append(it).append('\\n') }
+            missing.forEach { append("missing|").append(it).append('\n') }
             append("approval=").append(approval)
         }
         return CapabilityManifest(
