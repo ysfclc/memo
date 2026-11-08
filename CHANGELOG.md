@@ -1,5 +1,13 @@
 # Changelog
 
+## 8 November 2026 — Typed workflow proposal foundation
+
+- Added canonical TaskSpec records and dynamic DAG compilation while preserving schema-v1 graph serialization compatibility.
+- Added exact-runtime capability assembly and a strict parser for untrusted model task proposals; model output cannot supply idempotency keys or bypass runtime capability/approval checks.
+- Added bounded graph validation for dependencies, model calls, aggregate timeouts and external-write checkpoints, with JVM regression tests and source-verifier coverage.
+- Talk is not yet wired to generate these proposals and the DAG is not yet executed. This is the proposal/compiler foundation, not completion of the orchestrator.
+
+
 ## 8 November 2026 — Encrypted storage isolation and upgrade acceptance
 
 - Separated the primary AES-GCM workspace vault and the native workflow/run store into `memo-workspace-vault.bin` and `memo-native-workflows.bin`; preserved the legacy `synthos-vault.bin` as a read-only migration source.
