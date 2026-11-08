@@ -283,7 +283,7 @@ capability_source = (ROOT / "core/src/main/kotlin/app/memo/android/orchestration
 proposal_parser = (ROOT / "core/src/main/kotlin/app/memo/android/orchestration/WorkflowTaskProposalParser.kt").read_text()
 task_graph_tests = (ROOT / "core/src/test/kotlin/app/memo/android/orchestration/WorkflowGraphTest.kt").read_text()
 proposal_tests = (ROOT / "core/src/test/kotlin/app/memo/android/orchestration/WorkflowTaskProposalParserTest.kt").read_text()
-for marker in ("data class TaskSpec(", "typealias WorkflowNodeSpec = TaskSpec", "fun compile(\n        goal: String", "Workflow model-call budget exceeded", "Workflow total timeout exceeds", "approval-gated capability", "User checkpoints must target"):
+for marker in ("data class TaskSpec(", "typealias WorkflowNodeSpec = TaskSpec", "fun compile(\n        goal: String", "Workflow model-call budget exceeded", "Workflow total timeout exceeds", "approval-gated capability", "dedicated approval checkpoint", "User checkpoints must target"):
     if marker not in task_spec_source:
         fail(f"typed dynamic workflow graph contract is missing: {marker}")
 for marker in ("fun compileForTasks(", "task.runtimeId to it", "unresolvedRequirements = missing", "mode=task-spec"):
