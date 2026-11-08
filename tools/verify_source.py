@@ -286,7 +286,7 @@ proposal_tests = (ROOT / "core/src/test/kotlin/app/memo/android/orchestration/Wo
 for marker in ("data class TaskSpec(", "typealias WorkflowNodeSpec = TaskSpec", "fun compile(\n        goal: String", "Workflow model-call budget exceeded", "Workflow total timeout exceeds", "approval-gated capability", "dedicated approval checkpoint", "cannot be automatically retried", "User checkpoints must target"):
     if marker not in task_spec_source:
         fail(f"typed dynamic workflow graph contract is missing: {marker}")
-for marker in ("fun compileForTasks(", "task.runtimeId to it", "unresolvedRequirements = missing", "mode=task-spec"):
+for marker in ("fun compileForTasks(", "task.runtimeId to it", "unresolvedRequirements = missing", "registeredRuntimeIds = registeredRuntimes.map", "mode=task-spec"):
     if marker not in capability_source:
         fail(f"dynamic capability assembly is missing: {marker}")
 for marker in ("MAX_RAW_CHARS = 64_000", "UUID.randomUUID()", "CapabilityCompiler.compileForTasks", "WorkflowGraphCompiler.compile", "private fun integer(", "numeric % 1.0 == 0.0"):
@@ -295,7 +295,7 @@ for marker in ("MAX_RAW_CHARS = 64_000", "UUID.randomUUID()", "CapabilityCompile
 for marker in ("dynamicTaskSpecsCompileIntoAValidatedFanOutAndJoinDag", "NeverBorrowsAnIdenticallyNamedCapability", "dynamicGraphRejectsModelAndDurationBudgetOverruns"):
     if marker not in task_graph_tests:
         fail(f"dynamic workflow graph regression coverage is missing: {marker}")
-for marker in ("parsesDynamicTaskSpecsAndCreatesFreshAppOwnedIdempotencyKeys", "rejectsCapabilitiesThatExistOnlyOnAnotherRuntime", "approvalGatedCapabilitiesRequireAnExplicitApprovalTask", "rejectsCyclesAndUnapprovedExternalWrites", "rejectsMalformedAndOversizedTaskFields"):
+for marker in ("parsesDynamicTaskSpecsAndCreatesFreshAppOwnedIdempotencyKeys", "rejectsCapabilitiesThatExistOnlyOnAnotherRuntime", "rejectsAnUnregisteredRuntimeEvenWhenTheTaskNeedsNoCapabilities", "approvalGatedCapabilitiesRequireAnExplicitApprovalTask", "rejectsCyclesAndUnapprovedExternalWrites", "rejectsMalformedAndOversizedTaskFields"):
     if marker not in proposal_tests:
         fail(f"TaskSpec proposal parser regression coverage is missing: {marker}")
 print("PASS: typed TaskSpec proposals compile into bounded DAGs with exact-runtime capability resolution and fail-closed validation")
