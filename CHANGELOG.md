@@ -1,3 +1,5 @@
+# Changelog
+
 ## 8 November 2026 — Encrypted storage isolation and upgrade acceptance
 
 - Separated the primary AES-GCM workspace vault and the native workflow/run store into `memo-workspace-vault.bin` and `memo-native-workflows.bin`; preserved the legacy `synthos-vault.bin` as a read-only migration source.
@@ -10,8 +12,6 @@
 - Wired visible frontier website submissions to a full prompt/destination approval dialog before each send. The browser rechecks the live destination and exact prompt immediately before submission; uncertain outcomes are sent to review instead of automatically retried.
 - Added workspace schema v4 fields with v1-v3 import support, plus JVM tests for approval transitions, restart/import behavior, hash mismatch, audit tampering and evidence requirements.
 - Updated Polish/Turkish strings, feature audit and product-gap status. Structural checks pass; remote runner tests pass 12/12; targeted ledger behavior passes a standalone Kotlin harness. Gradle tests, Android compilation/lint, APK and real-device acceptance remain unverified because the pinned Gradle distribution could not be downloaded in this environment.
-
-# Changelog
 
 ## 28 October 2026 — Memo Director's Cut reset
 
