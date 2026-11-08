@@ -132,7 +132,8 @@ class EncryptedStoreUpgradeTest {
             this[this.lastIndex] = (this[this.lastIndex].toInt() xor 0x01).toByte()
         }
         legacy.writeBytes(corruptNative)
-        assertNull(EncryptedVault(context).read())
+        val workspaceRejectedCorruptNative = runCatching { EncryptedVault(context).read() }.isFailure
+        assertTrue("Unauthenticated native ciphertext must not be treated as a new empty workspace.", workspaceRejectedCorruptNative)
         assertFalse(workspace.exists())
         val nativeRejectedCorruption = runCatching { SynthStore(context) }.isFailure
         assertTrue("Corrupt native ciphertext must not be accepted.", nativeRejectedCorruption)
