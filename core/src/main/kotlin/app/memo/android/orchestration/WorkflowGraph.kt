@@ -170,6 +170,7 @@ object WorkflowGraphValidator {
         val ids = graph.nodes.map { it.id }
         require(ids.distinct().size == ids.size) { "Workflow node IDs must be unique." }
         val known = ids.toSet()
+        val byId = graph.nodes.associateBy { it.id }
         graph.nodes.forEach { node ->
             require(node.id.matches(Regex("[a-z0-9][a-z0-9._-]{0,63}"))) { "Invalid workflow node ID." }
             require(node.title.isNotBlank() && node.title.length <= 240) { "Workflow node title is missing or too long." }
@@ -186,6 +187,15 @@ object WorkflowGraphValidator {
             ) {
                 "External writes must be isolated behind a non-retrying user approval checkpoint."
             }
+            if (node.requiresApproval && node.kind != WorkflowNodeKind.APPROVAL) {
+                require(node.maxRetries == 0) { "Approval-gated task '\${node.id}' cannot be automatically retried." }
+                require(node.dependsOn.any { dependency ->
+                    val gate = byId[dependency]
+                    gate?.kind == WorkflowNodeKind.APPROVAL && gate.externalWrite &&
+                        gate.participant == WorkflowParticipant.USER && gate.runtimeId == "app.approvals" && gate.maxRetries == 0
+                }) { "Approval-gated task '\${node.id}' must depend on a dedicated approval checkpoint." }
+            }
+
         }
         require(graph.nodes.count { it.externalWrite } <= graph.budget.maxExternalWrites) { "Workflow external-write budget exceeded." }
     }
