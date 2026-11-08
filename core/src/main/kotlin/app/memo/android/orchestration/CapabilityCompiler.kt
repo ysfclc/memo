@@ -14,6 +14,7 @@ data class CompiledCapability(
     val capabilityId: String,
     val label: String,
     val requiresUserApproval: Boolean,
+    val externalSideEffect: Boolean,
     val runtimeStatus: String
 )
 
@@ -81,6 +82,7 @@ object CapabilityCompiler {
                     capabilityId = capability.id,
                     label = capability.label,
                     requiresUserApproval = capability.requiresUserApproval,
+                    externalSideEffect = capability.externalSideEffect,
                     runtimeStatus = runtime.status
                 )
             }
@@ -91,7 +93,8 @@ object CapabilityCompiler {
             append("schema=1\nmode=task-spec\nsource=").append(sourceHash).append('\n')
             chosen.forEach { capability ->
                 append(capability.runtimeId).append('|').append(capability.capabilityId).append('|')
-                    .append(capability.requiresUserApproval).append('|').append(capability.runtimeStatus).append('\n')
+                    .append(capability.requiresUserApproval).append('|').append(capability.externalSideEffect)
+                    .append('|').append(capability.runtimeStatus).append('\n')
             }
             missing.forEach { append("missing|").append(it).append('\n') }
             append("approval=").append(approval)
@@ -129,6 +132,7 @@ object CapabilityCompiler {
                 capabilityId = capability.id,
                 label = capability.label,
                 requiresUserApproval = capability.requiresUserApproval || id in setOf("browser.prepare_prompt", "android.tap_exact_text"),
+                externalSideEffect = capability.externalSideEffect,
                 runtimeStatus = runtime.status
             )
         }.sortedWith(compareBy<CompiledCapability> { it.runtimeId }.thenBy { it.capabilityId })
@@ -139,7 +143,8 @@ object CapabilityCompiler {
             append("schema=1\ndomain=").append(plan.domain.id).append("\nsource=").append(sourceHash).append('\n')
             chosen.forEach { c ->
                 append(c.runtimeId).append('|').append(c.capabilityId).append('|')
-                    .append(c.requiresUserApproval).append('|').append(c.runtimeStatus).append('\n')
+                    .append(c.requiresUserApproval).append('|').append(c.externalSideEffect)
+                    .append('|').append(c.runtimeStatus).append('\n')
             }
             requiredMissing.forEach { append("missing|").append(it).append('\n') }
             append("approval=").append(approval)
