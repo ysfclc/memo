@@ -2,12 +2,13 @@
 
 ## Current source increment — encrypted storage isolation (acceptance pending)
 
-- Working branch: `ysfclc-patch-1`; application source and acceptance-test head before this status update: `6be11dec1c71f51421b295c20a8056a767cd73e0`.
+- Working branch: `ysfclc-patch-1`; application source and acceptance-test head before this status update: `80cf2add0399ae71d27b2707aabbd3b09bf2ef2c`.
 - `EncryptedVault` and `SynthStore` now use separate canonical files while preserving their original Android Keystore aliases, encryption envelopes and schema. The old `synthos-vault.bin` remains untouched as a migration source.
 - Legacy ciphertext must authenticate with the corresponding existing key before it is copied. Corrupt, unknown or damaged-header payloads fail closed. AtomicFile workspace backup recovery is handled.
 - Added Android instrumentation coverage for real encrypted workspace and native workflow records, version-increasing signed install-over-existing, both legacy migration paths, independent writes, corruption, damaged headers and unknown formats. The test uses isolated private storage to avoid touching user data.
 - CI has been updated to build the instrumentation APK and run seed / verify around `adb install -r` on an API 35 emulator. Direct source changes use the checked-out branch source; the historical ZIP is not re-extracted over newer source.
 - The vault-error screen now exposes both plain JSON and passphrase-encrypted backup restore; share-sheet capture waits until vault recovery succeeds. The instrumentation fixture lives in its own persistent private-files subdirectory, separate from Memo's root vault files.
+- Instrumentation also simulates an interrupted AtomicFile write by restoring a valid encrypted workspace from the .bak file, and verifies that the backup is consumed into the canonical file.
 
 ### Verification not yet confirmed
 
