@@ -214,6 +214,20 @@ if missing:
     fail("static UI strings are missing Polish/Turkish catalog entries: " + " | ".join(missing[:30]))
 print(f"PASS: {len(translatable)}/{len(translatable)} static UI Text literals requiring translation are present in the catalog ({len(scanned)} literals scanned; URLs/placeholders excluded)")
 
+workspace_app = (ui_dir / "MemoWorkspaceApp.kt").read_text()
+for marker in (
+    "LaunchedEffect(sharedText, sharedSubject, vaultReady, vaultError)",
+    "vaultError == null && shared.isNotBlank()",
+    "onImportEncrypted = { encryptedImportLauncher.launch",
+    'Text("Restore encrypted backup")',
+):
+    if marker not in workspace_app:
+        fail(f"vault recovery UI is missing a safe recovery gate: {marker}")
+if "plain JSON or passphrase-encrypted" not in workspace_app:
+    fail("vault recovery UI must explain both supported backup formats")
+print("PASS: vault failure blocks share capture and keeps encrypted-backup recovery available")
+
+
 source_manifest = ROOT / "SOURCE_SHA256SUMS.txt"
 if not source_manifest.is_file():
     fail("source SHA-256 manifest is missing")
