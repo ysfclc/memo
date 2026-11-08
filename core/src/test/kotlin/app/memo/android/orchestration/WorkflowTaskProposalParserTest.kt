@@ -101,5 +101,10 @@ class WorkflowTaskProposalParserTest {
         assertTrue(runCatching {
             WorkflowTaskProposalParser.parse(proposal(listOf(task("bad id", "BROWSER", "runtime.browser"))), "Inspect page", runtimes)
         }.isFailure)
+        val fractionalLimit = task("fractional", "BROWSER", "runtime.browser")
+            .put("timeoutMs", 90_000.5)
+        assertTrue(runCatching {
+            WorkflowTaskProposalParser.parse(proposal(listOf(fractionalLimit)), "Inspect page", runtimes)
+        }.isFailure)
     }
 }
