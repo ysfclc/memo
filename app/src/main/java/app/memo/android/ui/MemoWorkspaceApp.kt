@@ -434,7 +434,7 @@ fun MemoWorkspaceApp(
                 )
                 EmptyState(
                     title = "Workspace changes are paused",
-                    body = "Export any information still visible in memory, or restore a valid Memo JSON backup. Browser tasks are paused so results are not silently discarded."
+                    body = "Export any information still visible in memory, or restore a valid Memo backup (plain JSON or passphrase-encrypted). Browser tasks are paused so results are not silently discarded."
                 )
             } else if (!vaultReady) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
