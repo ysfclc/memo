@@ -24,7 +24,8 @@ data class CapabilityManifest(
     val capabilities: List<CompiledCapability>,
     val unresolvedRequirements: List<String>,
     val requiresUserApproval: Boolean,
-    val manifestSha256: String
+    val manifestSha256: String,
+    val registeredRuntimeIds: Set<String> = emptySet()
 ) {
     val isRunnableForLocalPlanning: Boolean get() = unresolvedRequirements.isEmpty()
 }
@@ -53,9 +54,17 @@ object CapabilityCompiler {
     ): CapabilityManifest {
         require(sourceIntent.isNotBlank() && sourceIntent.length <= 8_000) { "Workflow intent is missing or too long." }
         require(tasks.isNotEmpty() && tasks.size <= 40) { "Task capability compilation requires 1 to 40 tasks." }
+        require(registeredRuntimes.map { it.id }.distinct().size == registeredRuntimes.size) {
+            "The runtime registry contains duplicate runtime IDs."
+        }
         val runtimes = registeredRuntimes.associateBy { it.id }
+        registeredRuntimes.forEach { runtime ->
+            require(runtime.capabilities.map { it.id }.distinct().size == runtime.capabilities.size) {
+                "Runtime '${runtime.id}' contains duplicate capability IDs."
+            }
+        }
         val requirements = tasks.flatMap { task ->
-            require(task.runtimeId.isNotBlank()) { "Task '${task.id}' has no runtime assignment." }
+            require(task.runtimeId in runtimes) { "Task '${task.id}' targets an unregistered runtime '${task.runtimeId}'." }
             task.requiredCapabilities.map { task.runtimeId to it }
         }.distinct().sortedWith(compareBy<Pair<String, String>> { it.first }.thenBy { it.second })
         val chosen = mutableListOf<CompiledCapability>()
@@ -94,7 +103,8 @@ object CapabilityCompiler {
             capabilities = chosen,
             unresolvedRequirements = missing,
             requiresUserApproval = approval,
-            manifestSha256 = sha256(manifestPayload)
+            manifestSha256 = sha256(manifestPayload),
+            registeredRuntimeIds = registeredRuntimes.map { it.id }.toSet()
         )
     }
 
@@ -141,7 +151,8 @@ object CapabilityCompiler {
             capabilities = chosen,
             unresolvedRequirements = requiredMissing,
             requiresUserApproval = approval,
-            manifestSha256 = sha256(manifestPayload)
+            manifestSha256 = sha256(manifestPayload),
+            registeredRuntimeIds = registeredRuntimes.map { it.id }.toSet()
         )
     }
 
