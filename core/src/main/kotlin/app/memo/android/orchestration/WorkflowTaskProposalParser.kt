@@ -53,7 +53,7 @@ object WorkflowTaskProposalParser {
             val postcondition = boundedString(row, "postcondition", 1_000)
             val timeoutMs = integer(row, "timeoutMs")
             val maxRetriesValue = integer(row, "maxRetries")
-            require(maxRetriesValue in 0..3) { "Task field 'maxRetries' must be between 0 and 3." }
+            require(maxRetriesValue in 0L..3L) { "Task field 'maxRetries' must be between 0 and 3." }
             val maxRetries = maxRetriesValue.toInt()
             val requiresApproval = boolean(row, "requiresApproval")
             val externalWrite = boolean(row, "externalWrite")
