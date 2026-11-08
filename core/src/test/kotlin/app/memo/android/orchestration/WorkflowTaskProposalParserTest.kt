@@ -69,6 +69,24 @@ class WorkflowTaskProposalParserTest {
         assertTrue(failure?.message.orEmpty().contains("runtime.browser:entity.propose"))
     }
 
+    @Test fun approvalGatedCapabilitiesRequireAnExplicitApprovalTask() {
+        val missingApproval = proposal(listOf(
+            task("submit", "BROWSER", "runtime.browser", listOf("browser.submit_prompt"))
+        ))
+        assertTrue(runCatching {
+            WorkflowTaskProposalParser.parse(missingApproval, "Submit a provider prompt", runtimes)
+        }.isFailure)
+
+        val approvedFlow = proposal(listOf(
+            task("prepare", "BROWSER", "runtime.browser", listOf("browser.submit_prompt"), requiresApproval = true),
+            task("approval", "USER", "app.approvals", dependsOn = listOf("prepare"), kind = "APPROVAL", externalWrite = true, requiresApproval = true),
+            task("review", "USER", "app.jobs", dependsOn = listOf("approval"), kind = "REVIEW")
+        ))
+        val graph = WorkflowTaskProposalParser.parse(approvedFlow, "Submit a provider prompt", runtimes)
+        assertTrue(graph.nodes.single { it.id == "prepare" }.requiresApproval)
+        assertTrue(graph.nodes.single { it.id == "approval" }.externalWrite)
+    }
+
     @Test fun rejectsCyclesAndUnapprovedExternalWrites() {
         val cycle = proposal(listOf(
             task("first", "DETERMINISTIC", "app.jobs", dependsOn = listOf("second")),
