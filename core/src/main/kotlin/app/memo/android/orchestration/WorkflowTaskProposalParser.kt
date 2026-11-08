@@ -60,7 +60,8 @@ object WorkflowTaskProposalParser {
             val keyMaterial = listOf(
                 proposalNonce, id, title, kind.name, participant.name, runtimeId,
                 capabilities.sorted().joinToString(","), dependencies.sorted().joinToString(","),
-                inputContract, outputContract, postcondition
+                inputContract, outputContract, postcondition, requiresApproval.toString(),
+                externalWrite.toString(), timeoutMs.toString(), maxRetries.toString()
             ).joinToString("|")
             TaskSpec(
                 id = id,
