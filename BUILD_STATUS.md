@@ -7,6 +7,7 @@
 - Legacy ciphertext must authenticate with the corresponding existing key before it is copied. Corrupt, unknown or damaged-header payloads fail closed. AtomicFile workspace backup recovery is handled.
 - Added Android instrumentation coverage for real encrypted workspace and native workflow records, version-increasing signed install-over-existing, both legacy migration paths, independent writes, corruption, damaged headers and unknown formats. The test uses isolated private storage to avoid touching user data.
 - CI has been updated to build the instrumentation APK and run seed / verify around `adb install -r` on an API 35 emulator. Direct source changes use the checked-out branch source; the historical ZIP is not re-extracted over newer source.
+- The vault-error screen now exposes both plain JSON and passphrase-encrypted backup restore; share-sheet capture waits until vault recovery succeeds. The instrumentation fixture lives in its own persistent private-files subdirectory, separate from Memo's root vault files.
 
 ### Verification not yet confirmed
 
