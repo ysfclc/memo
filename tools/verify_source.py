@@ -289,7 +289,7 @@ for marker in ("data class TaskSpec(", "typealias WorkflowNodeSpec = TaskSpec", 
 for marker in ("fun compileForTasks(", "task.runtimeId to it", "unresolvedRequirements = missing", "mode=task-spec"):
     if marker not in capability_source:
         fail(f"dynamic capability assembly is missing: {marker}")
-for marker in ("MAX_RAW_CHARS = 64_000", "UUID.randomUUID()", "CapabilityCompiler.compileForTasks", "WorkflowGraphCompiler.compile", "private fun integer("):
+for marker in ("MAX_RAW_CHARS = 64_000", "UUID.randomUUID()", "CapabilityCompiler.compileForTasks", "WorkflowGraphCompiler.compile", "private fun integer(", "numeric % 1.0 == 0.0"):
     if marker not in proposal_parser:
         fail(f"untrusted TaskSpec proposal parser is missing: {marker}")
 for marker in ("dynamicTaskSpecsCompileIntoAValidatedFanOutAndJoinDag", "NeverBorrowsAnIdenticallyNamedCapability", "dynamicGraphRejectsModelAndDurationBudgetOverruns"):
