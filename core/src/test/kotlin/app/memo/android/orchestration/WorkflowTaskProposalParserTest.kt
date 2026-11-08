@@ -119,6 +119,22 @@ class WorkflowTaskProposalParserTest {
         assertTrue(runCatching { WorkflowGraphValidator.validate(tampered) }.isFailure)
     }
 
+    @Test fun remoteModelConsentUsesApprovalWithoutBeingClassifiedAsExternalWrite() {
+        val raw = proposal(listOf(
+            task("draft", "DETERMINISTIC", "app.jobs", kind = "ARTIFACT"),
+            task("consent", "USER", "app.approvals", dependsOn = listOf("draft"), kind = "APPROVAL", requiresApproval = true),
+            task("generate", "LOCAL_MODEL", "app.models", listOf("model.generate_remote"), listOf("consent"), requiresApproval = true),
+            task("review", "USER", "app.jobs", dependsOn = listOf("generate"), kind = "REVIEW")
+        ))
+        val graph = WorkflowTaskProposalParser.parse(raw, "Generate using a remote provider", runtimes)
+        val generate = graph.nodes.single { it.id == "generate" }
+        val consent = graph.nodes.single { it.id == "consent" }
+        assertTrue(generate.requiresApproval)
+        assertTrue(!generate.externalSideEffect)
+        assertTrue(!consent.externalWrite)
+        assertTrue(runCatching { WorkflowGraph.fromJson(graph.toJson()) }.isSuccess)
+    }
+
     @Test fun rejectsCyclesAndUnapprovedExternalWrites() {
         val cycle = proposal(listOf(
             task("first", "DETERMINISTIC", "app.jobs", dependsOn = listOf("second")),
