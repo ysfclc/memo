@@ -285,9 +285,11 @@ task_graph_tests = (ROOT / "core/src/test/kotlin/app/memo/android/orchestration/
 proposal_tests = (ROOT / "core/src/test/kotlin/app/memo/android/orchestration/WorkflowTaskProposalParserTest.kt").read_text()
 runtime_registry = (ROOT / "core/src/main/kotlin/app/memo/android/runtime/RuntimeContracts.kt").read_text()
 runtime_registry_tests = (ROOT / "core/src/test/kotlin/app/memo/android/runtime/RuntimeRegistryTest.kt").read_text()
-for marker in ("RuntimeDescriptor(\"app.approvals\"", "approval.approve_exact", "approval.reject"):
+for marker in ("RuntimeDescriptor(\"app.approvals\"", "approval.approve_exact", "approval.reject", "model.generate_remote"):
     if marker not in runtime_registry:
         fail(f"human approval runtime contract is missing: {marker}")
+if "localInferenceAndRemoteProviderConsentAreDifferentCapabilities" not in runtime_registry_tests:
+    fail("local and remote model approval policy test is missing")
 if "humanApprovalInboxIsARegisteredRuntimeDistinctFromTheJobWorkbench" not in runtime_registry_tests:
     fail("human approval runtime isolation test is missing")
 for marker in ("data class TaskSpec(", "typealias WorkflowNodeSpec = TaskSpec", "fun compile(\n        goal: String", "Workflow model-call budget exceeded", "Workflow total timeout exceeds", "approval-gated capability", "dedicated approval checkpoint", "cannot be automatically retried", "User checkpoints must target"):
