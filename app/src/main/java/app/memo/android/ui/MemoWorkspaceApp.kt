@@ -250,9 +250,9 @@ fun MemoWorkspaceApp(
 
     fun snack(message: String) { scope.launch { snackbarHost.showSnackbar(message) } }
 
-    LaunchedEffect(sharedText, sharedSubject, vaultReady) {
+    LaunchedEffect(sharedText, sharedSubject, vaultReady, vaultError) {
         val shared = sharedText?.trim().orEmpty()
-        if (vaultReady && shared.isNotBlank()) {
+        if (vaultReady && vaultError == null && shared.isNotBlank()) {
             val title = sharedSubject?.trim()?.takeIf { it.isNotBlank() } ?: shared.lineSequence().firstOrNull().orEmpty().take(72).ifBlank { "Shared conversation" }
             viewModel.importConversation(title, "Android share sheet", shared).fold(
                 onSuccess = { id ->
@@ -429,7 +429,8 @@ fun MemoWorkspaceApp(
                 VaultWarning(
                     message = vaultError!!,
                     onExport = { exportLauncher.launch("memo-recovery-${System.currentTimeMillis()}.json") },
-                    onImport = { importLauncher.launch(arrayOf("application/json", "text/*", "application/octet-stream")) }
+                    onImport = { importLauncher.launch(arrayOf("application/json", "text/*", "application/octet-stream")) },
+                    onImportEncrypted = { encryptedImportLauncher.launch(arrayOf("application/octet-stream", "application/x-memo-backup", "*/*")) }
                 )
                 EmptyState(
                     title = "Workspace changes are paused",
@@ -899,7 +900,12 @@ private fun AppHeader(onLock: () -> Unit, onStop: () -> Unit, onMore: () -> Unit
 }
 
 @Composable
-private fun VaultWarning(message: String, onExport: () -> Unit, onImport: () -> Unit) {
+private fun VaultWarning(
+    message: String,
+    onExport: () -> Unit,
+    onImport: () -> Unit,
+    onImportEncrypted: () -> Unit
+) {
     SurfaceCard(modifier = Modifier.padding(horizontal = MemoTokens.Spacing.md, vertical = MemoTokens.Spacing.xs)) {
         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
             Icon(Icons.Rounded.Fingerprint, contentDescription = null, tint = MaterialTheme.colorScheme.error)
@@ -910,6 +916,7 @@ private fun VaultWarning(message: String, onExport: () -> Unit, onImport: () -> 
                     TextButton(onClick = onExport) { Text("Export visible data") }
                     TextButton(onClick = onImport) { Text("Restore backup") }
                 }
+                TextButton(onClick = onImportEncrypted) { Text("Restore encrypted backup") }
             }
         }
     }
