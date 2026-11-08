@@ -113,6 +113,10 @@ class WorkflowTaskProposalParserTest {
         assertTrue(graph.nodes.single { it.id == "submit" }.requiresApproval)
         assertEquals(listOf("approval"), graph.nodes.single { it.id == "submit" }.dependsOn)
         assertTrue(graph.nodes.single { it.id == "approval" }.externalWrite)
+        val tampered = graph.copy(nodes = graph.nodes.map { node ->
+            if (node.id == "submit") node.copy(dependsOn = emptyList()) else node
+        })
+        assertTrue(runCatching { WorkflowGraphValidator.validate(tampered) }.isFailure)
     }
 
     @Test fun rejectsCyclesAndUnapprovedExternalWrites() {
