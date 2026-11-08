@@ -4,6 +4,7 @@ import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.AtomicFile
+import org.json.JSONObject
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
@@ -158,9 +159,25 @@ class EncryptedVault(context: Context) {
             payload[3] == '1'.code.toByte()
 
     private fun isNativeStoreEnvelope(payload: ByteArray): Boolean {
-        if (payload.isEmpty()) return false
+        if (payload.size < 29) return false
         val ivLength = payload[0].toInt() and 0xff
-        return ivLength in 12..16 && payload.size > 1 + ivLength + 16
+        if (ivLength !in 12..16 || payload.size <= 1 + ivLength + 16) return false
+
+        // The legacy native format has no magic header. Authenticate it with its own existing key
+        // before treating it as foreign data; a damaged SYV1 header must not look like an empty vault.
+        return try {
+            val keyStore = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
+            val nativeKey = keyStore.getKey("synthos.runtime.store.v1", null) as? SecretKey
+                ?: return false
+            val iv = payload.copyOfRange(1, 1 + ivLength)
+            val encrypted = payload.copyOfRange(1 + ivLength, payload.size)
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.DECRYPT_MODE, nativeKey, GCMParameterSpec(128, iv))
+            val plain = cipher.doFinal(encrypted)
+            JSONObject(plain.toString(Charsets.UTF_8)).optInt("schemaVersion", 0) == 1
+        } catch (_: Exception) {
+            false
+        }
     }
 
     companion object {
