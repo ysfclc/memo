@@ -188,12 +188,12 @@ object WorkflowGraphValidator {
                 "External writes must be isolated behind a non-retrying user approval checkpoint."
             }
             if (node.requiresApproval && node.kind != WorkflowNodeKind.APPROVAL) {
-                require(node.maxRetries == 0) { "Approval-gated task '\${node.id}' cannot be automatically retried." }
+                require(node.maxRetries == 0) { "Approval-gated task '${node.id}' cannot be automatically retried." }
                 require(node.dependsOn.any { dependency ->
                     val gate = byId[dependency]
                     gate?.kind == WorkflowNodeKind.APPROVAL && gate.externalWrite &&
                         gate.participant == WorkflowParticipant.USER && gate.runtimeId == "app.approvals" && gate.maxRetries == 0
-                }) { "Approval-gated task '\${node.id}' must depend on a dedicated approval checkpoint." }
+                }) { "Approval-gated task '${node.id}' must depend on a dedicated approval checkpoint." }
             }
 
         }
