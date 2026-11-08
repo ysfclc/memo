@@ -242,7 +242,7 @@ for marker in ("memo-workspace-vault.bin", "synthos-vault.bin", "synthos_fieldwo
 for marker in ("memo-native-workflows.bin", "synthos-vault.bin", "synthos.runtime.store.v1", "getExistingKey()", "writePayloadAtomically(legacyPayload)"):
     if marker not in native_store:
         fail(f"native workflow store migration contract is missing: {marker}")
-if 'printf \'%s\\n\' "$CHANGED_FILES"' not in workflow or "INCOMING_ARCHIVE_CHANGE" not in workflow:
+if 'printf \'%s\n\' "$CHANGED_FILES"' not in workflow or "INCOMING_ARCHIVE_CHANGE" not in workflow:
     fail("GitHub workflow must build direct source changes without depending on, or overwriting them from, a stale ZIP")
 if "Direct source verification requested" not in workflow or "SOURCE_ONLY=true" not in workflow:
     fail("GitHub workflow is missing the checked-out-source verification route")
