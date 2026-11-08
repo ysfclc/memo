@@ -30,7 +30,10 @@ class EncryptedVault(context: Context) {
     private val aad = "Memo-Android:v1".toByteArray(Charsets.UTF_8)
 
     suspend fun read(): AppSnapshot? = mutex.withLock {
-        if (atomicFile.baseFile.exists()) return@withLock readCanonicalFile()
+        val canonicalBase = atomicFile.baseFile
+        if (canonicalBase.exists() || File(canonicalBase.path + ".bak").exists()) {
+            return@withLock readCanonicalFile()
+        }
 
         if (!legacySharedFile.exists()) return@withLock null
         require(legacySharedFile.length() <= MAX_WORKSPACE_BACKUP_BYTES + 64 * 1024L) {
@@ -62,11 +65,11 @@ class EncryptedVault(context: Context) {
     }
 
     private fun readCanonicalFile(): AppSnapshot {
-        val file = atomicFile.baseFile
-        require(file.length() <= MAX_WORKSPACE_BACKUP_BYTES + 64 * 1024L) {
+        // openRead restores AtomicFile's backup when a previous write was interrupted.
+        val bytes = atomicFile.openRead().use { input -> input.readBytes() }
+        require(bytes.size.toLong() <= MAX_WORKSPACE_BACKUP_BYTES + 64 * 1024L) {
             "Encrypted workspace exceeds the supported size limit."
         }
-        val bytes = atomicFile.openRead().use { input -> input.readBytes() }
         return AppSnapshot.fromJson(decrypt(bytes).toString(Charsets.UTF_8))
     }
 
