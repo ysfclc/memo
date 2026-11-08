@@ -731,8 +731,7 @@ jobs:
 
           # Keep the old sentinel as a supplemental generic sandbox check; encrypted-store
           # acceptance above/below proves the actual Keystore-backed data can be reopened.
-          adb shell run-as app.memo.android.debug mkdir -p files/.memo-upgrade-test
-          adb shell run-as app.memo.android.debug sh -c "printf 'memo-private-data-survives-update' > files/.memo-upgrade-test/sentinel"
+          adb shell "run-as app.memo.android.debug sh -c 'mkdir -p files/.memo-upgrade-test && printf \"%s\" \"memo-private-data-survives-update\" > files/.memo-upgrade-test/sentinel'"
 
           adb install -r "$CURRENT_APK" 2>&1 | tee -a "$MEMO_BUILD_LOG"
           run_store_acceptance_phase verify
