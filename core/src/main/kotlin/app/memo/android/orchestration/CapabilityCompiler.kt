@@ -79,7 +79,7 @@ object CapabilityCompiler {
         val approval = chosen.any { it.requiresUserApproval } || tasks.any { it.requiresApproval }
         val sourceHash = sha256(sourceIntent.trim())
         val manifestPayload = buildString {
-            append("schema=1\\nmode=task-spec\\nsource=").append(sourceHash).append('\\n')
+            append("schema=1\nmode=task-spec\nsource=").append(sourceHash).append('\n')
             chosen.forEach { capability ->
                 append(capability.runtimeId).append('|').append(capability.capabilityId).append('|')
                     .append(capability.requiresUserApproval).append('|').append(capability.runtimeStatus).append('\\n')
