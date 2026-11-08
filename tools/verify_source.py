@@ -285,7 +285,7 @@ task_graph_tests = (ROOT / "core/src/test/kotlin/app/memo/android/orchestration/
 proposal_tests = (ROOT / "core/src/test/kotlin/app/memo/android/orchestration/WorkflowTaskProposalParserTest.kt").read_text()
 runtime_registry = (ROOT / "core/src/main/kotlin/app/memo/android/runtime/RuntimeContracts.kt").read_text()
 runtime_registry_tests = (ROOT / "core/src/test/kotlin/app/memo/android/runtime/RuntimeRegistryTest.kt").read_text()
-for marker in ("RuntimeDescriptor(\"app.approvals\"", "approval.approve_exact", "approval.reject", "model.generate_remote"):
+for marker in ("RuntimeDescriptor(\"app.approvals\"", "approval.approve_exact", "approval.reject", "model.generate_remote", "externalSideEffect: Boolean = false", "browser.submit_prompt", "true, true"):
     if marker not in runtime_registry:
         fail(f"human approval runtime contract is missing: {marker}")
 if "localInferenceAndRemoteProviderConsentAreDifferentCapabilities" not in runtime_registry_tests:
@@ -304,7 +304,7 @@ for marker in ("MAX_RAW_CHARS = 64_000", "UUID.randomUUID()", "CapabilityCompile
 for marker in ("dynamicTaskSpecsCompileIntoAValidatedFanOutAndJoinDag", "NeverBorrowsAnIdenticallyNamedCapability", "dynamicGraphRejectsModelAndDurationBudgetOverruns"):
     if marker not in task_graph_tests:
         fail(f"dynamic workflow graph regression coverage is missing: {marker}")
-for marker in ("parsesDynamicTaskSpecsAndCreatesFreshAppOwnedIdempotencyKeys", "rejectsCapabilitiesThatExistOnlyOnAnotherRuntime", "rejectsAnUnregisteredRuntimeEvenWhenTheTaskNeedsNoCapabilities", "approvalGatedCapabilitiesRequireAnExplicitApprovalTask", "remoteModelConsentUsesApprovalWithoutBeingClassifiedAsExternalWrite", "rejectsCyclesAndUnapprovedExternalWrites", "rejectsMalformedAndOversizedTaskFields"):
+for marker in ("parsesDynamicTaskSpecsAndCreatesFreshAppOwnedIdempotencyKeys", "rejectsCapabilitiesThatExistOnlyOnAnotherRuntime", "rejectsAnUnregisteredRuntimeEvenWhenTheTaskNeedsNoCapabilities", "approvalGatedCapabilitiesRequireAnExplicitApprovalTask", "remoteModelConsentUsesApprovalWithoutBeingClassifiedAsExternalWrite", "externalSideEffect", "rejectsCyclesAndUnapprovedExternalWrites", "rejectsMalformedAndOversizedTaskFields"):
     if marker not in proposal_tests:
         fail(f"TaskSpec proposal parser regression coverage is missing: {marker}")
 print("PASS: typed TaskSpec proposals compile into bounded DAGs with exact-runtime capability resolution and fail-closed validation")
