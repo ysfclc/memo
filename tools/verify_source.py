@@ -236,12 +236,16 @@ if "sha256sum -c SOURCE_SHA256SUMS.txt" not in workflow or "Memo-Source-Archive-
 workspace_vault = (ROOT / "app/src/main/java/app/memo/android/data/EncryptedVault.kt").read_text()
 native_store = (ROOT / "app/src/main/java/com/synthos/runtime/data/SynthStore.java").read_text()
 upgrade_test = (ROOT / "app/src/androidTest/java/app/memo/android/data/EncryptedStoreUpgradeTest.kt").read_text()
-for marker in ("memo-workspace-vault.bin", "synthos-vault.bin", "synthos_fieldwork_vault_v1", "Memo-Android:v1", "getExistingKey()", "copyLegacyWorkspaceAtomically"):
+for marker in ("memo-workspace-vault.bin", "synthos-vault.bin", "synthos_fieldwork_vault_v1", "Memo-Android:v1", "getExistingKey()", "copyLegacyWorkspaceAtomically", 'keyStore.getKey("synthos.runtime.store.v1", null)', "cipher.doFinal(encrypted)", "damaged SYV1 header"):
     if marker not in workspace_vault:
         fail(f"primary encrypted workspace migration contract is missing: {marker}")
 for marker in ("memo-native-workflows.bin", "synthos-vault.bin", "synthos.runtime.store.v1", "getExistingKey()", "writePayloadAtomically(legacyPayload)"):
     if marker not in native_store:
         fail(f"native workflow store migration contract is missing: {marker}")
+if 'printf \'%s\\n\' "$CHANGED_FILES"' not in workflow or "INCOMING_ARCHIVE_CHANGE" not in workflow:
+    fail("GitHub workflow must build direct source changes without depending on, or overwriting them from, a stale ZIP")
+if "Direct source verification requested" not in workflow or "SOURCE_ONLY=true" not in workflow:
+    fail("GitHub workflow is missing the checked-out-source verification route")
 if "legacySharedFile.delete()" in native_store or "legacySharedFile.delete()" in workspace_vault:
     fail("legacy encrypted source file must never be deleted by automatic migration")
 if workspace_vault.index("AppSnapshot.fromJson(decrypt(legacyBytes)") > workspace_vault.index("copyLegacyWorkspaceAtomically(legacyBytes)"):
@@ -256,7 +260,7 @@ for marker in ("app-debug-androidTest.apk", "run_store_acceptance_phase seed", "
         fail(f"CI does not execute the encrypted-store in-place upgrade test: {marker}")
 print("PASS: encrypted workspace/native store separation, authenticate-before-copy migration, legacy preservation, and in-place upgrade instrumentation are wired")
 
-print("PASS: CI builds only the canonical ZIP, verifies its source manifest, checks the one-Activity boundary, and runs Android unit tests/lint/APK assembly")
+print("PASS: CI safely handles canonical ZIP imports and checked-out direct-source builds, verifies source integrity, and runs Android unit tests/lint/APK assembly")
 
 runner_tests = list((ROOT / "remote-runner/tests").glob("test_*.py"))
 if not runner_tests:
