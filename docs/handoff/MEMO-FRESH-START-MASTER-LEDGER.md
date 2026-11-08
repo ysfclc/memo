@@ -402,3 +402,13 @@ Next after this P0 gate: implement the roadmap's typed TaskSpec, dynamic version
 - Direct source changes build the checked-out branch snapshot; an actual incoming/memo.zip change still uses the ZIP-import path. The direct-source shell block passed bash -n and three simulations (source commit, ZIP commit, unrelated README commit).
 - BUILD_STATUS.md is intentionally not a workflow trigger because the workflow itself appends build results to it. The source verifier now rejects adding that self-trigger. CHANGELOG and product/code/workflow paths remain eligible triggers.
 - The corrected workflow still has no observed GitHub Actions result for the current source revision. Structural and shell checks are not a substitute for Gradle, lint, APK identity/signature, or emulator instrumentation results.
+
+
+## 8 November 2026 — Typed TaskSpec / dynamic DAG proposal implementation
+
+- Added TaskSpec as the canonical typed unit of workflow work while preserving the WorkflowNodeSpec typealias and schema-v1 serialized graph shape.
+- Added task-driven capability assembly that resolves (runtimeId, capabilityId) pairs exactly; no global-name fallback is permitted. Manifest hashes are deterministic and include runtime readiness.
+- Added dynamic graph compilation from arbitrary TaskSpec lists, supporting fan-out/join dependencies and validating runtime/participant compatibility, capability registration, contracts, unique IDs/dependencies, cycles, idempotency-key format, model-call/time/node budgets and approval-isolated external writes.
+- Added WorkflowTaskProposalParser for bounded untrusted JSON proposals. It rejects malformed types/arrays/enums/contracts, missing runtime capabilities, cycles and unapproved external writes. Idempotency keys are generated locally by Memo and are not accepted from model output.
+- Added JVM regression tests for the proposal parser and dynamic graph path; extended tools/verify_source.py with source invariants. CI has been triggered by core source/test changes, but build/test results must be observed before acceptance.
+- Product boundary remains explicit: current Talk intent planning still uses static domain templates; parser is not yet connected to a model planner. No DAG executor, per-node durable run journal, shared pause/resume/cancel scheduler or runtime dispatch has been implemented in this increment.
