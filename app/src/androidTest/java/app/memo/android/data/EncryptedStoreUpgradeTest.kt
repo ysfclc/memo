@@ -127,6 +127,16 @@ class EncryptedStoreUpgradeTest {
         assertEquals("Second isolated workflow", SynthStore(context).getWorkflow("upgrade-workflow-second")?.name)
         assertTrue(workspace.isFile && native.isFile)
 
+        // Simulate a process interruption after the AtomicFile backup was committed but before
+        // the canonical base file is restored. The next read must recover the backup.
+        val workspaceBackup = File(workspace.path + ".bak")
+        assertTrue(workspace.delete())
+        workspaceBackup.writeBytes(workspaceBeforeNativeWrite)
+        assertWorkspaceContent(EncryptedVault(context).read())
+        assertTrue("AtomicFile backup was not restored to the canonical workspace.", workspace.isFile)
+        assertFalse("AtomicFile recovery left a stale backup behind.", workspaceBackup.exists())
+        assertArrayEquals(workspaceBeforeNativeWrite, workspace.readBytes())
+
         // Corrupted primary data must fail closed without being overwritten by the other store.
         assertTrue(workspace.delete())
         assertTrue(native.delete())
