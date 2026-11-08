@@ -218,16 +218,18 @@ object WorkflowGraphCompiler {
                     require(task.requiresApproval) {
                         "Task '${task.id}' uses approval-gated capability '${capabilityId}' without an explicit approval checkpoint."
                     }
-                    require(task.maxRetries == 0) {
-                        "Approval-gated task '${task.id}' cannot be automatically retried."
-                    }
-                    require(task.dependsOn.any { dependency ->
-                        val gate = tasksById[dependency]
-                        gate?.kind == WorkflowNodeKind.APPROVAL && gate.externalWrite &&
-                            gate.participant == WorkflowParticipant.USER && gate.runtimeId == "app.approvals" && gate.maxRetries == 0
-                    }) {
-                        "Task '${task.id}' must depend on a dedicated approval checkpoint before using '${capabilityId}'."
-                    }
+                }
+            }
+            if (task.requiresApproval && task.kind != WorkflowNodeKind.APPROVAL) {
+                require(task.maxRetries == 0) {
+                    "Approval-gated task '${task.id}' cannot be automatically retried."
+                }
+                require(task.dependsOn.any { dependency ->
+                    val gate = tasksById[dependency]
+                    gate?.kind == WorkflowNodeKind.APPROVAL && gate.externalWrite &&
+                        gate.participant == WorkflowParticipant.USER && gate.runtimeId == "app.approvals" && gate.maxRetries == 0
+                }) {
+                    "Task '${task.id}' must depend on a dedicated approval checkpoint before execution."
                 }
             }
             when (task.participant) {
