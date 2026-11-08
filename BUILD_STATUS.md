@@ -1,6 +1,13 @@
 # Build and verification status — 8 November 2026
 
-## Current source increment — encrypted storage isolation (acceptance pending)
+## Current source increment — typed TaskSpec DAG proposal boundary (CI pending)
+
+- Added the canonical typed TaskSpec contract, dynamic fan-out/join DAG compiler and exact-runtime capability assembly.
+- Added a strict parser for untrusted model task proposals. Runtime/capability mismatches, malformed contracts, cycles, invalid budgets and unapproved external writes fail closed. Memo generates idempotency keys itself.
+- Added core JVM regression tests and static source-verifier checks. Existing schema-v1 graph serialization is preserved.
+- This is not yet connected to Talk's model planner and does not execute tasks. Durable node state, runtime dispatch, policy integration, pause/resume and postcondition evidence remain future P2 work.
+
+### Previous source increment — encrypted storage isolation (acceptance pending)
 
 - Working branch: `ysfclc-patch-1`; latest inspected source/workflow/acceptance branch snapshot before this status-only update: `1a9a8f4ca84b8dfe7257ebfa270e68c586885d89`.
 - `EncryptedVault` and `SynthStore` now use separate canonical files while preserving their original Android Keystore aliases, encryption envelopes and schema. The old `synthos-vault.bin` remains untouched as a migration source.
