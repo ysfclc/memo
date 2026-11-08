@@ -92,7 +92,13 @@ public final class SynthStore {
         }
 
         // Verify decryption and schema before copying any legacy bytes.
-        decryptPayload(legacyPayload);
+        try {
+            decryptPayload(legacyPayload);
+        } catch (IOException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IOException("The legacy native workflow store could not be authenticated. The original file was preserved.", e);
+        }
         writePayloadAtomically(legacyPayload);
         // Read back from the new location. A failed read leaves the legacy source untouched.
         return readEncryptedFile(storeFile);
