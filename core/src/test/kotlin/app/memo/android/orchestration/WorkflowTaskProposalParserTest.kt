@@ -69,6 +69,17 @@ class WorkflowTaskProposalParserTest {
         assertTrue(failure?.message.orEmpty().contains("runtime.browser:entity.propose"))
     }
 
+    @Test fun rejectsAnUnregisteredRuntimeEvenWhenTheTaskNeedsNoCapabilities() {
+        val raw = proposal(listOf(
+            task("unknown", "DETERMINISTIC", "app.ghost-runtime")
+        ))
+        val failure = runCatching {
+            WorkflowTaskProposalParser.parse(raw, "Run an unknown task", runtimes)
+        }.exceptionOrNull()
+        assertTrue(failure?.message.orEmpty().contains("unregistered runtime"))
+    }
+
+
     @Test fun approvalGatedCapabilitiesRequireAnExplicitApprovalTask() {
         val missingApproval = proposal(listOf(
             task("submit", "BROWSER", "runtime.browser", listOf("browser.submit_prompt"))
