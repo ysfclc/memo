@@ -7,8 +7,15 @@ data class RuntimeCapability(
     val id: String,
     val label: String,
     val description: String,
-    val requiresUserApproval: Boolean = false
-)
+    val requiresUserApproval: Boolean = false,
+    val externalSideEffect: Boolean = false
+) {
+    init {
+        require(!externalSideEffect || requiresUserApproval) {
+            "External side-effect capabilities must require explicit user approval."
+        }
+    }
+}
 
 data class RuntimeDescriptor(
     val id: String,
@@ -66,7 +73,7 @@ class RuntimeRegistry {
         capabilities = listOf(
             RuntimeCapability("android.launch_app", "Launch installed app", "Open a launchable app selected by the user."),
             RuntimeCapability("android.observe_visible_labels", "Observe visible labels", "Read exposed non-editable labels only after Accessibility is enabled."),
-            RuntimeCapability("android.tap_exact_text", "Tap exact text", "Tap a unique visible label in the selected target app.", true),
+            RuntimeCapability("android.tap_exact_text", "Tap exact text", "Tap a unique visible label in the selected target app.", true, true),
             RuntimeCapability("android.verify_visible_text", "Verify visible outcome", "Require a visible-text postcondition before a run is marked verified."),
             RuntimeCapability("android.capture_screen_context", "Capture accessible screen labels", "Capture only after a user taps Capture; editable values and passwords are excluded.", true)
         )
@@ -82,9 +89,9 @@ class RuntimeRegistry {
             RuntimeCapability("browser.inspect_page", "Inspect visible page", "Read supported page content through browser-side scripts."),
             RuntimeCapability("browser.capture_evidence", "Capture evidence", "Save inspected content with source URL and timestamp."),
             RuntimeCapability("browser.prepare_prompt", "Prepare prompt", "Fill a supported frontier-chat composer for review.", true),
-            RuntimeCapability("browser.submit_prompt", "Submit prompt", "Send a user-approved prompt through the visible provider website; provider UI compatibility is checked first.", true),
+            RuntimeCapability("browser.submit_prompt", "Submit prompt", "Send a user-approved prompt through the visible provider website; provider UI compatibility is checked first.", true, true),
             RuntimeCapability("browser.capture_response", "Capture response", "Capture a new, stable assistant answer from the current provider page."),
-            RuntimeCapability("browser.run_multi_chat_workflow", "Run multi-chat workflow", "Coordinate multiple frontier chat websites in a visible, sequential run with input/output linking and user takeover.", true)
+            RuntimeCapability("browser.run_multi_chat_workflow", "Run multi-chat workflow", "Coordinate multiple frontier chat websites in a visible, sequential run with input/output linking and user takeover.", true, true)
         )
     )
 
