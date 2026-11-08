@@ -210,7 +210,7 @@ object WorkflowGraphCompiler {
         require(tasks.isNotEmpty()) { "A workflow needs at least one task." }
         val available = manifest.capabilities.map { it.runtimeId to it.capabilityId }.toSet()
         tasks.forEach { task ->
-            require(task.requiredCapabilities.all { capability -> task.runtimeId to capability in available }) {
+            require(task.requiredCapabilities.all { capability -> (task.runtimeId to capability) in available }) {
                 "Task '${task.id}' requires a capability that is not registered on runtime '${task.runtimeId}'."
             }
             when (task.participant) {
