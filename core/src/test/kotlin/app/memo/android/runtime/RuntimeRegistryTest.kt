@@ -25,6 +25,19 @@ class RuntimeRegistryTest {
         assertTrue(registry.can("app.jobs", "job.verify"))
         assertFalse(registry.can("app.entities", "browser.navigate_https"))
     }
+    @Test fun humanApprovalInboxIsARegisteredRuntimeDistinctFromTheJobWorkbench() {
+        val registry = RuntimeRegistry()
+        val approvals = registry.resolve("app.approvals")
+        val jobs = registry.resolve("app.jobs")
+        assertNotNull(approvals)
+        assertNotNull(jobs)
+        assertEquals(RuntimeKind.APP, approvals!!.kind)
+        assertTrue(registry.can("app.approvals", "approval.inspect"))
+        assertTrue(registry.can("app.approvals", "approval.approve_exact"))
+        assertTrue(registry.can("app.approvals", "approval.reject"))
+        assertFalse(registry.can("app.jobs", "approval.approve_exact"))
+    }
+
     @Test fun externalAndroidControlIsSeparateAndSensitiveActionsRequireApproval() {
         val registry = RuntimeRegistry()
         val runtime = registry.resolve("runtime.android.accessibility")
