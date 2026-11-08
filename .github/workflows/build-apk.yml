@@ -17,7 +17,6 @@ name: Memo — Import source ZIP and build Android APK
       - 'ROADMAP.md'
       - 'TASKS.md'
       - 'README.md'
-      - 'BUILD_STATUS.md'
       - 'CHANGELOG.md'
       - 'docs/**'
       - '**/*.gradle'
@@ -99,7 +98,7 @@ jobs:
             echo 'This exact archive upload commit already has an import note.'
           fi
           CHANGED_FILES="$(git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA")"
-          DIRECT_SOURCE_CHANGE="$(printf '%s\n' "$CHANGED_FILES" | grep -Ec '^(.github/workflows/build-apk.yml|app/|core/|gradle/|tools/|docs/|README[.]md$|TASKS[.]md$|ROADMAP[.]md$|FEATURE_AUDIT[.]md$|PRODUCT_GAP_REGISTRY[.]md$|MEMO2_ALIGNMENT_MATRIX[.]md$|BUILD_STATUS[.]md$|CHANGELOG[.]md$|.*[.]gradle([.]kts)?$|gradle[.]properties$|settings[.]gradle([.]kts)?$)' || true)"
+          DIRECT_SOURCE_CHANGE="$(printf '%s\n' "$CHANGED_FILES" | grep -Ec '^(.github/workflows/build-apk.yml|app/|core/|gradle/|tools/|docs/|README[.]md$|TASKS[.]md$|ROADMAP[.]md$|FEATURE_AUDIT[.]md$|PRODUCT_GAP_REGISTRY[.]md$|MEMO2_ALIGNMENT_MATRIX[.]md$|CHANGELOG[.]md$|.*[.]gradle([.]kts)?$|gradle[.]properties$|settings[.]gradle([.]kts)?$)' || true)"
           INCOMING_ARCHIVE_CHANGE="$(printf '%s\n' "$CHANGED_FILES" | grep -Ec '^incoming/memo[.]zip$' || true)"
           if [[ "$GITHUB_EVENT_NAME" == "push" && "$DIRECT_SOURCE_CHANGE" -gt 0 && "$INCOMING_ARCHIVE_CHANGE" -eq 0 ]]; then
             # Direct source changes must always build the checked-out revision. The historical
