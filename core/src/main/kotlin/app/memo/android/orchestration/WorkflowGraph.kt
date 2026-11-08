@@ -221,6 +221,9 @@ object WorkflowGraphCompiler {
         val capabilitiesByRuntime = manifest.capabilities.associateBy { it.runtimeId to it.capabilityId }
         val tasksById = tasks.associateBy { it.id }
         tasks.forEach { task ->
+            require(task.runtimeId in manifest.registeredRuntimeIds) {
+                "Task '${task.id}' targets an unregistered runtime '${task.runtimeId}'."
+            }
             task.requiredCapabilities.forEach { capabilityId ->
                 val capability = capabilitiesByRuntime[task.runtimeId to capabilityId]
                     ?: throw IllegalArgumentException("Task '${task.id}' requires a capability that is not registered on runtime '${task.runtimeId}'.")
