@@ -209,12 +209,22 @@ object WorkflowGraphCompiler {
         }
         require(tasks.isNotEmpty()) { "A workflow needs at least one task." }
         val capabilitiesByRuntime = manifest.capabilities.associateBy { it.runtimeId to it.capabilityId }
+        val tasksById = tasks.associateBy { it.id }
         tasks.forEach { task ->
             task.requiredCapabilities.forEach { capabilityId ->
                 val capability = capabilitiesByRuntime[task.runtimeId to capabilityId]
                     ?: throw IllegalArgumentException("Task '${task.id}' requires a capability that is not registered on runtime '${task.runtimeId}'.")
-                require(!capability.requiresUserApproval || task.requiresApproval) {
-                    "Task '${task.id}' uses approval-gated capability '${capabilityId}' without an explicit approval checkpoint."
+                if (capability.requiresUserApproval) {
+                    require(task.requiresApproval) {
+                        "Task '${task.id}' uses approval-gated capability '${capabilityId}' without an explicit approval checkpoint."
+                    }
+                    require(task.dependsOn.any { dependency ->
+                        val gate = tasksById[dependency]
+                        gate?.kind == WorkflowNodeKind.APPROVAL && gate.externalWrite &&
+                            gate.participant == WorkflowParticipant.USER && gate.runtimeId == "app.approvals" && gate.maxRetries == 0
+                    }) {
+                        "Task '${task.id}' must depend on a dedicated approval checkpoint before using '${capabilityId}'."
+                    }
                 }
             }
             when (task.participant) {
