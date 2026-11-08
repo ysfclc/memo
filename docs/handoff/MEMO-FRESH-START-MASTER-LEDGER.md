@@ -343,3 +343,44 @@ Before adding more orchestration behavior, separate the two encrypted stores wit
 - Physical-device install-over-existing and user-data confirmation remain open until tested on the user's phone. CI/emulator success must not be described as physical-device acceptance.
 
 **Status:** selected; implementation not started. Do not advance to single-store consolidation or the typed dynamic orchestrator until this data-safety slice is green and its evidence is recorded.
+
+
+---
+
+## 2026-11-08 — Storage isolation implementation committed; acceptance pending
+
+Implementation branch: ysfclc-patch-1  
+Inspected source head at this checkpoint: 42779b33a4f522e31b2d6f47a393557c3880d713
+
+### Source changes
+
+- EncryptedVault writes to memo-workspace-vault.bin; it retains the existing synthos_fieldwork_vault_v1 alias, Memo-Android:v1 AAD, SYV1 envelope and AtomicFile semantics.
+- SynthStore writes to memo-native-workflows.bin; it retains synthos.runtime.store.v1 and its existing IV-length + AES-GCM + JSON schema-v1 envelope.
+- Both stores treat synthos-vault.bin as a non-destructive migration source. Each validates its own existing ciphertext with its existing key before copying into a distinct canonical file. The legacy source is not deleted or overwritten.
+- EncryptedVault authenticates a candidate legacy native-store envelope with the native store's existing key/schema before classifying it as foreign. A damaged SYV1 header or corrupt native envelope fails closed rather than presenting as an empty workspace.
+- Workspace AtomicFile backup recovery is respected. Read paths require the existing key and do not create replacement keys to decrypt old ciphertext.
+- Added EncryptedStoreUpgradeTest with isolated test storage. It seeds actual encrypted workspace + native workflow records, verifies both decrypt after a signed/version-increasing adb install -r, exercises both legacy migration directions, confirms independent writes, and checks corrupt, damaged-header and unknown payload preservation.
+- CI now assembles the instrumentation APK, runs seed before the install update and verify afterwards on the API 35 emulator, while retaining the previous plaintext sentinel only as a supplemental sandbox check. The workflow also routes direct source edits to the checked-out source and explicitly avoids extracting the historical ZIP over newer code.
+
+### Implementation commits
+
+- e267c05a0679f8b07eb8e13ca035e478a62e8cc4 — separate primary workspace file and preserve legacy source
+- 1c206ec21811fc2e141980c2eeb5b7e97dc65b96 / ce0be87edc6a95b048b2f33353b52f06268eff0e — separate native store; fail closed on authentication errors
+- d5c38742f9dac56805db41c04ff3510c4ae44497, 18b03c4ed6e73e46565589a552686d690bee3eb9, 256d3a2c5b9a05c4e5192517e2d1c6c42e486550, 69df8a575739dea0c4353be699652476eae8ac52, 743c9b06d9cb653cf2f82a73a77088672a9f550a — instrumentation and recovery/corruption coverage
+- bdb7378fe3b2f8f7122d6a4d87fc764211fddf6c — Android test dependencies
+- 94da5231ed5042b913b32158ff50f0ac99b2efa7, de080cf0155d2499a2c17e86b1dac2df8da288de — CI upgrade test and safe direct-source preflight
+- 1f98772b7242ced5a616e35c0387adfeb113d81a, 33e7293d023ae6005a865fc2c4c830a255abc6ff — AtomicFile recovery and authenticated legacy foreign-store detection
+- b67b8cf348ebb1cb12822425f83e85f71bf66b8f, 7a7a07c4c1a6247642ace45461c4e0806d114a0d, 8c34602fc6e200f56a3a515f6d31baf000536034, 30183b3b83c228f72e13852310839f6c4112ee8c, d7f99e16000476063479fa0e8bc9ffb02a6190ab, 1e4becc409ebe198084aa731871766e590bb0959 — roadmap, status, audit, gap registry and changelog alignment
+- 335023a06caf67f1089c45681479b38c1062481c, cae4e6c0aec5fed62749e556228e392fd1fba993, 42779b33a4f522e31b2d6f47a393557c3880d713 — source-verifier coverage for migration and safe CI routing
+
+### Verification state
+
+- Source changes and documentation are committed.
+- The checked-out GitHub connector reported no status checks or workflow-run records for the inspected head. This is not a build pass and does not prove whether Actions started.
+- The current environment has no usable Gradle/Android SDK, so I have not claimed Kotlin/Java compilation, lint, APK assembly or instrumentation success.
+- Physical phone install-over-existing remains untested.
+- The older 5 November CI green run is historical evidence for its then-current source only; it does not validate this storage increment.
+
+Status: source implementation [~]; automated acceptance [ ]; physical-device acceptance [ ]. Keep M0.C1/M0.C2 open until a real CI run passes and the phone test is recorded. Eventual single-store transaction/event unification remains a later task; do not merge or delete either data set as part of this slice.
+
+Next after this P0 gate: implement the roadmap's typed TaskSpec, dynamic versioned dependency DAG, and shared runtime/policy contracts. Only then connect Talk's composer to an inspectable workflow draft and route it through the correct capability.
