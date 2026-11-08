@@ -33,6 +33,9 @@ REQUIRED = [
     "app/src/main/java/app/memo/android/ui/LiveWorkspaceScreen.kt",
     "app/src/main/java/app/memo/android/ui/MemoTheme.kt",
     "app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt",
+    "app/src/main/java/app/memo/android/data/EncryptedVault.kt",
+    "app/src/main/java/com/synthos/runtime/data/SynthStore.java",
+    "app/src/androidTest/java/app/memo/android/data/EncryptedStoreUpgradeTest.kt",
     "app/src/main/java/app/memo/android/runtime/MemoRuntimeBridge.java",
     "app/src/main/java/com/synthos/runtime/engine/AutomationAccessibilityService.java",
     "remote-runner/server.py",
@@ -220,7 +223,7 @@ if "incoming/memo.zip" not in workflow:
     fail("GitHub workflow does not use the canonical incoming/memo.zip source upload")
 if "Memo-Android-Repository.zip" in workflow:
     fail("GitHub workflow must not depend on a legacy root-level source ZIP")
-for task in (":core:test", ":app:testDebugUnitTest", ":app:lintDebug", ":app:assembleDebug"):
+for task in (":core:test", ":app:testDebugUnitTest", ":app:lintDebug", ":app:assembleDebug", ":app:assembleDebugAndroidTest"):
     if task not in workflow:
         fail(f"GitHub workflow missing Android gate: {task}")
 if any(alternate in workflow for alternate in ("Memo-Android-source.zip", "Memo-Android-Download-Fresh.zip")):
@@ -229,6 +232,30 @@ if "Expected exactly one Android Gradle project root" not in workflow or "Memo-A
     fail("GitHub workflow is missing canonical-root or artifact-delivery checks")
 if "sha256sum -c SOURCE_SHA256SUMS.txt" not in workflow or "Memo-Source-Archive-SHA256.txt" not in workflow:
     fail("GitHub workflow is missing source-integrity verification/receipt")
+
+workspace_vault = (ROOT / "app/src/main/java/app/memo/android/data/EncryptedVault.kt").read_text()
+native_store = (ROOT / "app/src/main/java/com/synthos/runtime/data/SynthStore.java").read_text()
+upgrade_test = (ROOT / "app/src/androidTest/java/app/memo/android/data/EncryptedStoreUpgradeTest.kt").read_text()
+for marker in ("memo-workspace-vault.bin", "synthos-vault.bin", "synthos_fieldwork_vault_v1", "Memo-Android:v1", "getExistingKey()", "copyLegacyWorkspaceAtomically"):
+    if marker not in workspace_vault:
+        fail(f"primary encrypted workspace migration contract is missing: {marker}")
+for marker in ("memo-native-workflows.bin", "synthos-vault.bin", "synthos.runtime.store.v1", "getExistingKey()", "writePayloadAtomically(legacyPayload)"):
+    if marker not in native_store:
+        fail(f"native workflow store migration contract is missing: {marker}")
+if "legacySharedFile.delete()" in native_store or "legacySharedFile.delete()" in workspace_vault:
+    fail("legacy encrypted source file must never be deleted by automatic migration")
+if workspace_vault.index("AppSnapshot.fromJson(decrypt(legacyBytes)") > workspace_vault.index("copyLegacyWorkspaceAtomically(legacyBytes)"):
+    fail("primary legacy ciphertext must be authenticated before it is copied")
+if native_store.index("decryptPayload(legacyPayload)") > native_store.index("writePayloadAtomically(legacyPayload)"):
+    fail("native legacy ciphertext must be authenticated before it is copied")
+for marker in ("phase=seed", "phase=verify", "memo-storage-upgrade-acceptance", "Corrupt primary", "Unknown formats"):
+    if marker not in upgrade_test:
+        fail(f"encrypted-store upgrade instrumentation coverage is missing: {marker}")
+for marker in ("app-debug-androidTest.apk", "run_store_acceptance_phase seed", "run_store_acceptance_phase verify", 'adb install -r "$CURRENT_APK"'):
+    if marker not in workflow:
+        fail(f"CI does not execute the encrypted-store in-place upgrade test: {marker}")
+print("PASS: encrypted workspace/native store separation, authenticate-before-copy migration, legacy preservation, and in-place upgrade instrumentation are wired")
+
 print("PASS: CI builds only the canonical ZIP, verifies its source manifest, checks the one-Activity boundary, and runs Android unit tests/lint/APK assembly")
 
 runner_tests = list((ROOT / "remote-runner/tests").glob("test_*.py"))
