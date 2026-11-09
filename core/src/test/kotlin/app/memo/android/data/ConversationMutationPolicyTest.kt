@@ -22,6 +22,13 @@ class ConversationMutationPolicyTest {
         assertNull(ConversationMutationPolicy.messageMutationBlockReason(assistant, emptyList()))
         val citation = EntityRecord(type = "KNOWLEDGE", title = "Saved fact", sourceMessageId = "user")
         assertTrue(ConversationMutationPolicy.messageMutationBlockReason(user, listOf(citation))!!.contains("provenance"))
+        val promotedPlan = WorkJobRecord(
+            title = "Prepare next step",
+            goal = "Complete the proposed outcome",
+            sourceConversationId = "conversation",
+            sourceMessageId = "assistant"
+        )
+        assertTrue(ConversationMutationPolicy.messageMutationBlockReason(assistant, emptyList(), listOf(promotedPlan))!!.contains("provenance"))
     }
 
     @Test
