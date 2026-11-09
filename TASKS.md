@@ -425,3 +425,6 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - **PR safety:** pull requests run build/test validation only; persistent signing and repository writes are skipped.
 - **Documentation:** `docs/security/CI_CREDENTIAL_BOUNDARIES.md`.
 - **Acceptance still required:** PR CI green; normal signing run verifies the pinned certificate; final APK install-over-existing; inspect artifact/log/permissions; physical-device acceptance remains separate.
+
+
+- **CI environment blocker (2026-11-09):** PR workflow runs `42547937826` and `42548268839`, plus the temporary diagnostic workflow run `42548268893`, failed before any step executed. GitHub reports runner ID `0`, no step records and no downloadable job logs. The separate diagnostic workflow failed the same way, so this is not evidence of an application test failure or a specific YAML error. Exact cause is not exposed by the connected GitHub API. Keep PR #3 open and do not merge until a hosted runner can execute the checks; inspect repository Actions settings and account Actions minutes/billing.
