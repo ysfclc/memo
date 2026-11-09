@@ -186,3 +186,12 @@ The current build passing CI does not mean the product is complete. The source b
 - An arbitrary task can compose and execute a bounded workflow with visible Live state and safe recovery.
 
 No feature is complete because a screen or button exists. Require source changes, named tests, green CI, and physical-device evidence for Android-specific behavior.
+
+
+## 9 November 2026 — Experience and navigation reset
+
+The user's latest direction explicitly reopens the navbar and the entire experience. The former four-surface shell is no longer a fixed navigation constraint. The new implementation direction is defined in [`docs/product/MEMO_EXPERIENCE_NAVIGATION_REBUILD.md`](product/MEMO_EXPERIENCE_NAVIGATION_REBUILD.md).
+
+The proposed primary destinations are **Talk / Social / Live / Work / Studio**. Social is a major first-class product domain—not only content creation or publishing—and includes connected identities, unified feed, inbox, engagement, discovery, relationship management, trends/audience/competitor intelligence, publishing and analytics. Social activity connects to Work's people, projects, conversations and goals. Work opens on Today (MUST / SHOULD / COULD / NOT TODAY). Browser, Apps, Approvals, Council, Models and Settings remain supporting/contextual surfaces, not extra bottom tabs.
+
+This is a product/navigation decision and an implementation target, not a claim that Social integrations or the new navigation are already implemented. Do not expose a Social tab until its destination has real, tested behavior. Preserve the product's local-first, approval-bound, evidence-backed and data-migration guardrails.
