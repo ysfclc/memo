@@ -190,6 +190,7 @@ data class WorkJobRecord(
     val status: String = "DRAFT",
     val runtimeId: String = "",
     val sourceConversationId: String = "",
+    val sourceMessageId: String = "",
     val steps: List<JobStepRecord> = emptyList(),
     val resultSummary: String = "",
     val createdAt: Long = nowMillis(),
@@ -316,7 +317,7 @@ data class AppSnapshot(
         }
         relationships.forEach { add(it.id); add(it.fromEntityId); add(it.toEntityId); add(it.relationType); add(it.sourceConversationId) }
         jobs.forEach { job ->
-            add(job.id); add(job.title); add(job.goal); add(job.status); add(job.runtimeId); add(job.sourceConversationId); add(job.resultSummary); add(job.workflowGraphJson); add(job.todayPriority); add(job.todayPriorityDate)
+            add(job.id); add(job.title); add(job.goal); add(job.status); add(job.runtimeId); add(job.sourceConversationId); add(job.sourceMessageId); add(job.resultSummary); add(job.workflowGraphJson); add(job.todayPriority); add(job.todayPriorityDate)
             job.steps.forEach { add(it.id); add(it.title); add(it.detail); add(it.status); add(it.evidence) }
         }
         actionApprovals.forEach { action ->
@@ -495,6 +496,7 @@ data class AppSnapshot(
                     put("status", job.status.take(32))
                     put("runtimeId", job.runtimeId.take(80))
                     put("sourceConversationId", job.sourceConversationId.take(128))
+                    put("sourceMessageId", job.sourceMessageId.take(128))
                     put("resultSummary", job.resultSummary.take(4_000))
                     put("workflowGraphJson", job.workflowGraphJson.take(64_000))
                     put("todayPriority", job.todayPriority)
@@ -741,6 +743,7 @@ data class AppSnapshot(
                     status = row.safeString("status").take(32).ifBlank { "DRAFT" },
                     runtimeId = row.safeString("runtimeId").take(80),
                     sourceConversationId = row.safeString("sourceConversationId").take(128),
+                    sourceMessageId = row.safeString("sourceMessageId").take(128),
                     steps = steps,
                     resultSummary = row.safeString("resultSummary").take(4_000),
                     createdAt = row.optLong("createdAt", nowMillis()),
