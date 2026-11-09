@@ -13,8 +13,14 @@ jobs:
           no_output_timeout: 20m
           command: |
             set -euo pipefail
+            sudo apt-get update
+            sudo apt-get install -y openjdk-17-jdk
+            export JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"
+            export PATH="$JAVA_HOME/bin:$PATH"
             export ANDROID_HOME="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/opt/android-sdk}}"
             export ANDROID_SDK_ROOT="$ANDROID_HOME"
+            echo "export JAVA_HOME='$JAVA_HOME'" >> "$BASH_ENV"
+            echo "export PATH='$JAVA_HOME/bin:$PATH'" >> "$BASH_ENV"
             SDKMANAGER="$(find "$ANDROID_HOME" -type f -name sdkmanager -print -quit)"
             test -n "$SDKMANAGER"
             echo "export ANDROID_HOME='$ANDROID_HOME'" >> "$BASH_ENV"
