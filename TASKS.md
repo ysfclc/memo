@@ -24,3 +24,12 @@ class TodayPriorityTest {
         assertEquals("UNSORTED", restored.jobs.single().todayPriority)
     }
 }
+
+
+## 9 November 2026 — Today graph connections
+
+- [~] Today plan cards now surface the actual next checkpoint (or active checkpoint), the plan goal as the desired outcome, and the latest recorded completed-step outcome when available.
+- [~] Plan cards surface approved/proposed entities explicitly sourced from that plan; selecting one opens its existing entity detail view.
+- [~] Browser task cards surface the task intent and its captured evidence records; selecting evidence opens the existing evidence detail view.
+- [~] Corrected plan priority grouping to use the same local-day expiry resolver as browser tasks.
+- [ ] Verify UI compile, tests and navigation on device; source-only until CI/device evidence exists.
