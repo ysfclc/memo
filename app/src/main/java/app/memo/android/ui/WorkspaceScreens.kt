@@ -257,13 +257,13 @@ fun ChatsWorkspaceScreen(
                         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
                     )
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedButton(onClick = launchVoiceInput, modifier = Modifier.height(48.dp)) {
+                        OutlinedButton(onClick = launchVoiceInput, modifier = Modifier.height(MemoTokens.Spacing.minimumTouch)) {
                             Icon(Icons.Rounded.Mic, contentDescription = null); Spacer(Modifier.width(6.dp)); Text("Voice")
                         }
                         Button(
                             onClick = { val intent = draft.trim(); if (intent.isNotBlank() && onStartConversation(intent)) draft = "" },
                             enabled = draft.isNotBlank(),
-                            modifier = Modifier.weight(1f).height(48.dp)
+                            modifier = Modifier.weight(1f).height(MemoTokens.Spacing.minimumTouch)
                         ) {
                             Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = null); Spacer(Modifier.width(7.dp)); Text("Start with Memo")
                         }
@@ -554,7 +554,7 @@ fun ChatsWorkspaceScreen(
                         IconButton(
                             onClick = launchVoiceInput,
                             enabled = !runtimeState.running,
-                            modifier = Modifier.size(48.dp)
+                            modifier = Modifier.size(MemoTokens.Spacing.minimumTouch)
                         ) { Icon(Icons.Rounded.Mic, contentDescription = MemoLocalization.translate("Voice input", uiLanguage), tint = MaterialTheme.colorScheme.primary) }
                         IconButton(
                             onClick = {
@@ -1243,7 +1243,7 @@ fun SelfModelStudioScreen(
                         listOf("CV summary", "Cover letter", "LinkedIn About", "Project brief").forEach { kind -> FilterChip(selected = artifactKind == kind, onClick = { artifactKind = kind }, enabled = !runtimeState.running, label = { Text(kind) }) }
                     }
                     OutlinedTextField(targetNotes, { if (it.length <= 3_000) targetNotes = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Target role or brief (optional)") }, placeholder = { Text("Paste the target job requirements or describe the intended audience…") }, minLines = 2, maxLines = 5)
-                    Button(onClick = { generateArtifact() }, enabled = approvedFacts.isNotEmpty() && selectedModel != null && !runtimeState.running, modifier = Modifier.fillMaxWidth().height(48.dp)) {
+                    Button(onClick = { generateArtifact() }, enabled = approvedFacts.isNotEmpty() && selectedModel != null && !runtimeState.running, modifier = Modifier.fillMaxWidth().height(MemoTokens.Spacing.minimumTouch)) {
                         Icon(Icons.Rounded.AutoAwesome, null); Spacer(Modifier.width(7.dp)); Text("Generate $artifactKind locally")
                     }
                     Text("Only approved Self Model facts are allowed as claims about you. Missing facts are marked for confirmation rather than invented.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
