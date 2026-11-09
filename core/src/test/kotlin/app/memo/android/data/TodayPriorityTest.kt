@@ -28,6 +28,18 @@ class TodayPriorityTest {
         assertEquals("UNSORTED", restored.jobs.single().todayPriority)
     }
 
+    @Test fun workPlanKeepsExactSourceMessageProvenanceAcrossBackupRestore() {
+        val job = WorkJobRecord(
+            title = "Prepare launch",
+            goal = "Publish the reviewed launch plan",
+            sourceConversationId = "conversation-123",
+            sourceMessageId = "message-456"
+        )
+        val restored = AppSnapshot(jobs = listOf(job)).let { AppSnapshot.fromJson(it.toJson()) }
+        assertEquals("conversation-123", restored.jobs.single().sourceConversationId)
+        assertEquals("message-456", restored.jobs.single().sourceMessageId)
+    }
+
     @Test fun yesterdayPriorityDoesNotRemainInToday() {
         val task = TaskRecord(title = "Review notes", todayPriority = "MUST", todayPriorityDate = "2000-01-01")
         val restored = AppSnapshot.fromJson(AppSnapshot(tasks = listOf(task)).toJson())
