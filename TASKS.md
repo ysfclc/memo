@@ -450,7 +450,7 @@ The user reopened the navbar and overall UI/UX. The current four-tab shell is no
 - [ ] **UX-5 Studio:** general artifact editor, source/context manifest, revisions, comparison, preview and export; publication hands off to Social for exact approval.
 - [ ] **UX-6 Supporting surfaces and quality:** contextual Browser/Apps/Approvals/Council/Models/Settings; localization, accessibility, reduced motion, keyboard safety, performance and recovery.
 
-**Current status:** product direction and acceptance journeys documented. No new navigation or Social UI has been implemented by this documentation change. Do not mark any UX item complete until source changes, tests, CI and applicable physical-device checks pass. Do not ship a dead Social tab, fake provider state, duplicate controls or a broad visual rewrite before route/state ownership is established.
+**Current status:** product direction and acceptance journeys are documented. The first adaptive-shell source step now switches to a NavigationRail at widths of 840dp and above, while retaining the bottom bar on compact widths. This is a responsive presentation step only: typed routes, per-destination back stacks, route ownership and navigation contract tests are still open. Social remains unexposed until real connected-account, feed and inbox behavior exists. Do not mark UX-0 complete until source changes, tests, CI and applicable physical-device checks pass. Do not ship a dead Social tab, fake provider state, duplicate controls or a broad visual rewrite before route/state ownership is established.
 
 
 ## 9 November 2026 — New Memo design system
