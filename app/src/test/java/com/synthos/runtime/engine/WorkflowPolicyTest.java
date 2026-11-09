@@ -3,7 +3,7 @@ package com.synthos.runtime.engine;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertTrue;
 
 import com.synthos.runtime.data.Workflow;
 import com.synthos.runtime.data.WorkflowStep;
