@@ -1,6 +1,16 @@
 # Native automation approval boundary
 
-Status: design and acceptance contract; implementation is not complete.
+Status: interim fail-closed mitigation implemented; full destination-bound approval flow is not implemented.
+
+## Interim mitigation now present in source
+
+- WorkflowPolicy now classifies known native step types into stable capability IDs and allows only launch, visible-text observation and bounded delay without approval.
+- Native TAP_TEXT and BACK steps are rejected before the run begins. Unknown step types fail closed.
+- The native workflow editor defaults to WAIT_TEXT and no longer offers Tap or Back as new step choices. Existing drafts containing those steps remain visible for explicit removal/editing.
+- Seven JVM policy tests now cover safe workflow acceptance, tap/back rejection, unknown action classification, sensitive text and workflow bounds.
+
+This mitigation prevents the current native runner from executing those unapproved UI side effects. It does not create an approval proposal, approval UI, one-use consumption, shared-ledger lifecycle or native action evidence. Do not describe the full native approval feature as implemented.
+
 
 ## Evidence and current gap
 
