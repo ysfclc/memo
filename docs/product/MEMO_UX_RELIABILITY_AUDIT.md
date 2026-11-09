@@ -21,6 +21,10 @@ Inspected the active Android Compose source on this security branch, based on ys
 7. **Live is currently a summary with links.** It surfaces active jobs/tasks, approvals and recent activity, then sends the user to separate Browser and Apps screens. The product contract calls for one chronological cross-runtime execution timeline with pause, resume, takeover, cancellation, evidence and uncertainty. Do not call a summary dashboard a complete control room.
 8. **Social platform is a product-scope gap, not a design omission.** No first-class social publishing, inbox, feed, discovery, engagement or analytics journey is represented in the four primary surfaces. Preserve this requirement in the product roadmap; do not silently omit it or add a disconnected social dashboard.
 
+## Follow-up usability fix
+
+The native workflow editor now defaults to a supported observation step and offers only wait/delay step types. It explains that Tap and Back are unavailable until exact-action approval exists. This prevents users from building a workflow that the fail-closed runner will inevitably reject. Existing drafts containing blocked steps remain visible so users can remove or revise them rather than having them silently rewritten.
+
 ## First reliability fix landed on this branch
 
 The Talk capture handoff previously cleared the composer before the parent had confirmed that a conversation and source message were durably accepted. If the workspace hit its conversation limit or message persistence failed, the user's draft could disappear. The callback now returns an acceptance result; the composer clears only when the handoff succeeds. A plan-generation failure after the source message is saved still preserves the request in its linked conversation. This is a narrow reliability fix, not a completed UX redesign; it still needs Android compilation, automated UI coverage and device verification.
