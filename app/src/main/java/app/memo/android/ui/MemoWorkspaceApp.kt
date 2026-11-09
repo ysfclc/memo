@@ -222,7 +222,9 @@ fun MemoWorkspaceApp(
                 "CHATS" -> AppTab.HOME
                 "TALK", "HOME" -> AppTab.HOME
                 "LIVE" -> AppTab.LIVE
-                "WORK", "FLOWS", "RUNS", "RECORDS" -> AppTab.WORK
+                "WORK" -> { workSectionRequest = "TODAY"; AppTab.WORK }
+                "FLOWS", "RUNS" -> { workSectionRequest = "JOBS"; AppTab.WORK }
+                "RECORDS" -> { workSectionRequest = "ENTITIES"; AppTab.WORK }
                 "STUDIO" -> AppTab.STUDIO
                 "APPS" -> AppTab.APPS
                 "APPROVALS", "REVIEW" -> AppTab.APPROVALS
