@@ -418,7 +418,7 @@ fun ChatsWorkspaceScreen(
                 }
                 if (runtimeState.running) {
                     item {
-                        SurfaceCard {
+                        MemoPanel {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                 CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                                 Column(Modifier.weight(1f)) {
