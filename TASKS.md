@@ -465,3 +465,10 @@ A new visual language, **Signal & Graphite**, is defined in `docs/product/MEMO_D
 - [ ] Verify Polish/Turkish copy, large font scale, keyboard insets, reduced motion and touch targets on physical Android devices.
 
 Do not mark the design system complete based on token changes alone. Build, tests, visual review and device acceptance are required.
+
+
+## 9 November 2026 — Work Today implementation increment
+
+- [~] **Today data model:** saved browser tasks and work plans now carry a validated todayPriority (MUST, SHOULD, COULD, NOT_TODAY, UNSORTED) inside the encrypted workspace and JSON backup. Existing backups and existing records without the additive field load as UNSORTED; unknown values are normalized to UNSORTED. The backup schema remains v6 because the new field is optional and backward-compatible.
+- [~] **Today landing view:** Work now opens on Today and groups actual non-completed browser tasks and non-terminal plans into user-assigned priority buckets. The user can change a record's priority from its card; changes go through the workspace view model and are persisted. No priority, due date or urgency is inferred. Completed browser tasks and succeeded/cancelled plans are excluded from active Today.
+- [ ] **Verification:** add/execute serialization regression tests, compile the Android app, run unit/instrumentation tests, and verify on compact and expanded Android layouts. This source increment is not build- or device-verified and PR #5 remains draft.
