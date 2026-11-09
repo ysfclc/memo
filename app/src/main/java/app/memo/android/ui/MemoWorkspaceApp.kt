@@ -214,7 +214,7 @@ fun MemoWorkspaceApp(
     var activeConversationId by remember { mutableStateOf<String?>(null) }
     var pendingChatPrompt by remember { mutableStateOf("") }
     var toolSection by remember { mutableStateOf(ToolSection.BROWSER) }
-    var workSectionRequest by remember { mutableStateOf("ENTITIES") }
+    var workSectionRequest by remember { mutableStateOf("TODAY") }
     LaunchedEffect(initialWorkspace) {
         val destination = initialWorkspace?.trim()?.uppercase().orEmpty()
         if (destination.isNotBlank()) {
