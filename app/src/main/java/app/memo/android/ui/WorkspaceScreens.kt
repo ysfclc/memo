@@ -213,6 +213,15 @@ fun ChatsWorkspaceScreen(
         }
     }
 
+    val launchVoiceInput: () -> Unit = {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            speechPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        } else {
+            runCatching { speechResultLauncher.launch(voiceIntent()) }
+                .onFailure { onShowMessage(MemoLocalization.translate("Voice input is unavailable. Try typing or check your Android speech service.", uiLanguage)) }
+        }
+    }
+
     val modelOptions = buildList {
         runtimeState.installedModels.forEach { add("local:${it.id}" to (it.name + " · on device")) }
         if (runtimeState.providerConfigured) add(REMOTE_MODEL_ID to (runtimeState.providerModel + " · remote"))
@@ -249,7 +258,7 @@ fun ChatsWorkspaceScreen(
                         keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
                     )
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedButton(onClick = { speechPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO) }) {
+                        OutlinedButton(onClick = launchVoiceInput, modifier = Modifier.height(48.dp)) {
                             Icon(Icons.Rounded.Mic, contentDescription = null); Spacer(Modifier.width(6.dp)); Text("Voice")
                         }
                         Button(
@@ -544,14 +553,7 @@ fun ChatsWorkspaceScreen(
                             enabled = !runtimeState.running
                         )
                         IconButton(
-                            onClick = {
-                                if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                                    speechPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                                } else {
-                                    runCatching { speechResultLauncher.launch(voiceIntent()) }
-                                        .onFailure { onShowMessage(MemoLocalization.translate("Voice input is unavailable. Try typing or check your Android speech service.", uiLanguage)) }
-                                }
-                            },
+                            onClick = launchVoiceInput,
                             enabled = !runtimeState.running,
                             modifier = Modifier.size(48.dp)
                         ) { Icon(Icons.Rounded.Mic, contentDescription = MemoLocalization.translate("Voice input", uiLanguage), tint = MaterialTheme.colorScheme.primary) }
@@ -761,7 +763,7 @@ fun WorkWorkspaceScreen(
                 OutlinedTextField(
                     value = search, onValueChange = { search = it }, modifier = Modifier.weight(1f),
                     placeholder = { Text(if (section == "ARCHIVE") "Find archived entities" else "Find entities") }, leadingIcon = { Icon(Icons.Rounded.Search, null) }, singleLine = true,
-                    shape = RoundedCornerShape(14.dp)
+                    shape = RoundedCornerShape(MemoTokens.Radius.medium)
                 )
                 if (section == "ENTITIES") {
                     IconButton(onClick = { showCreateEntity = true }, modifier = Modifier.size(52.dp)) { Icon(Icons.Rounded.Add, "Create entity") }
