@@ -118,6 +118,8 @@ The header becomes context-aware instead of repeating a generic Memo bar. Lock/p
 - Spacing, radius, elevation and motion token groups.
 - Typography and shape scale.
 - Primary navbar selection colors use the semantic accent.
+- Reusable `MemoPageHeader`, `MemoSectionHeading`, `MemoPanel` and `MemoStatusTag` primitives are in `MemoPrimitives.kt`.
+- Talk and Work now use the shared page-header primitive as the first screen migration.
 
 ### Next
 - [ ] Build shared Compose primitives listed above.
