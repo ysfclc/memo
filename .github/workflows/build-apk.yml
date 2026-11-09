@@ -24,10 +24,13 @@ name: Memo — Import source ZIP and build Android APK
       - 'gradle.properties'
       - 'settings.gradle'
       - 'settings.gradle.kts'
+  pull_request:
+    branches:
+      - ysfclc-patch-1
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: memo-source-import-${{ github.ref }}
@@ -49,12 +52,29 @@ jobs:
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Resolve the upload commit and enforce the single-ZIP contract
         id: resolve
         shell: bash
         run: |
           set -euo pipefail
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            if [[ "$GITHUB_BASE_REF" != "ysfclc-patch-1" ]]; then
+              echo "::error::Memo CI pull-request validation is restricted to ysfclc-patch-1. Base: $GITHUB_BASE_REF"
+              exit 1
+            fi
+            ARCHIVE_SHA="$(sha256sum SOURCE_SHA256SUMS.txt | awk '{print $1}')"
+            {
+              echo 'skip_no_upload=false'
+              echo 'already_imported=false'
+              echo "upload_commit=$GITHUB_SHA"
+              echo "archive_sha=$ARCHIVE_SHA"
+              echo 'source_only=true'
+            } >> "$GITHUB_OUTPUT"
+            echo 'Pull-request source validation: no import, signing or repository write will run.'
+            exit 0
+          fi
           if [[ "$GITHUB_REF_TYPE" != "branch" || "$GITHUB_REF_NAME" != "ysfclc-patch-1" ]]; then
             echo "::error::Memo source imports are restricted to ysfclc-patch-1. Current ref: $GITHUB_REF"
             exit 1
@@ -135,6 +155,8 @@ jobs:
     needs: preflight
     if: needs.preflight.outputs.skip_no_upload != 'true' && needs.preflight.outputs.already_imported != 'true'
     name: Validate, extract, synchronize, test and build Memo
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
@@ -147,6 +169,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Initialize build log
         shell: bash
@@ -445,39 +468,6 @@ jobs:
           echo "MEMO_PROJECT_DIR=$GITHUB_WORKSPACE" >> "$GITHUB_ENV"
           echo 'Using the committed repository source directly; no stale upload ZIP was extracted.' | tee -a "$MEMO_BUILD_LOG"
 
-      - name: Configure optional persistent APK signing
-        shell: bash
-        env:
-          MEMO_UPLOAD_KEYSTORE_BASE64: ${{ secrets.MEMO_UPLOAD_KEYSTORE_BASE64 }}
-          MEMO_UPLOAD_STORE_PASSWORD: ${{ secrets.MEMO_UPLOAD_STORE_PASSWORD || secrets.MEMO_KEYSTORE_PASSWORD }}
-          MEMO_UPLOAD_KEY_ALIAS: ${{ secrets.MEMO_UPLOAD_KEY_ALIAS || secrets.MEMO_KEY_ALIAS }}
-          MEMO_UPLOAD_KEY_PASSWORD: ${{ secrets.MEMO_UPLOAD_KEY_PASSWORD || secrets.MEMO_KEY_PASSWORD }}
-        run: |
-          set -euo pipefail
-          values=("${MEMO_UPLOAD_KEYSTORE_BASE64:-}" "${MEMO_UPLOAD_STORE_PASSWORD:-}" "${MEMO_UPLOAD_KEY_ALIAS:-}" "${MEMO_UPLOAD_KEY_PASSWORD:-}")
-          nonempty=0
-          for value in "${values[@]}"; do [[ -n "$value" ]] && nonempty=$((nonempty + 1)); done
-          if [[ "$nonempty" -ne 0 && "$nonempty" -ne 4 ]]; then
-            echo '::error::Memo signing secrets are partially configured. Set all four signing secrets or remove all four.'
-            exit 1
-          fi
-          if [[ "$nonempty" -ne 4 ]]; then
-            echo '::error::Persistent Memo signing is mandatory. Refusing to create an APK with a temporary or different certificate.'
-            exit 1
-          fi
-          KEYSTORE="$RUNNER_TEMP/memo-upload-signing.jks"
-          printf '%s' "$MEMO_UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
-          test -s "$KEYSTORE"
-          keytool -list -keystore "$KEYSTORE" -storepass "$MEMO_UPLOAD_STORE_PASSWORD" -alias "$MEMO_UPLOAD_KEY_ALIAS" >/dev/null
-          {
-            echo "MEMO_UPLOAD_KEYSTORE_FILE=$KEYSTORE"
-            echo "MEMO_UPLOAD_STORE_PASSWORD=$MEMO_UPLOAD_STORE_PASSWORD"
-            echo "MEMO_UPLOAD_KEY_ALIAS=$MEMO_UPLOAD_KEY_ALIAS"
-            echo "MEMO_UPLOAD_KEY_PASSWORD=$MEMO_UPLOAD_KEY_PASSWORD"
-            echo 'MEMO_SIGNING_MODE=pinned persistent upload keystore'
-          } >> "$GITHUB_ENV"
-          echo 'Pinned persistent signing configured; temporary debug signing is disabled.' | tee -a "$MEMO_BUILD_LOG"
-
       - name: Refresh source checksum manifest
         shell: bash
         run: |
@@ -593,19 +583,13 @@ jobs:
           fi
           [[ "$PACKAGE_LINE" == *"versionCode='${VERSION_PARTS[0]}'"* ]] || { echo '::error::APK versionCode differs from source.'; exit 1; }
           [[ "$PACKAGE_LINE" == *"versionName='${VERSION_PARTS[1]}'"* ]] || { echo '::error::APK versionName differs from source.'; exit 1; }
-          SIGNATURE="$("$APKSIGNER" verify --verbose --print-certs "$APK" 2>&1)"
-          printf '%s\n' "$SIGNATURE" | tee -a "$MEMO_BUILD_LOG"
-          CERT="$(printf '%s\n' "$SIGNATURE" | sed -nE 's/.*certificate SHA-256 digest: ([0-9a-fA-F]+).*/\1/p' | head -n1 | tr '[:upper:]' '[:lower:]')"
-          test -n "$CERT" || { echo '::error::APK signing certificate could not be verified.'; exit 1; }
-          EXPECTED_MEMO_CERT_SHA256='a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a'
-          [[ "$CERT" == "$EXPECTED_MEMO_CERT_SHA256" ]] || { echo '::error::Memo signing certificate changed. Refusing to publish an APK that may require uninstalling the installed app.'; exit 1; }
+          "$APKSIGNER" verify --verbose "$APK" 2>&1 | tee -a "$MEMO_BUILD_LOG"
           {
-            echo 'Memo APK identity verification: PASS'
+            echo 'Memo build APK identity verification: PASS'
             echo 'Package: app.memo.android.debug'
             echo "Version code: ${VERSION_PARTS[0]}"
             echo "Version name: ${VERSION_PARTS[1]}"
-            echo "Certificate SHA-256: $CERT"
-            echo "Signing mode: ${MEMO_SIGNING_MODE:-unknown}"
+            echo 'Build/test signature: ephemeral CI debug key; final signing is isolated.'
           } | tee "$RUNNER_TEMP/Memo-APK-Identity.txt" | tee -a "$MEMO_BUILD_LOG"
 
       - name: Prove install-over-existing preserves app-private data
@@ -837,8 +821,7 @@ jobs:
           mkdir -p "$DELIVERY"
           APK='app/build/outputs/apk/debug/app-debug.apk'
           test -s "$APK"
-          cp "$APK" "$DELIVERY/Memo-Android-debug.apk"
-          cp "$RUNNER_TEMP/Memo-APK-Identity.txt" "$DELIVERY/Memo-APK-Identity.txt"
+          cp "$APK" "$DELIVERY/Memo-Android-debug-unsigned.apk"
           cp "$RUNNER_TEMP/Memo-Source-SHA256.txt" "$DELIVERY/Memo-Source-Archive-SHA256.txt"
 
           REPO_ZIP="$DELIVERY/Memo-Android-Integrated-Repository.zip"
@@ -848,89 +831,17 @@ jobs:
                '*/.externalNativeBuild/*' '*/captures/*' '*/.venv/*' '*/venv/*' \
                '*/local.properties' '*/.env' '*/.env.*' '*/.jks' '*/.keystore' \
                '*/.p12' '*/.pfx' '*/.pem' '*/.key' '*/delivery/*'
-          (cd "$DELIVERY" && sha256sum Memo-Android-debug.apk Memo-Android-Integrated-Repository.zip Memo-APK-Identity.txt Memo-Source-Archive-SHA256.txt > SHA256SUMS.txt)
+          (cd "$DELIVERY" && sha256sum Memo-Android-debug-unsigned.apk Memo-Android-Integrated-Repository.zip Memo-Source-Archive-SHA256.txt > SHA256SUMS.txt)
           echo "Prepared APK and full integrated repository snapshot." | tee -a "$MEMO_BUILD_LOG"
 
-      - name: Commit the validated source snapshot and handoff updates
-        if: success()
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd "$GITHUB_WORKSPACE"
-          git fetch --no-tags origin "$GITHUB_REF_NAME"
-          REMOTE_SHA="$(git rev-parse FETCH_HEAD)"
-          if [[ "$REMOTE_SHA" != "$GITHUB_SHA" ]]; then
-            echo '::error::The branch advanced during this build. No integration commit was pushed; rerun against the newest upload.'
-            echo "Trigger SHA: $GITHUB_SHA" | tee -a "$MEMO_BUILD_LOG"
-            echo "Remote SHA: $REMOTE_SHA" | tee -a "$MEMO_BUILD_LOG"
-            exit 1
-          fi
-
-          # Explicit exclusions are a second line of defence even if a generated file is already staged.
-          git add -A -- . \
-            ':(exclude,glob)**/build/**' \
-            ':(exclude,glob)**/.gradle/**' \
-            ':(exclude,glob)**/__pycache__/**' \
-            ':(exclude,glob)**/.kotlin/**' \
-            ':(exclude,glob)**/.cxx/**' \
-            ':(exclude,glob)**/.externalNativeBuild/**' \
-            ':(exclude,glob)**/captures/**' \
-            ':(exclude,glob)**/node_modules/**' \
-            ':(exclude,glob)**/.idea/**' \
-            ':(exclude,glob)**/*.apk' \
-            ':(exclude,glob)**/*.aab' \
-            ':(exclude,glob)**/*.class' \
-            ':(exclude,glob)**/*.pyc' \
-            ':(exclude,glob)**/*.log' \
-            ':(exclude,glob)**/*.tmp' \
-            ':(exclude,glob)**/*.swp' \
-            ':(exclude,glob)**/*.bak' \
-            ':(exclude,glob)**/*~' \
-            ':(exclude,glob)incoming/memo.zip'
-          # The uploaded source ZIP remains the immutable input commit, not part of the integration commit.
-          git reset --quiet -- incoming/memo.zip || true
-
-          python3 - <<'PY'
-          import re, subprocess, sys
-          raw = subprocess.check_output(['git', 'diff', '--cached', '--name-only', '-z'])
-          paths = [p.decode('utf-8', 'surrogateescape') for p in raw.split(b'\0') if p]
-          pattern = re.compile(r'(^|/)(?:\.env(?:\..*)?|local\.properties|[^/]*\.jks|[^/]*\.keystore|[^/]*\.p12|[^/]*\.pfx|[^/]*\.pem|[^/]*\.key|id_rsa[^/]*|[^/]*(?:signing|credentials)[^/]*\.properties)$', re.I)
-          bad = [path for path in paths if pattern.search(path)]
-          if bad:
-              print('::error::Refusing to commit private configuration or signing material:', file=sys.stderr)
-              for path in bad:
-                  print(' - ' + path, file=sys.stderr)
-              raise SystemExit(1)
-          PY
-
-          if git diff --cached --quiet; then
-            echo 'No source or handoff changes to commit.' | tee -a "$MEMO_BUILD_LOG"
-          else
-            git config user.name 'github-actions[bot]'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git commit -m "Import Memo source snapshot ${MEMO_UPLOAD_COMMIT:0:12}"
-            git push origin "HEAD:${GITHUB_REF_NAME}"
-          fi
-          {
-            echo '## Memo import complete'
-            echo
-            echo "- Upload commit: \`$MEMO_UPLOAD_COMMIT\`"
-            echo "- Source fingerprint SHA-256: \`$MEMO_ARCHIVE_SHA\`"
-            echo '- Source mirror, handoff notes, checksum manifest and build status committed.'
-            echo "- APK artifact: **Memo-Android-debug-APK**"
-            echo "- Integrated repository artifact: **Memo-Android-Integrated-Repository**"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload debug APK artifact
-        if: always() && steps.apk_verify.outcome == 'success'
+      - name: Upload unsigned build/test APK for isolated signing
+        if: always() && steps.delivery.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
-          name: Memo-Android-debug-APK
+          name: Memo-Android-unsigned-debug-APK
           path: |
-            ${{ runner.temp }}/memo-delivery/Memo-Android-debug.apk
-            ${{ runner.temp }}/memo-delivery/Memo-APK-Identity.txt
+            ${{ runner.temp }}/memo-delivery/Memo-Android-debug-unsigned.apk
             ${{ runner.temp }}/memo-delivery/Memo-Source-Archive-SHA256.txt
-            ${{ runner.temp }}/memo-delivery/SHA256SUMS.txt
           if-no-files-found: error
           compression-level: 0
           retention-days: 14
@@ -964,6 +875,241 @@ jobs:
             ${{ github.workspace }}/core/build/test-results/**
           if-no-files-found: ignore
           retention-days: 14
+
+
+  sign:
+    name: Sign the verified APK in an isolated job
+    needs: build
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download the build-only APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Memo-Android-unsigned-debug-APK
+          path: ${{ runner.temp }}/memo-unsigned
+
+      - name: Set up Android build tools
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install pinned Android build tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager --install 'build-tools;35.0.0'
+
+      - name: Sign and verify the APK (no project scripts are executed)
+        shell: bash
+        env:
+          MEMO_UPLOAD_KEYSTORE_BASE64: ${{ secrets.MEMO_UPLOAD_KEYSTORE_BASE64 }}
+          MEMO_UPLOAD_STORE_PASSWORD: ${{ secrets.MEMO_UPLOAD_STORE_PASSWORD || secrets.MEMO_KEYSTORE_PASSWORD }}
+          MEMO_UPLOAD_KEY_ALIAS: ${{ secrets.MEMO_UPLOAD_KEY_ALIAS || secrets.MEMO_KEY_ALIAS }}
+          MEMO_UPLOAD_KEY_PASSWORD: ${{ secrets.MEMO_UPLOAD_KEY_PASSWORD || secrets.MEMO_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          values=("${MEMO_UPLOAD_KEYSTORE_BASE64:-}" "${MEMO_UPLOAD_STORE_PASSWORD:-}" "${MEMO_UPLOAD_KEY_ALIAS:-}" "${MEMO_UPLOAD_KEY_PASSWORD:-}")
+          nonempty=0
+          for value in "${values[@]}"; do [[ -n "$value" ]] && nonempty=$((nonempty + 1)); done
+          if [[ "$nonempty" -ne 4 ]]; then
+            echo '::error::All four persistent Memo signing secrets must be configured.'
+            exit 1
+          fi
+          INPUT="$RUNNER_TEMP/memo-unsigned/Memo-Android-debug-unsigned.apk"
+          SOURCE_SHA="$RUNNER_TEMP/memo-unsigned/Memo-Source-Archive-SHA256.txt"
+          KEYSTORE="$RUNNER_TEMP/memo-upload-signing.jks"
+          ALIGNED="$RUNNER_TEMP/Memo-Android-debug-aligned.apk"
+          DELIVERY="$RUNNER_TEMP/memo-signed"
+          mkdir -p "$DELIVERY"
+          SIGNED="$DELIVERY/Memo-Android-debug.apk"
+          test -s "$INPUT" && test -s "$SOURCE_SHA"
+          printf '%s' "$MEMO_UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
+          test -s "$KEYSTORE"
+          keytool -list -keystore "$KEYSTORE" -storepass "$MEMO_UPLOAD_STORE_PASSWORD" -alias "$MEMO_UPLOAD_KEY_ALIAS" >/dev/null
+          BUILD_TOOLS="$ANDROID_HOME/build-tools/35.0.0"
+          AAPT="$BUILD_TOOLS/aapt"
+          ZIPALIGN="$BUILD_TOOLS/zipalign"
+          APKSIGNER="$BUILD_TOOLS/apksigner"
+          test -x "$AAPT" && test -x "$ZIPALIGN" && test -x "$APKSIGNER"
+          "$ZIPALIGN" -f -p 4 "$INPUT" "$ALIGNED"
+          "$APKSIGNER" sign --ks "$KEYSTORE" --ks-key-alias "$MEMO_UPLOAD_KEY_ALIAS" --ks-pass env:MEMO_UPLOAD_STORE_PASSWORD --key-pass env:MEMO_UPLOAD_KEY_PASSWORD --out "$SIGNED" "$ALIGNED"
+          BADGING="$("$AAPT" dump badging "$SIGNED")"
+          PACKAGE_LINE="$(printf '%s\\n' "$BADGING" | grep -m1 '^package:')"
+          [[ "$PACKAGE_LINE" == *"name='app.memo.android.debug'"* ]] || {
+            echo '::error::Signed APK application ID changed.'
+            printf '%s\\n' "$PACKAGE_LINE"
+            exit 1
+          }
+          SIGNATURE="$("$APKSIGNER" verify --verbose --print-certs "$SIGNED" 2>&1)"
+          printf '%s\\n' "$SIGNATURE"
+          CERT="$(printf '%s\\n' "$SIGNATURE" | sed -nE 's/.*certificate SHA-256 digest: ([0-9a-fA-F]+).*/\\1/p' | head -n1 | tr '[:upper:]' '[:lower:]')"
+          EXPECTED_MEMO_CERT_SHA256='a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a'
+          [[ "$CERT" == "$EXPECTED_MEMO_CERT_SHA256" ]] || {
+            echo '::error::Persistent Memo signing certificate mismatch. Refusing to publish an incompatible APK.'
+            exit 1
+          }
+          {
+            echo 'Memo APK identity verification: PASS'
+            echo 'Package: app.memo.android.debug'
+            echo "Certificate SHA-256: $CERT"
+            echo 'Signing mode: pinned persistent upload keystore (isolated signing job)'
+          } > "$DELIVERY/Memo-APK-Identity.txt"
+          cp "$SOURCE_SHA" "$DELIVERY/Memo-Source-Archive-SHA256.txt"
+          (cd "$DELIVERY" && sha256sum Memo-Android-debug.apk Memo-APK-Identity.txt Memo-Source-Archive-SHA256.txt > SHA256SUMS.txt)
+          rm -f "$KEYSTORE" "$ALIGNED"
+
+      - name: Upload final pinned-certificate APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Memo-Android-debug-APK
+          path: |
+            ${{ runner.temp }}/memo-signed/Memo-Android-debug.apk
+            ${{ runner.temp }}/memo-signed/Memo-APK-Identity.txt
+            ${{ runner.temp }}/memo-signed/Memo-Source-Archive-SHA256.txt
+            ${{ runner.temp }}/memo-signed/SHA256SUMS.txt
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+  commit:
+    name: Commit validated source in a separate write-only job
+    needs: [preflight, build, sign]
+    if: github.event_name != 'pull_request' && needs.build.result == 'success' && needs.sign.result == 'success'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      MEMO_UPLOAD_COMMIT: ${{ needs.preflight.outputs.upload_commit }}
+      MEMO_ARCHIVE_SHA: ${{ needs.preflight.outputs.archive_sha }}
+    steps:
+      - name: Check out the triggering revision for the handoff commit
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Download the integrated repository snapshot
+        uses: actions/download-artifact@v4
+        with:
+          name: Memo-Android-Integrated-Repository
+          path: ${{ runner.temp }}/memo-integrated
+
+      - name: Safely restore the validated repository snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          ARCHIVE="$RUNNER_TEMP/memo-integrated/Memo-Android-Integrated-Repository.zip"
+          STAGING="$RUNNER_TEMP/memo-commit-tree"
+          test -s "$ARCHIVE"
+          rm -rf "$STAGING"
+          mkdir -p "$STAGING"
+          python3 - "$ARCHIVE" "$STAGING" <<'PY'
+          import os, stat, sys, zipfile
+          from pathlib import Path, PureWindowsPath
+          archive, destination = Path(sys.argv[1]), Path(sys.argv[2])
+          seen = set()
+          with zipfile.ZipFile(archive) as zf:
+              for info in zf.infolist():
+                  name = info.filename
+                  while name.startswith('./'):
+                      name = name[2:]
+                  if not name:
+                      continue
+                  if name.startswith('/') or '\\\\' in name or PureWindowsPath(name).drive:
+                      raise SystemExit(f'Unsafe archive path: {info.filename!r}')
+                  parts = name.rstrip('/').split('/')
+                  if any(part in ('', '.', '..') for part in parts):
+                      raise SystemExit(f'Unsafe archive path: {info.filename!r}')
+                  if '.git' in parts or (parts[0] == 'incoming' and len(parts) > 1):
+                      raise SystemExit(f'Protected path in repository artifact: {info.filename!r}')
+                  key = '/'.join(parts)
+                  if key in seen:
+                      raise SystemExit(f'Duplicate archive path: {key!r}')
+                  seen.add(key)
+                  mode = (info.external_attr >> 16) & 0xffff
+                  if stat.S_ISLNK(mode) or (mode and not (stat.S_ISREG(mode) or stat.S_ISDIR(mode))):
+                      raise SystemExit(f'Symlink or special file is forbidden: {key!r}')
+                  target = destination.joinpath(*parts)
+                  if info.is_dir():
+                      target.mkdir(parents=True, exist_ok=True)
+                  else:
+                      target.parent.mkdir(parents=True, exist_ok=True)
+                      with zf.open(info) as source, target.open('wb') as output:
+                          output.write(source.read())
+                      if mode:
+                          os.chmod(target, mode & 0o755)
+          PY
+          rsync -a --delete --exclude='/.git/' --exclude='/incoming/' "$STAGING/" "$GITHUB_WORKSPACE/"
+
+      - name: Commit without executing repository source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$GITHUB_WORKSPACE"
+          git fetch --no-tags origin "$GITHUB_REF_NAME"
+          REMOTE_SHA="$(git rev-parse FETCH_HEAD)"
+          if [[ "$REMOTE_SHA" != "$GITHUB_SHA" ]]; then
+            echo '::error::The branch advanced during the build. No integration commit was pushed; rerun against the newest revision.'
+            echo "Trigger SHA: $GITHUB_SHA"
+            echo "Remote SHA: $REMOTE_SHA"
+            exit 1
+          fi
+          git add -A -- . \
+            ':(exclude,glob)**/build/**' \
+            ':(exclude,glob)**/.gradle/**' \
+            ':(exclude,glob)**/__pycache__/**' \
+            ':(exclude,glob)**/.kotlin/**' \
+            ':(exclude,glob)**/.cxx/**' \
+            ':(exclude,glob)**/.externalNativeBuild/**' \
+            ':(exclude,glob)**/captures/**' \
+            ':(exclude,glob)**/node_modules/**' \
+            ':(exclude,glob)**/.idea/**' \
+            ':(exclude,glob)**/*.apk' \
+            ':(exclude,glob)**/*.aab' \
+            ':(exclude,glob)**/*.class' \
+            ':(exclude,glob)**/*.pyc' \
+            ':(exclude,glob)**/*.log' \
+            ':(exclude,glob)**/*.tmp' \
+            ':(exclude,glob)**/*.swp' \
+            ':(exclude,glob)**/*.bak' \
+            ':(exclude,glob)**/*~' \
+            ':(exclude,glob)incoming/memo.zip'
+          git reset --quiet -- incoming/memo.zip || true
+          python3 - <<'PY'
+          import re, subprocess, sys
+          raw = subprocess.check_output(['git', 'diff', '--cached', '--name-only', '-z'])
+          paths = [p.decode('utf-8', 'surrogateescape') for p in raw.split(b'\\0') if p]
+          pattern = re.compile(r'(^|/)(?:\\.env(?:\\..*)?|local\\.properties|[^/]*\\.jks|[^/]*\\.keystore|[^/]*\\.p12|[^/]*\\.pfx|[^/]*\\.pem|[^/]*\\.key|id_rsa[^/]*|[^/]*(?:signing|credentials)[^/]*\\.properties)$', re.I)
+          bad = [path for path in paths if pattern.search(path)]
+          if bad:
+              print('::error::Refusing to commit private configuration or signing material:', file=sys.stderr)
+              for path in bad:
+                  print(' - ' + path, file=sys.stderr)
+              raise SystemExit(1)
+          PY
+          if git diff --cached --quiet; then
+            echo 'No source or handoff changes to commit.'
+          else
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git commit -m "Import Memo source snapshot ${MEMO_UPLOAD_COMMIT:0:12}"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+          {
+            echo '## Memo import complete'
+            echo
+            echo "- Source fingerprint SHA-256: `$MEMO_ARCHIVE_SHA`"
+            echo '- Build/test ran without signing secrets or repository write credentials.'
+            echo '- Persistent signing ran in an isolated job with no repository write permission.'
+            echo '- Source handoff commit ran in a separate job with no signing secrets and no project-code execution.'
+            echo '- Final APK artifact: **Memo-Android-debug-APK**'
+            echo '- Integrated repository artifact: **Memo-Android-Integrated-Repository**'
+          } >> "$GITHUB_STEP_SUMMARY"
 
 # CI verification trigger: validate direct repository maintenance commits as well as ZIP imports.
 
