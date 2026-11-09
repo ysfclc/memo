@@ -612,7 +612,7 @@ private fun NativeWorkflowEditorDialog(
     }
     var draftSteps by remember(existing?.id) { mutableStateOf(initialSteps) }
     var successText by remember(existing?.id) { mutableStateOf(existing?.steps?.lastOrNull()?.takeIf { it.type == WorkflowStep.WAIT_TEXT }?.value.orEmpty()) }
-    var kind by remember { mutableStateOf(WorkflowStep.TAP_TEXT) }
+    var kind by remember { mutableStateOf(WorkflowStep.WAIT_TEXT) }
     var value by remember { mutableStateOf("") }
     var delaySeconds by remember { mutableStateOf("1") }
     var appMenu by remember { mutableStateOf(false) }
@@ -636,7 +636,7 @@ private fun NativeWorkflowEditorDialog(
                         apps.forEach { app -> DropdownMenuItem(text = { Text(app.label, maxLines = 1, overflow = TextOverflow.Ellipsis) }, onClick = { selectedApp = app; appMenu = false }) }
                     }
                 }
-                Text("Steps run in order. LAUNCH APP is inserted automatically; the final visible-text check is mandatory.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Steps run in order. Launch, wait and delay are available. Tap and Back are temporarily disabled until exact-action approval is ready; existing drafts containing them must be edited before saving.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (draftSteps.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                         draftSteps.forEachIndexed { index, step ->
@@ -654,7 +654,7 @@ private fun NativeWorkflowEditorDialog(
                     Box {
                         OutlinedButton(onClick = { kindMenu = true }) { Text(kindLabel(kind)) }
                         DropdownMenu(expanded = kindMenu, onDismissRequest = { kindMenu = false }) {
-                            listOf(WorkflowStep.TAP_TEXT, WorkflowStep.WAIT_TEXT, WorkflowStep.BACK, WorkflowStep.DELAY).forEach { option ->
+                            listOf(WorkflowStep.WAIT_TEXT, WorkflowStep.DELAY).forEach { option ->
                                 DropdownMenuItem(text = { Text(kindLabel(option)) }, onClick = { kind = option; kindMenu = false; value = "" })
                             }
                         }
