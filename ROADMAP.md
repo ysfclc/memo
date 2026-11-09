@@ -7,7 +7,7 @@
 
 ## Product promise
 
-Memo is a personal AI operating agent. One intent entry point connects Talk, Live, Work and Studio. It plans and executes bounded workflows across the user's encrypted workspace, compatible local models, explicitly permitted frontier AI websites/apps, browser sessions and Android runtimes. It creates useful deliverables, records provenance and keeps consequential actions under the user's control.
+Memo is a personal AI operating agent. One intent entry point connects Talk, Live, Work and Studio. It plans and executes bounded workflows across the user's encrypted workspace, compatible local models, explicitly permitted frontier AI websites/apps, browser sessions and Android runtimes. It creates useful deliverables, records provenance and keeps consequential actions under the user's control. Its first-class domains include the user's social world: connected accounts, supported feeds and inboxes, engagement, relationships, discovery, publishing, analytics and growth—not merely content generation.
 
 This is not a browser-first app, chatbot skin, static planner or disconnected dashboard.
 
@@ -78,6 +78,22 @@ The active shell is now Talk / Live / Work / Studio. Talk has one text/voice ent
 - [ ] CV, cover letter, job-tailored application and research/document outputs.
 - [ ] Content drafts and media pipeline with private-by-default workflow.
 - [ ] Channel publishing preview, exact approval, verified receipt and metrics ingestion.
+
+### P6.5 — Build the full social platform (not just publishing)
+- [ ] Provider/API/terms/cost audit for LinkedIn, Instagram, Facebook Pages, X, TikTok, YouTube, Reddit and Threads; record actual scopes, account eligibility, capability gaps and last-checked sources. Evaluate the existing separate WhatsApp/Troy workflow without duplicating it.
+- [ ] Versioned provider capability contracts and encrypted domain schemas for accounts, feeds/items, conversations/messages, engagement actions, campaigns/posts and metric samples.
+- [ ] Account connection centre: connect/disconnect/reconnect, scopes, health, sync status, per-account capability matrix and revocation.
+- [ ] Read-only unified activity/feed with provenance, pagination, filtering, deduplication, refresh/offline states and explicit provider coverage gaps.
+- [ ] Unified supported inbox for DMs, comments, mentions and replies; conversation search, participant identity resolution and Work/CRM linking.
+- [ ] Provider-supported engagement actions with exact account/target/content preview, approval, verified receipt and safe uncertain-outcome handling.
+- [ ] Studio content calendar/queue, channel-specific variants, real media assets, destination previews, per-destination approval, scheduling only where supported and independent publish receipts.
+- [ ] Listening/discovery for user-selected topics, people, brands and competitors with bounded monitoring, sourced digests and follow-up tasks.
+- [ ] Source-linked account/post analytics, metrics history and evidence-backed learning; no invented metrics or attribution.
+- [ ] Personal-brand, customer-acquisition and monetization workflows linked to Self Model, CRM, opportunities and measurable outcomes.
+- [ ] User-authored automation rules with opt-in scopes, rate/volume limits, quiet hours, audit, global stop and strict anti-spam policy.
+- [ ] Real-account acceptance across at least two eligible providers, including permission denial, token expiry, rate limit, partial sync, disconnect/delete and ambiguous-send recovery.
+
+Detailed contract and acceptance scenarios: [docs/SOCIAL_PLATFORM_PRODUCT_SPEC.md](docs/SOCIAL_PLATFORM_PRODUCT_SPEC.md). No decorative feed UI before provider, data and security contracts are proven.
 
 ### P7 — Voice and everyday use
 - [ ] Reliable foreground voice session with interruption/barge-in and local ASR/TTS.
