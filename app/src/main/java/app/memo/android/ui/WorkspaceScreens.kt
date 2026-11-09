@@ -101,6 +101,7 @@ import app.memo.android.data.ChatMessageRecord
 import app.memo.android.data.EntityRecord
 import app.memo.android.data.EntityRelationship
 import app.memo.android.data.EvidenceRecord
+import app.memo.android.data.effectiveTodayPriority
 import app.memo.android.data.OutcomeParser
 import app.memo.android.data.SelfModelFactualityGuard
 import app.memo.android.data.MemoWorkspaceViewModel
@@ -752,7 +753,7 @@ private fun TodayWorkScreen(
             }
         }
         priorities.forEach { (priority, label) ->
-            val tasks = activeTasks.filter { (if (it.todayPriorityDate == today) it.todayPriority else "UNSORTED") == priority }
+            val tasks = activeTasks.filter { effectiveTodayPriority(it.todayPriority, it.todayPriorityDate, today) == priority }
             val jobs = activeJobs.filter { (if (it.todayPriorityDate == today) it.todayPriority else "UNSORTED") == priority }
             item(key = "today-heading-$priority") {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -775,7 +776,7 @@ private fun TodayWorkScreen(
                 TodayPriorityCard(
                     title = task.title,
                     detail = "${task.kind.label} · ${task.status.label} · ${task.lastMessage}",
-                    priority = if (task.todayPriorityDate == today) task.todayPriority else "UNSORTED",
+                    priority = effectiveTodayPriority(task.todayPriority, task.todayPriorityDate, today),
                     onPriorityChange = { onSetTaskPriority(task.id, it) }
                 )
             }
@@ -784,7 +785,7 @@ private fun TodayWorkScreen(
                 TodayPriorityCard(
                     title = job.title,
                     detail = "${job.status.lowercase().replace('_', ' ')} · $completed/${job.steps.size} checkpoints complete${job.resultSummary.takeIf { it.isNotBlank() }?.let { " · ${it.take(160)}" }.orEmpty()}",
-                    priority = if (job.todayPriorityDate == today) job.todayPriority else "UNSORTED",
+                    priority = effectiveTodayPriority(job.todayPriority, job.todayPriorityDate, today),
                     onPriorityChange = { onSetJobPriority(job.id, it) },
                     onOpen = onOpenPlans,
                     openLabel = "Open plan"
