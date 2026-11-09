@@ -21,6 +21,9 @@ In CircleCI Project Settings → Environment Variables, add the same four values
 
 Use the exact existing Memo upload keystore and credentials. Do not generate a new key, paste secrets into chat, commit them, or use a temporary debug keystore. The build refuses to publish if the pinned certificate SHA-256 does not match the certificate already required by Memo.
 
+**Important secret-transfer limitation:** GitHub does not reveal the value of an existing Actions secret after it has been saved. CircleCI cannot automatically read GitHub repository secrets. If you do not already have the original keystore file and its passwords/alias backed up somewhere you control, stop here and do not create a replacement key. We must recover the exact original signing material before producing an update-compatible APK.
+
+
 ## Gates
 
 - Source invariant verifier
