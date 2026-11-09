@@ -728,6 +728,9 @@ jobs:
 
       - name: Update build status and create a permanent import note
         if: success() && github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
           if [[ "$MEMO_SOURCE_ONLY" == 'true' ]]; then
             INPUT_LABEL='direct repository source'
             ZIP_GATE='not applicable (direct source verification)'
@@ -735,9 +738,6 @@ jobs:
             INPUT_LABEL='incoming/memo.zip'
             ZIP_GATE='PASS'
           fi
-        shell: bash
-        run: |
-          set -euo pipefail
           cd "$GITHUB_WORKSPACE"
           mkdir -p notes/imports
           DATE_UTC="$(date -u +'%Y-%m-%d %H:%M:%S UTC')"
@@ -762,7 +762,7 @@ jobs:
           - \`:app:testDebugUnitTest\`: PASS
           - \`:app:lintDebug\`: PASS
           - \`:app:assembleDebug\`: PASS
-          - APK package/version/signature verification: PASS
+          - APK package/version and CI debug-signature verification: PASS
           - Build/test signature: ephemeral CI debug key; final pinned signing is isolated.
 
           For ZIP imports, the original upload remains immutable in Git history. Direct-source verification never re-extracts the historical ZIP. The extracted project is an exact snapshot; the live workflow, Git metadata, incoming upload and permanent import notes are preserved.
