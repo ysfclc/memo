@@ -391,28 +391,38 @@ fun ChatsWorkspaceScreen(
                 items(selectedConversation.messages, key = { it.id }) { message ->
                     val isUser = message.role == "USER"
                     val isSource = message.role == "SOURCE"
-                    Surface(
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        color = when { isUser -> MaterialTheme.colorScheme.primaryContainer; isSource -> MaterialTheme.colorScheme.tertiaryContainer; else -> MaterialTheme.colorScheme.surface },
-                        contentColor = when { isUser -> MaterialTheme.colorScheme.onPrimaryContainer; isSource -> MaterialTheme.colorScheme.onTertiaryContainer; else -> MaterialTheme.colorScheme.onSurface },
-                        shape = RoundedCornerShape(18.dp),
-                        border = if (isUser) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
                     ) {
-                        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(when (message.role) { "USER" -> "YOU"; "ASSISTANT" -> message.modelId.ifBlank { "MEMO AI" }; "SOURCE" -> "IMPORTED SOURCE"; else -> message.sourceType }, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold)
-                                Spacer(Modifier.weight(1f))
-                                Text(formatWorkspaceDate(message.createdAt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                if (message.role == "USER" || message.role == "ASSISTANT") {
-                                    IconButton(onClick = { messageEditTarget = message; messageEditText = message.content }, modifier = Modifier.size(30.dp)) {
-                                        Icon(Icons.Rounded.Edit, contentDescription = "Edit message", modifier = Modifier.size(17.dp))
-                                    }
-                                    IconButton(onClick = { messageDeleteTarget = message }, modifier = Modifier.size(30.dp)) {
-                                        Icon(Icons.Rounded.Delete, contentDescription = "Delete message", modifier = Modifier.size(17.dp))
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(if (isUser) 0.88f else 0.98f),
+                            color = when { isUser -> MaterialTheme.colorScheme.primaryContainer; isSource -> MaterialTheme.colorScheme.tertiaryContainer; else -> MaterialTheme.colorScheme.surface },
+                            contentColor = when { isUser -> MaterialTheme.colorScheme.onPrimaryContainer; isSource -> MaterialTheme.colorScheme.onTertiaryContainer; else -> MaterialTheme.colorScheme.onSurface },
+                            shape = RoundedCornerShape(
+                                topStart = MemoTokens.Radius.large,
+                                topEnd = MemoTokens.Radius.large,
+                                bottomEnd = if (isUser) MemoTokens.Radius.small else MemoTokens.Radius.large,
+                                bottomStart = if (isUser) MemoTokens.Radius.large else MemoTokens.Radius.small
+                            ),
+                            border = if (isUser) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                        ) {
+                            Column(Modifier.padding(MemoTokens.Spacing.md), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.xs)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(when (message.role) { "USER" -> "YOU"; "ASSISTANT" -> message.modelId.ifBlank { "MEMO AI" }; "SOURCE" -> "IMPORTED SOURCE"; else -> message.sourceType }, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold)
+                                    Spacer(Modifier.weight(1f))
+                                    Text(formatWorkspaceDate(message.createdAt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    if (message.role == "USER" || message.role == "ASSISTANT") {
+                                        IconButton(onClick = { messageEditTarget = message; messageEditText = message.content }, modifier = Modifier.size(30.dp)) {
+                                            Icon(Icons.Rounded.Edit, contentDescription = "Edit message", modifier = Modifier.size(17.dp))
+                                        }
+                                        IconButton(onClick = { messageDeleteTarget = message }, modifier = Modifier.size(30.dp)) {
+                                            Icon(Icons.Rounded.Delete, contentDescription = "Delete message", modifier = Modifier.size(17.dp))
+                                        }
                                     }
                                 }
+                                SelectionContainer { Text(message.content, style = MaterialTheme.typography.bodyMedium) }
                             }
-                            SelectionContainer { Text(message.content, style = MaterialTheme.typography.bodyMedium) }
                         }
                     }
                 }
