@@ -147,7 +147,7 @@ The following keeps Claude's task families and ordering while requiring Memo 1-s
 - [ ] **M0.0** Establish the adapted plan, task state, branch/commit policy and evidence ledger.
 - [ ] **M0.A1** Make external workflow steps asynchronous and resumable (`Pending`/external result delivery); define timeout, cancel, stale result and process-death behavior.
 - [ ] **M0.A2 (folded into M0.A1 where the source plan consolidates it)** Audit wiring: every side effect and state transition is represented in the audit trail; verify no empty/detached audit chain.
-- [ ] **M0.A3** Define versioned domain entities and invariants for Project, Note, Person, Company, Job, ContentDraft, Post, MetricSample, WorkflowTemplate, Prompt, ArchitecturalPrinciple, ContentPreference, ChannelAccount and ProviderAdapter, plus migration compatibility.
+- [ ] **M0.A3** Define versioned domain entities and invariants for Project, Note, Person, Company, Job, ContentDraft, Post, MetricSample, WorkflowTemplate, Prompt, ArchitecturalPrinciple, ContentPreference, ChannelAccount, ProviderAdapter, ProviderCapability, SocialAccount, SocialItem, SocialConversation, SocialMessage, EngagementAction, Campaign and SocialMetric, plus migration compatibility.
 - [ ] **M0.A4** Add schema semver, workspace versioning, registry reuse/update rules and real migration (not identity-only); test round-trip, unknown versions and failed migration rollback.
 - [ ] **M0.A5** Centralize policy: channel controls, destructive-action classification, user permissions, approval requirements, redaction and kill switch.
 - [ ] **M0.A6** Implement deterministic routing contracts: selected target, rationale, availability, fallback and audit; routing must not bypass user settings.
@@ -273,6 +273,7 @@ The following keeps Claude's task families and ordering while requiring Memo 1-s
 - [ ] **M4.B4** App capability map, versioning and reuse-first matching.
 - [ ] **M4.C1** Device-wide AI app discovery with signature evidence; avoid unsupported package/name assumptions.
 - [ ] **M4.C2** Channel settings and router wiring; explain why a channel was chosen and what access it needs.
+- [ ] **M4.C3** Social provider capability registry: versioned account/provider capability manifests, exact scopes, account eligibility, limits, policy constraints, fixtures, health and last-verified evidence. Planner must not infer support from a provider name.
 - [ ] **M4.D1** Native-app sessions with visible Memo console, verified app identity, refusal when session controls are hidden, safe return path.
 - [ ] **M4.L3** App Live HUD with node highlighting and immediate pause when user touches the target app.
 - [ ] **M4.D2** Memo overlay console; verify safe form filling, secure-window suppression and that Memo never taps itself by accident.
@@ -299,6 +300,24 @@ The following keeps Claude's task families and ordering while requiring Memo 1-s
 - [ ] **M5.C1 UC-4 Content:** source idea → preferences → text/image/carousel/video draft → review → user-approved publish → metric tracking and learning loop. No pretend publishing.
 - [ ] **M5.C1a** Local image-generation capability with real model/adapter status, resource limits, cancellation and device test.
 - [ ] **M5.C1b** Media asset pipeline for slides/storyboard, carousel PDF and/or MP4; validate real output files on device.
+
+#### M5.D — Social platform (full product domain; not content-only)
+
+- [ ] **M5.D0 Provider truth audit:** LinkedIn, Instagram, Facebook Pages, X, TikTok, YouTube, Reddit and Threads; document official APIs, scopes, account eligibility, review/pricing, rate limits, terms and unsupported operations with dated sources. Evaluate the existing separate WhatsApp/Troy workflow without silently replacing it.
+- [ ] **M5.D1 Accounts and identity:** connect/disconnect/reconnect, multiple eligible profiles/pages, scoped credentials, health, sync status, capability matrix and revocation tests.
+- [ ] **M5.D2 Unified feed/activity:** real provider-backed reads, followed people/pages/topics where exposed, filtering, pagination, refresh, dedupe, provenance, offline/stale states and honest coverage gaps.
+- [ ] **M5.D3 Unified inbox:** supported DMs, requests, comments, mentions and replies; conversation grouping/search, participant identity resolution, Work/CRM linking and permission-aware attachments.
+- [ ] **M5.D4 Engagement:** supported reactions, comments, replies, repost/share, follow/unfollow and bookmarks; exact account/target/content approval, verified receipts and NEEDS_REVIEW for uncertain sends.
+- [ ] **M5.D5 Publishing operations:** channel-specific content variants, private calendar/queue, media assets, previews, per-destination approval, provider-supported scheduling, independent receipts and partial-failure recovery.
+- [ ] **M5.D6 Listening and discovery:** bounded monitoring of user-selected topics/people/brands/competitors, sourced digests, opportunity discovery, alerts and follow-up tasks.
+- [ ] **M5.D7 Analytics and learning:** source-linked account/post metrics, exact post/version association, historical comparisons, evidence-backed recommendations and explicit distinction between provider data/imports/estimates.
+- [ ] **M5.D8 Personal brand and growth:** approved positioning/content pillars in Self Model, inbound enquiry-to-CRM workflows, customer acquisition, campaigns, partnerships and monetization experiments with factuality guardrails.
+- [ ] **M5.D9 Automation:** opt-in user-authored monitoring/draft/follow-up rules with narrow scopes, limits, quiet hours, global stop, audit and anti-spam constraints.
+- [ ] **M5.D10 Security and data lifecycle:** encrypted local storage, provider-secret isolation, per-account revoke, cache deletion/export, remote-context consent, rate-limit handling and account-disconnect recovery.
+- [ ] **M5.D11 End-to-end acceptance:** two eligible real providers; account revoke; feed sync; supported inbox thread; approved reply with receipt; multi-destination publish; metrics ingestion; provider failure/rate-limit/token-expiry; ambiguous send and stop. Clearly label fixtures vs sandbox vs real-account evidence.
+
+Full product contract: docs/SOCIAL_PLATFORM_PRODUCT_SPEC.md. No task closes because a feed/inbox screen renders sample data.
+
 - [ ] **M5.C2 UC-5 Arbitrary plan:** decompose arbitrary tasks, enforce iteration/time/action budgets, stop always wins, and all risky steps checkpointed.
 - [ ] **M5 close** Watch and verify UC-1, UC-3, UC-4 and UC-5 end to end on a real supported phone; record any blocked external services clearly.
 
