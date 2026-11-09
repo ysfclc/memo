@@ -335,7 +335,12 @@ fun ChatsWorkspaceScreen(
                         }
                     }
                 } else {
-                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    MemoPanel {
+                        MemoSectionHeading(
+                            title = "Request controls",
+                            supporting = "Choose the model and decide what information may be shared."
+                        )
+                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.xs)) {
                         modelOptions.forEach { (id, label) -> FilterChip(
                             selected = selectedModelId == id,
                             onClick = { selectedModelId = id; if (id != REMOTE_MODEL_ID) allowRemote = false },
@@ -376,6 +381,7 @@ fun ChatsWorkspaceScreen(
                                 if (localContextSelection.hits.size > 4) Text("+ ${localContextSelection.hits.size - 4} more source(s)", style = MaterialTheme.typography.labelSmall)
                             }
                         }
+                    }
                     }
                 }
             }
