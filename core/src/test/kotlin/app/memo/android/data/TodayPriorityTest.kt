@@ -33,6 +33,6 @@ class TodayPriorityTest {
         val restored = AppSnapshot.fromJson(AppSnapshot(tasks = listOf(task)).toJson())
         assertEquals("MUST", restored.tasks.single().todayPriority)
         assertEquals("2000-01-01", restored.tasks.single().todayPriorityDate)
-        assertEquals(false, restored.tasks.single().todayPriorityDate == todayPriorityDay())
+        assertEquals("UNSORTED", effectiveTodayPriority(restored.tasks.single().todayPriority, restored.tasks.single().todayPriorityDate))
     }
 }
