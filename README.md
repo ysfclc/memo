@@ -2,7 +2,7 @@
 
 Memo is a local-first personal execution environment. Conversation is the easiest way in; durable records, relationships, source evidence, tasks and verified work live behind it. Browser sessions, local models and optional Android automation are capabilities around Memo—not separate sources of truth. Other project archives contribute bounded primitives only; they do not define Memo’s product shell. This archive is a development build, not a production-readiness claim.
 
-**Product direction:** [`docs/MEMO_PRODUCT_CONTRACT.md`](docs/MEMO_PRODUCT_CONTRACT.md) is the authoritative product contract. Memo's primary experience is Talk / Live / Work / Studio, connected by one orchestrator and one user-owned workspace. The source audit in that contract deliberately distinguishes current functionality from the intended product.
+**Product direction:** [`docs/MEMO_PRODUCT_CONTRACT.md`](docs/MEMO_PRODUCT_CONTRACT.md) is the authoritative product contract. Memo's primary experience is Talk / Live / Work / Studio, connected by one orchestrator and one user-owned workspace. The source audit in that contract deliberately distinguishes current functionality from the intended product. The full social operating layer—accounts, feeds, inbox, engagement, relationships, listening, publishing, analytics and growth—is specified in [`docs/SOCIAL_PLATFORM_PRODUCT_SPEC.md`](docs/SOCIAL_PLATFORM_PRODUCT_SPEC.md), not just content publishing.
 
 ## What is implemented in this source tree
 
@@ -83,7 +83,7 @@ Not verified here:
 ## Feature audit and gap registry
 
 - `FEATURE_AUDIT.md` lists every supplied source build, the feature lineage, current source status and verification gate.
-- `PRODUCT_GAP_REGISTRY.md` prioritizes additional capabilities inferred from the full product vision, including cross-runtime workflows, durable recovery, media/capture, content studio, CRM/job flows, remote push policy and optional voice wake-up.
+- `PRODUCT_GAP_REGISTRY.md` prioritizes known product gaps. The full social platform is currently unimplemented and has its own provider-aware product contract, delivery sequence and acceptance criteria in `docs/SOCIAL_PLATFORM_PRODUCT_SPEC.md`.
 - `tools/verify_source.py` performs offline source/package checks; it explicitly does not substitute for Android compilation or device acceptance.
 
 ## Explicit product gaps
@@ -95,7 +95,7 @@ This is a stronger integrated implementation, but not yet the complete end-state
 3. Add generic dependency-graph (DAG) execution across browser and app steps, durable checkpoints, idempotency keys and automatic recovery rules that never repeat uncertain external side effects.
 4. Generalize browser surface schemas to versioned DOM/semantic maps with selectors, page-change detection, postconditions and replay tests—not just provider-specific scripts.
 5. Add a reviewable versioned skill/tool/agent/schema registry, with run manifests pinning all relevant versions.
-6. Add full file/image/media ingestion, robust streaming/progress rendering, editable schema tooling, and cross-channel publishing/analytics connectors with full artifact/destination approval.
+6. Build the full social platform: connected accounts, real unified feed/inbox, engagement, relationship management, listening/discovery, channel publishing, analytics, growth and bounded automation—with provider-specific capability truth and approval/security controls.
 7. Validate Accessibility behavior, overlay permission flows, background execution constraints, screen-lock handling, and manufacturer-specific Android behavior on-device. Android does not allow a normal app to arbitrarily operate other apps while the device is locked; the current runner is explicitly foreground/unlocked.
 8. Expand local-model discovery and installation to provider/device APIs beyond the supported LiteRT-LM model format. Local model support does not mean every Android-installed model is directly accessible.
 9. Add automated browser/app compatibility fixtures and privacy/security review, plus an actual signed release process before public distribution.
