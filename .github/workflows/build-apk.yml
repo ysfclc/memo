@@ -37,7 +37,7 @@ concurrency:
 jobs:
   preflight:
     name: Resolve the one incoming/memo.zip upload
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       skip_no_upload: ${{ steps.resolve.outputs.skip_no_upload }}
       already_imported: ${{ steps.resolve.outputs.already_imported }}
@@ -136,7 +136,7 @@ jobs:
     needs: preflight
     if: needs.preflight.outputs.skip_no_upload != 'true' && needs.preflight.outputs.already_imported != 'true'
     name: Validate, extract, synchronize, test and build Memo
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
       MEMO_UPLOAD_COMMIT: ${{ needs.preflight.outputs.upload_commit }}
