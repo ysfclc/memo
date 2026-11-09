@@ -442,8 +442,9 @@ fun MemoWorkspaceApp(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = { AppHeader(onLock = lockWorkspace, onStop = ::stopActiveWork, onMore = { tab = AppTab.MORE }) },
         snackbarHost = { SnackbarHost(snackbarHost) },
-        bottomBar = if (expandedLayout) null else {
-            Column {
+        bottomBar = {
+            if (!expandedLayout) {
+                Column {
                 Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.72f), thickness = 1.dp)
                 NavigationBar(
                     containerColor = MaterialTheme.colorScheme.background,
@@ -486,6 +487,7 @@ fun MemoWorkspaceApp(
                             )
                         )
                     }
+                }
                 }
             }
         }
