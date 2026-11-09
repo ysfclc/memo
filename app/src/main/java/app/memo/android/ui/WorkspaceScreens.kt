@@ -779,10 +779,10 @@ private fun TodayWorkScreen(
                 val taskEvidence = snapshot.evidence.filter { it.taskId == task.id }.sortedByDescending { it.capturedAt }
                 TodayPriorityCard(
                     title = task.title,
-                    detail = "${task.kind.label} · ${task.status.label} · ${task.lastMessage}",
+                    detail = "${task.kind.label} · ${task.status.label} · ${task.lastMessage.take(220)}",
                     priority = effectiveTodayPriority(task.todayPriority, task.todayPriorityDate, today),
                     onPriorityChange = { onSetTaskPriority(task.id, it) },
-                    outcome = task.query.takeIf { it.isNotBlank() }?.let { "Intent · $it" },
+                    outcome = task.query.takeIf { it.isNotBlank() }?.let { "Intent · ${it.take(220)}" },
                     evidence = taskEvidence.take(3),
                     onOpenEvidence = onOpenEvidence
                 )
@@ -790,11 +790,15 @@ private fun TodayWorkScreen(
             items(jobs, key = { "job-${it.id}" }) { job ->
                 val completed = job.steps.count { it.status == "COMPLETED" }
                 val runningStep = job.steps.firstOrNull { it.status == "RUNNING" }
-                val nextStep = job.steps.firstOrNull { it.status in setOf("PENDING", "NEEDS_REVIEW") }
+                val reviewStep = job.steps.firstOrNull { it.status == "NEEDS_REVIEW" }
+                val failedStep = job.steps.firstOrNull { it.status == "FAILED" }
+                val pendingStep = job.steps.firstOrNull { it.status == "PENDING" }
                 val nextAction = runningStep?.let { "In progress · ${it.title}" }
-                    ?: nextStep?.let { "Next checkpoint · ${it.title}" }
-                    ?: job.steps.firstOrNull { it.status == "FAILED" }?.let { "Blocked checkpoint · ${it.title}" }
-                val lastOutcome = job.steps.lastOrNull { it.status == "COMPLETED" && it.evidence.isNotBlank() }?.evidence
+                    ?: reviewStep?.let { "Needs review · ${it.title}" }
+                    ?: failedStep?.let { "Blocked checkpoint · ${it.title}" }
+                    ?: pendingStep?.let { "Next checkpoint · ${it.title}" }
+                val lastOutcome = job.steps.filter { it.status == "COMPLETED" && it.evidence.isNotBlank() }
+                    .maxByOrNull { it.updatedAt }?.evidence
                 val relatedEntities = openEntities.filter { it.sourceJobId == job.id }
                 TodayPriorityCard(
                     title = job.title,
@@ -804,7 +808,7 @@ private fun TodayWorkScreen(
                     onOpen = onOpenPlans,
                     openLabel = "Open plan",
                     outcome = lastOutcome?.let { "Latest outcome · $it" }
-                        ?: job.goal.substringBefore("\n\nMemo route:").takeIf { it.isNotBlank() }?.let { "Desired outcome · $it" },
+                        ?: job.goal.substringBefore("\n\nMemo route:").takeIf { it.isNotBlank() }?.let { "Desired outcome · ${it.take(240)}" },
                     nextAction = nextAction,
                     relatedEntities = relatedEntities,
                     onOpenEntity = onOpenEntity
