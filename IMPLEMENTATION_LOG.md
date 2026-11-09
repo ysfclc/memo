@@ -126,3 +126,14 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - **Task evidence:** Browser task cards surface their original intent and up to three newest captured evidence records. Selecting a record opens the existing evidence detail view.
 - **Consistency:** Plan priority buckets now use the same local-day resolver as task buckets, so stale plan priorities also return to Needs sorting.
 - **Verification:** Source implementation and static source checks only. Android compile, test execution, emulator and device verification remain pending.
+
+### 2026-11-09 — UX-TALK-TO-WORK — Explicit message promotion with source provenance
+
+- **User flow:** Each assistant response in Talk now has an explicit Promote-to-Work action. The user reviews and may edit the proposed outcome/next action before confirming creation.
+- **Persistence:** The resulting plan remains a local DRAFT. It records both sourceConversationId and sourceMessageId; the view model rejects missing or mismatched source messages. No external action is executed by promotion.
+- **Reviewability:** Work plan cards show the exact originating message excerpt and link back to the source conversation.
+- **Backup compatibility:** sourceMessageId is an additive optional v6 field. Older workspace backups load with an empty source message ID; the size estimator and JSON serializer include the new value.
+- **Regression test:** Added a backup/restore test asserting that both source IDs survive serialization.
+- **APK delivery:** Added a feature-branch Actions workflow that runs source verification, core/app unit tests, lint and APK assembly, then verifies the pinned existing signing certificate before uploading the APK artifact. The workflow intentionally publishes nothing if persistent signing secrets are missing or the certificate differs.
+- **Verification status:** Changes are committed to the feature branch. GitHub Actions execution, build/test results and APK artifact are pending; no local Android SDK build or device acceptance is claimed.
+
