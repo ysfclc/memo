@@ -27,6 +27,7 @@ Priority meanings: **P0** release blockers; **P1** core product capability; **P2
 - [ ] **Pocket-style source handling.** `ACTION_SEND_MULTIPLE`/URI imports, file size/type limits, review inbox, immutable original capture, derived working copy, source hash/URL/timestamp, per-mission/context selection and versioned backup.
 - [ ] **Capture that produces traceable records.** Quick text, share sheet, voice, image/screenshot and selected text; every capture has original source, extraction results, provenance and a review step before it changes the graph.
 - [ ] **Private draft → public-safe studio.** Drafts, claims/evidence check, media/carousel storyboard, generated asset provenance, channel-specific preview, destination-bound human approval, post receipts and later engagement measurements.
+- [ ] **Full social platform — first-class product domain, not content-only.** Provider audit; connected account identity/scopes; real unified feed/activity; unified supported inbox/DMs/comments/mentions; engagement and relationship linking; listening/discovery; channel-specific publishing; metrics/learning; personal-brand, customer-acquisition and monetization workflows; bounded automation. No feed/inbox mock data or unsupported API claims. See `docs/SOCIAL_PLATFORM_PRODUCT_SPEC.md` and M5.D in `TASKS.md`.
 
 ## P2 — the powerful “arms and hands” expansion
 
