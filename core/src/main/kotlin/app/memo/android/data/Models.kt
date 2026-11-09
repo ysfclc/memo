@@ -22,6 +22,8 @@ const val MAX_WORKSPACE_BACKUP_BYTES = 40 * 1024 * 1024
 private const val MAX_SERIALIZED_BYTES = MAX_WORKSPACE_BACKUP_BYTES
 private const val MAX_URL_CHARS = 2_048
 
+val TODAY_PRIORITY_VALUES = setOf("MUST", "SHOULD", "COULD", "NOT_TODAY", "UNSORTED")
+
 fun newId(): String = UUID.randomUUID().toString()
 
 fun nowMillis(): Long = System.currentTimeMillis()
@@ -60,7 +62,8 @@ data class TaskRecord(
     val status: TaskStatus = TaskStatus.QUEUED,
     val lastMessage: String = "Ready to run",
     val createdAt: Long = nowMillis(),
-    val updatedAt: Long = nowMillis()
+    val updatedAt: Long = nowMillis(),
+    val todayPriority: String = "UNSORTED"
 )
 
 data class EvidenceRecord(
@@ -180,7 +183,8 @@ data class WorkJobRecord(
     val resultSummary: String = "",
     val createdAt: Long = nowMillis(),
     val updatedAt: Long = nowMillis(),
-    val workflowGraphJson: String = ""
+    val workflowGraphJson: String = "",
+    val todayPriority: String = "UNSORTED"
 )
 
 data class AppSnapshot(
@@ -344,6 +348,7 @@ data class AppSnapshot(
                     put("lastMessage", task.lastMessage.take(activityMessageLimit))
                     put("createdAt", task.createdAt)
                     put("updatedAt", task.updatedAt)
+                    put("todayPriority", task.todayPriority)
                 })
             }
         })
@@ -479,6 +484,7 @@ data class AppSnapshot(
                     put("sourceConversationId", job.sourceConversationId.take(128))
                     put("resultSummary", job.resultSummary.take(4_000))
                     put("workflowGraphJson", job.workflowGraphJson.take(64_000))
+                    put("todayPriority", job.todayPriority)
                     put("createdAt", job.createdAt)
                     put("updatedAt", job.updatedAt)
                     put("steps", JSONArray().apply {
@@ -569,7 +575,8 @@ data class AppSnapshot(
                     status = TaskStatus.from(row.optString("status")),
                     lastMessage = row.safeString("lastMessage").take(1_000),
                     createdAt = row.optLong("createdAt", nowMillis()),
-                    updatedAt = row.optLong("updatedAt", nowMillis())
+                    updatedAt = row.optLong("updatedAt", nowMillis()),
+                    todayPriority = row.safeString("todayPriority").takeIf { it in TODAY_PRIORITY_VALUES } ?: "UNSORTED"
                 )
             }
             val usedEvidenceIds = mutableSetOf<String>()
@@ -723,7 +730,8 @@ data class AppSnapshot(
                     resultSummary = row.safeString("resultSummary").take(4_000),
                     createdAt = row.optLong("createdAt", nowMillis()),
                     updatedAt = row.optLong("updatedAt", nowMillis()),
-                    workflowGraphJson = row.safeString("workflowGraphJson").take(64_000)
+                    workflowGraphJson = row.safeString("workflowGraphJson").take(64_000),
+                    todayPriority = row.safeString("todayPriority").takeIf { it in TODAY_PRIORITY_VALUES } ?: "UNSORTED"
                 )
             }
             val actionApprovals = if (schema < 4) emptyList() else root.optJSONArray("actionApprovals").toTypedRecords(MAX_ACTION_APPROVALS) { row ->
