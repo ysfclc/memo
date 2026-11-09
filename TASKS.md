@@ -451,3 +451,17 @@ The user reopened the navbar and overall UI/UX. The current four-tab shell is no
 - [ ] **UX-6 Supporting surfaces and quality:** contextual Browser/Apps/Approvals/Council/Models/Settings; localization, accessibility, reduced motion, keyboard safety, performance and recovery.
 
 **Current status:** product direction and acceptance journeys documented. No new navigation or Social UI has been implemented by this documentation change. Do not mark any UX item complete until source changes, tests, CI and applicable physical-device checks pass. Do not ship a dead Social tab, fake provider state, duplicate controls or a broad visual rewrite before route/state ownership is established.
+
+
+## 9 November 2026 — New Memo design system
+
+A new visual language, **Signal & Graphite**, is defined in `docs/product/MEMO_DESIGN_SYSTEM.md`. The foundation palette, semantic colors, spacing/radius/elevation/motion tokens, typography and primary navbar selection colors have been implemented in Compose. This is foundation work only; the app is not yet visually migrated.
+
+- [ ] Build reusable Compose primitives for app shell, typography/layout, actions, inputs, data display, state communication and overlays.
+- [ ] Migrate Talk first as the reference screen; preserve all existing functionality and data behavior.
+- [ ] Migrate Live, Work and Studio; introduce Social only when its real workflows exist.
+- [ ] Replace ad-hoc styling safely; maintain semantic exceptions and contrast.
+- [ ] Add light/dark previews, compact/expanded width previews, screenshot tests and accessibility checks.
+- [ ] Verify Polish/Turkish copy, large font scale, keyboard insets, reduced motion and touch targets on physical Android devices.
+
+Do not mark the design system complete based on token changes alone. Build, tests, visual review and device acceptance are required.
