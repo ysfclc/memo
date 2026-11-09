@@ -811,7 +811,13 @@ private fun TodayPriorityCard(
             }
             Box {
                 TextButton(onClick = { menuOpen = true }) {
-                    Text(if (priority == "NOT_TODAY") "Not today" else priority.lowercase().replaceFirstChar { it.uppercase() })
+                    Text(when (priority) {
+                        "MUST" -> "Must"
+                        "SHOULD" -> "Should"
+                        "COULD" -> "Could"
+                        "NOT_TODAY" -> "Not today"
+                        else -> "Needs sorting"
+                    })
                 }
                 DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                     listOf("MUST" to "Must", "SHOULD" to "Should", "COULD" to "Could", "NOT_TODAY" to "Not today", "UNSORTED" to "Needs sorting").forEach { (value, label) ->
