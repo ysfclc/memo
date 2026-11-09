@@ -348,48 +348,48 @@ fun ChatsWorkspaceScreen(
                             title = "Request controls",
                             supporting = "Choose the model and decide what information may be shared."
                         )
-                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.xs)) {
-                        modelOptions.forEach { (id, label) -> FilterChip(
-                            selected = selectedModelId == id,
-                            onClick = { selectedModelId = id; if (id != REMOTE_MODEL_ID) allowRemote = false },
-                            label = { Text(label, maxLines = 1) },
-                            enabled = !runtimeState.running
-                        ) }
-                    }
-                    if (selectedModelId == REMOTE_MODEL_ID) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(checked = allowRemote, onCheckedChange = { allowRemote = it }, enabled = !runtimeState.running)
-                            Text("Allow this request to leave this device", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.xs)) {
+                            modelOptions.forEach { (id, label) -> FilterChip(
+                                selected = selectedModelId == id,
+                                onClick = { selectedModelId = id; if (id != REMOTE_MODEL_ID) allowRemote = false },
+                                label = { Text(label, maxLines = 1) },
+                                enabled = !runtimeState.running
+                            ) }
                         }
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = useWorkspaceContext, onCheckedChange = { useWorkspaceContext = it }, enabled = !runtimeState.running)
-                        Column(Modifier.weight(1f)) {
-                            Text("Use relevant saved context", style = MaterialTheme.typography.bodySmall)
-                            Text(if (localContextSelection.isEmpty) "No matching local records for this prompt yet." else "${localContextSelection.hits.size} local record(s) matched; sources are shown below.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (selectedModelId == REMOTE_MODEL_ID) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = allowRemote, onCheckedChange = { allowRemote = it }, enabled = !runtimeState.running)
+                                Text("Allow this request to leave this device", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
                         }
-                    }
-                    if (selectedModelId == REMOTE_MODEL_ID && useWorkspaceContext && !localContextSelection.isEmpty) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(checked = shareWorkspaceContextRemotely, onCheckedChange = { shareWorkspaceContextRemotely = it }, enabled = !runtimeState.running)
+                            Checkbox(checked = useWorkspaceContext, onCheckedChange = { useWorkspaceContext = it }, enabled = !runtimeState.running)
                             Column(Modifier.weight(1f)) {
-                                Text("Also send these local records to the remote provider", style = MaterialTheme.typography.bodySmall)
-                                Text("Off by default. Review the source list before enabling.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("Use relevant saved context", style = MaterialTheme.typography.bodySmall)
+                                Text(if (localContextSelection.isEmpty) "No matching local records for this prompt yet." else "${localContextSelection.hits.size} local record(s) matched; sources are shown below.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
-                    }
-                    if (useWorkspaceContext && !localContextSelection.isEmpty) {
-                        Surface(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.52f), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
-                            Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                                Text(if (contextForThisRequest) "Context preview · included in this request" else "Context preview · stays on this device", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                                localContextSelection.hits.take(4).forEach { hit ->
-                                    Text("${hit.type} · ${hit.title}", style = MaterialTheme.typography.labelMedium)
-                                    Text(hit.excerpt.take(150), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        if (selectedModelId == REMOTE_MODEL_ID && useWorkspaceContext && !localContextSelection.isEmpty) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = shareWorkspaceContextRemotely, onCheckedChange = { shareWorkspaceContextRemotely = it }, enabled = !runtimeState.running)
+                                Column(Modifier.weight(1f)) {
+                                    Text("Also send these local records to the remote provider", style = MaterialTheme.typography.bodySmall)
+                                    Text("Off by default. Review the source list before enabling.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
-                                if (localContextSelection.hits.size > 4) Text("+ ${localContextSelection.hits.size - 4} more source(s)", style = MaterialTheme.typography.labelSmall)
                             }
                         }
-                    }
+                        if (useWorkspaceContext && !localContextSelection.isEmpty) {
+                            Surface(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.52f), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+                                Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                                    Text(if (contextForThisRequest) "Context preview · included in this request" else "Context preview · stays on this device", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                    localContextSelection.hits.take(4).forEach { hit ->
+                                        Text("${hit.type} · ${hit.title}", style = MaterialTheme.typography.labelMedium)
+                                        Text(hit.excerpt.take(150), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                    }
+                                    if (localContextSelection.hits.size > 4) Text("+ ${localContextSelection.hits.size - 4} more source(s)", style = MaterialTheme.typography.labelSmall)
+                                }
+                            }
+                        }
                     }
                 }
             }
