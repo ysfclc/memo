@@ -34,6 +34,10 @@ fun nowMillis(): Long = System.currentTimeMillis()
 /** Local calendar day used to scope MUST / SHOULD / COULD / NOT TODAY decisions. */
 fun todayPriorityDay(): String = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(Date())
 
+/** Return a priority only when it was explicitly assigned for the current local day. */
+fun effectiveTodayPriority(priority: String, assignedDay: String, today: String = todayPriorityDay()): String =
+    if (assignedDay == today && priority in TODAY_PRIORITY_VALUES) priority else "UNSORTED"
+
 enum class TaskKind(val label: String, val description: String) {
     CAPTURE_PAGE("Capture page", "Save readable page content and source metadata."),
     EXTRACT_LINKS("Extract links", "Collect visible links and their labels."),
