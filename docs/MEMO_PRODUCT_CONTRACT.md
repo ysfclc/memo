@@ -6,6 +6,8 @@
 **Branch:** `ysfclc-patch-1`  
 **Authority:** This document records the user's product decisions and is the product-level source of truth for future implementation. `TASKS.md` is the engineering execution ledger. Older architecture drafts and inherited app implementations are subordinate where they conflict with this contract. The full social platform requirements are specified in [SOCIAL_PLATFORM_PRODUCT_SPEC.md](SOCIAL_PLATFORM_PRODUCT_SPEC.md) and are equally in scope; they must not be reduced to content publishing.
 
+**Delivery governance:** [../DEVELOPMENT_GOVERNANCE.md](../DEVELOPMENT_GOVERNANCE.md) defines how this contract is protected and verified. Stable capability IDs are tracked in [REQUIREMENT_TRACEABILITY.md](REQUIREMENT_TRACEABILITY.md); material decisions are recorded in [DECISION_LOG.md](DECISION_LOG.md).
+
 ## 1. The product in one sentence
 
 **Memo is a personal AI operating agent on the phone: it understands what the user wants, assembles and runs the right workflow across the user's information, models, websites and Android apps, produces useful work, and keeps the user in control.**
