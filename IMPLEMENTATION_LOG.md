@@ -117,3 +117,12 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - **Verification:** Source-level implementation only. Serialization regression test added; execution pending. Android compile, CI, emulator and physical-device checks are pending. PR #5 remains draft and must not be merged until its acceptance gates pass.
 
 - **Daily scope correction:** priority selections are tied to the device's local calendar day. When the date changes, previously assigned items return to Needs sorting instead of carrying a previous day's MUST/SHOULD decision forward. Old backups lacking the day field are safely treated as unsorted.
+
+
+### 2026-11-09 — UX-WORK-TODAY-GRAPH — Connect priorities to outcomes and source records
+
+- **Plan context:** Today now shows the plan's actual next pending/review checkpoint, or its active checkpoint, rather than only a status/count. It surfaces the plan goal as the desired outcome and the most recent completed-step outcome when one exists.
+- **Work graph:** Plan cards surface active entity records whose sourceJobId points to that plan. Selecting a linked entity opens its existing entity detail view.
+- **Task evidence:** Browser task cards surface their original intent and up to three newest captured evidence records. Selecting a record opens the existing evidence detail view.
+- **Consistency:** Plan priority buckets now use the same local-day resolver as task buckets, so stale plan priorities also return to Needs sorting.
+- **Verification:** Source implementation and static source checks only. Android compile, test execution, emulator and device verification remain pending.
