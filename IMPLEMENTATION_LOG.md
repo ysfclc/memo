@@ -147,3 +147,14 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - **Observed blocker:** GitHub created run `42612738172`, but its first preflight job terminated in approximately two seconds with `runner_id=0`, no runner name, zero steps and no logs. Retrying run `42612564351` produced the same pre-runner failure. The same workflow succeeded on `ysfclc-patch-1` the previous day, so this is not evidence of a Kotlin/Gradle compile failure. No APK artifact was produced.
 - **Verification status:** workflow routing and branch allow-list are committed; actual execution and APK remain blocked before the first step by GitHub Actions runner allocation. No build, test or device acceptance is claimed for this feature commit.
 
+
+
+### 2026-11-09 — CI-CIRCLECI-001 — Add external Android build pipeline
+
+- **Requirement:** Restore repeatable private-repository Android builds without consuming exhausted GitHub-hosted Actions compute; preserve Memo's signing identity and in-place encrypted-store upgrade gate.
+- **Files changed:** `.circleci/config.yml`; `tools/ci/circleci-android.sh`; `docs/ci/CIRCLECI_SETUP.md`; GitHub Actions automatic push trigger disabled while manual dispatch remains available.
+- **Implementation:** CircleCI uses its Android machine image (not a Docker executor), installs Android 35/build-tools 35, runs source invariants, remote-runner tests, core/app JVM tests, lint and debug APK/instrumentation assembly. It requires the existing four signing environment variables, verifies the pinned Memo certificate SHA-256, boots an Android 35 x86_64 emulator, seeds the encrypted stores, performs an in-place install upgrade, and verifies encrypted-store reopening plus app-private-data preservation. Only the APK and small verification receipts are retained; the integrated repository ZIP is not duplicated. The job does not mutate or push repository source.
+- **Resource choice:** Android `large` machine class is selected to provide enough CPU/RAM for Gradle and the emulator together. Actual free-plan eligibility and credit consumption must be confirmed by the first CircleCI run.
+- **Required external setup:** Copy the existing GitHub signing secret values into CircleCI Project Settings → Environment Variables using the exact names documented in `docs/ci/CIRCLECI_SETUP.md`. Never generate a replacement keystore or share its contents in chat.
+- **Verification:** Repository file contents and PR branch configuration were read back after commits. No CircleCI run result is yet available; do not claim the new pipeline or APK has passed until CircleCI reports a completed green run and its artifact is checked.
+- **Status:** [~] Pipeline configuration committed; awaiting CircleCI activation, signing environment setup and first full run.
