@@ -5,6 +5,10 @@
 **Product contract:** [docs/MEMO_PRODUCT_CONTRACT.md](docs/MEMO_PRODUCT_CONTRACT.md)  
 **Execution ledger:** [TASKS.md](TASKS.md)
 
+**Workflow governance:** [DEVELOPMENT_GOVERNANCE.md](DEVELOPMENT_GOVERNANCE.md)  
+**Requirement traceability:** [docs/REQUIREMENT_TRACEABILITY.md](docs/REQUIREMENT_TRACEABILITY.md)  
+**Decision history:** [docs/DECISION_LOG.md](docs/DECISION_LOG.md)
+
 ## Product promise
 
 Memo is a personal AI operating agent. One intent entry point connects Talk, Live, Work and Studio. It plans and executes bounded workflows across the user's encrypted workspace, compatible local models, explicitly permitted frontier AI websites/apps, browser sessions and Android runtimes. It creates useful deliverables, records provenance and keeps consequential actions under the user's control. Its first-class domains include the user's social world: connected accounts, supported feeds and inboxes, engagement, relationships, discovery, publishing, analytics and growth—not merely content generation.
