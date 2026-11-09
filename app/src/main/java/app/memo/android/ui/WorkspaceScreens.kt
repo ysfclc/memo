@@ -720,7 +720,9 @@ private fun TodayWorkScreen(
     snapshot: AppSnapshot,
     onSetTaskPriority: (String, String) -> Unit,
     onSetJobPriority: (String, String) -> Unit,
-    onOpenPlans: () -> Unit
+    onOpenPlans: () -> Unit,
+    onOpenEvidence: (String) -> Unit,
+    onOpenEntity: (EntityRecord) -> Unit
 ) {
     val activeTasks = snapshot.tasks.filter { it.status != app.memo.android.data.TaskStatus.COMPLETED }
         .sortedByDescending { it.updatedAt }
@@ -734,6 +736,7 @@ private fun TodayWorkScreen(
         "COULD" to "Could",
         "NOT_TODAY" to "Not today"
     )
+    val openEntities = snapshot.entities.filter { it.reviewStatus !in setOf("REJECTED", "MERGED") }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.sm),
@@ -743,7 +746,7 @@ private fun TodayWorkScreen(
             MemoPanel {
                 Text("Your active work, from the encrypted workspace.", style = MaterialTheme.typography.bodyMedium)
                 Text(
-                    "${activeTasks.size + activeJobs.size} open item(s) · Set priorities yourself; Memo never guesses urgency.",
+                    "${activeTasks.size + activeJobs.size} open item(s) · Outcomes, next checkpoints and source records stay connected.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -754,7 +757,7 @@ private fun TodayWorkScreen(
         }
         priorities.forEach { (priority, label) ->
             val tasks = activeTasks.filter { effectiveTodayPriority(it.todayPriority, it.todayPriorityDate, today) == priority }
-            val jobs = activeJobs.filter { (if (it.todayPriorityDate == today) it.todayPriority else "UNSORTED") == priority }
+            val jobs = activeJobs.filter { effectiveTodayPriority(it.todayPriority, it.todayPriorityDate, today) == priority }
             item(key = "today-heading-$priority") {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
@@ -773,22 +776,38 @@ private fun TodayWorkScreen(
                 }
             }
             items(tasks, key = { "task-${it.id}" }) { task ->
+                val taskEvidence = snapshot.evidence.filter { it.taskId == task.id }.sortedByDescending { it.capturedAt }
                 TodayPriorityCard(
                     title = task.title,
                     detail = "${task.kind.label} · ${task.status.label} · ${task.lastMessage}",
                     priority = effectiveTodayPriority(task.todayPriority, task.todayPriorityDate, today),
-                    onPriorityChange = { onSetTaskPriority(task.id, it) }
+                    onPriorityChange = { onSetTaskPriority(task.id, it) },
+                    outcome = task.query.takeIf { it.isNotBlank() }?.let { "Intent · $it" },
+                    evidence = taskEvidence.take(3),
+                    onOpenEvidence = onOpenEvidence
                 )
             }
             items(jobs, key = { "job-${it.id}" }) { job ->
                 val completed = job.steps.count { it.status == "COMPLETED" }
+                val runningStep = job.steps.firstOrNull { it.status == "RUNNING" }
+                val nextStep = job.steps.firstOrNull { it.status in setOf("PENDING", "NEEDS_REVIEW") }
+                val nextAction = runningStep?.let { "In progress · ${it.title}" }
+                    ?: nextStep?.let { "Next checkpoint · ${it.title}" }
+                    ?: job.steps.firstOrNull { it.status == "FAILED" }?.let { "Blocked checkpoint · ${it.title}" }
+                val lastOutcome = job.steps.lastOrNull { it.status == "COMPLETED" && it.evidence.isNotBlank() }?.evidence
+                val relatedEntities = openEntities.filter { it.sourceJobId == job.id }
                 TodayPriorityCard(
                     title = job.title,
-                    detail = "${job.status.lowercase().replace('_', ' ')} · $completed/${job.steps.size} checkpoints complete${job.resultSummary.takeIf { it.isNotBlank() }?.let { " · ${it.take(160)}" }.orEmpty()}",
+                    detail = "${job.status.lowercase().replace('_', ' ')} · $completed/${job.steps.size} checkpoints complete",
                     priority = effectiveTodayPriority(job.todayPriority, job.todayPriorityDate, today),
                     onPriorityChange = { onSetJobPriority(job.id, it) },
                     onOpen = onOpenPlans,
-                    openLabel = "Open plan"
+                    openLabel = "Open plan",
+                    outcome = lastOutcome?.let { "Latest outcome · $it" }
+                        ?: job.goal.substringBefore("\n\nMemo route:").takeIf { it.isNotBlank() }?.let { "Desired outcome · $it" },
+                    nextAction = nextAction,
+                    relatedEntities = relatedEntities,
+                    onOpenEntity = onOpenEntity
                 )
             }
         }
@@ -802,7 +821,13 @@ private fun TodayPriorityCard(
     priority: String,
     onPriorityChange: (String) -> Unit,
     onOpen: (() -> Unit)? = null,
-    openLabel: String = ""
+    openLabel: String = "",
+    outcome: String? = null,
+    nextAction: String? = null,
+    evidence: List<EvidenceRecord> = emptyList(),
+    relatedEntities: List<EntityRecord> = emptyList(),
+    onOpenEvidence: (String) -> Unit = {},
+    onOpenEntity: (EntityRecord) -> Unit = {}
 ) {
     var menuOpen by remember { mutableStateOf(false) }
     MemoPanel {
@@ -828,6 +853,37 @@ private fun TodayPriorityCard(
                             onClick = { menuOpen = false; onPriorityChange(value) }
                         )
                     }
+                }
+            }
+        }
+        outcome?.let {
+            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        nextAction?.let {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Rounded.TaskAlt, null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp))
+                Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary)
+            }
+        }
+        if (relatedEntities.isNotEmpty()) {
+            Text("Linked work", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                relatedEntities.take(4).forEach { entity ->
+                    FilterChip(
+                        selected = false,
+                        onClick = { onOpenEntity(entity) },
+                        label = { Text(entity.title, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                    )
+                }
+            }
+        }
+        if (evidence.isNotEmpty()) {
+            Text("Evidence", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            evidence.forEach { record ->
+                TextButton(onClick = { onOpenEvidence(record.id) }) {
+                    Icon(Icons.Rounded.Description, null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(5.dp))
+                    Text(record.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
         }
@@ -886,7 +942,9 @@ fun WorkWorkspaceScreen(
                 snapshot = snapshot,
                 onSetTaskPriority = viewModel::setTaskTodayPriority,
                 onSetJobPriority = viewModel::setJobTodayPriority,
-                onOpenPlans = { section = "JOBS"; onSectionChanged("JOBS") }
+                onOpenPlans = { section = "JOBS"; onSectionChanged("JOBS") },
+                onOpenEvidence = onOpenEvidence,
+                onOpenEntity = { selectedEntity = it }
             )
         } else if (section != "JOBS") {
             Row(Modifier.padding(horizontal = MemoTokens.Spacing.pageMargin), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
