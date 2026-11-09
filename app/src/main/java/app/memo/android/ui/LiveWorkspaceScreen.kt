@@ -66,10 +66,10 @@ fun LiveWorkspaceScreen(
         }
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = onOpenBrowser, modifier = Modifier.weight(1f).height(48.dp)) { Text("Browser session") }
-                OutlinedButton(onClick = onOpenApps, modifier = Modifier.weight(1f).height(48.dp)) { Text("Phone apps") }
+                OutlinedButton(onClick = onOpenBrowser, modifier = Modifier.weight(1f).height(MemoTokens.Spacing.minimumTouch)) { Text("Browser session") }
+                OutlinedButton(onClick = onOpenApps, modifier = Modifier.weight(1f).height(MemoTokens.Spacing.minimumTouch)) { Text("Phone apps") }
             }
-            OutlinedButton(onClick = onOpenApprovals, modifier = Modifier.fillMaxWidth().height(48.dp)) {
+            OutlinedButton(onClick = onOpenApprovals, modifier = Modifier.fillMaxWidth().height(MemoTokens.Spacing.minimumTouch)) {
                 if (reviewActions.isEmpty()) {
                     Text("Approval inbox")
                 } else {
