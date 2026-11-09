@@ -456,7 +456,7 @@ fun MemoWorkspaceApp(
                             AppTab.STUDIO -> tab == AppTab.STUDIO
                             else -> false
                         },
-                        onClick = { if (dest == AppTab.HOME) activeConversationId = null; tab = dest },
+                        onClick = { tab = dest },
                         icon = { Icon(icon, contentDescription = label, modifier = Modifier.size(22.dp)) },
                         label = { Text(label, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
                         alwaysShowLabel = true
