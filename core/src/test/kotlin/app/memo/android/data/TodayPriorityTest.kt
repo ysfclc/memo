@@ -22,10 +22,12 @@ class TodayPriorityTest {
         ).toJson())
         root.getJSONArray("tasks").getJSONObject(0).remove("todayPriorityDate")
         root.getJSONArray("jobs").getJSONObject(0).put("todayPriority", "URGENT")
+        root.getJSONArray("jobs").getJSONObject(0).remove("sourceMessageId")
         val restored = AppSnapshot.fromJson(root.toString())
         assertEquals("UNSORTED", restored.tasks.single().todayPriority)
         assertEquals("", restored.tasks.single().todayPriorityDate)
         assertEquals("UNSORTED", restored.jobs.single().todayPriority)
+        assertEquals("", restored.jobs.single().sourceMessageId)
     }
 
     @Test fun workPlanKeepsExactSourceMessageProvenanceAcrossBackupRestore() {
