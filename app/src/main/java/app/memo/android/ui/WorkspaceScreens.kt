@@ -144,6 +144,8 @@ fun ChatsWorkspaceScreen(
     var messageEditTarget by remember { mutableStateOf<ChatMessageRecord?>(null) }
     var messageEditText by remember { mutableStateOf("") }
     var messageDeleteTarget by remember { mutableStateOf<ChatMessageRecord?>(null) }
+    var promoteMessageTarget by remember { mutableStateOf<ChatMessageRecord?>(null) }
+    var promoteIntent by remember { mutableStateOf("") }
     var draft by remember(selectedConversationId) { mutableStateOf("") }
     LaunchedEffect(selectedConversationId, initialPrompt) {
         if (selectedConversationId != null && initialPrompt.isNotBlank()) {
@@ -419,6 +421,14 @@ fun ChatsWorkspaceScreen(
                             IconButton(onClick = { messageDeleteTarget = message }, modifier = Modifier.size(30.dp)) {
                                 Icon(Icons.Rounded.Delete, contentDescription = "Delete message", modifier = Modifier.size(17.dp))
                             }
+                            if (message.role == "ASSISTANT") {
+                                IconButton(
+                                    onClick = { promoteMessageTarget = message; promoteIntent = message.content },
+                                    modifier = Modifier.size(30.dp)
+                                ) {
+                                    Icon(Icons.Rounded.TaskAlt, contentDescription = "Promote this response to Work", modifier = Modifier.size(17.dp))
+                                }
+                            }
                         }
                     }
                 }
@@ -601,6 +611,52 @@ fun ChatsWorkspaceScreen(
                 }
             }
         }
+    }
+
+
+    if (promoteMessageTarget != null && selectedConversation != null) {
+        val sourceMessage = promoteMessageTarget!!
+        AlertDialog(
+            onDismissRequest = { promoteMessageTarget = null },
+            title = { Text("Promote response to Work") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        "Review the outcome or next action Memo should turn into a plan. The source conversation and exact message will stay linked.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text("SOURCE · ${selectedConversation.title}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                    Text(sourceMessage.content.take(360), style = MaterialTheme.typography.bodySmall, maxLines = 5, overflow = TextOverflow.Ellipsis)
+                    OutlinedTextField(
+                        value = promoteIntent,
+                        onValueChange = { if (it.length <= 6_000) promoteIntent = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Outcome and next action") },
+                        minLines = 4,
+                        maxLines = 9
+                    )
+                    Text("Creates a local draft plan only. Nothing is sent, published or executed.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    viewModel.createIntentPlan(
+                        rawIntent = promoteIntent,
+                        sourceConversationId = selectedConversation.id,
+                        sourceMessageId = sourceMessage.id
+                    ).fold(
+                        onSuccess = {
+                            promoteMessageTarget = null
+                            onShowMessage("Draft plan created and linked to this exact message. Review it in Work before starting.")
+                            onOpenWork()
+                        },
+                        onFailure = { error -> onShowMessage(error.message ?: "Could not create the Work plan.") }
+                    )
+                }, enabled = promoteIntent.isNotBlank() && !runtimeState.running) { Text("Create draft plan") }
+            },
+            dismissButton = { TextButton(onClick = { promoteMessageTarget = null }) { Text("Cancel") } }
+        )
     }
 
     if (showImport) ImportConversationDialog(
