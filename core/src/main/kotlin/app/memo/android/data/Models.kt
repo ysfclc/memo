@@ -285,7 +285,7 @@ data class AppSnapshot(
                 index++
             }
         }
-        tasks.forEach { add(it.id); add(it.title); add(it.targetUrl); add(it.query); add(it.lastMessage) }
+        tasks.forEach { add(it.id); add(it.title); add(it.targetUrl); add(it.query); add(it.lastMessage); add(it.todayPriority) }
         evidence.forEach { add(it.id); add(it.taskId); add(it.title); add(it.sourceUrl); add(it.kind); add(it.content); add(it.summary); add(it.metadata) }
         activity.forEach { add(it.id); add(it.level); add(it.message); add(it.taskId) }
         councilRuns.forEach { run ->
@@ -304,7 +304,7 @@ data class AppSnapshot(
         }
         relationships.forEach { add(it.id); add(it.fromEntityId); add(it.toEntityId); add(it.relationType); add(it.sourceConversationId) }
         jobs.forEach { job ->
-            add(job.id); add(job.title); add(job.goal); add(job.status); add(job.runtimeId); add(job.sourceConversationId); add(job.resultSummary); add(job.workflowGraphJson)
+            add(job.id); add(job.title); add(job.goal); add(job.status); add(job.runtimeId); add(job.sourceConversationId); add(job.resultSummary); add(job.workflowGraphJson); add(job.todayPriority)
             job.steps.forEach { add(it.id); add(it.title); add(it.detail); add(it.status); add(it.evidence) }
         }
         actionApprovals.forEach { action ->
