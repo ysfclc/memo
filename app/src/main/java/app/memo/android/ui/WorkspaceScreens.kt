@@ -234,9 +234,11 @@ fun ChatsWorkspaceScreen(
                         Icon(Icons.Rounded.ImportExport, contentDescription = null); Spacer(Modifier.width(7.dp)); Text("Import")
                     }
                 }
-                SurfaceCard {
-                    Text("Start with Memo", style = MaterialTheme.typography.titleMedium)
-                    Text("Start with a thought, question or task. Memo keeps the conversation and its related work together.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                MemoPanel {
+                    MemoSectionHeading(
+                        title = "Start with Memo",
+                        supporting = "A thought, question or task. The conversation and its related work stay together."
+                    )
                     OutlinedTextField(
                         value = draft,
                         onValueChange = { if (it.length <= 6_000) draft = it },
@@ -282,8 +284,14 @@ fun ChatsWorkspaceScreen(
                     contentPadding = PaddingValues(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.xs),
                     verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)
                 ) {
+                    item {
+                        MemoSectionHeading(
+                            title = "Conversations",
+                            supporting = "${filtered.size} saved"
+                        )
+                    }
                     items(filtered, key = { it.id }) { conversation ->
-                        SurfaceCard {
+                        MemoPanel {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                 Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(12.dp), modifier = Modifier.size(44.dp)) {
                                     Box(contentAlignment = Alignment.Center) { Icon(Icons.Rounded.ChatBubbleOutline, null, tint = MaterialTheme.colorScheme.onPrimaryContainer) }
