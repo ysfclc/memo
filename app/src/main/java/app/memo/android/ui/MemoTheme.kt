@@ -1,6 +1,7 @@
 package app.memo.android.ui
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
@@ -14,11 +15,27 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.shape.RoundedCornerShape
 
-/** Single design-token source. Components consume MaterialTheme rather than ad-hoc styling. */
+/**
+ * Memo's visual foundation.
+ *
+ * Keep existing token names stable while new surfaces migrate. Feature screens should
+ * consume MaterialTheme and these semantic tokens instead of defining local palettes.
+ */
 object MemoTokens {
+    object Brand {
+        // Signal Mint: a quiet, recognisable accent for intent, focus and active work.
+        val signal = Color(0xFF087A63)
+        val signalBright = Color(0xFF72E2BE)
+        val midnight = Color(0xFF0B1210)
+        val graphite = Color(0xFF17211E)
+        val paper = Color(0xFFF4F6F2)
+        val ink = Color(0xFF17201D)
+        val violet = Color(0xFF7775C8) // Reserved for AI/council context, never general decoration.
+    }
+
     object Spacing {
+        val xxxs = 2.dp
         val xxs = 4.dp
         val xs = 8.dp
         val sm = 12.dp
@@ -26,95 +43,112 @@ object MemoTokens {
         val lg = 20.dp
         val xl = 24.dp
         val xxl = 32.dp
+        val xxxl = 48.dp
         val pageMargin = 20.dp
         val minimumTouch = 48.dp
     }
 
     object Radius {
+        val extraSmall = 6.dp
         val small = 10.dp
-        val medium = 16.dp
-        val large = 24.dp
+        val medium = 14.dp
+        val large = 20.dp
+        val extraLarge = 26.dp
         val pill = 100.dp
     }
 
+    object Elevation {
+        val flat = 0.dp
+        val raised = 2.dp
+        val floating = 6.dp
+        val modal = 12.dp
+    }
+
+    object Motion {
+        const val instant = 90
+        const val quick = 150
+        const val standard = 220
+        const val expressive = 320
+    }
+
     object SemanticLight {
-        val success = Color(0xFF006B5F)
+        val success = Color(0xFF176B52)
         val onSuccess = Color(0xFFFFFFFF)
-        val successContainer = Color(0xFFD1F5EC)
-        val onSuccessContainer = Color(0xFF00201A)
-        val warning = Color(0xFF7A4D00)
+        val successContainer = Color(0xFFD8F2E6)
+        val onSuccessContainer = Color(0xFF082D20)
+        val warning = Color(0xFF805000)
         val onWarning = Color(0xFFFFFFFF)
-        val warningContainer = Color(0xFFFFDEA6)
-        val onWarningContainer = Color(0xFF291800)
-        val info = Color(0xFF215AAB)
+        val warningContainer = Color(0xFFFFE8BD)
+        val onWarningContainer = Color(0xFF352000)
+        val info = Color(0xFF315D9B)
         val onInfo = Color(0xFFFFFFFF)
-        val infoContainer = Color(0xFFD9E2FF)
-        val onInfoContainer = Color(0xFF001A41)
+        val infoContainer = Color(0xFFE0EBFF)
+        val onInfoContainer = Color(0xFF142D52)
     }
 
     object SemanticDark {
-        val success = Color(0xFF82D9CA)
-        val onSuccess = Color(0xFF003731)
-        val successContainer = Color(0xFF005047)
-        val onSuccessContainer = Color(0xFF9AF2E1)
-        val warning = Color(0xFFFFB95C)
-        val onWarning = Color(0xFF4A2800)
-        val warningContainer = Color(0xFF664000)
-        val onWarningContainer = Color(0xFFFFDEA6)
-        val info = Color(0xFFA7C8FF)
-        val onInfo = Color(0xFF00305D)
-        val infoContainer = Color(0xFF194777)
-        val onInfoContainer = Color(0xFFD9E2FF)
+        val success = Color(0xFF83DDB9)
+        val onSuccess = Color(0xFF063B2B)
+        val successContainer = Color(0xFF14563F)
+        val onSuccessContainer = Color(0xFFB5F4D6)
+        val warning = Color(0xFFFFC66E)
+        val onWarning = Color(0xFF462B00)
+        val warningContainer = Color(0xFF684400)
+        val onWarningContainer = Color(0xFFFFE7B7)
+        val info = Color(0xFFA8C8FF)
+        val onInfo = Color(0xFF17345D)
+        val infoContainer = Color(0xFF254A79)
+        val onInfoContainer = Color(0xFFDCE8FF)
     }
 
     object Light {
-        val primary = Color(0xFF373CA6)
+        val primary = Color(0xFF087A63)
         val onPrimary = Color(0xFFFFFFFF)
-        val primaryContainer = Color(0xFFE3E5FF)
-        val onPrimaryContainer = Color(0xFF10145C)
-        val secondary = Color(0xFF53617A)
+        val primaryContainer = Color(0xFFD4F1E6)
+        val onPrimaryContainer = Color(0xFF002F24)
+        val secondary = Color(0xFF52635D)
         val onSecondary = Color(0xFFFFFFFF)
-        val secondaryContainer = Color(0xFFE3E8F5)
-        val onSecondaryContainer = Color(0xFF171F33)
-        val tertiary = Color(0xFF006B5F)
+        val secondaryContainer = Color(0xFFDCE8E1)
+        val onSecondaryContainer = Color(0xFF17231E)
+        val tertiary = Color(0xFF6262A7)
         val onTertiary = Color(0xFFFFFFFF)
-        val tertiaryContainer = Color(0xFF9AF2E1)
-        val onTertiaryContainer = Color(0xFF00201A)
-        val background = Color(0xFFF6F7FB)
-        val onBackground = Color(0xFF171A28)
-        val surface = Color(0xFFFFFFFF)
-        val onSurface = Color(0xFF171A28)
-        val surfaceVariant = Color(0xFFE8EAF3)
-        val onSurfaceVariant = Color(0xFF44485A)
-        val outline = Color(0xFF73788B)
-        val outlineVariant = Color(0xFFD1D4E1)
-        val error = Color(0xFFBA1A1A)
+        val tertiaryContainer = Color(0xFFE8E5FF)
+        val onTertiaryContainer = Color(0xFF24234E)
+        val background = Color(0xFFF4F6F2)
+        val onBackground = Color(0xFF17201D)
+        val surface = Color(0xFFFCFDFC)
+        val onSurface = Color(0xFF17201D)
+        val surfaceVariant = Color(0xFFE8EDE8)
+        val onSurfaceVariant = Color(0xFF46534D)
+        val outline = Color(0xFF77847D)
+        val outlineVariant = Color(0xFFD1DAD3)
+        val error = Color(0xFFB3261E)
         val onError = Color(0xFFFFFFFF)
-        val errorContainer = Color(0xFFFFDAD6)
-        val onErrorContainer = Color(0xFF410002)
+        val errorContainer = Color(0xFFF9DEDC)
+        val onErrorContainer = Color(0xFF410E0B)
     }
 
     object Dark {
-        val primary = Color(0xFFB9BFFF)
-        val onPrimary = Color(0xFF171A5E)
-        val primaryContainer = Color(0xFF252A76)
-        val onPrimaryContainer = Color(0xFFE2E4FF)
-        val secondary = Color(0xFFC0C7DF)
-        val onSecondary = Color(0xFF283146)
-        val secondaryContainer = Color(0xFF3E475F)
-        val onSecondaryContainer = Color(0xFFDEE4FC)
-        val tertiary = Color(0xFF82D9CA)
-        val onTertiary = Color(0xFF003731)
-        val tertiaryContainer = Color(0xFF005047)
-        val onTertiaryContainer = Color(0xFF9AF2E1)
-        val background = Color(0xFF11131D)
-        val onBackground = Color(0xFFE6E7F2)
-        val surface = Color(0xFF191C29)
-        val onSurface = Color(0xFFE6E7F2)
-        val surfaceVariant = Color(0xFF292D3D)
-        val onSurfaceVariant = Color(0xFFC2C5D7)
-        val outline = Color(0xFF8C91A6)
-        val outlineVariant = Color(0xFF414659)
+        val primary = Color(0xFF72E2BE)
+        val onPrimary = Color(0xFF00382C)
+        val primaryContainer = Color(0xFF075B49)
+        val onPrimaryContainer = Color(0xFFB7F5DD)
+        val secondary = Color(0xFFB8CBC1)
+        val onSecondary = Color(0xFF24352E)
+        val secondaryContainer = Color(0xFF34473F)
+        val onSecondaryContainer = Color(0xFFD4E7DC)
+        val tertiary = Color(0xFFBDBBFF)
+        val onTertiary = Color(0xFF29285F)
+        val tertiaryContainer = Color(0xFF45447E)
+        val onTertiaryContainer = Color(0xFFE4E1FF)
+        val background = Color(0xFF0B1210)
+        val onBackground = Color(0xFFE5EEE9)
+        val surface = Color(0xFF121B18)
+        val onSurface = Color(0xFFE5EEE9)
+        val surfaceVariant = Color(0xFF202C27)
+        val onSurfaceVariant = Color(0xFFB6C5BD)
+        val outline = Color(0xFF81938A)
+        val outlineVariant = Color(0xFF35443D)
         val error = Color(0xFFFFB4AB)
         val onError = Color(0xFF690005)
         val errorContainer = Color(0xFF93000A)
@@ -144,27 +178,28 @@ object MemoTokens {
     )
 
     val typography = Typography(
-        displayLarge = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Bold, fontSize = 32.sp, lineHeight = 38.sp),
-        headlineLarge = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Bold, fontSize = 28.sp, lineHeight = 34.sp),
-        headlineMedium = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.SemiBold, fontSize = 24.sp, lineHeight = 30.sp),
-        headlineSmall = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.SemiBold, fontSize = 21.sp, lineHeight = 27.sp),
+        displayLarge = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.SemiBold, fontSize = 34.sp, lineHeight = 40.sp, letterSpacing = (-0.7).sp),
+        displayMedium = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.SemiBold, fontSize = 30.sp, lineHeight = 36.sp, letterSpacing = (-0.5).sp),
+        headlineLarge = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.SemiBold, fontSize = 28.sp, lineHeight = 34.sp, letterSpacing = (-0.4).sp),
+        headlineMedium = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.SemiBold, fontSize = 24.sp, lineHeight = 30.sp, letterSpacing = (-0.25).sp),
+        headlineSmall = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.SemiBold, fontSize = 20.sp, lineHeight = 26.sp),
         titleLarge = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.SemiBold, fontSize = 18.sp, lineHeight = 24.sp),
-        titleMedium = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, lineHeight = 22.sp),
-        titleSmall = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, lineHeight = 20.sp),
+        titleMedium = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Medium, fontSize = 16.sp, lineHeight = 22.sp),
+        titleSmall = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Medium, fontSize = 14.sp, lineHeight = 20.sp),
         bodyLarge = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal, fontSize = 16.sp, lineHeight = 24.sp),
-        bodyMedium = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal, fontSize = 14.sp, lineHeight = 20.sp),
-        bodySmall = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal, fontSize = 12.sp, lineHeight = 17.sp),
+        bodyMedium = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal, fontSize = 14.sp, lineHeight = 21.sp),
+        bodySmall = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal, fontSize = 12.sp, lineHeight = 18.sp),
         labelLarge = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, lineHeight = 20.sp),
         labelMedium = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Medium, fontSize = 12.sp, lineHeight = 16.sp),
-        labelSmall = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Medium, fontSize = 11.sp, lineHeight = 15.sp)
+        labelSmall = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Medium, fontSize = 11.sp, lineHeight = 15.sp, letterSpacing = 0.1.sp)
     )
 
     val shapes = Shapes(
-        extraSmall = RoundedCornerShape(8.dp),
+        extraSmall = RoundedCornerShape(6.dp),
         small = RoundedCornerShape(10.dp),
-        medium = RoundedCornerShape(16.dp),
-        large = RoundedCornerShape(24.dp),
-        extraLarge = RoundedCornerShape(28.dp)
+        medium = RoundedCornerShape(14.dp),
+        large = RoundedCornerShape(20.dp),
+        extraLarge = RoundedCornerShape(26.dp)
     )
 }
 
