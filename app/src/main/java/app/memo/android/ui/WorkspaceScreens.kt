@@ -1186,7 +1186,14 @@ fun SelfModelStudioScreen(
     Column(modifier.fillMaxSize()) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.sm), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
             item {
-                SurfaceCard {
+                MemoPageHeader(
+                    title = "Studio",
+                    eyebrow = "MEMO / STUDIO",
+                    description = "Create private, evidence-backed artifacts from facts you approve. Nothing is submitted or published."
+                )
+            }
+            item {
+                MemoPanel {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(14.dp), modifier = Modifier.size(46.dp)) {
                             Box(contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Person, null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(24.dp)) }
@@ -1211,7 +1218,7 @@ fun SelfModelStudioScreen(
                 }
             }
             item {
-                SurfaceCard {
+                MemoPanel {
                     Text("Ingest profile source", style = MaterialTheme.typography.titleMedium)
                     Text("Paste text from a CV, LinkedIn export, project summary or notes. The original source is preserved separately from extracted candidate facts.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     OutlinedTextField(sourceTitle, { sourceTitle = it.take(240) }, modifier = Modifier.fillMaxWidth(), label = { Text("Source name") }, singleLine = true)
@@ -1230,7 +1237,7 @@ fun SelfModelStudioScreen(
                 }
             }
             item {
-                SurfaceCard {
+                MemoPanel {
                     Text("Artifact Studio", style = MaterialTheme.typography.titleMedium)
                     Text("Create a CV summary, targeted cover letter, LinkedIn About draft or project brief from approved facts. The local model cannot submit or publish the result.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -1244,9 +1251,9 @@ fun SelfModelStudioScreen(
                 }
             }
             if (sources.isNotEmpty()) {
-                item { SectionHeading("Preserved source material", "Original text used to validate candidate facts") }
+                item { MemoSectionHeading("Preserved source material", "Original text used to validate candidate facts") }
                 items(sources, key = { it.id }) { source ->
-                    SurfaceCard {
+                    MemoPanel {
                         Text(source.title, style = MaterialTheme.typography.titleSmall)
                         Text(source.summary.ifBlank { source.content.take(180) }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 3, overflow = TextOverflow.Ellipsis)
                         TextButton(onClick = { onOpenEvidence(source.id) }) { Icon(Icons.Rounded.Description, null); Spacer(Modifier.width(5.dp)); Text("Open preserved source") }
@@ -1254,9 +1261,9 @@ fun SelfModelStudioScreen(
                 }
             }
             if (proposedFacts.isNotEmpty()) {
-                item { SectionHeading("Review extracted facts", "Each proposed fact is linked to an exact source excerpt") }
+                item { MemoSectionHeading("Review extracted facts", "Each proposed fact is linked to an exact source excerpt") }
                 items(proposedFacts, key = { it.id }) { fact ->
-                    SurfaceCard {
+                    MemoPanel {
                         Text(fact.title, style = MaterialTheme.typography.titleSmall)
                         Text(fact.description, style = MaterialTheme.typography.bodySmall)
                         if (fact.sourceExcerpt.isNotBlank()) Text("Source quote · “${fact.sourceExcerpt}”", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
@@ -1269,9 +1276,9 @@ fun SelfModelStudioScreen(
                 }
             }
             if (approvedFacts.isNotEmpty()) {
-                item { SectionHeading("Approved profile facts", "You control what Artifact Studio may use") }
+                item { MemoSectionHeading("Approved profile facts", "You control what Artifact Studio may use") }
                 items(approvedFacts, key = { it.id }) { fact ->
-                    SurfaceCard {
+                    MemoPanel {
                         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Icon(Icons.Rounded.CheckCircle, null, tint = MaterialTheme.colorScheme.tertiary)
                             Column(Modifier.weight(1f)) {
@@ -1285,9 +1292,9 @@ fun SelfModelStudioScreen(
                 }
             }
             if (artifacts.isNotEmpty()) {
-                item { SectionHeading("Your generated artifacts", "Saved drafts remain editable and exportable") }
+                item { MemoSectionHeading("Your generated artifacts", "Saved drafts remain editable and exportable") }
                 items(artifacts, key = { it.id }) { artifact ->
-                    SurfaceCard(modifier = Modifier.clickable { onOpenEvidence(artifact.id) }) {
+                    MemoPanel(modifier = Modifier.clickable { onOpenEvidence(artifact.id) }) {
                         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Icon(Icons.Rounded.Description, null, tint = MaterialTheme.colorScheme.primary)
                             Column(Modifier.weight(1f)) {
