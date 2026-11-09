@@ -115,3 +115,5 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - **View-model behavior:** Added validated task and plan priority update methods; both update the encrypted workspace snapshot through the existing persistence path.
 - **UI behavior:** Work defaults to Today. Today displays active saved browser tasks and non-terminal work plans in priority buckets, with per-record priority selection. Completed tasks and succeeded/cancelled plans are not shown as active. No due dates or urgency are fabricated. Entities, Archive and Plans remain available as secondary Work sections.
 - **Verification:** Source-level implementation only. Serialization regression test added; execution pending. Android compile, CI, emulator and physical-device checks are pending. PR #5 remains draft and must not be merged until its acceptance gates pass.
+
+- **Daily scope correction:** priority selections are tied to the device's local calendar day. When the date changes, previously assigned items return to Needs sorting instead of carrying yesterday's MUST/SHOULD decision forward. Old backups lacking the day field are safely treated as unsorted.
