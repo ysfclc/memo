@@ -423,3 +423,16 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - **Implementation order:** shared typed capability/approval scope → extend the canonical action ledger → exact-scope native approval UI → final AccessibilityService consumption gate → lifecycle invalidation and uncertain-outcome recovery → CI, emulator and physical-device acceptance.
 - **Required fail-closed behavior:** native `TAP_TEXT` and potentially destructive `BACK` actions cannot execute without fresh approval bound to run, workflow version, package, step, exact target and payload. Stale/changed UI, app switch, lock, expiry, cancellation, process death or uncertain outcome must block/review rather than replay.
 
+## 2026-11-09 — UI/UX reliability pass
+
+- **Source audit:** see [docs/product/MEMO_UX_RELIABILITY_AUDIT.md](docs/product/MEMO_UX_RELIABILITY_AUDIT.md). This is based on the current Compose source, not screenshots or device acceptance.
+- **Findings:** Talk's landing state mixes the intent composer with dashboard/search/shortcut actions; global search is an in-memory scan with limited results and imperfect deep links; More exposes implementation-facing runtime descriptors; Live remains a summary with links rather than a unified run timeline; core Compose files are roughly 1,900 lines each; first-class social workflows are still absent from the primary surfaces.
+- **UX-1:** make Talk the single intent entry and conversation home; reduce competing shortcuts; preserve drafts until handoff is durably accepted.
+- **UX-2:** make Live a truthful cross-runtime event timeline with pause/resume/takeover/cancel, approvals, evidence and explicit uncertain outcomes.
+- **UX-3:** make Work searchable and navigable at record level, with provenance, undo and Today priorities.
+- **UX-4:** make Studio a real editor with autosave, revisions, evidence, export and private-by-default publishing.
+- **UX-5:** keep browser/apps/models/Council/diagnostics contextual; everyday UI must use plain-language status and next action.
+- **UX-6:** add Compose journey and regression tests for empty/loading/offline/locked/permission-denied/interrupted/large-data states; keyboard, accessibility, large-text and reduced-motion acceptance.
+- **Scope guard:** preserve the full Memo vision including social publishing, inbox, feed, discovery, engagement and analytics. No disconnected social dashboard, placeholder UI or generic card proliferation.
+- **Delivery gate:** no broad visual rewrite before navigation/state ownership and journey tests are stable; no UX-complete claim without CI, emulator and physical-device verification.
+
