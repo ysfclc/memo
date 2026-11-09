@@ -1,0 +1,48 @@
+version: 2.1
+
+jobs:
+  memo-android:
+    machine:
+      image: android:default
+    resource_class: large
+    working_directory: ~/project
+    steps:
+      - checkout
+      - run:
+          name: Prepare Android SDK and Java 17
+          no_output_timeout: 20m
+          command: |
+            set -euo pipefail
+            export ANDROID_HOME="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/opt/android-sdk}}"
+            export ANDROID_SDK_ROOT="$ANDROID_HOME"
+            SDKMANAGER="$(find "$ANDROID_HOME" -type f -name sdkmanager -print -quit)"
+            test -n "$SDKMANAGER"
+            echo "export ANDROID_HOME='$ANDROID_HOME'" >> "$BASH_ENV"
+            echo "export ANDROID_SDK_ROOT='$ANDROID_HOME'" >> "$BASH_ENV"
+            echo "export PATH='$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$ANDROID_HOME/build-tools/35.0.0:$PATH'" >> "$BASH_ENV"
+            yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+            "$SDKMANAGER" --install 'platform-tools' 'platforms;android-35' 'build-tools;35.0.0' 'emulator' 'system-images;android-35;google_apis;x86_64'
+            java -version
+      - run:
+          name: Verify, test, build, sign and exercise in-place upgrade
+          no_output_timeout: 30m
+          command: |
+            set -euo pipefail
+            bash tools/ci/circleci-android.sh
+      - store_artifacts:
+          path: artifacts
+          destination: memo-android-build
+      - store_test_results:
+          path: app/build/test-results
+      - store_test_results:
+          path: core/build/test-results
+
+workflows:
+  memo-android:
+    jobs:
+      - memo-android:
+          filters:
+            branches:
+              only:
+                - ux/experience-navigation-rebuild-2026-11-09
+                - ysfclc-patch-1
