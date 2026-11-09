@@ -1060,6 +1060,8 @@ fun WorkWorkspaceScreen(
                         JobCard(
                             job,
                             sourceTitle = snapshot.conversations.firstOrNull { it.id == job.sourceConversationId }?.title,
+                            sourceMessageExcerpt = snapshot.conversations.firstOrNull { it.id == job.sourceConversationId }
+                                ?.messages?.firstOrNull { it.id == job.sourceMessageId }?.content?.take(280),
                             onOpenSource = { if (job.sourceConversationId.isNotBlank()) onOpenConversation(job.sourceConversationId) },
                             onStartStep = { stepId -> viewModel.startJobStep(job.id, stepId).fold(onSuccess = { onShowMessage("Checkpoint started. Work on the real deliverable, then record the observed outcome.") }, onFailure = { onShowMessage(it.message ?: "Could not start checkpoint.") }) },
                             onRecordOutcome = { stepId, outcome -> viewModel.recordJobCheckpoint(job.id, stepId, outcome).fold(onSuccess = { onShowMessage("Checkpoint outcome saved.") }, onFailure = { onShowMessage(it.message ?: "Could not record checkpoint.") }) },
@@ -1924,6 +1926,7 @@ private fun IntentPlanEditDialog(
 private fun JobCard(
     job: WorkJobRecord,
     sourceTitle: String?,
+    sourceMessageExcerpt: String?,
     onOpenSource: () -> Unit,
     onStartStep: (String) -> Unit,
     onRecordOutcome: (String, String) -> Unit,
@@ -2029,7 +2032,13 @@ private fun JobCard(
             Spacer(Modifier.height(7.dp))
             Text(job.resultSummary, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        if (!sourceTitle.isNullOrBlank()) TextButton(onClick = onOpenSource) { Icon(Icons.Rounded.OpenInNew, null); Spacer(Modifier.width(5.dp)); Text("Open source conversation · $sourceTitle") }
+        if (!sourceTitle.isNullOrBlank()) {
+            if (!sourceMessageExcerpt.isNullOrBlank()) {
+                Text("Promoted from this message", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                Text(sourceMessageExcerpt, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            }
+            TextButton(onClick = onOpenSource) { Icon(Icons.Rounded.OpenInNew, null); Spacer(Modifier.width(5.dp)); Text("Open source conversation · $sourceTitle") }
+        }
     }
     if (showPlanEditor) {
         IntentPlanEditDialog(
