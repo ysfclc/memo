@@ -106,3 +106,12 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - **Local verification:** Static source assertions, `tools/verify_source.py`, source-manifest integrity, archive CRC/mode checks, and remote-runner tests are rerun for this package. Full Gradle execution is unavailable locally because the pinned Gradle distribution and Android SDK are not installed.
 - **CI status:** The run #74 source snapshot is not green. The next Actions run must confirm lint passes and proceed through APK assembly/signature verification; do not claim an APK until an artifact is produced.
 - **Status:** `[~]` permission fix packaged; awaiting authoritative CI validation.
+
+
+### 2026-11-09 — UX-WORK-TODAY — Persisted daily priorities and real-work landing view
+
+- **Requirement:** Work should open on a useful Today view with MUST / SHOULD / COULD / NOT TODAY priorities, based on actual saved work rather than sample content.
+- **Implementation:** Added an additive todayPriority field to persisted browser tasks and work plans. Supported values are MUST, SHOULD, COULD, NOT_TODAY and UNSORTED. Old v6 records without the field safely load as UNSORTED; invalid imported values are normalized to UNSORTED. The JSON serializer includes the field and the serialized-size estimator accounts for it. The schema version remains v6 because this is an optional backward-compatible field.
+- **View-model behavior:** Added validated task and plan priority update methods; both update the encrypted workspace snapshot through the existing persistence path.
+- **UI behavior:** Work defaults to Today. Today displays active saved browser tasks and non-terminal work plans in priority buckets, with per-record priority selection. Completed tasks and succeeded/cancelled plans are not shown as active. No due dates or urgency are fabricated. Entities, Archive and Plans remain available as secondary Work sections.
+- **Verification:** Source-level implementation only. Serialization regression test added; execution pending. Android compile, CI, emulator and physical-device checks are pending. PR #5 remains draft and must not be merged until its acceptance gates pass.
