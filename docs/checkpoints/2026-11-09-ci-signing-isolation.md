@@ -3,7 +3,7 @@
 **Date:** 2026-11-09  
 **Branch:** `security/isolate-ci-signing-2026-11-09`  
 **Base:** `ysfclc-patch-1`  
-**Checkpoint commit:** `16d979d3f920a4e879bce1496233d90ffed81914`
+**Checkpoint before runner diagnosis:** `16d979d3f920a4e879bce1496233d90ffed81914`
 
 ## User outcome
 
@@ -35,7 +35,7 @@ Prevent imported source, Gradle scripts, tests or emulator execution from readin
 
 ## Not yet verified
 
-- GitHub Actions YAML/workflow validation and PR build.
+- GitHub Actions YAML/workflow validation and PR build are blocked: runs `42547937826`, `42548268839` and diagnostic run `42548268893` all failed before any runner step. GitHub returned runner ID `0`, no steps and no downloadable logs. The separate diagnostic workflow failed the same way; exact infrastructure cause is not exposed.
 - Actual isolated signing run with the configured private key.
 - Final signed APK install-over-existing.
 - Device-level behavior on a physical phone.
