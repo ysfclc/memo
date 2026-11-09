@@ -138,3 +138,12 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - **APK delivery:** Added a feature-branch Actions workflow that runs source verification, core/app unit tests, lint and APK assembly, then verifies the pinned existing signing certificate before uploading the APK artifact. The workflow intentionally publishes nothing if persistent signing secrets are missing or the certificate differs.
 - **Verification status:** Changes are committed to the feature branch. GitHub Actions execution, build/test results and APK artifact are pending; no local Android SDK build or device acceptance is claimed.
 
+### 2026-11-09 — CI-APK-BRANCH-ENABLEMENT — Canonical signed build workflow
+
+- Removed the duplicate feature-only APK workflow. The repository's existing, stronger Android pipeline is now the single source of truth for APK delivery.
+- Enabled the canonical workflow on `ux/experience-navigation-rebuild-2026-11-09` in addition to its designated integration branch; expanded its preflight allow-list accordingly.
+- Pinned both jobs to `ubuntu-24.04` instead of the moving `ubuntu-latest` label.
+- The canonical workflow retains its complete gate: source invariants, remote-runner tests, core/app unit tests, lint, debug APK assembly, persistent signing-certificate verification, install-over-existing instrumentation and artifact upload.
+- **Observed blocker:** GitHub created run `42612738172`, but its first preflight job terminated in approximately two seconds with `runner_id=0`, no runner name, zero steps and no logs. Retrying run `42612564351` produced the same pre-runner failure. The same workflow succeeded on `ysfclc-patch-1` the previous day, so this is not evidence of a Kotlin/Gradle compile failure. No APK artifact was produced.
+- **Verification status:** workflow routing and branch allow-list are committed; actual execution and APK remain blocked before the first step by GitHub Actions runner allocation. No build, test or device acceptance is claimed for this feature commit.
+
