@@ -460,12 +460,12 @@ fun MemoWorkspaceApp(
                                 val sourceId = viewModel.createConversation(title = title)
                                 if (sourceId.isBlank()) {
                                     snack("Memo reached its conversation limit. Export a backup before removing older records.")
+                                    false
                                 } else {
                                     val captureError = viewModel.appendChatMessage(sourceId, "USER", clean)
                                     if (captureError != null) {
-                                        activeConversationId = sourceId
-                                        tab = AppTab.CHATS
-                                        snack(captureError)
+                                        snack("Your draft was not saved: $captureError")
+                                        false
                                     } else {
                                         viewModel.createIntentPlan(clean, uiLanguage, sourceConversationId = sourceId).fold(
                                             onSuccess = { jobId ->
@@ -480,16 +480,19 @@ fun MemoWorkspaceApp(
                                                 snack("The request is saved in Talk, but its plan could not be created: ${error.message ?: "unknown error"}")
                                             }
                                         )
+                                        true
                                     }
                                 }
                             } else {
                                 val id = viewModel.createConversation(title = title)
                                 if (id.isBlank()) {
                                     snack("Memo reached its conversation limit. Export a backup before removing older records.")
+                                    false
                                 } else {
                                     pendingChatPrompt = clean
                                     activeConversationId = id
                                     tab = AppTab.CHATS
+                                    true
                                 }
                             }
                         },
@@ -934,7 +937,7 @@ private fun HomeScreen(
     onChats: () -> Unit,
     onWork: () -> Unit,
     onOpenStudio: () -> Unit,
-    onContinueWithMemo: (String) -> Unit,
+    onContinueWithMemo: (String) -> Boolean,
     onShowMessage: (String) -> Unit,
     onOpenConversation: (String) -> Unit,
     onOpenEvidence: (EvidenceRecord) -> Unit,
@@ -1098,7 +1101,7 @@ private fun HomeScreen(
                 )
                 Spacer(Modifier.height(MemoTokens.Spacing.xs))
                 Button(
-                    onClick = { val intent = captureDraft.trim(); if (intent.isNotBlank()) { captureDraft = ""; onContinueWithMemo(intent) } },
+                    onClick = { val intent = captureDraft.trim(); if (intent.isNotBlank() && onContinueWithMemo(intent)) captureDraft = "" },
                     enabled = captureDraft.isNotBlank(),
                     modifier = Modifier.fillMaxWidth().height(50.dp),
                     contentPadding = PaddingValues(horizontal = 12.dp)
