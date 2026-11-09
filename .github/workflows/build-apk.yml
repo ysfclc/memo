@@ -728,6 +728,13 @@ jobs:
 
       - name: Update build status and create a permanent import note
         if: success() && github.event_name != 'pull_request'
+          if [[ "$MEMO_SOURCE_ONLY" == 'true' ]]; then
+            INPUT_LABEL='direct repository source'
+            ZIP_GATE='not applicable (direct source verification)'
+          else
+            INPUT_LABEL='incoming/memo.zip'
+            ZIP_GATE='PASS'
+          fi
         shell: bash
         run: |
           set -euo pipefail
@@ -739,7 +746,7 @@ jobs:
           # Memo source import
 
           - Upload commit: \`$MEMO_UPLOAD_COMMIT\`
-          - Input: \`incoming/memo.zip\`
+          - Input: $INPUT_LABEL
           - Source fingerprint SHA-256: \`$MEMO_ARCHIVE_SHA\`
           - Integration date: $DATE_UTC
           - Branch: \`$GITHUB_REF_NAME\`
@@ -748,7 +755,7 @@ jobs:
 
           ## Gates
 
-          - ZIP safety, CRC, project-root and source-manifest validation: PASS
+          - ZIP safety, CRC, project-root and source-manifest validation: $ZIP_GATE
           - Memo source invariants: PASS
           - Remote-runner tests: PASS
           - \`:core:test\`: PASS
@@ -758,7 +765,7 @@ jobs:
           - APK package/version/signature verification: PASS
           - Build/test signature: ephemeral CI debug key; final pinned signing is isolated.
 
-          The uploaded ZIP is retained as the immutable input in Git history. The extracted source is an exact project snapshot: stale source files absent from the archive are removed. The live workflow, Git metadata, incoming upload and permanent import notes are preserved.
+          For ZIP imports, the original upload remains immutable in Git history. Direct-source verification never re-extracts the historical ZIP. The extracted project is an exact snapshot; the live workflow, Git metadata, incoming upload and permanent import notes are preserved.
           NOTE_TEXT
 
           if [[ ! -s notes/README.md ]]; then
@@ -776,7 +783,7 @@ jobs:
 
           ## Automated import — $DATE_UTC
 
-          - Source upload commit: \`$MEMO_UPLOAD_COMMIT\`
+          - Source revision: \`$MEMO_UPLOAD_COMMIT\`
           - Archive SHA-256: \`$MEMO_ARCHIVE_SHA\`
           - Required source, runner, JVM, lint and APK identity gates: PASS
           - Build/test signature: ephemeral CI debug key; final pinned signing is isolated.
@@ -1014,8 +1021,23 @@ jobs:
           import os, stat, sys, zipfile
           from pathlib import Path, PureWindowsPath
           archive, destination = Path(sys.argv[1]), Path(sys.argv[2])
+          max_archive = 1024 * 1024 * 1024
+          max_total = 3 * 1024 * 1024 * 1024
+          max_file = 768 * 1024 * 1024
+          if archive.stat().st_size > max_archive:
+              raise SystemExit('Repository artifact exceeds the 1 GiB compressed limit')
           seen = set()
           with zipfile.ZipFile(archive) as zf:
+              infos = zf.infolist()
+              if not infos or len(infos) > 75000:
+                  raise SystemExit('Repository artifact entry count outside safe limits')
+              if sum(info.file_size for info in infos) > max_total:
+                  raise SystemExit('Repository artifact exceeds the 3 GiB uncompressed limit')
+              if any(info.file_size > max_file for info in infos):
+                  raise SystemExit('Repository artifact contains an oversized file')
+              bad_member = zf.testzip()
+              if bad_member:
+                  raise SystemExit(f'Repository artifact CRC failure: {bad_member!r}')
               for info in zf.infolist():
                   name = info.filename
                   while name.startswith('./'):
@@ -1042,7 +1064,8 @@ jobs:
                   else:
                       target.parent.mkdir(parents=True, exist_ok=True)
                       with zf.open(info) as source, target.open('wb') as output:
-                          output.write(source.read())
+                          import shutil
+                          shutil.copyfileobj(source, output, length=1024 * 1024)
                       if mode:
                           os.chmod(target, mode & 0o755)
           PY
