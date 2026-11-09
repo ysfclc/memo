@@ -133,6 +133,7 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - **Persistence:** The resulting plan remains a local DRAFT. It records both sourceConversationId and sourceMessageId; the view model rejects missing or mismatched source messages. No external action is executed by promotion.
 - **Reviewability:** Work plan cards show the exact originating message excerpt and link back to the source conversation.
 - **Backup compatibility:** sourceMessageId is an additive optional v6 field. Older workspace backups load with an empty source message ID; the size estimator and JSON serializer include the new value.
+- **Mutation safety:** messages cited by a promoted plan are now protected from edit/delete just like entity evidence; conversation deletion already counts linked plans as dependencies. Added a policy regression test.
 - **Regression test:** Added a backup/restore test asserting that both source IDs survive serialization.
 - **APK delivery:** Added a feature-branch Actions workflow that runs source verification, core/app unit tests, lint and APK assembly, then verifies the pinned existing signing certificate before uploading the APK artifact. The workflow intentionally publishes nothing if persistent signing secrets are missing or the certificate differs.
 - **Verification status:** Changes are committed to the feature branch. GitHub Actions execution, build/test results and APK artifact are pending; no local Android SDK build or device acceptance is claimed.
