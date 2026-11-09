@@ -119,11 +119,11 @@ The header becomes context-aware instead of repeating a generic Memo bar. Lock/p
 - Typography and shape scale.
 - Primary navbar selection colors use the semantic accent.
 - Reusable `MemoPageHeader`, `MemoSectionHeading`, `MemoPanel` and `MemoStatusTag` primitives are in `MemoPrimitives.kt`.
-- Talk and Work now use the shared page-header primitive as the first screen migration.
+- Talk and Work use the shared page-header primitive. Talk's intent composer, recent-conversation section and conversation rows now use shared section/panel primitives.
 
 ### Next
 - [ ] Build shared Compose primitives listed above.
-- [ ] Migrate Talk first; use it as the reference implementation.
+- [~] Migrate Talk first; the page header, intent composer, recent-conversation heading and conversation rows use shared primitives. Message bubbles, conversation controls, search, model/privacy controls and composer behavior still need component-level design and accessibility review.
 - [ ] Apply the system to Live, Work and Studio, then Social when real behavior is ready.
 - [ ] Replace repeated one-off colors/radii/spacing where safe; retain semantic exceptions.
 - [ ] Add previews for light/dark, small phone, large phone and tablet/window.
