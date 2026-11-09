@@ -118,6 +118,7 @@ The header becomes context-aware instead of repeating a generic Memo bar. Lock/p
 - Spacing, radius, elevation and motion token groups.
 - Typography and shape scale.
 - Primary navbar selection colors use the semantic accent.
+- The shared `minimumTouch` token now drives 48dp controls across Talk, Live, Studio and browser/utility surfaces instead of repeating the raw dimension.
 - Reusable `MemoPageHeader`, `MemoSectionHeading`, `MemoPanel` and `MemoStatusTag` primitives are in `MemoPrimitives.kt`.
 - Talk and Work use the shared page-header primitive. Talk's intent composer, recent-conversation section and conversation rows now use shared section/panel primitives.
 
