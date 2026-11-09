@@ -384,7 +384,7 @@ fun MemoWorkspaceApp(
     BackHandler(enabled = tab != AppTab.HOME || evidenceDetail != null || activeConversationId != null) {
         when {
             evidenceDetail != null -> evidenceDetail = null
-            activeConversationId != null -> activeConversationId = null
+            tab == AppTab.HOME && activeConversationId != null -> activeConversationId = null
             tab in setOf(AppTab.BROWSER, AppTab.APPS, AppTab.APPROVALS) -> tab = AppTab.LIVE
             tab != AppTab.HOME -> { activeConversationId = null; tab = AppTab.HOME }
         }
