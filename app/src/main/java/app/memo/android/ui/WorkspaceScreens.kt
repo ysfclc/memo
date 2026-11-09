@@ -1250,7 +1250,7 @@ fun SelfModelStudioScreen(
                 }
             }
             if (sources.isNotEmpty()) {
-                item { MemoSectionHeading("Preserved source material", "Original text used to validate candidate facts") }
+                item { MemoSectionHeading("Preserved source material", supporting = "Original text used to validate candidate facts") }
                 items(sources, key = { it.id }) { source ->
                     MemoPanel {
                         Text(source.title, style = MaterialTheme.typography.titleSmall)
@@ -1260,7 +1260,7 @@ fun SelfModelStudioScreen(
                 }
             }
             if (proposedFacts.isNotEmpty()) {
-                item { MemoSectionHeading("Review extracted facts", "Each proposed fact is linked to an exact source excerpt") }
+                item { MemoSectionHeading("Review extracted facts", supporting = "Each proposed fact is linked to an exact source excerpt") }
                 items(proposedFacts, key = { it.id }) { fact ->
                     MemoPanel {
                         Text(fact.title, style = MaterialTheme.typography.titleSmall)
@@ -1275,7 +1275,7 @@ fun SelfModelStudioScreen(
                 }
             }
             if (approvedFacts.isNotEmpty()) {
-                item { MemoSectionHeading("Approved profile facts", "You control what Artifact Studio may use") }
+                item { MemoSectionHeading("Approved profile facts", supporting = "You control what Artifact Studio may use") }
                 items(approvedFacts, key = { it.id }) { fact ->
                     MemoPanel {
                         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1291,7 +1291,7 @@ fun SelfModelStudioScreen(
                 }
             }
             if (artifacts.isNotEmpty()) {
-                item { MemoSectionHeading("Your generated artifacts", "Saved drafts remain editable and exportable") }
+                item { MemoSectionHeading("Your generated artifacts", supporting = "Saved drafts remain editable and exportable") }
                 items(artifacts, key = { it.id }) { artifact ->
                     MemoPanel(modifier = Modifier.clickable { onOpenEvidence(artifact.id) }) {
                         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
