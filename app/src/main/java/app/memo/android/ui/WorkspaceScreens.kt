@@ -132,7 +132,7 @@ fun ChatsWorkspaceScreen(
     onOpenModels: () -> Unit,
     onOpenWork: () -> Unit,
     onOpenCouncil: () -> Unit,
-    onStartConversation: (String) -> Unit,
+    onStartConversation: (String) -> Boolean,
     onShowMessage: (String) -> Unit
 ) {
     val conversations = snapshot.conversations.sortedByDescending { it.updatedAt }
@@ -225,20 +225,14 @@ fun ChatsWorkspaceScreen(
     if (selectedConversation == null) {
         Column(Modifier.fillMaxSize()) {
             Column(Modifier.padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.md), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
-                DotLabel("MEMO / CONVERSATIONS")
-                Text("AI Chats", style = MaterialTheme.typography.headlineLarge)
+                DotLabel("MEMO / TALK")
+                Text("Talk", style = MaterialTheme.typography.headlineLarge)
                 Text("A searchable home for ongoing conversations, imported transcripts and the work they produce.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    Button(onClick = {
-                        val id = viewModel.createConversation()
-                        if (id.isBlank()) onShowMessage("Conversation or entity limit reached. Export a backup before removing older records.") else onSelectConversation(id)
-                    }, modifier = Modifier.weight(1f).height(48.dp)) {
-                        Icon(Icons.Rounded.Add, contentDescription = null); Spacer(Modifier.width(7.dp)); Text("New chat")
-                    }
-                    OutlinedButton(onClick = onOpenCouncil, modifier = Modifier.height(48.dp)) {
+                    OutlinedButton(onClick = onOpenCouncil, modifier = Modifier.weight(1f).height(44.dp)) {
                         Icon(Icons.Rounded.Hub, contentDescription = null); Spacer(Modifier.width(7.dp)); Text("Council")
                     }
-                    OutlinedButton(onClick = { showImport = true }, modifier = Modifier.height(48.dp)) {
+                    OutlinedButton(onClick = { showImport = true }, modifier = Modifier.weight(1f).height(44.dp)) {
                         Icon(Icons.Rounded.ImportExport, contentDescription = null); Spacer(Modifier.width(7.dp)); Text("Import")
                     }
                 }
@@ -259,11 +253,11 @@ fun ChatsWorkspaceScreen(
                             Icon(Icons.Rounded.Mic, contentDescription = null); Spacer(Modifier.width(6.dp)); Text("Voice")
                         }
                         Button(
-                            onClick = { val intent = draft.trim(); if (intent.isNotBlank()) { draft = ""; onStartConversation(intent) } },
+                            onClick = { val intent = draft.trim(); if (intent.isNotBlank() && onStartConversation(intent)) draft = "" },
                             enabled = draft.isNotBlank(),
                             modifier = Modifier.weight(1f).height(48.dp)
                         ) {
-                            Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = null); Spacer(Modifier.width(7.dp)); Text("Continue in Talk")
+                            Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = null); Spacer(Modifier.width(7.dp)); Text("Start with Memo")
                         }
                     }
                 }
