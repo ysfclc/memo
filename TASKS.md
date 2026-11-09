@@ -415,3 +415,13 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - **Acceptance added:** `EncryptedStoreUpgradeTest` seeds both real encrypted stores, verifies decryption after a version-increasing signed `adb install -r`, tests both legacy-format migration directions, tests corruption/unknown-format preservation, and uses an isolated app-private test directory so it cannot mutate the actual user workspace. The CI workflow now builds and runs this test on API 35.
 - **Verification state:** source edits are committed on `ysfclc-patch-1`. Android Gradle compilation, lint, instrumentation/emulator results and physical-device acceptance are not yet confirmed. Do not mark this slice complete until the CI run is inspected; do not claim phone acceptance from emulator evidence.
 - **Remaining:** confirm CI; complete physical install-over-existing on the user's phone; later design and test a single authoritative transaction/event boundary without deleting or silently merging either store.
+
+
+## 2026-11-09 — P0 CI credential isolation
+
+- **Status:** in progress; security boundary implemented in `.github/workflows/build-apk.yml`, pending PR CI and a normal signed workflow run.
+- **Finding:** the prior single build job exposed the persistent upload keystore/passwords and repository-write checkout credential to Gradle, imported source, tests and emulator execution. No actual credential theft was established.
+- **Change:** split the pipeline into read-only preflight/build, isolated artifact-only signing, and a separate repository-write handoff. The build checkout no longer persists credentials and receives no signing secrets. The sign job has no repository-write permission or source checkout. The commit job receives no signing secrets, safely restores the artifact, preserves `.github/`, and executes no project code.
+- **PR safety:** pull requests run build/test validation only; persistent signing and repository writes are skipped.
+- **Documentation:** `docs/security/CI_CREDENTIAL_BOUNDARIES.md`.
+- **Acceptance still required:** PR CI green; normal signing run verifies the pinned certificate; final APK install-over-existing; inspect artifact/log/permissions; physical-device acceptance remains separate.
