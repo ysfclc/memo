@@ -225,9 +225,7 @@ fun ChatsWorkspaceScreen(
     if (selectedConversation == null) {
         Column(Modifier.fillMaxSize()) {
             Column(Modifier.padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.md), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
-                DotLabel("MEMO / TALK")
-                Text("Talk", style = MaterialTheme.typography.headlineLarge)
-                Text("A searchable home for ongoing conversations, imported transcripts and the work they produce.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                MemoPageHeader(title = "Talk", eyebrow = "MEMO / TALK", description = "A searchable home for ongoing conversations, imported transcripts and the work they produce.")
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                     OutlinedButton(onClick = onOpenCouncil, modifier = Modifier.weight(1f).height(44.dp)) {
                         Icon(Icons.Rounded.Hub, contentDescription = null); Spacer(Modifier.width(7.dp)); Text("Council")
@@ -746,9 +744,7 @@ fun WorkWorkspaceScreen(
 
     Column(Modifier.fillMaxSize()) {
         Column(Modifier.padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.md), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
-            DotLabel("MEMO / WORKSPACE GRAPH")
-            Text("Work", style = MaterialTheme.typography.headlineLarge)
-            Text("Conversations become projects, tasks, decisions and linked knowledge. Every proposal keeps its source.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            MemoPageHeader(title = "Work", eyebrow = "MEMO / WORK", description = "Conversations become projects, tasks, decisions and linked knowledge. Every proposal keeps its source.")
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(selected = section == "ENTITIES", onClick = { section = "ENTITIES"; onSectionChanged("ENTITIES") }, label = { Text("Entities · ${snapshot.entities.count { it.reviewStatus !in setOf("REJECTED", "MERGED") }}") })
                 FilterChip(selected = section == "ARCHIVE", onClick = { section = "ARCHIVE"; onSectionChanged("ARCHIVE") }, label = { Text("Archive · ${snapshot.entities.count { it.reviewStatus in setOf("REJECTED", "MERGED") }}") })
