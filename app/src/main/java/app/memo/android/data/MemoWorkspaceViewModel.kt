@@ -560,7 +560,8 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
     fun createIntentPlan(
         rawIntent: String,
         language: String = _uiLanguage.value,
-        sourceConversationId: String = ""
+        sourceConversationId: String = "",
+        sourceMessageId: String = ""
     ): Result<String> {
         if (!_vaultReady.value) return Result.failure(IllegalStateException("Unlock the workspace before creating work."))
         if (_vaultError.value != null) return Result.failure(IllegalStateException("Workspace persistence is unavailable. Resolve the workspace issue before creating work."))
@@ -568,8 +569,13 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             .getOrElse { return Result.failure(it) }
         val current = _snapshot.value
         val sourceId = sourceConversationId.trim().take(128)
-        if (sourceId.isNotBlank() && current.conversations.none { it.id == sourceId }) {
+        val messageId = sourceMessageId.trim().take(128)
+        val sourceConversation = current.conversations.firstOrNull { it.id == sourceId }
+        if (sourceId.isNotBlank() && sourceConversation == null) {
             return Result.failure(IllegalArgumentException("The source conversation no longer exists."))
+        }
+        if (messageId.isNotBlank() && (sourceConversation == null || sourceConversation.messages.none { it.id == messageId })) {
+            return Result.failure(IllegalArgumentException("The source message no longer exists in that conversation."))
         }
         if (current.jobs.size >= 240) return Result.failure(IllegalStateException("The 240-job limit has been reached. Export a backup before removing older jobs."))
         val compiledCapabilities = CapabilityCompiler.compile(plan, runtimeRegistry.listRuntimes(), plan.goal)
@@ -587,6 +593,7 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             status = "DRAFT",
             runtimeId = "app.jobs",
             sourceConversationId = sourceId,
+            sourceMessageId = messageId,
             steps = plan.steps.map { step ->
                 JobStepRecord(
                     title = step.title,
