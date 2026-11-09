@@ -415,3 +415,11 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - **Acceptance added:** `EncryptedStoreUpgradeTest` seeds both real encrypted stores, verifies decryption after a version-increasing signed `adb install -r`, tests both legacy-format migration directions, tests corruption/unknown-format preservation, and uses an isolated app-private test directory so it cannot mutate the actual user workspace. The CI workflow now builds and runs this test on API 35.
 - **Verification state:** source edits are committed on `ysfclc-patch-1`. Android Gradle compilation, lint, instrumentation/emulator results and physical-device acceptance are not yet confirmed. Do not mark this slice complete until the CI run is inspected; do not claim phone acceptance from emulator evidence.
 - **Remaining:** confirm CI; complete physical install-over-existing on the user's phone; later design and test a single authoritative transaction/event boundary without deleting or silently merging either store.
+
+## 2026-11-09 — Native automation security follow-up
+
+- **Finding:** `WorkflowPolicy` uses a narrow keyword denylist, while `AutomationAccessibilityService` can execute exact-text `TAP_TEXT` clicks and global `BACK` actions without a destination-bound, one-use approval. This does not meet the existing policy contract for external/destructive side effects.
+- **Status:** design contract recorded in [`docs/security/NATIVE_AUTOMATION_APPROVAL.md`](docs/security/NATIVE_AUTOMATION_APPROVAL.md). This is a documented gap, **not a completed code fix**. Keep native side effects out of unattended-use claims until implementation and verification are complete.
+- **Implementation order:** shared typed capability/approval scope → extend the canonical action ledger → exact-scope native approval UI → final AccessibilityService consumption gate → lifecycle invalidation and uncertain-outcome recovery → CI, emulator and physical-device acceptance.
+- **Required fail-closed behavior:** native `TAP_TEXT` and potentially destructive `BACK` actions cannot execute without fresh approval bound to run, workflow version, package, step, exact target and payload. Stale/changed UI, app switch, lock, expiry, cancellation, process death or uncertain outcome must block/review rather than replay.
+
