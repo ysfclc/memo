@@ -742,6 +742,11 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
+    fun setJobTodayPriority(jobId: String, priority: String) {
+        val valid = priority.uppercase(Locale.ROOT).takeIf { it in TODAY_PRIORITY_VALUES } ?: return
+        updateJob(jobId) { it.copy(todayPriority = valid) }
+    }
+
     fun updateJobStep(jobId: String, stepId: String, status: String, detail: String = "", evidence: String = "") {
         val valid = status.uppercase(Locale.ROOT).takeIf { it in setOf("PENDING", "RUNNING", "COMPLETED", "FAILED", "NEEDS_REVIEW", "SKIPPED") } ?: return
         updateJob(jobId) { job -> job.copy(steps = job.steps.map { step ->
@@ -861,6 +866,11 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
                 .withActivity("Task created: ${task.title}", task.id)
         }
         return null
+    }
+
+    fun setTaskTodayPriority(id: String, priority: String) {
+        val valid = priority.uppercase(Locale.ROOT).takeIf { it in TODAY_PRIORITY_VALUES } ?: return
+        updateSnapshot { current -> current.updateTask(id) { it.copy(todayPriority = valid, updatedAt = nowMillis()) } }
     }
 
     fun markTaskRunning(id: String, message: String = "Waiting for the page. Sign in if needed, then continue.") {
