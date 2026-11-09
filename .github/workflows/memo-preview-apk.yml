@@ -1,0 +1,116 @@
+name: Memo feature-branch Android verification
+
+on:
+  push:
+    branches:
+      - ux/experience-navigation-rebuild-2026-11-09
+    paths:
+      - 'app/**'
+      - 'core/**'
+      - 'gradle/**'
+      - 'tools/**'
+      - '.github/workflows/memo-preview-apk.yml'
+      - '**/*.gradle'
+      - '**/*.gradle.kts'
+      - 'gradle.properties'
+      - 'settings.gradle'
+      - 'settings.gradle.kts'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: memo-preview-apk-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify-and-build:
+    name: Test, lint, build and verify the existing Memo APK signature
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      MEMO_UPLOAD_KEYSTORE_BASE64: ${{ secrets.MEMO_UPLOAD_KEYSTORE_BASE64 }}
+      MEMO_UPLOAD_STORE_PASSWORD: ${{ secrets.MEMO_UPLOAD_STORE_PASSWORD || secrets.MEMO_KEYSTORE_PASSWORD }}
+      MEMO_UPLOAD_KEY_ALIAS: ${{ secrets.MEMO_UPLOAD_KEY_ALIAS || secrets.MEMO_KEY_ALIAS }}
+      MEMO_UPLOAD_KEY_PASSWORD: ${{ secrets.MEMO_UPLOAD_KEY_PASSWORD || secrets.MEMO_KEY_PASSWORD }}
+    steps:
+      - name: Check out the exact feature commit
+        uses: actions/checkout@v5
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android SDK build packages
+        run: |
+          set -euo pipefail
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager --install 'platform-tools' 'platforms;android-35' 'build-tools;35.0.0'
+
+      - name: Set up pinned Gradle 8.14.6
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14.6'
+          validate-wrappers: false
+
+      - name: Verify source invariants
+        run: python3 tools/verify_source.py
+
+      - name: Run Android unit tests, lint and assemble APK
+        run: |
+          set -euo pipefail
+          gradle --no-daemon --stacktrace \
+            :core:test \
+            :app:testDebugUnitTest \
+            :app:lintDebug \
+            :app:assembleDebug
+
+      - name: Verify persistent signing configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          values=("${MEMO_UPLOAD_KEYSTORE_BASE64:-}" "${MEMO_UPLOAD_STORE_PASSWORD:-}" "${MEMO_UPLOAD_KEY_ALIAS:-}" "${MEMO_UPLOAD_KEY_PASSWORD:-}")
+          nonempty=0
+          for value in "${values[@]}"; do [[ -n "$value" ]] && nonempty=$((nonempty + 1)); done
+          if [[ "$nonempty" -ne 4 ]]; then
+            echo "::error::Persistent Memo signing secrets are missing or incomplete. No APK will be published."
+            exit 1
+          fi
+          KEYSTORE="$RUNNER_TEMP/memo-upload-signing.jks"
+          printf '%s' "$MEMO_UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
+          test -s "$KEYSTORE"
+          keytool -list -keystore "$KEYSTORE" -storepass "$MEMO_UPLOAD_STORE_PASSWORD" -alias "$MEMO_UPLOAD_KEY_ALIAS" >/dev/null
+          echo "MEMO_UPLOAD_KEYSTORE_FILE=$KEYSTORE" >> "$GITHUB_ENV"
+
+      - name: Verify APK identity and pinned certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          test -s "$APK"
+          AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
+          APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+          BADGING="$("$AAPT" dump badging "$APK")"
+          PACKAGE_LINE="$(printf '%s\n' "$BADGING" | grep -m1 '^package:')"
+          [[ "$PACKAGE_LINE" == *"name='app.memo.android.debug'"* ]] || { echo "::error::Unexpected APK application ID."; exit 1; }
+          SIGNATURE="$("$APKSIGNER" verify --verbose --print-certs "$APK" 2>&1)"
+          printf '%s\n' "$SIGNATURE"
+          CERT="$(printf '%s\n' "$SIGNATURE" | sed -nE 's/.*certificate SHA-256 digest: ([0-9a-fA-F]+).*/\1/p' | head -n1 | tr '[:upper:]' '[:lower:]')"
+          EXPECTED='a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a'
+          [[ -n "$CERT" && "$CERT" == "$EXPECTED" ]] || { echo "::error::APK certificate differs from the existing Memo signing identity. Refusing to publish."; exit 1; }
+          echo "APK package and persistent signing certificate verified: $CERT"
+
+      - name: Upload verified APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Memo-Android-debug-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
