@@ -67,6 +67,12 @@ Social must support the complete loop, not a static dashboard:
 
 Provider API and policy limits must be represented honestly. A visible browser/app handoff is preferable to a fake universal integration. Never scrape, bypass access controls or claim a provider action succeeded without observable evidence.
 
+## 5. Design system
+
+The visual foundation is **Signal & Graphite**, defined in `docs/product/MEMO_DESIGN_SYSTEM.md`. This is a new product design language, not a generic Material reskin: warm mineral paper / graphite surfaces, Signal Mint for active intent and selection, restrained violet only for AI/Council context, editorial typography, disciplined spacing and geometry, low elevation, purposeful motion and strong accessibility contracts. The design-system document is the source of truth for palette, typography, spacing, radii, elevation, motion, component inventory and visual acceptance gates.
+
+The foundation tokens and primary navigation selection colors have been implemented in Compose. Shared component migration and screen-by-screen visual acceptance remain incomplete. Talk is the first migration target.
+
 ## 5. Screen design principles
 
 - One dominant purpose per screen; one obvious next action.
