@@ -715,12 +715,127 @@ private fun ImportConversationDialog(onDismiss: () -> Unit, onImport: (String, S
 }
 
 @Composable
+private fun TodayWorkScreen(
+    snapshot: AppSnapshot,
+    onSetTaskPriority: (String, String) -> Unit,
+    onSetJobPriority: (String, String) -> Unit,
+    onOpenPlans: () -> Unit
+) {
+    val activeTasks = snapshot.tasks.filter { it.status != app.memo.android.data.TaskStatus.COMPLETED }
+        .sortedByDescending { it.updatedAt }
+    val activeJobs = snapshot.jobs.filter { it.status !in setOf("SUCCEEDED", "CANCELLED") }
+        .sortedByDescending { it.updatedAt }
+    val priorities = listOf(
+        "UNSORTED" to "Needs sorting",
+        "MUST" to "Must",
+        "SHOULD" to "Should",
+        "COULD" to "Could",
+        "NOT_TODAY" to "Not today"
+    )
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.sm),
+        verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)
+    ) {
+        item {
+            MemoPanel {
+                Text("Your active work, from the encrypted workspace.", style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    "${activeTasks.size + activeJobs.size} open item(s) · Set priorities yourself; Memo never guesses urgency.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (activeTasks.isEmpty() && activeJobs.isEmpty()) {
+                    Text("Nothing active yet. Browser tasks and saved plans will appear here when you create them.")
+                }
+            }
+        }
+        priorities.forEach { (priority, label) ->
+            val tasks = activeTasks.filter { it.todayPriority == priority }
+            val jobs = activeJobs.filter { it.todayPriority == priority }
+            item(key = "today-heading-$priority") {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.weight(1f))
+                    Text("${tasks.size + jobs.size}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            if (tasks.isEmpty() && jobs.isEmpty()) {
+                item(key = "today-empty-$priority") {
+                    Text(
+                        if (priority == "UNSORTED") "Everything has a priority." else "Nothing assigned here.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = MemoTokens.Spacing.sm, bottom = MemoTokens.Spacing.xs)
+                    )
+                }
+            }
+            items(tasks, key = { "task-${it.id}" }) { task ->
+                TodayPriorityCard(
+                    title = task.title,
+                    detail = "${task.kind.label} · ${task.status.label} · ${task.lastMessage}",
+                    priority = task.todayPriority,
+                    onPriorityChange = { onSetTaskPriority(task.id, it) }
+                )
+            }
+            items(jobs, key = { "job-${it.id}" }) { job ->
+                val completed = job.steps.count { it.status == "COMPLETED" }
+                TodayPriorityCard(
+                    title = job.title,
+                    detail = "${job.status.lowercase().replace('_', ' ')} · $completed/${job.steps.size} checkpoints complete${job.resultSummary.takeIf { it.isNotBlank() }?.let { " · ${it.take(160)}" }.orEmpty()}",
+                    priority = job.todayPriority,
+                    onPriorityChange = { onSetJobPriority(job.id, it) },
+                    onOpen = onOpenPlans,
+                    openLabel = "Open plan"
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TodayPriorityCard(
+    title: String,
+    detail: String,
+    priority: String,
+    onPriorityChange: (String) -> Unit,
+    onOpen: (() -> Unit)? = null,
+    openLabel: String = ""
+) {
+    var menuOpen by remember { mutableStateOf(false) }
+    MemoPanel {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Box {
+                TextButton(onClick = { menuOpen = true }) {
+                    Text(if (priority == "NOT_TODAY") "Not today" else priority.lowercase().replaceFirstChar { it.uppercase() })
+                }
+                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                    listOf("MUST" to "Must", "SHOULD" to "Should", "COULD" to "Could", "NOT_TODAY" to "Not today", "UNSORTED" to "Needs sorting").forEach { (value, label) ->
+                        DropdownMenuItem(
+                            text = { Text(label) },
+                            onClick = { menuOpen = false; onPriorityChange(value) }
+                        )
+                    }
+                }
+            }
+        }
+        if (onOpen != null) {
+            TextButton(onClick = onOpen) { Text(openLabel) }
+        }
+    }
+}
+
+@Composable
 fun WorkWorkspaceScreen(
     snapshot: AppSnapshot,
     viewModel: MemoWorkspaceViewModel,
     runtime: AiRuntimeViewModel,
     runtimeState: ModelRuntimeUiState,
-    initialSection: String = "ENTITIES",
+    initialSection: String = "TODAY",
     onSectionChanged: (String) -> Unit = {},
     onOpenConversation: (String) -> Unit,
     onOpenApprovals: () -> Unit = {},
@@ -752,12 +867,20 @@ fun WorkWorkspaceScreen(
         Column(Modifier.padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.md), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
             MemoPageHeader(title = "Work", eyebrow = "MEMO / WORK", description = "Conversations become projects, tasks, decisions and linked knowledge. Every proposal keeps its source.")
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(selected = section == "TODAY", onClick = { section = "TODAY"; onSectionChanged("TODAY") }, label = { Text("Today") })
                 FilterChip(selected = section == "ENTITIES", onClick = { section = "ENTITIES"; onSectionChanged("ENTITIES") }, label = { Text("Entities · ${snapshot.entities.count { it.reviewStatus !in setOf("REJECTED", "MERGED") }}") })
                 FilterChip(selected = section == "ARCHIVE", onClick = { section = "ARCHIVE"; onSectionChanged("ARCHIVE") }, label = { Text("Archive · ${snapshot.entities.count { it.reviewStatus in setOf("REJECTED", "MERGED") }}") })
                 FilterChip(selected = section == "JOBS", onClick = { section = "JOBS"; onSectionChanged("JOBS") }, label = { Text("Plans · ${snapshot.jobs.size}") })
             }
         }
-        if (section != "JOBS") {
+        if (section == "TODAY") {
+            TodayWorkScreen(
+                snapshot = snapshot,
+                onSetTaskPriority = viewModel::setTaskTodayPriority,
+                onSetJobPriority = viewModel::setJobTodayPriority,
+                onOpenPlans = { section = "JOBS"; onSectionChanged("JOBS") }
+            )
+        } else if (section != "JOBS") {
             Row(Modifier.padding(horizontal = MemoTokens.Spacing.pageMargin), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = search, onValueChange = { search = it }, modifier = Modifier.weight(1f),
