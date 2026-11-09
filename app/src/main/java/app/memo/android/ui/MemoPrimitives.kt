@@ -5,10 +5,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -155,3 +157,60 @@ fun MemoStatusTag(
 enum class MemoStatusTone {
     NEUTRAL, SUCCESS, WARNING, INFO, ERROR
 }
+
+/**
+ * Conversation message treatment. User messages align to the end; assistant and
+ * imported-source messages align to the start. Content remains selectable.
+ */
+@Composable
+fun MemoMessageBubble(
+    isUser: Boolean,
+    isSource: Boolean,
+    label: String,
+    timestamp: String,
+    content: String,
+    modifier: Modifier = Modifier,
+    actions: @Composable () -> Unit = {}
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(if (isUser) 0.88f else 0.98f),
+            color = when {
+                isUser -> MaterialTheme.colorScheme.primaryContainer
+                isSource -> MaterialTheme.colorScheme.tertiaryContainer
+                else -> MaterialTheme.colorScheme.surface
+            },
+            contentColor = when {
+                isUser -> MaterialTheme.colorScheme.onPrimaryContainer
+                isSource -> MaterialTheme.colorScheme.onTertiaryContainer
+                else -> MaterialTheme.colorScheme.onSurface
+            },
+            shape = RoundedCornerShape(
+                topStart = MemoTokens.Radius.large,
+                topEnd = MemoTokens.Radius.large,
+                bottomEnd = if (isUser) MemoTokens.Radius.small else MemoTokens.Radius.large,
+                bottomStart = if (isUser) MemoTokens.Radius.large else MemoTokens.Radius.small
+            ),
+            border = if (isUser) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        ) {
+            Column(
+                Modifier.padding(MemoTokens.Spacing.md),
+                verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.xs)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(label, style = MaterialTheme.typography.labelSmall, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
+                    Spacer(Modifier.weight(1f))
+                    Text(timestamp, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    actions()
+                }
+                SelectionContainer {
+                    Text(content, style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        }
+    }
+}
+
