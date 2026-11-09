@@ -437,38 +437,49 @@ fun MemoWorkspaceApp(
         topBar = { AppHeader(onLock = lockWorkspace, onStop = ::stopActiveWork, onMore = { tab = AppTab.MORE }) },
         snackbarHost = { SnackbarHost(snackbarHost) },
         bottomBar = {
-            NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surface,
-                tonalElevation = 0.dp,
-                windowInsets = WindowInsets.navigationBars
-            ) {
-                val items = listOf(
-                    Triple(AppTab.HOME, Icons.Rounded.ChatBubbleOutline, "Talk"),
-                    Triple(AppTab.LIVE, Icons.Rounded.Bolt, "Live"),
-                    Triple(AppTab.WORK, Icons.Rounded.Hub, "Work"),
-                    Triple(AppTab.STUDIO, Icons.Rounded.Article, "Studio")
-                )
-                items.forEach { (dest, icon, label) ->
-                    NavigationBarItem(
-                        selected = when (dest) {
+            Column {
+                Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.72f), thickness = 1.dp)
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    tonalElevation = 0.dp,
+                    windowInsets = WindowInsets.navigationBars
+                ) {
+                    val items = listOf(
+                        Triple(AppTab.HOME, Icons.Rounded.ChatBubbleOutline, "Talk"),
+                        Triple(AppTab.LIVE, Icons.Rounded.Bolt, "Live"),
+                        Triple(AppTab.WORK, Icons.Rounded.Hub, "Work"),
+                        Triple(AppTab.STUDIO, Icons.Rounded.Article, "Studio")
+                    )
+                    items.forEach { (dest, icon, label) ->
+                        val selected = when (dest) {
                             AppTab.HOME -> tab in setOf(AppTab.HOME, AppTab.COUNCIL)
                             AppTab.LIVE -> tab in setOf(AppTab.LIVE, AppTab.BROWSER, AppTab.APPS, AppTab.APPROVALS)
                             AppTab.WORK -> tab == AppTab.WORK
                             AppTab.STUDIO -> tab == AppTab.STUDIO
                             else -> false
-                        },
-                        onClick = { tab = dest },
-                        icon = { Icon(icon, contentDescription = label, modifier = Modifier.size(22.dp)) },
-                        label = { Text(label, maxLines = 1, style = MaterialTheme.typography.labelSmall) },
-                        alwaysShowLabel = true,
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = MaterialTheme.colorScheme.primary,
-                            selectedTextColor = MaterialTheme.colorScheme.primary,
-                            indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                        NavigationBarItem(
+                            selected = selected,
+                            onClick = { tab = dest },
+                            icon = { Icon(icon, contentDescription = label, modifier = Modifier.size(22.dp)) },
+                            label = {
+                                Text(
+                                    label,
+                                    maxLines = 1,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
+                                )
+                            },
+                            alwaysShowLabel = true,
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = MaterialTheme.colorScheme.primary,
+                                selectedTextColor = MaterialTheme.colorScheme.primary,
+                                indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         )
-                    )
+                    }
                 }
             }
         }
