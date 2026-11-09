@@ -436,3 +436,18 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - **Scope guard:** preserve the full Memo vision including social publishing, inbox, feed, discovery, engagement and analytics. No disconnected social dashboard, placeholder UI or generic card proliferation.
 - **Delivery gate:** no broad visual rewrite before navigation/state ownership and journey tests are stable; no UX-complete claim without CI, emulator and physical-device verification.
 
+
+
+## 9 November 2026 — Full experience and navigation rebuild
+
+The user reopened the navbar and overall UI/UX. The current four-tab shell is not sacred. The product target is now Talk / Social / Live / Work / Studio, with Social treated as a major first-class domain and Work opening on Today (MUST / SHOULD / COULD / NOT TODAY). See `docs/product/MEMO_EXPERIENCE_NAVIGATION_REBUILD.md` for the information architecture, route behavior, Social scope, screen principles, acceptance journeys and implementation sequence.
+
+- [ ] **UX-0 Information architecture/state ownership:** inventory all routes, deep links, state owners and back behavior; define typed routes and per-destination stacks; add navigation contract tests before deleting or replacing routes.
+- [ ] **UX-1 Talk:** remove the legacy Home/dashboard detour; unify intent capture, conversation history, voice/share intake and Council context; retain drafts until durable persistence succeeds.
+- [ ] **UX-2 Social:** audit actual provider paths and permissions; define provider-neutral account/feed/thread/action/publication/metric contracts; implement real account health, feed and inbox before exposing a Social tab; connect activity to Work and Live.
+- [ ] **UX-3 Live:** unify cross-runtime events and contextual Browser/Android panes; implement controls only when backed by runtime support and evidence.
+- [ ] **UX-4 Work:** Today as default landing view; outcome-based priorities and searchable linked graph for projects, people, jobs, opportunities, tasks, sources, decisions and evidence.
+- [ ] **UX-5 Studio:** general artifact editor, source/context manifest, revisions, comparison, preview and export; publication hands off to Social for exact approval.
+- [ ] **UX-6 Supporting surfaces and quality:** contextual Browser/Apps/Approvals/Council/Models/Settings; localization, accessibility, reduced motion, keyboard safety, performance and recovery.
+
+**Current status:** product direction and acceptance journeys documented. No new navigation or Social UI has been implemented by this documentation change. Do not mark any UX item complete until source changes, tests, CI and applicable physical-device checks pass. Do not ship a dead Social tab, fake provider state, duplicate controls or a broad visual rewrite before route/state ownership is established.
