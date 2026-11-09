@@ -820,7 +820,7 @@ jobs:
           mkdir -p "$DELIVERY"
           APK='app/build/outputs/apk/debug/app-debug.apk'
           test -s "$APK"
-          cp "$APK" "$DELIVERY/Memo-Android-debug-unsigned.apk"
+          cp "$APK" "$DELIVERY/Memo-Android-debug-ci-signed.apk"
           cp "$RUNNER_TEMP/Memo-Source-SHA256.txt" "$DELIVERY/Memo-Source-Archive-SHA256.txt"
 
           REPO_ZIP="$DELIVERY/Memo-Android-Integrated-Repository.zip"
@@ -830,16 +830,16 @@ jobs:
                '*/.externalNativeBuild/*' '*/captures/*' '*/.venv/*' '*/venv/*' \
                '*/local.properties' '*/.env' '*/.env.*' '*/.jks' '*/.keystore' \
                '*/.p12' '*/.pfx' '*/.pem' '*/.key' '*/delivery/*'
-          (cd "$DELIVERY" && sha256sum Memo-Android-debug-unsigned.apk Memo-Android-Integrated-Repository.zip Memo-Source-Archive-SHA256.txt > SHA256SUMS.txt)
+          (cd "$DELIVERY" && sha256sum Memo-Android-debug-ci-signed.apk Memo-Android-Integrated-Repository.zip Memo-Source-Archive-SHA256.txt > SHA256SUMS.txt)
           echo "Prepared APK and full integrated repository snapshot." | tee -a "$MEMO_BUILD_LOG"
 
-      - name: Upload unsigned build/test APK for isolated signing
+      - name: Upload CI-debug-signed build/test APK for isolated re-signing
         if: always() && steps.delivery.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
-          name: Memo-Android-unsigned-debug-APK
+          name: Memo-Android-ci-debug-APK
           path: |
-            ${{ runner.temp }}/memo-delivery/Memo-Android-debug-unsigned.apk
+            ${{ runner.temp }}/memo-delivery/Memo-Android-debug-ci-signed.apk
             ${{ runner.temp }}/memo-delivery/Memo-Source-Archive-SHA256.txt
           if-no-files-found: error
           compression-level: 0
@@ -885,10 +885,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Download the build-only APK artifact
+      - name: Download the CI-debug-signed APK artifact
         uses: actions/download-artifact@v4
         with:
-          name: Memo-Android-unsigned-debug-APK
+          name: Memo-Android-ci-debug-APK
           path: ${{ runner.temp }}/memo-unsigned
 
       - name: Set up Android build tools
@@ -918,7 +918,7 @@ jobs:
             echo '::error::All four persistent Memo signing secrets must be configured.'
             exit 1
           fi
-          INPUT="$RUNNER_TEMP/memo-unsigned/Memo-Android-debug-unsigned.apk"
+          INPUT="$RUNNER_TEMP/memo-unsigned/Memo-Android-debug-ci-signed.apk"
           SOURCE_SHA="$RUNNER_TEMP/memo-unsigned/Memo-Source-Archive-SHA256.txt"
           KEYSTORE="$RUNNER_TEMP/memo-upload-signing.jks"
           ALIGNED="$RUNNER_TEMP/Memo-Android-debug-aligned.apk"
@@ -928,6 +928,7 @@ jobs:
           test -s "$INPUT" && test -s "$SOURCE_SHA"
           printf '%s' "$MEMO_UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
           test -s "$KEYSTORE"
+          trap 'rm -f "$KEYSTORE" "$ALIGNED"' EXIT
           keytool -list -keystore "$KEYSTORE" -storepass "$MEMO_UPLOAD_STORE_PASSWORD" -alias "$MEMO_UPLOAD_KEY_ALIAS" >/dev/null
           BUILD_TOOLS="$ANDROID_HOME/build-tools/35.0.0"
           AAPT="$BUILD_TOOLS/aapt"
@@ -943,6 +944,7 @@ jobs:
             printf '%s\n' "$PACKAGE_LINE"
             exit 1
           }
+          "$ZIPALIGN" -c -p 4 "$SIGNED"
           SIGNATURE="$("$APKSIGNER" verify --verbose --print-certs "$SIGNED" 2>&1)"
           printf '%s\n' "$SIGNATURE"
           CERT="$(printf '%s\n' "$SIGNATURE" | sed -nE 's/.*certificate SHA-256 digest: ([0-9a-fA-F]+).*/\1/p' | head -n1 | tr '[:upper:]' '[:lower:]')"
@@ -1084,7 +1086,7 @@ jobs:
           import re, subprocess, sys
           raw = subprocess.check_output(['git', 'diff', '--cached', '--name-only', '-z'])
           paths = [p.decode('utf-8', 'surrogateescape') for p in raw.split(bytes([0])) if p]
-          pattern = re.compile(r'(^|/)(?:[.]env(?:[.].*)?|local[.]properties|[^/]*[.](?:jks|keystore|p12|pfx|pem|key)|id_rsa[^/]*|[^/]*(?:signing|credentials)[^/]*[.]properties)$', re.I)
+          pattern = re.compile(r'(^|/)(?:[.]env(?:[.].*)?|[.]npmrc|[.]pypirc|[.]netrc|local[.]properties|[^/]*[.](?:jks|keystore|p12|pfx|pem|key|mobileprovision)|id_rsa[^/]*|[^/]*(?:signing|credentials)[^/]*[.]properties|[^/]*(?:credentials|secret|token)[^/]*[.]json|service-account[^/]*[.]json)$', re.I)
           bad = [path for path in paths if pattern.search(path)]
           if bad:
               print('::error::Refusing to commit private configuration or signing material:', file=sys.stderr)
