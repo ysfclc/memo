@@ -123,7 +123,7 @@ The header becomes context-aware instead of repeating a generic Memo bar. Lock/p
 
 ### Next
 - [~] Build shared Compose primitives: page/section headers, panels and semantic status tags exist; action, input, data-display, overlay and adaptive-shell components remain.
-- [~] Migrate Talk first; the page header, intent composer, recent-conversation heading and conversation rows use shared primitives. Message bubbles, conversation controls, search, model/privacy controls and composer behavior still need component-level design and accessibility review.
+- [~] Migrate Talk first; the page header, intent composer, recent-conversation heading, conversation rows and active-run panel use shared primitives. Message bubbles now use role-aware alignment and restrained asymmetric geometry while preserving content, edit/delete actions and text selection. Conversation controls, search, model/privacy controls and composer behavior still need component-level design and accessibility review.
 - [ ] Apply the system to Live, Work and Studio, then Social when real behavior is ready.
 - [ ] Replace repeated one-off colors/radii/spacing where safe; retain semantic exceptions.
 - [ ] Add previews for light/dark, small phone, large phone and tablet/window.
