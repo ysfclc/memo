@@ -120,7 +120,7 @@ fun LiveWorkspaceScreen(
             }
         } else {
             items(activeJobs.take(6), key = { "job-${it.id}" }) { job ->
-                SurfaceCard(modifier = Modifier.clickable(onClick = onOpenWork)) {
+                MemoPanel(modifier = Modifier.clickable(onClick = onOpenWork)) {
                     Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(job.title, style = MaterialTheme.typography.titleMedium)
@@ -145,7 +145,7 @@ fun LiveWorkspaceScreen(
                 }
             }
             items(attentionTasks.take(6), key = { "task-${it.id}" }) { task ->
-                SurfaceCard {
+                MemoPanel {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(task.title, style = MaterialTheme.typography.titleSmall)
@@ -169,7 +169,7 @@ fun LiveWorkspaceScreen(
             }
         }
         item {
-            SurfaceCard {
+            MemoPanel {
                 MemoSectionHeading("Action decisions", supporting = "External actions stay blocked until you approve the exact proposal")
                 Spacer(Modifier.height(8.dp))
                 if (reviewActions.isEmpty()) {
@@ -185,7 +185,7 @@ fun LiveWorkspaceScreen(
             item { EmptyState("No activity recorded yet", "Memo will record meaningful workflow, capture and review events here.") }
         } else {
             items(recentActivity, key = { it.id }) { event ->
-                SurfaceCard {
+                MemoPanel {
                     Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
                         MemoStatusTag(
                             label = event.level,
