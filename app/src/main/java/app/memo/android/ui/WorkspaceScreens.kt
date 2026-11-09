@@ -770,14 +770,18 @@ fun WorkWorkspaceScreen(
                 }
             }
             if (section == "ENTITIES" && pending.isNotEmpty()) {
-                Surface(color = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer, shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.xs)) {
-                    Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Rounded.CheckCircle, null)
-                        Column(Modifier.weight(1f).padding(start = 10.dp)) {
-                            Text("${pending.size} proposed outcome(s) need review", style = MaterialTheme.typography.titleSmall)
-                            Text("Approve only what is supported. Rejected proposals are removed from the active graph.", style = MaterialTheme.typography.bodySmall)
-                        }
-                    }
+                MemoPanel(
+                    modifier = Modifier.padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.xs)
+                ) {
+                    MemoStatusTag(
+                        label = "${pending.size} proposed outcome(s) need review",
+                        tone = MemoStatusTone.WARNING
+                    )
+                    Text(
+                        "Approve only what is supported. Rejected proposals are removed from the active graph.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
             if (visibleEntities.isEmpty()) {
