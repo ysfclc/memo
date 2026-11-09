@@ -161,7 +161,7 @@ import java.util.Date
 import java.util.Locale
 
 private enum class AppTab(val label: String) {
-    HOME("Home"), CHATS("Talk"), LIVE("Live"), WORK("Work"), STUDIO("Studio"), BROWSER("Browser"), MORE("More"), APPS("Apps"), APPROVALS("Approvals"), COUNCIL("Council"), MODELS("Models"), SETTINGS("Settings")
+    HOME("Talk"), LIVE("Live"), WORK("Work"), STUDIO("Studio"), BROWSER("Browser"), MORE("More"), APPS("Apps"), APPROVALS("Approvals"), COUNCIL("Council"), MODELS("Models"), SETTINGS("Settings")
 }
 
 private enum class ToolSection(val label: String) { BROWSER("Browser"), WORKFLOWS("Workflows"), TASKS("Tasks"), EVIDENCE("Evidence") }
@@ -214,7 +214,7 @@ fun MemoWorkspaceApp(
         val destination = initialWorkspace?.trim()?.uppercase().orEmpty()
         if (destination.isNotBlank()) {
             tab = when (destination) {
-                "CHATS" -> AppTab.CHATS
+                "CHATS" -> AppTab.HOME
                 "TALK", "HOME" -> AppTab.HOME
                 "LIVE" -> AppTab.LIVE
                 "WORK", "FLOWS", "RUNS", "RECORDS" -> AppTab.WORK
@@ -227,7 +227,7 @@ fun MemoWorkspaceApp(
                 "MODELS" -> AppTab.MODELS
                 "SETTINGS" -> AppTab.SETTINGS
                 "MORE" -> AppTab.MORE
-                else -> AppTab.CHATS
+                else -> AppTab.HOME
             }
             onInitialWorkspaceConsumed()
         }
@@ -257,7 +257,7 @@ fun MemoWorkspaceApp(
             viewModel.importConversation(title, "Android share sheet", shared).fold(
                 onSuccess = { id ->
                     activeConversationId = id
-                    tab = AppTab.CHATS
+                    tab = AppTab.HOME
                     snack("Shared text imported into AI Chats.")
                     onSharedTextConsumed()
                 },
@@ -381,13 +381,54 @@ fun MemoWorkspaceApp(
         }
     }
 
-    BackHandler(enabled = tab != AppTab.HOME || evidenceDetail != null || (tab == AppTab.CHATS && activeConversationId != null)) {
+    BackHandler(enabled = tab != AppTab.HOME || evidenceDetail != null || activeConversationId != null) {
         when {
             evidenceDetail != null -> evidenceDetail = null
-            tab == AppTab.CHATS && activeConversationId != null -> activeConversationId = null
+            activeConversationId != null -> activeConversationId = null
             tab in setOf(AppTab.BROWSER, AppTab.APPS, AppTab.APPROVALS) -> tab = AppTab.LIVE
             tab != AppTab.HOME -> { activeConversationId = null; tab = AppTab.HOME }
         }
+    }
+
+    fun startTalkIntent(rawIntent: String): Boolean {
+        val clean = rawIntent.trim().take(6_000)
+        if (clean.isBlank()) return false
+        val title = clean.lineSequence().firstOrNull().orEmpty().take(64).ifBlank { "New conversation" }
+        if (IntentPlanner.shouldCreateWorkflow(clean)) {
+            val sourceId = viewModel.createConversation(title = title)
+            if (sourceId.isBlank()) {
+                snack("Memo reached its conversation limit. Export a backup before removing older records.")
+                return false
+            }
+            val captureError = viewModel.appendChatMessage(sourceId, "USER", clean)
+            if (captureError != null) {
+                snack("Your draft was not saved: $captureError")
+                return false
+            }
+            viewModel.createIntentPlan(clean, uiLanguage, sourceConversationId = sourceId).fold(
+                onSuccess = { jobId ->
+                    workSectionRequest = "JOBS"
+                    tab = AppTab.WORK
+                    val checkpoints = viewModel.snapshot.value.jobs.firstOrNull { it.id == jobId }?.steps?.size ?: 0
+                    snack("Draft plan created with $checkpoints checkpoints and linked to its source conversation. Review it before starting; no external action has run.")
+                },
+                onFailure = { error ->
+                    activeConversationId = sourceId
+                    tab = AppTab.HOME
+                    snack("The request is saved in Talk, but its plan could not be created: ${error.message ?: "unknown error"}")
+                }
+            )
+            return true
+        }
+        val id = viewModel.createConversation(title = title)
+        if (id.isBlank()) {
+            snack("Memo reached its conversation limit. Export a backup before removing older records.")
+            return false
+        }
+        pendingChatPrompt = clean
+        activeConversationId = id
+        tab = AppTab.HOME
+        return true
     }
 
     Scaffold(
@@ -409,7 +450,7 @@ fun MemoWorkspaceApp(
                 items.forEach { (dest, icon, label) ->
                     NavigationBarItem(
                         selected = when (dest) {
-                            AppTab.HOME -> tab in setOf(AppTab.HOME, AppTab.CHATS, AppTab.COUNCIL)
+                            AppTab.HOME -> tab in setOf(AppTab.HOME, AppTab.COUNCIL)
                             AppTab.LIVE -> tab in setOf(AppTab.LIVE, AppTab.BROWSER, AppTab.APPS, AppTab.APPROVALS)
                             AppTab.WORK -> tab == AppTab.WORK
                             AppTab.STUDIO -> tab == AppTab.STUDIO
@@ -442,67 +483,7 @@ fun MemoWorkspaceApp(
                 }
             } else {
                 when (tab) {
-                    AppTab.HOME -> HomeScreen(
-                        snapshot = snapshot,
-                        activity = snapshot.activity.take(6),
-                        localModelCount = modelState.installedModels.size,
-                        remoteConfigured = modelState.providerConfigured,
-                        onCouncil = { tab = AppTab.COUNCIL },
-                        onModels = { tab = AppTab.MODELS },
-                        onTools = { tab = AppTab.LIVE },
-                        onChats = { activeConversationId = null; tab = AppTab.CHATS },
-                        onWork = { workSectionRequest = "ENTITIES"; tab = AppTab.WORK },
-                        onOpenStudio = { tab = AppTab.STUDIO },
-                        onContinueWithMemo = { rawIntent ->
-                            val clean = rawIntent.trim().take(6_000)
-                            val title = clean.lineSequence().firstOrNull().orEmpty().take(64).ifBlank { "New conversation" }
-                            if (IntentPlanner.shouldCreateWorkflow(clean)) {
-                                val sourceId = viewModel.createConversation(title = title)
-                                if (sourceId.isBlank()) {
-                                    snack("Memo reached its conversation limit. Export a backup before removing older records.")
-                                    false
-                                } else {
-                                    val captureError = viewModel.appendChatMessage(sourceId, "USER", clean)
-                                    if (captureError != null) {
-                                        snack("Your draft was not saved: $captureError")
-                                        false
-                                    } else {
-                                        viewModel.createIntentPlan(clean, uiLanguage, sourceConversationId = sourceId).fold(
-                                            onSuccess = { jobId ->
-                                                workSectionRequest = "JOBS"
-                                                tab = AppTab.WORK
-                                                val checkpoints = viewModel.snapshot.value.jobs.firstOrNull { it.id == jobId }?.steps?.size ?: 0
-                                                snack("Draft plan created with $checkpoints checkpoints and linked to its source conversation. Review it before starting; no external action has run.")
-                                            },
-                                            onFailure = { error ->
-                                                activeConversationId = sourceId
-                                                tab = AppTab.CHATS
-                                                snack("The request is saved in Talk, but its plan could not be created: ${error.message ?: "unknown error"}")
-                                            }
-                                        )
-                                        true
-                                    }
-                                }
-                            } else {
-                                val id = viewModel.createConversation(title = title)
-                                if (id.isBlank()) {
-                                    snack("Memo reached its conversation limit. Export a backup before removing older records.")
-                                    false
-                                } else {
-                                    pendingChatPrompt = clean
-                                    activeConversationId = id
-                                    tab = AppTab.CHATS
-                                    true
-                                }
-                            }
-                        },
-                        onShowMessage = ::snack,
-                        onOpenConversation = { id -> activeConversationId = id; tab = AppTab.CHATS },
-                        onOpenEvidence = { evidenceDetail = it },
-                        onOpenJob = { workSectionRequest = "JOBS"; tab = AppTab.WORK },
-                        onResumeTask = { task -> runTask(task, browser, callbacks, onOpenBrowser = { tab = AppTab.BROWSER; toolSection = ToolSection.BROWSER }) }
-                    )
-                    AppTab.CHATS -> ChatsWorkspaceScreen(
+                    AppTab.HOME -> ChatsWorkspaceScreen(
                         snapshot = snapshot,
                         runtime = aiRuntime,
                         runtimeState = modelState,
@@ -514,15 +495,7 @@ fun MemoWorkspaceApp(
                         onOpenModels = { tab = AppTab.MODELS },
                         onOpenWork = { tab = AppTab.WORK },
                         onOpenCouncil = { tab = AppTab.COUNCIL },
-                        onStartConversation = { prompt ->
-                            val clean = prompt.trim().take(6_000)
-                            if (clean.isNotBlank()) {
-                                val title = clean.lineSequence().firstOrNull().orEmpty().take(64).ifBlank { "New conversation" }
-                                val id = viewModel.createConversation(title = title)
-                                if (id.isBlank()) snack("Memo reached its conversation limit. Export a backup before removing older records.")
-                                else { pendingChatPrompt = clean; activeConversationId = id }
-                            }
-                        },
+                        onStartConversation = ::startTalkIntent,
                         onShowMessage = ::snack
                     )
                     AppTab.LIVE -> LiveWorkspaceScreen(
