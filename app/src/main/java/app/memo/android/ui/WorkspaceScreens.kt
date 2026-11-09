@@ -1375,22 +1375,14 @@ private fun SelfModelFactDialog(onDismiss: () -> Unit, onSave: (String, String, 
 
 @Composable
 private fun EntityCard(entity: EntityRecord, relationshipCount: Int, sourceTitle: String?, onOpen: () -> Unit, onApprove: () -> Unit, onReject: () -> Unit) {
-    SurfaceCard {
+    MemoPanel {
         Column(Modifier.fillMaxWidth().clickable(onClick = onOpen), verticalArrangement = Arrangement.spacedBy(7.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(8.dp)) {
-                    Text(entity.type, modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                }
+                MemoStatusTag(label = entity.type, tone = MemoStatusTone.INFO)
                 when (entity.reviewStatus) {
-                    "PROPOSED" -> Surface(color = MaterialTheme.colorScheme.tertiaryContainer, shape = RoundedCornerShape(100.dp)) {
-                        Text("Needs review", modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onTertiaryContainer)
-                    }
-                    "MERGED" -> Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(100.dp)) {
-                        Text("Merged source", modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall)
-                    }
-                    "REJECTED" -> Surface(color = MaterialTheme.colorScheme.errorContainer, shape = RoundedCornerShape(100.dp)) {
-                        Text("Rejected", modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onErrorContainer)
-                    }
+                    "PROPOSED" -> MemoStatusTag(label = "Needs review", tone = MemoStatusTone.WARNING)
+                    "MERGED" -> MemoStatusTag(label = "Merged source", tone = MemoStatusTone.NEUTRAL)
+                    "REJECTED" -> MemoStatusTag(label = "Rejected", tone = MemoStatusTone.ERROR)
                 }
                 Spacer(Modifier.weight(1f))
                 Text("$relationshipCount links", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -1699,7 +1691,7 @@ private fun JobCard(
     val activeStep = job.steps.firstOrNull { it.status == "RUNNING" }
     val nextStep = job.steps.firstOrNull { it.status == "PENDING" || it.status == "NEEDS_REVIEW" }
     val completed = job.steps.count { it.status == "COMPLETED" }
-    SurfaceCard {
+    MemoPanel {
         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Surface(color = if (job.status == "FAILED") MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(10.dp), modifier = Modifier.size(42.dp)) {
                 Box(contentAlignment = Alignment.Center) { Icon(Icons.Rounded.PlayArrow, null, tint = if (job.status == "FAILED") MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer) }
@@ -1707,9 +1699,15 @@ private fun JobCard(
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 Text(job.title, style = MaterialTheme.typography.titleMedium)
                 Text(job.goal.substringBefore("\n\nMemo route:"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 3, overflow = TextOverflow.Ellipsis)
-                Surface(color = statusColor(job.status), shape = RoundedCornerShape(100.dp)) {
-                    Text(job.status.lowercase().replace('_', ' '), modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp), style = MaterialTheme.typography.labelSmall)
-                }
+                MemoStatusTag(
+                    label = job.status.lowercase().replace('_', ' '),
+                    tone = when (job.status) {
+                        "FAILED", "BLOCKED" -> MemoStatusTone.ERROR
+                        "NEEDS_REVIEW", "WAITING_FOR_USER" -> MemoStatusTone.WARNING
+                        "SUCCEEDED", "COMPLETED" -> MemoStatusTone.SUCCESS
+                        else -> MemoStatusTone.INFO
+                    }
+                )
                 Text("Runtime · ${job.runtimeId.ifBlank { "not assigned" }} · $completed/${job.steps.size} checkpoints", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (job.status == "DRAFT" && job.steps.all { it.status == "PENDING" }) {
                     TextButton(onClick = { showPlanEditor = true }) {
@@ -1734,9 +1732,7 @@ private fun JobCard(
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Text(step.title, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
                                 if (step.requiresApproval || step.checkpointKind == "EXTERNAL_ACTION") {
-                                    Surface(color = MaterialTheme.colorScheme.tertiaryContainer, shape = RoundedCornerShape(100.dp)) {
-                                        Text("APPROVAL", modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onTertiaryContainer)
-                                    }
+                                    MemoStatusTag(label = "APPROVAL", tone = MemoStatusTone.WARNING)
                                 }
                             }
                             if (step.detail.isNotBlank()) Text(step.detail, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
