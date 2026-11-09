@@ -505,7 +505,7 @@ fun MemoWorkspaceApp(
                         onOpenApps = { tab = AppTab.APPS },
                         onOpenApprovals = { tab = AppTab.APPROVALS },
                         onOpenWork = { tab = AppTab.WORK },
-                        onOpenTalk = { id -> activeConversationId = id; tab = AppTab.CHATS },
+                        onOpenTalk = { id -> activeConversationId = id; tab = AppTab.HOME },
                         onResumeTask = { task -> runTask(task, browser, callbacks, onOpenBrowser = { tab = AppTab.BROWSER; toolSection = ToolSection.BROWSER }) }
                     )
                     AppTab.STUDIO -> SelfModelStudioScreen(
@@ -524,7 +524,7 @@ fun MemoWorkspaceApp(
                         runtimeState = modelState,
                         initialSection = workSectionRequest,
                         onSectionChanged = { workSectionRequest = it },
-                        onOpenConversation = { id -> activeConversationId = id; tab = AppTab.CHATS },
+                        onOpenConversation = { id -> activeConversationId = id; tab = AppTab.HOME },
                         onOpenApprovals = { tab = AppTab.APPROVALS },
                         onOpenEvidence = { id -> evidenceDetail = viewModel.snapshot.value.evidence.firstOrNull { it.id == id } },
                         onOpenModels = { tab = AppTab.MODELS },
@@ -548,7 +548,7 @@ fun MemoWorkspaceApp(
                         runtimeState = modelState,
                         browser = browser,
                         callbacks = callbacks,
-                        onOpenConversation = { id -> activeConversationId = id; tab = AppTab.CHATS },
+                        onOpenConversation = { id -> activeConversationId = id; tab = AppTab.HOME },
                         onShowMessage = ::snack,
                         onQuickTask = { kind, query ->
                             val title = TaskRules.guessTitle(kind, query)
