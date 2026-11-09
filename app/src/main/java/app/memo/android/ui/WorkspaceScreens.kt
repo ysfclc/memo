@@ -111,7 +111,6 @@ import app.memo.android.runtime.RuntimeKind
 import app.memo.android.runtime.RuntimeRegistry
 import app.memo.android.ui.components.DotLabel
 import app.memo.android.ui.components.EmptyState
-import app.memo.android.ui.components.SectionHeading
 import app.memo.android.ui.components.SurfaceCard
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
