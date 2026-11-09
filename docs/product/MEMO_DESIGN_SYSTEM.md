@@ -88,7 +88,7 @@ Components consume theme tokens, expose semantics, support loading/disabled/erro
 
 The proposed primary destinations remain **Talk / Social / Live / Work / Studio**. Until Social has real connected-account/feed/inbox functionality, do not expose a dead tab.
 
-Navigation reads as a compact persistent tool rail on phones, with a restrained selected-state capsule using Signal Mint. Labels remain visible. No floating central action competes with the Talk composer. Supporting destinations do not become bottom tabs.
+On phones, the four currently implemented primary destinations use a persistent bottom bar: Talk, Live, Work and Studio. The selected destination uses a restrained Signal Mint capsule and stronger label weight; a subtle divider separates navigation from content. Supporting destinations remain secondary. Social is a fifth product destination in the target architecture, but it must not appear until connected-account, feed and inbox behavior is real. On expanded screens, evaluate a navigation rail as a separate adaptive-shell step rather than forcing a phone bar onto tablets.
 
 The header becomes context-aware instead of repeating a generic Memo bar. Lock/privacy state and stop-active-work remain globally reachable without competing with the screen title.
 
