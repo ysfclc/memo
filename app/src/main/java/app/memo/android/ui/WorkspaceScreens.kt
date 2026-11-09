@@ -245,9 +245,10 @@ fun ChatsWorkspaceScreen(
                         placeholder = { Text("What do you want Memo to help you accomplish?") },
                         minLines = 2,
                         maxLines = 4,
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(MemoTokens.Radius.medium),
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
                     )
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
                         OutlinedButton(onClick = { speechPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO) }) {
                             Icon(Icons.Rounded.Mic, contentDescription = null); Spacer(Modifier.width(6.dp)); Text("Voice")
                         }
@@ -263,7 +264,7 @@ fun ChatsWorkspaceScreen(
                 OutlinedTextField(
                     value = search, onValueChange = { search = it }, modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text("Search conversations and messages") }, leadingIcon = { Icon(Icons.Rounded.Search, null) },
-                    singleLine = true, shape = RoundedCornerShape(16.dp)
+                    singleLine = true, shape = RoundedCornerShape(MemoTokens.Radius.medium)
                 )
             }
             val filtered = conversations.filter { conversation ->
@@ -532,7 +533,7 @@ fun ChatsWorkspaceScreen(
                             placeholder = { Text("Message Memo…") },
                             minLines = 1,
                             maxLines = 5,
-                            shape = RoundedCornerShape(18.dp),
+                            shape = RoundedCornerShape(MemoTokens.Radius.large),
                             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                             enabled = !runtimeState.running
                         )
