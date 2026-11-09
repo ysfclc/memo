@@ -52,7 +52,6 @@ jobs:
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
-          persist-credentials: false
 
       - name: Resolve the upload commit and enforce the single-ZIP contract
         id: resolve
@@ -728,7 +727,7 @@ jobs:
           echo 'PASS: signed in-place upgrade preserved app-private data and both real encrypted Memo stores; legacy recovery and corruption tests passed.' | tee -a "$MEMO_BUILD_LOG"
 
       - name: Update build status and create a permanent import note
-        if: success()
+        if: success() && github.event_name != 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
@@ -757,7 +756,7 @@ jobs:
           - \`:app:lintDebug\`: PASS
           - \`:app:assembleDebug\`: PASS
           - APK package/version/signature verification: PASS
-          - Signing mode: \`${MEMO_SIGNING_MODE:-unknown}\`
+          - Build/test signature: ephemeral CI debug key; final pinned signing is isolated.
 
           The uploaded ZIP is retained as the immutable input in Git history. The extracted source is an exact project snapshot: stale source files absent from the archive are removed. The live workflow, Git metadata, incoming upload and permanent import notes are preserved.
           NOTE_TEXT
@@ -780,7 +779,7 @@ jobs:
           - Source upload commit: \`$MEMO_UPLOAD_COMMIT\`
           - Archive SHA-256: \`$MEMO_ARCHIVE_SHA\`
           - Required source, runner, JVM, lint and APK identity gates: PASS
-          - Signing mode: ${MEMO_SIGNING_MODE:-unknown}
+          - Build/test signature: ephemeral CI debug key; final pinned signing is isolated.
           - Workflow run: $MEMO_RUN_URL
           STATUS
           fi
@@ -788,7 +787,7 @@ jobs:
           echo "Permanent import note created: $NOTE" | tee -a "$MEMO_BUILD_LOG"
 
       - name: Regenerate the checksum manifest after CI handoff updates
-        if: success()
+        if: success() && github.event_name != 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
@@ -811,7 +810,7 @@ jobs:
 
       - name: Prepare debug APK, integrated repository ZIP and checksums
         id: delivery
-        if: success()
+        if: success() && github.event_name != 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
@@ -938,15 +937,15 @@ jobs:
           "$ZIPALIGN" -f -p 4 "$INPUT" "$ALIGNED"
           "$APKSIGNER" sign --ks "$KEYSTORE" --ks-key-alias "$MEMO_UPLOAD_KEY_ALIAS" --ks-pass env:MEMO_UPLOAD_STORE_PASSWORD --key-pass env:MEMO_UPLOAD_KEY_PASSWORD --out "$SIGNED" "$ALIGNED"
           BADGING="$("$AAPT" dump badging "$SIGNED")"
-          PACKAGE_LINE="$(printf '%s\\n' "$BADGING" | grep -m1 '^package:')"
+          PACKAGE_LINE="$(printf '%s\n' "$BADGING" | grep -m1 '^package:')"
           [[ "$PACKAGE_LINE" == *"name='app.memo.android.debug'"* ]] || {
             echo '::error::Signed APK application ID changed.'
-            printf '%s\\n' "$PACKAGE_LINE"
+            printf '%s\n' "$PACKAGE_LINE"
             exit 1
           }
           SIGNATURE="$("$APKSIGNER" verify --verbose --print-certs "$SIGNED" 2>&1)"
-          printf '%s\\n' "$SIGNATURE"
-          CERT="$(printf '%s\\n' "$SIGNATURE" | sed -nE 's/.*certificate SHA-256 digest: ([0-9a-fA-F]+).*/\\1/p' | head -n1 | tr '[:upper:]' '[:lower:]')"
+          printf '%s\n' "$SIGNATURE"
+          CERT="$(printf '%s\n' "$SIGNATURE" | sed -nE 's/.*certificate SHA-256 digest: ([0-9a-fA-F]+).*/\1/p' | head -n1 | tr '[:upper:]' '[:lower:]')"
           EXPECTED_MEMO_CERT_SHA256='a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a'
           [[ "$CERT" == "$EXPECTED_MEMO_CERT_SHA256" ]] || {
             echo '::error::Persistent Memo signing certificate mismatch. Refusing to publish an incompatible APK.'
@@ -992,6 +991,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
+          persist-credentials: true
 
       - name: Download the integrated repository snapshot
         uses: actions/download-artifact@v4
@@ -1020,7 +1020,7 @@ jobs:
                       name = name[2:]
                   if not name:
                       continue
-                  if name.startswith('/') or '\\\\' in name or PureWindowsPath(name).drive:
+                  if name.startswith('/') or chr(92) in name or PureWindowsPath(name).drive:
                       raise SystemExit(f'Unsafe archive path: {info.filename!r}')
                   parts = name.rstrip('/').split('/')
                   if any(part in ('', '.', '..') for part in parts):
@@ -1044,7 +1044,7 @@ jobs:
                       if mode:
                           os.chmod(target, mode & 0o755)
           PY
-          rsync -a --delete --exclude='/.git/' --exclude='/incoming/' "$STAGING/" "$GITHUB_WORKSPACE/"
+          rsync -a --delete --exclude='/.git/' --exclude='/.github/' --exclude='/incoming/' "$STAGING/" "$GITHUB_WORKSPACE/"
 
       - name: Commit without executing repository source
         shell: bash
@@ -1083,8 +1083,8 @@ jobs:
           python3 - <<'PY'
           import re, subprocess, sys
           raw = subprocess.check_output(['git', 'diff', '--cached', '--name-only', '-z'])
-          paths = [p.decode('utf-8', 'surrogateescape') for p in raw.split(b'\\0') if p]
-          pattern = re.compile(r'(^|/)(?:\\.env(?:\\..*)?|local\\.properties|[^/]*\\.jks|[^/]*\\.keystore|[^/]*\\.p12|[^/]*\\.pfx|[^/]*\\.pem|[^/]*\\.key|id_rsa[^/]*|[^/]*(?:signing|credentials)[^/]*\\.properties)$', re.I)
+          paths = [p.decode('utf-8', 'surrogateescape') for p in raw.split(bytes([0])) if p]
+          pattern = re.compile(r'(^|/)(?:[.]env(?:[.].*)?|local[.]properties|[^/]*[.](?:jks|keystore|p12|pfx|pem|key)|id_rsa[^/]*|[^/]*(?:signing|credentials)[^/]*[.]properties)$', re.I)
           bad = [path for path in paths if pattern.search(path)]
           if bad:
               print('::error::Refusing to commit private configuration or signing material:', file=sys.stderr)
