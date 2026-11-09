@@ -22,6 +22,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -98,6 +99,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -432,11 +435,13 @@ fun MemoWorkspaceApp(
         return true
     }
 
-    Scaffold(
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val expandedLayout = maxWidth >= 840.dp
+        Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = { AppHeader(onLock = lockWorkspace, onStop = ::stopActiveWork, onMore = { tab = AppTab.MORE }) },
         snackbarHost = { SnackbarHost(snackbarHost) },
-        bottomBar = {
+        bottomBar = if (expandedLayout) null else {
             Column {
                 Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.72f), thickness = 1.dp)
                 NavigationBar(
@@ -484,7 +489,47 @@ fun MemoWorkspaceApp(
             }
         }
     ) { innerPadding ->
-        Column(Modifier.fillMaxSize().padding(innerPadding)) {
+        Row(Modifier.fillMaxSize().padding(innerPadding)) {
+            if (expandedLayout) {
+                NavigationRail(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    header = {
+                        Text("MEMO", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(vertical = 12.dp))
+                    }
+                ) {
+                    val destinations = listOf(
+                        Triple(AppTab.HOME, Icons.Rounded.ChatBubbleOutline, "Talk"),
+                        Triple(AppTab.LIVE, Icons.Rounded.Bolt, "Live"),
+                        Triple(AppTab.WORK, Icons.Rounded.Hub, "Work"),
+                        Triple(AppTab.STUDIO, Icons.Rounded.Article, "Studio")
+                    )
+                    destinations.forEach { (dest, icon, label) ->
+                        val selected = when (dest) {
+                            AppTab.HOME -> tab in setOf(AppTab.HOME, AppTab.COUNCIL)
+                            AppTab.LIVE -> tab in setOf(AppTab.LIVE, AppTab.BROWSER, AppTab.APPS, AppTab.APPROVALS)
+                            AppTab.WORK -> tab == AppTab.WORK
+                            AppTab.STUDIO -> tab == AppTab.STUDIO
+                            else -> false
+                        }
+                        NavigationRailItem(
+                            selected = selected,
+                            onClick = { tab = dest },
+                            icon = { Icon(icon, contentDescription = label, modifier = Modifier.size(22.dp)) },
+                            label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+                            alwaysShowLabel = true,
+                            colors = NavigationRailItemDefaults.colors(
+                                selectedIconColor = MaterialTheme.colorScheme.primary,
+                                selectedTextColor = MaterialTheme.colorScheme.primary,
+                                indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        )
+                    }
+                }
+                VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.72f))
+            }
+            Column(Modifier.weight(1f).fillMaxSize()) {
             if (vaultError != null) {
                 VaultWarning(
                     message = vaultError!!,
@@ -628,6 +673,8 @@ fun MemoWorkspaceApp(
                     )
                 }
             }
+            }
+        }
         }
     }
 
