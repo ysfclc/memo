@@ -101,6 +101,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -527,7 +528,7 @@ fun MemoWorkspaceApp(
                         )
                     }
                 }
-                VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.72f))
+                Box(Modifier.width(1.dp).fillMaxSize().background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.72f)))
             }
             Column(Modifier.weight(1f).fillMaxSize()) {
             if (vaultError != null) {
