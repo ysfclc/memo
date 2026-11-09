@@ -458,7 +458,7 @@ The user reopened the navbar and overall UI/UX. The current four-tab shell is no
 A new visual language, **Signal & Graphite**, is defined in `docs/product/MEMO_DESIGN_SYSTEM.md`. The foundation palette, semantic colors, spacing/radius/elevation/motion tokens, typography and primary navbar selection colors are implemented in Compose. Shared page/section headers and panel/status primitives exist. Talk and Work page headers are migrated; Talk's intent composer, conversation section heading and conversation rows now use shared primitives. This is an incremental migration, not a complete visual redesign.
 
 - [ ] Build reusable Compose primitives for app shell, typography/layout, actions, inputs, data display, state communication and overlays.
-- [~] Migrate Talk first as the reference screen; page hierarchy, intent composer and conversation list now use shared primitives. Message bubbles, model/privacy controls, search, voice capture and composer interaction styling remain to migrate/review without changing data behavior.
+- [~] Migrate Talk first as the reference screen; page hierarchy, intent composer and conversation list use shared primitives. Message bubbles now have role-aware alignment and asymmetric geometry; model/privacy controls, search, voice capture and composer interaction styling remain to migrate/review without changing data behavior.
 - [ ] Migrate Live, Work and Studio; introduce Social only when its real workflows exist.
 - [ ] Replace ad-hoc styling safely; maintain semantic exceptions and contrast.
 - [ ] Add light/dark previews, compact/expanded width previews, screenshot tests and accessibility checks.
