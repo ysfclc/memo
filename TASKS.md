@@ -7,6 +7,12 @@
 
 > **Important status rule:** upstream `[x]` marks from Memo 2 are not completion evidence for Memo 1. Every task below starts unverified in Memo 1 and must pass its own evidence gate before it may be marked `[x]`.
 
+**Delivery governance:** [DEVELOPMENT_GOVERNANCE.md](DEVELOPMENT_GOVERNANCE.md)  
+**Stable requirement IDs and acceptance crosswalk:** [docs/REQUIREMENT_TRACEABILITY.md](docs/REQUIREMENT_TRACEABILITY.md)  
+**Material decision history:** [docs/DECISION_LOG.md](docs/DECISION_LOG.md)  
+
+Every substantial task must reference requirement IDs and close only with evidence under the governance rules.
+
 ## 0. Mission and non-negotiable product intent
 
 Memo is a **voice-first, local-first, checkpoint-driven personal execution environment**. A conversation is its interface, not its database. Memo captures intent; assembles the capability a task needs; routes safe work through local models, browser sessions, native apps, and human review; produces real artifacts; records evidence; and resumes work without losing context.
