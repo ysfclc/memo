@@ -4,7 +4,7 @@
 **Reconciled:** 5 November 2026  
 **Product:** Memo for Android  
 **Branch:** `ysfclc-patch-1`  
-**Authority:** This document records the user's product decisions and is the product-level source of truth for future implementation. `TASKS.md` is the engineering execution ledger. Older architecture drafts and inherited app implementations are subordinate where they conflict with this contract.
+**Authority:** This document records the user's product decisions and is the product-level source of truth for future implementation. `TASKS.md` is the engineering execution ledger. Older architecture drafts and inherited app implementations are subordinate where they conflict with this contract. The full social platform requirements are specified in [SOCIAL_PLATFORM_PRODUCT_SPEC.md](SOCIAL_PLATFORM_PRODUCT_SPEC.md) and are equally in scope; they must not be reduced to content publishing.
 
 ## 1. The product in one sentence
 
@@ -106,6 +106,10 @@ Capture idea/source → use the user's approved positioning and content preferen
 
 Interpret the desired outcome and constraints → compose a bounded workflow from reusable capabilities → show dependencies and unresolved requirements → execute safe internal steps → checkpoint consequential actions → verify outputs → save artifacts and learnings. This is the general product capability, not a fifth hardcoded scenario.
 
+### UC-6 — Operate the user's social world
+
+Connect the user's permitted social accounts → inspect actual provider capabilities and permissions → unify supported feeds, conversations and engagement in one provider-aware experience → link people and activity to the canonical Work graph → research topics/audiences/opportunities → create channel-specific content and campaigns in Studio → preview and approve each external action → verify receipts → ingest real metrics and improve future decisions. This includes account management, feed/activity, inbox/DMs, comments/replies/reactions, relationship management, discovery/listening, publishing, analytics, personal brand, customer acquisition and monetization workflows. It is not limited to content generation or publishing. See [SOCIAL_PLATFORM_PRODUCT_SPEC.md](SOCIAL_PLATFORM_PRODUCT_SPEC.md) for capability and acceptance detail.
+
 ## 5. Intelligence and execution architecture
 
 - **Local-first source of truth:** user data, records, workflow state, approvals and evidence remain in the encrypted on-device workspace by default. Memo must remain useful for local capture, search, organization and supported local inference without a cloud account.
@@ -160,6 +164,7 @@ This is a source audit, not a device-acceptance claim.
 | Browser/app runtime | A provider-specific WebView browser workflow exists. Native Accessibility automation is bounded and permission-gated, with separate legacy persistence. Neither is a universal DOM/native capability system. |
 | Work graph | Conversations, entities, jobs, tasks and evidence exist. Full project/contact/opportunity/application CRUD and cross-runtime provenance are incomplete. |
 | Studio | Studio now has a primary destination, but the screen is still primarily Self Model fact extraction and local-model CV-style artifact generation. General artifact editing/versioning/export and publishing/metrics remain incomplete. |
+| Social platform | The current contract/backlog only describe a narrow content-to-publishing/metrics journey and generic ChannelAccount/ProviderAdapter data concepts. No complete feed, inbox, engagement, listening, account management or social analytics implementation is evidenced. Treat the entire social platform spec as unimplemented until source paths and provider-backed acceptance tests prove otherwise. |
 | Voice | Chat tap-to-talk delegates to Android speech recognition. Full local ASR/TTS, always-on voice and dependable lock-screen command execution are not implemented. |
 | Model platform | Curated LiteRT-LM catalogue and optional API-compatible provider exist. GGUF/llama.cpp and device-wide model discovery are not integrated. |
 | Data layer | Primary Compose vault and native workflow `SynthStore` remain separate. This violates the target single-store boundary and requires a safe migration. |
@@ -174,8 +179,9 @@ The current build passing CI does not mean the product is complete. The source b
 4. **Build Live:** one cross-runtime event timeline and visible browser/native sessions with pause, takeover, approval, resume and verification.
 5. **Complete Work:** canonical graph and useful end-to-end CRM, job/opportunity and project workflows.
 6. **Complete Studio:** evidence-grounded artifacts, editor/revisions/export and approved publishing flow.
-7. **Make voice a first-class entry path:** foreground live voice, quick entry, local ASR/TTS and an Android-compliant lock-screen/notification/shortcut experience.
-8. **Harden and verify:** unit/integration tests, CI, physical-device acceptance, privacy/security, performance and accessibility.
+7. **Build the social platform:** provider capability audit, account connections, unified supported feed/inbox, engagement, relationship graph, listening/discovery, channel-specific publishing, analytics and bounded automation. Follow the staged delivery sequence in SOCIAL_PLATFORM_PRODUCT_SPEC.md; do not ship a decorative feed ahead of real provider/data/security contracts.
+8. **Make voice a first-class entry path:** foreground live voice, quick entry, local ASR/TTS and an Android-compliant lock-screen/notification/shortcut experience.
+9. **Harden and verify:** unit/integration tests, CI, physical-device acceptance, privacy/security, performance and accessibility.
 
 ### End-to-end acceptance gates
 
@@ -183,6 +189,8 @@ The current build passing CI does not mean the product is complete. The source b
 - A contact can be captured, deduplicated, enriched with sourced fields and approved into Work.
 - A job can be discovered, ranked, turned into a factual application in Studio, submitted only after approval and tracked with a verified receipt.
 - A content idea can become a reviewed private artifact, be published only after approval and have real metrics captured.
+- Two eligible social accounts can provide real, provenance-preserving feed/inbox data; supported replies and engagement are approved and verified; unsupported provider capabilities are explicitly disclosed.
+- Social activity can link to Work contacts/opportunities; channel-specific content can be approved/published with independent receipts and evidence-backed metrics.
 - An arbitrary task can compose and execute a bounded workflow with visible Live state and safe recovery.
 
 No feature is complete because a screen or button exists. Require source changes, named tests, green CI, and physical-device evidence for Android-specific behavior.
