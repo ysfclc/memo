@@ -1349,11 +1349,11 @@ private fun BrowserScreen(
             }
         }
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-            OutlinedButton(onClick = { browser.goBack() }, modifier = Modifier.weight(1f).height(48.dp), contentPadding = PaddingValues(0.dp)) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back") }
-            OutlinedButton(onClick = { browser.goForward() }, modifier = Modifier.weight(1f).height(48.dp), contentPadding = PaddingValues(0.dp)) { Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = "Forward") }
-            OutlinedButton(onClick = { browser.refresh() }, modifier = Modifier.weight(1f).height(48.dp), contentPadding = PaddingValues(0.dp)) { Icon(Icons.Rounded.Refresh, contentDescription = "Reload") }
-            OutlinedButton(onClick = { onQuickTask(TaskKind.CAPTURE_PAGE, "") }, enabled = browser.currentUrl.isNotBlank() && !browser.isLoading, modifier = Modifier.weight(1f).height(48.dp), contentPadding = PaddingValues(horizontal = 8.dp)) { Icon(Icons.Rounded.Bookmark, contentDescription = null); Spacer(Modifier.width(4.dp)); Text("Save") }
-            OutlinedButton(onClick = { onQuickTask(TaskKind.EXTRACT_LINKS, "") }, enabled = browser.currentUrl.isNotBlank() && !browser.isLoading, modifier = Modifier.weight(1f).height(48.dp), contentPadding = PaddingValues(horizontal = 8.dp)) { Icon(Icons.Rounded.Link, contentDescription = null); Spacer(Modifier.width(4.dp)); Text("Links") }
+            OutlinedButton(onClick = { browser.goBack() }, modifier = Modifier.weight(1f).height(MemoTokens.Spacing.minimumTouch), contentPadding = PaddingValues(0.dp)) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back") }
+            OutlinedButton(onClick = { browser.goForward() }, modifier = Modifier.weight(1f).height(MemoTokens.Spacing.minimumTouch), contentPadding = PaddingValues(0.dp)) { Icon(Icons.AutoMirrored.Rounded.ArrowForward, contentDescription = "Forward") }
+            OutlinedButton(onClick = { browser.refresh() }, modifier = Modifier.weight(1f).height(MemoTokens.Spacing.minimumTouch), contentPadding = PaddingValues(0.dp)) { Icon(Icons.Rounded.Refresh, contentDescription = "Reload") }
+            OutlinedButton(onClick = { onQuickTask(TaskKind.CAPTURE_PAGE, "") }, enabled = browser.currentUrl.isNotBlank() && !browser.isLoading, modifier = Modifier.weight(1f).height(MemoTokens.Spacing.minimumTouch), contentPadding = PaddingValues(horizontal = 8.dp)) { Icon(Icons.Rounded.Bookmark, contentDescription = null); Spacer(Modifier.width(4.dp)); Text("Save") }
+            OutlinedButton(onClick = { onQuickTask(TaskKind.EXTRACT_LINKS, "") }, enabled = browser.currentUrl.isNotBlank() && !browser.isLoading, modifier = Modifier.weight(1f).height(MemoTokens.Spacing.minimumTouch), contentPadding = PaddingValues(horizontal = 8.dp)) { Icon(Icons.Rounded.Link, contentDescription = null); Spacer(Modifier.width(4.dp)); Text("Links") }
         }
         if (browser.pendingTask != null) {
             SurfaceCard {
@@ -1363,7 +1363,7 @@ private fun BrowserScreen(
                         Text(browser.pendingTask?.title.orEmpty(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
                         Text(if (browser.canContinueTask) "Review the open page, then continue." else "Waiting for page load…", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
                     }
-                    Button(onClick = { browser.continueTask() }, enabled = browser.canContinueTask && !browser.isExecutingTask, modifier = Modifier.height(48.dp), contentPadding = PaddingValues(horizontal = 12.dp)) {
+                    Button(onClick = { browser.continueTask() }, enabled = browser.canContinueTask && !browser.isExecutingTask, modifier = Modifier.height(MemoTokens.Spacing.minimumTouch), contentPadding = PaddingValues(horizontal = 12.dp)) {
                         if (browser.isExecutingTask) CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp) else Text("Continue")
                     }
                     IconButton(onClick = onCancelTask, modifier = Modifier.size(MemoTokens.Spacing.minimumTouch)) { Icon(Icons.Rounded.Close, contentDescription = "Cancel task") }
@@ -1376,11 +1376,11 @@ private fun BrowserScreen(
                 Text("The prompt is in the website composer. Review it before sending.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (browser.sendMessage.isNotBlank()) Text(browser.sendMessage, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.xs)) {
-                    Button(onClick = { browser.sendPreparedPrompt() }, enabled = !browser.isSendingPrompt && !browser.isLoading, modifier = Modifier.weight(1f).height(48.dp)) {
+                    Button(onClick = { browser.sendPreparedPrompt() }, enabled = !browser.isSendingPrompt && !browser.isLoading, modifier = Modifier.weight(1f).height(MemoTokens.Spacing.minimumTouch)) {
                         if (browser.isSendingPrompt) CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp) else Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = null)
                         Spacer(Modifier.width(6.dp)); Text("Send prepared prompt")
                     }
-                    OutlinedButton(onClick = onClearPrompt, enabled = !browser.isSendingPrompt, modifier = Modifier.height(48.dp)) { Text("Clear") }
+                    OutlinedButton(onClick = onClearPrompt, enabled = !browser.isSendingPrompt, modifier = Modifier.height(MemoTokens.Spacing.minimumTouch)) { Text("Clear") }
                 }
             }
         }
@@ -1460,7 +1460,7 @@ private fun TasksScreen(
     Column(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.md), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
             SectionHeading("Browser tasks", "Small, inspectable actions that you can resume")
-            Button(onClick = { showCreate = true }, modifier = Modifier.fillMaxWidth().height(48.dp)) {
+            Button(onClick = { showCreate = true }, modifier = Modifier.fillMaxWidth().height(MemoTokens.Spacing.minimumTouch)) {
                 Icon(Icons.Rounded.Add, contentDescription = null); Spacer(Modifier.width(8.dp)); Text("Create task")
             }
             Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1543,7 +1543,7 @@ private fun CreateTaskDialog(onDismiss: () -> Unit, onCreate: (String, String, T
                 OutlinedTextField(value = title, onValueChange = { title = it; validation = "" }, label = { Text("Task name") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                 OutlinedTextField(value = url, onValueChange = { url = it; validation = "" }, label = { Text("Target HTTPS URL (optional)") }, modifier = Modifier.fillMaxWidth(), singleLine = true, placeholder = { Text("https://example.com") })
                 Box {
-                    OutlinedButton(onClick = { kindExpanded = true }, modifier = Modifier.fillMaxWidth().height(48.dp)) {
+                    OutlinedButton(onClick = { kindExpanded = true }, modifier = Modifier.fillMaxWidth().height(MemoTokens.Spacing.minimumTouch)) {
                         Text(kind.label, modifier = Modifier.weight(1f)); Icon(Icons.Rounded.MoreHoriz, contentDescription = "Choose task type")
                     }
                     DropdownMenu(expanded = kindExpanded, onDismissRequest = { kindExpanded = false }) {
@@ -1860,9 +1860,9 @@ private fun SettingsScreen(
                 Text("Backup and restore", style = MaterialTheme.typography.titleLarge)
                 Text("Plain JSON is readable by anyone with the file. Prefer a passphrase-encrypted backup for moving personal workspace data between devices. Restore replaces this device's workspace after confirmation.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(MemoTokens.Spacing.sm))
-                Button(onClick = onExportEncrypted, modifier = Modifier.fillMaxWidth().height(48.dp)) { Icon(Icons.Rounded.Lock, contentDescription = null); Spacer(Modifier.width(8.dp)); Text("Export encrypted backup") }
+                Button(onClick = onExportEncrypted, modifier = Modifier.fillMaxWidth().height(MemoTokens.Spacing.minimumTouch)) { Icon(Icons.Rounded.Lock, contentDescription = null); Spacer(Modifier.width(8.dp)); Text("Export encrypted backup") }
                 Spacer(Modifier.height(MemoTokens.Spacing.xs))
-                OutlinedButton(onClick = onImportEncrypted, modifier = Modifier.fillMaxWidth().height(48.dp)) { Icon(Icons.Rounded.Lock, contentDescription = null); Spacer(Modifier.width(8.dp)); Text("Restore encrypted backup") }
+                OutlinedButton(onClick = onImportEncrypted, modifier = Modifier.fillMaxWidth().height(MemoTokens.Spacing.minimumTouch)) { Icon(Icons.Rounded.Lock, contentDescription = null); Spacer(Modifier.width(8.dp)); Text("Restore encrypted backup") }
                 Spacer(Modifier.height(MemoTokens.Spacing.sm))
                 OutlinedButton(onClick = onExport, modifier = Modifier.fillMaxWidth().height(44.dp)) { Icon(Icons.Rounded.FileDownload, contentDescription = null); Spacer(Modifier.width(8.dp)); Text("Export plain JSON") }
                 Spacer(Modifier.height(MemoTokens.Spacing.xs))
@@ -1874,7 +1874,7 @@ private fun SettingsScreen(
                 Text("Automation boundaries", style = MaterialTheme.typography.titleLarge)
                 Text("Council roles organize model work; they do not grant independent authority. Outputs remain inspectable, disagreements are preserved, and you own the final decision. Browser actions remain bounded to user-visible HTTPS pages and do not bypass sign-in, certificate errors or access controls.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(MemoTokens.Spacing.sm))
-                OutlinedButton(onClick = onLock, modifier = Modifier.fillMaxWidth().height(48.dp)) { Icon(Icons.Rounded.Lock, contentDescription = null); Spacer(Modifier.width(8.dp)); Text("Lock workspace now") }
+                OutlinedButton(onClick = onLock, modifier = Modifier.fillMaxWidth().height(MemoTokens.Spacing.minimumTouch)) { Icon(Icons.Rounded.Lock, contentDescription = null); Spacer(Modifier.width(8.dp)); Text("Lock workspace now") }
             }
         }
         item {
