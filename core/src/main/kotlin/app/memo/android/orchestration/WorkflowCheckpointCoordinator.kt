@@ -22,7 +22,7 @@ object WorkflowCheckpointCoordinator {
         val job = snapshot.jobs.firstOrNull { it.id == jobId }
             ?: error("This work plan no longer exists.")
         require(job.status in setOf("DRAFT", "READY", "RUNNING", "WAITING_FOR_USER")) {
-            "This plan cannot start a checkpoint from \${job.status}."
+            "This plan cannot start a checkpoint from ${job.status}."
         }
         require(job.workflowGraphJson.isNotBlank()) {
             "This plan has no validated workflow graph. Rebuild the plan before starting it."
@@ -43,26 +43,26 @@ object WorkflowCheckpointCoordinator {
             "This workflow contains an approval-gated or external action. Use its dedicated approval flow."
         }
         require(step.status in setOf("PENDING", "NEEDS_REVIEW")) {
-            "This checkpoint is not startable from \${step.status}."
+            "This checkpoint is not startable from ${step.status}."
         }
         require(job.steps.none { it.status == "RUNNING" }) {
             "Another checkpoint is already active. Finish or review it before starting another."
         }
         val completed = job.steps.filter { it.status == "COMPLETED" }.map { it.id }.toSet()
         require(node.dependsOn.all { it in completed }) {
-            "This checkpoint is waiting for dependencies: \${node.dependsOn.filterNot { it in completed }.joinToString(", ")}."
+            "This checkpoint is waiting for dependencies: ${node.dependsOn.filterNot { it in completed }.joinToString(", ")}."
         }
         val runtimesById = registeredRuntimes.associateBy { it.id }
         require(runtimesById.size == registeredRuntimes.size) { "The runtime registry contains duplicate runtime IDs." }
         graph.nodes.forEach { candidate ->
             val runtime = runtimesById[candidate.runtimeId]
-                ?: error("Workflow runtime '\${candidate.runtimeId}' is not registered.")
+                ?: error("Workflow runtime '${candidate.runtimeId}' is not registered.")
             require(runtime.status == "AVAILABLE") {
-                "Workflow runtime '\${candidate.runtimeId}' is not currently available (\${runtime.status})."
+                "Workflow runtime '${candidate.runtimeId}' is not currently available (${runtime.status})."
             }
             candidate.requiredCapabilities.forEach { capabilityId ->
                 require(runtime.capabilities.any { it.id == capabilityId }) {
-                    "Capability '\${candidate.runtimeId}:\$capabilityId' is no longer registered."
+                    "Capability '${candidate.runtimeId}:$capabilityId' is no longer registered."
                 }
             }
         }
@@ -80,7 +80,7 @@ object WorkflowCheckpointCoordinator {
         )
         snapshot.copy(
             jobs = snapshot.jobs.map { if (it.id == jobId) updatedJob else it },
-            activity = (listOf(ActivityRecord(at = now, message = "Started workflow checkpoint: \${step.title}", taskId = jobId)) + snapshot.activity).take(500)
+            activity = (listOf(ActivityRecord(at = now, message = "Started workflow checkpoint: ${step.title}", taskId = jobId)) + snapshot.activity).take(500)
         )
     }
 
@@ -98,7 +98,7 @@ object WorkflowCheckpointCoordinator {
         val clean = outcome.trim().take(2_000)
         require(clean.length >= 6) { "Record a concrete outcome of at least six characters." }
         val job = snapshot.jobs.firstOrNull { it.id == jobId } ?: error("This work plan no longer exists.")
-        val graph = job.workflowGraphJson.takeIf { it.isNotBlank() }?.let(WorkflowGraph::fromJson)
+        val graph = job.workflowGraphJson.takeIf { it.isNotBlank() }?.let { WorkflowGraph.fromJson(it) }
             ?: error("This plan has no validated workflow graph.")
         val node = graph.nodes.firstOrNull { it.id == stepId } ?: error("This checkpoint is not in the saved workflow graph.")
         val step = job.steps.firstOrNull { it.id == stepId } ?: error("This checkpoint no longer exists.")
@@ -128,7 +128,7 @@ object WorkflowCheckpointCoordinator {
         )
         snapshot.copy(
             jobs = snapshot.jobs.map { if (it.id == jobId) updatedJob else it },
-            activity = (listOf(ActivityRecord(at = now, message = "User recorded checkpoint outcome: \${step.title}", taskId = jobId)) + snapshot.activity).take(500)
+            activity = (listOf(ActivityRecord(at = now, message = "User recorded checkpoint outcome: ${step.title}", taskId = jobId)) + snapshot.activity).take(500)
         )
     }
 }
