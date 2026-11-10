@@ -6,9 +6,13 @@ CircleCI is the primary external build runner for the private Memo repository. G
 
 1. In CircleCI, open the connected `ysfclc/memo` project.
 2. Ensure the active configuration file is `.circleci/config.yml` and enable the project.
-3. Trigger the `ux/experience-navigation-rebuild-2026-11-09` branch.
+3. Trigger a new pipeline for `main` (or push a source change to `main`). The checked-in `.circleci/config.yml` intentionally filters this job to `main`; feature branches will not run it.
 
 The job uses CircleCI's Android machine image with nested virtualization, because the final acceptance gate boots an Android 35 emulator. A Docker-only executor is not sufficient.
+
+## Build trigger and artifact retrieval
+
+After the pipeline starts, open the `memo-android` workflow for the `main` commit. The build artifacts are published as `memo-android-build`; download `Memo-Android-debug.apk` together with `Memo-APK-Identity.txt` and `SHA256SUMS.txt`. A green GitHub Actions check is not a substitute for this CircleCI build: the CircleCI job is the pipeline that runs the Android emulator acceptance gate.
 
 ## Required signing environment variables
 
