@@ -9,31 +9,39 @@ echo "Commit: ${VERCEL_GIT_COMMIT_SHA:-unknown}"
 echo "Branch: ${VERCEL_GIT_COMMIT_REF:-unknown}"
 echo "Build host: $(uname -a)"
 
-export DEBIAN_FRONTEND=noninteractive
+if ! command -v curl >/dev/null 2>&1 || ! command -v tar >/dev/null 2>&1 || ! command -v unzip >/dev/null 2>&1; then
+  echo "This Vercel build image must provide curl, tar, and unzip." >&2
+  exit 1
+fi
+
 if ! command -v java >/dev/null 2>&1 || ! java -version 2>&1 | grep -q '17\\.'; then
-  if command -v apt-get >/dev/null 2>&1 && [ "$(id -u)" -eq 0 ]; then
-    apt-get update
-    apt-get install -y --no-install-recommends openjdk-17-jdk-headless curl unzip ca-certificates
-    rm -rf /var/lib/apt/lists/*
-  else
-    echo "Java 17 is required and could not be installed in this build image." >&2
+  TOOLCHAIN_DIR="$HOME/.memo-toolchains"
+  JAVA_HOME="$TOOLCHAIN_DIR/jdk-17"
+  mkdir -p "$TOOLCHAIN_DIR"
+  TMP_JDK="$(mktemp -d)"
+  trap 'rm -rf "$TMP_JDK"' EXIT
+  echo "Downloading a user-local Temurin JDK 17 (no root/apt required)..."
+  curl --fail --location --retry 3 \
+    https://api.adoptium.net/v3/binary/latest/17/ga/linux/x64/jdk/hotspot/normal/eclipse \
+    --output "$TMP_JDK/jdk17.tar.gz"
+  mkdir -p "$JAVA_HOME"
+  tar -xzf "$TMP_JDK/jdk17.tar.gz" -C "$TMP_JDK"
+  JDK_EXTRACTED="$(find "$TMP_JDK" -mindepth 1 -maxdepth 1 -type d -name 'jdk-*' | head -n 1)"
+  if [ -z "$JDK_EXTRACTED" ]; then
+    echo "Could not locate extracted JDK 17 directory." >&2
     exit 1
   fi
+  rm -rf "$JAVA_HOME"
+  mv "$JDK_EXTRACTED" "$JAVA_HOME"
+  rm -rf "$TMP_JDK"
+  trap - EXIT
+  export JAVA_HOME
+  export PATH="$JAVA_HOME/bin:$PATH"
+else
+  export JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v java)")")")"
+  export PATH="$JAVA_HOME/bin:$PATH"
 fi
 
-if ! command -v curl >/dev/null 2>&1 || ! command -v unzip >/dev/null 2>&1; then
-  if command -v apt-get >/dev/null 2>&1 && [ "$(id -u)" -eq 0 ]; then
-    apt-get update
-    apt-get install -y --no-install-recommends curl unzip ca-certificates
-    rm -rf /var/lib/apt/lists/*
-  else
-    echo "curl and unzip are required." >&2
-    exit 1
-  fi
-fi
-
-export JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v java)")")")"
-export PATH="$JAVA_HOME/bin:$PATH"
 java -version
 
 export ANDROID_SDK_ROOT="${ANDROID_SDK_ROOT:-$HOME/android-sdk}"
