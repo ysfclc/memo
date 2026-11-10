@@ -716,65 +716,34 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         else Result.failure(IllegalStateException("The plan changed while you were editing it. Reopen the plan and try again."))
     }
 
-    /** Start only the next sequential checkpoint. An external-write checkpoint cannot be started through this generic workbench. */
+    /** Start one dependency-ready, non-external workflow checkpoint and persist its state. */
     fun startJobStep(jobId: String, stepId: String): Result<Unit> {
         if (!_vaultReady.value || _vaultError.value != null) return Result.failure(IllegalStateException("Workspace persistence is unavailable."))
-        val current = _snapshot.value
-        val job = current.jobs.firstOrNull { it.id == jobId } ?: return Result.failure(IllegalArgumentException("Job no longer exists."))
-        val index = job.steps.indexOfFirst { it.id == stepId }
-        if (index < 0) return Result.failure(IllegalArgumentException("Checkpoint no longer exists."))
-        val step = job.steps[index]
-        if (step.requiresApproval || step.checkpointKind == "EXTERNAL_ACTION") {
-            return Result.failure(IllegalStateException("This checkpoint requires the dedicated exact-content action approval flow. The work planner cannot execute external actions."))
-        }
-        if (job.steps.take(index).any { it.status != "COMPLETED" }) return Result.failure(IllegalStateException("Complete earlier checkpoints in order first."))
-        if (job.steps.any { it.status == "RUNNING" }) return Result.failure(IllegalStateException("Finish or review the active checkpoint before starting another."))
-        if (step.status !in setOf("PENDING", "NEEDS_REVIEW")) return Result.failure(IllegalStateException("This checkpoint is not startable from ${step.status}."))
-        updateSnapshot { snapshot ->
-            snapshot.copy(jobs = snapshot.jobs.map { candidate ->
-                if (candidate.id != jobId) candidate else candidate.copy(
-                    status = "RUNNING",
-                    steps = candidate.steps.map { candidateStep -> if (candidateStep.id == stepId) candidateStep.copy(status = "RUNNING", detail = candidateStep.detail.take(1_700) + "\n\nStarted by the user at ${nowMillis()}.", updatedAt = nowMillis()) else candidateStep },
-                    resultSummary = "A checkpoint is active. Memo is not acting outside this screen; record a real outcome before moving on.",
-                    updatedAt = nowMillis()
-                )
-            }).withActivity("Started checkpoint: ${step.title}", jobId)
-        }
-        return Result.success(Unit)
+        val before = _snapshot.value
+        val transition = app.memo.android.orchestration.WorkflowCheckpointCoordinator.start(
+            before, jobId, stepId, runtimeRegistry.listRuntimes(), nowMillis()
+        )
+        if (transition.isFailure) return Result.failure(transition.exceptionOrNull() ?: IllegalStateException("The checkpoint could not be started."))
+        val next = transition.getOrThrow()
+        updateSnapshot { current -> if (current == before) next else current }
+        val committed = _snapshot.value.jobs.firstOrNull { it.id == jobId }
+        return if (committed?.steps?.any { it.id == stepId && it.status == "RUNNING" } == true) Result.success(Unit)
+        else Result.failure(IllegalStateException("The workspace changed before the checkpoint could be started. Reopen Work and try again."))
     }
 
-    /** Save a user-reported result for a local checkpoint. External-write steps require the real approval/runtime flow and are never completed by this shortcut. */
+    /** Record a user-reported outcome. It is never presented as runtime-verified evidence. */
     fun recordJobCheckpoint(jobId: String, stepId: String, outcome: String): Result<Unit> {
         if (!_vaultReady.value || _vaultError.value != null) return Result.failure(IllegalStateException("Workspace persistence is unavailable."))
-        val clean = outcome.trim().take(2_000)
-        if (clean.length < 6) return Result.failure(IllegalArgumentException("Record a concrete outcome of at least six characters."))
-        val current = _snapshot.value
-        val job = current.jobs.firstOrNull { it.id == jobId } ?: return Result.failure(IllegalArgumentException("Job no longer exists."))
-        val step = job.steps.firstOrNull { it.id == stepId } ?: return Result.failure(IllegalArgumentException("Checkpoint no longer exists."))
-        if (step.requiresApproval || step.checkpointKind == "EXTERNAL_ACTION") {
-            return Result.failure(IllegalStateException("External actions cannot be marked complete from a note. Use the destination runtime and its exact-content approval gate, then retain verifiable outcome evidence."))
-        }
-        if (step.status !in setOf("RUNNING", "NEEDS_REVIEW")) return Result.failure(IllegalStateException("Start this checkpoint or open its review before recording an outcome."))
-        val updatedSteps = job.steps.map { candidate ->
-            if (candidate.id == stepId) candidate.copy(
-                status = "COMPLETED",
-                evidence = "USER_REPORTED: $clean".take(2_000),
-                detail = candidate.detail.take(1_200) + "\n\nOutcome recorded by user; not independently verified.",
-                updatedAt = nowMillis()
-            ) else candidate
-        }
-        val allComplete = updatedSteps.isNotEmpty() && updatedSteps.all { it.status == "COMPLETED" }
-        updateSnapshot { snapshot ->
-            snapshot.copy(jobs = snapshot.jobs.map { candidate ->
-                if (candidate.id != jobId) candidate else candidate.copy(
-                    status = if (allComplete) "SUCCEEDED" else "RUNNING",
-                    steps = updatedSteps,
-                    resultSummary = if (allComplete) "All local checkpoints were marked complete by the user. External side effects, if any, were not independently verified by this plan." else "Checkpoint outcome recorded by user. Continue to the next step in sequence.",
-                    updatedAt = nowMillis()
-                )
-            }).withActivity("User recorded checkpoint outcome: ${step.title}", jobId, if (allComplete) "INFO" else "INFO")
-        }
-        return Result.success(Unit)
+        val before = _snapshot.value
+        val transition = app.memo.android.orchestration.WorkflowCheckpointCoordinator.recordUserOutcome(
+            before, jobId, stepId, outcome, nowMillis()
+        )
+        if (transition.isFailure) return Result.failure(transition.exceptionOrNull() ?: IllegalStateException("The checkpoint outcome could not be recorded."))
+        val next = transition.getOrThrow()
+        updateSnapshot { current -> if (current == before) next else current }
+        val committed = _snapshot.value.jobs.firstOrNull { it.id == jobId }
+        return if (committed?.steps?.any { it.id == stepId && it.status == "COMPLETED" && it.evidence.startsWith("USER_REPORTED:") } == true) Result.success(Unit)
+        else Result.failure(IllegalStateException("The workspace changed before the outcome could be saved. Reopen Work and review the checkpoint."))
     }
 
     fun createJob(title: String, goal: String, runtimeId: String, sourceConversationId: String = "", stepTitles: List<String>): String? {
