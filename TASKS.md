@@ -456,3 +456,16 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - [ ] **M7.A6 — Delivery/reporting (MEMO-SALES-006):** client-authorised data boundaries, deliverables, milestones, acceptance and measured outcomes.
 
 **P0 release gate:** CI signing isolation is documented in `docs/security/CI_CREDENTIAL_BOUNDARIES.md`. The workflow's job boundaries are statically inspected; a fresh runner execution, normal signing run and physical-device upgrade acceptance remain open.
+
+
+## 2026-11-10 — Consolidated security and experience work
+
+- [~] Native automation safety: unapproved TAP_TEXT and BACK actions fail closed; editor defaults to observation-only WAIT_TEXT; unknown action types are rejected. This is an interim guard, not the final shared one-use approval ledger.
+- [~] Talk reliability: failed draft capture no longer navigates away or discards the user's draft; the user receives an explicit save error.
+- [~] Signal & Graphite design foundation and unified Talk / Live / Work / Studio navigation rebuild integrated. Today priority grouping is persisted against the local calendar day and plan cards expose checkpoints, outcomes, linked entities and evidence.
+- [ ] Complete component migration, Gradle tests, Android lint/build and visual/device acceptance. Source integration is not proof of runtime acceptance.
+
+## M7.A1 — Industrial account research (optional Work capability)
+
+- [~] Domain model, evidence-backed ICP scoring, unknown-factor handling, duplicate warnings, vault-gated proposed ORGANIZATION creation and initial Work intake UI integrated.
+- [ ] Add evidence capture / factor review UI, run full Gradle and ViewModel integration tests, and verify the Android experience. This is one optional Work workflow; Memo's product scope remains broader.

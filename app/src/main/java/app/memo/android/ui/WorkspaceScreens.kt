@@ -7,7 +7,6 @@ import android.content.pm.PackageManager
 import android.speech.RecognizerIntent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -101,7 +100,12 @@ import app.memo.android.data.ConversationRecord
 import app.memo.android.data.ChatMessageRecord
 import app.memo.android.data.EntityRecord
 import app.memo.android.data.EntityRelationship
+import app.memo.android.data.SalesAccountProfile
+import app.memo.android.data.SalesAccountSegment
+import app.memo.android.data.SalesAccessRoute
+import app.memo.android.data.SalesAccountResearchState
 import app.memo.android.data.EvidenceRecord
+import app.memo.android.data.effectiveTodayPriority
 import app.memo.android.data.OutcomeParser
 import app.memo.android.data.SelfModelFactualityGuard
 import app.memo.android.data.MemoWorkspaceViewModel
@@ -112,7 +116,6 @@ import app.memo.android.runtime.RuntimeKind
 import app.memo.android.runtime.RuntimeRegistry
 import app.memo.android.ui.components.DotLabel
 import app.memo.android.ui.components.EmptyState
-import app.memo.android.ui.components.SectionHeading
 import app.memo.android.ui.components.SurfaceCard
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -145,6 +148,8 @@ fun ChatsWorkspaceScreen(
     var messageEditTarget by remember { mutableStateOf<ChatMessageRecord?>(null) }
     var messageEditText by remember { mutableStateOf("") }
     var messageDeleteTarget by remember { mutableStateOf<ChatMessageRecord?>(null) }
+    var promoteMessageTarget by remember { mutableStateOf<ChatMessageRecord?>(null) }
+    var promoteIntent by remember { mutableStateOf("") }
     var draft by remember(selectedConversationId) { mutableStateOf("") }
     LaunchedEffect(selectedConversationId, initialPrompt) {
         if (selectedConversationId != null && initialPrompt.isNotBlank()) {
@@ -214,6 +219,15 @@ fun ChatsWorkspaceScreen(
         }
     }
 
+    val launchVoiceInput: () -> Unit = {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            speechPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        } else {
+            runCatching { speechResultLauncher.launch(voiceIntent()) }
+                .onFailure { onShowMessage(MemoLocalization.translate("Voice input is unavailable. Try typing or check your Android speech service.", uiLanguage)) }
+        }
+    }
+
     val modelOptions = buildList {
         runtimeState.installedModels.forEach { add("local:${it.id}" to (it.name + " · on device")) }
         if (runtimeState.providerConfigured) add(REMOTE_MODEL_ID to (runtimeState.providerModel + " · remote"))
@@ -225,11 +239,7 @@ fun ChatsWorkspaceScreen(
     if (selectedConversation == null) {
         Column(Modifier.fillMaxSize()) {
             Column(Modifier.padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.md), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
-                MemoPageHeader(
-                    title = "Talk",
-                    eyebrow = "MEMO / TALK",
-                    description = "A searchable home for ongoing conversations, imported transcripts and the work they produce."
-                )
+                MemoPageHeader(title = "Talk", eyebrow = "MEMO / TALK", description = "A searchable home for ongoing conversations, imported transcripts and the work they produce.")
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                     OutlinedButton(onClick = onOpenCouncil, modifier = Modifier.weight(1f).height(44.dp)) {
                         Icon(Icons.Rounded.Hub, contentDescription = null); Spacer(Modifier.width(7.dp)); Text("Council")
@@ -238,9 +248,11 @@ fun ChatsWorkspaceScreen(
                         Icon(Icons.Rounded.ImportExport, contentDescription = null); Spacer(Modifier.width(7.dp)); Text("Import")
                     }
                 }
-                SurfaceCard {
-                    Text("Start with Memo", style = MaterialTheme.typography.titleMedium)
-                    Text("Start with a thought, question or task. Memo keeps the conversation and its related work together.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                MemoPanel {
+                    MemoSectionHeading(
+                        title = "Start with Memo",
+                        supporting = "A thought, question or task. The conversation and its related work stay together."
+                    )
                     OutlinedTextField(
                         value = draft,
                         onValueChange = { if (it.length <= 6_000) draft = it },
@@ -248,16 +260,17 @@ fun ChatsWorkspaceScreen(
                         placeholder = { Text("What do you want Memo to help you accomplish?") },
                         minLines = 2,
                         maxLines = 4,
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(MemoTokens.Radius.medium),
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
                     )
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedButton(onClick = { speechPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO) }) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
+                        OutlinedButton(onClick = launchVoiceInput, modifier = Modifier.height(MemoTokens.Spacing.minimumTouch)) {
                             Icon(Icons.Rounded.Mic, contentDescription = null); Spacer(Modifier.width(6.dp)); Text("Voice")
                         }
                         Button(
                             onClick = { val intent = draft.trim(); if (intent.isNotBlank() && onStartConversation(intent)) draft = "" },
                             enabled = draft.isNotBlank(),
-                            modifier = Modifier.weight(1f).height(48.dp)
+                            modifier = Modifier.weight(1f).height(MemoTokens.Spacing.minimumTouch)
                         ) {
                             Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = null); Spacer(Modifier.width(7.dp)); Text("Start with Memo")
                         }
@@ -266,7 +279,7 @@ fun ChatsWorkspaceScreen(
                 OutlinedTextField(
                     value = search, onValueChange = { search = it }, modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text("Search conversations and messages") }, leadingIcon = { Icon(Icons.Rounded.Search, null) },
-                    singleLine = true, shape = RoundedCornerShape(16.dp)
+                    singleLine = true, shape = RoundedCornerShape(MemoTokens.Radius.medium)
                 )
             }
             val filtered = conversations.filter { conversation ->
@@ -286,8 +299,14 @@ fun ChatsWorkspaceScreen(
                     contentPadding = PaddingValues(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.xs),
                     verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)
                 ) {
+                    item {
+                        MemoSectionHeading(
+                            title = "Conversations",
+                            supporting = "${filtered.size} saved"
+                        )
+                    }
                     items(filtered, key = { it.id }) { conversation ->
-                        SurfaceCard {
+                        MemoPanel {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                 Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(12.dp), modifier = Modifier.size(44.dp)) {
                                     Box(contentAlignment = Alignment.Center) { Icon(Icons.Rounded.ChatBubbleOutline, null, tint = MaterialTheme.colorScheme.onPrimaryContainer) }
@@ -331,45 +350,51 @@ fun ChatsWorkspaceScreen(
                         }
                     }
                 } else {
-                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        modelOptions.forEach { (id, label) -> FilterChip(
-                            selected = selectedModelId == id,
-                            onClick = { selectedModelId = id; if (id != REMOTE_MODEL_ID) allowRemote = false },
-                            label = { Text(label, maxLines = 1) },
-                            enabled = !runtimeState.running
-                        ) }
-                    }
-                    if (selectedModelId == REMOTE_MODEL_ID) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(checked = allowRemote, onCheckedChange = { allowRemote = it }, enabled = !runtimeState.running)
-                            Text("Allow this request to leave this device", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    MemoPanel {
+                        MemoSectionHeading(
+                            title = "Request controls",
+                            supporting = "Choose the model and decide what information may be shared."
+                        )
+                        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.xs)) {
+                            modelOptions.forEach { (id, label) -> FilterChip(
+                                selected = selectedModelId == id,
+                                onClick = { selectedModelId = id; if (id != REMOTE_MODEL_ID) allowRemote = false },
+                                label = { Text(label, maxLines = 1) },
+                                enabled = !runtimeState.running
+                            ) }
                         }
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = useWorkspaceContext, onCheckedChange = { useWorkspaceContext = it }, enabled = !runtimeState.running)
-                        Column(Modifier.weight(1f)) {
-                            Text("Use relevant saved context", style = MaterialTheme.typography.bodySmall)
-                            Text(if (localContextSelection.isEmpty) "No matching local records for this prompt yet." else "${localContextSelection.hits.size} local record(s) matched; sources are shown below.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                    if (selectedModelId == REMOTE_MODEL_ID && useWorkspaceContext && !localContextSelection.isEmpty) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(checked = shareWorkspaceContextRemotely, onCheckedChange = { shareWorkspaceContextRemotely = it }, enabled = !runtimeState.running)
-                            Column(Modifier.weight(1f)) {
-                                Text("Also send these local records to the remote provider", style = MaterialTheme.typography.bodySmall)
-                                Text("Off by default. Review the source list before enabling.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (selectedModelId == REMOTE_MODEL_ID) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = allowRemote, onCheckedChange = { allowRemote = it }, enabled = !runtimeState.running)
+                                Text("Allow this request to leave this device", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
-                    }
-                    if (useWorkspaceContext && !localContextSelection.isEmpty) {
-                        Surface(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.52f), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
-                            Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                                Text(if (contextForThisRequest) "Context preview · included in this request" else "Context preview · stays on this device", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                                localContextSelection.hits.take(4).forEach { hit ->
-                                    Text("${hit.type} · ${hit.title}", style = MaterialTheme.typography.labelMedium)
-                                    Text(hit.excerpt.take(150), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = useWorkspaceContext, onCheckedChange = { useWorkspaceContext = it }, enabled = !runtimeState.running)
+                            Column(Modifier.weight(1f)) {
+                                Text("Use relevant saved context", style = MaterialTheme.typography.bodySmall)
+                                Text(if (localContextSelection.isEmpty) "No matching local records for this prompt yet." else "${localContextSelection.hits.size} local record(s) matched; sources are shown below.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                        if (selectedModelId == REMOTE_MODEL_ID && useWorkspaceContext && !localContextSelection.isEmpty) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = shareWorkspaceContextRemotely, onCheckedChange = { shareWorkspaceContextRemotely = it }, enabled = !runtimeState.running)
+                                Column(Modifier.weight(1f)) {
+                                    Text("Also send these local records to the remote provider", style = MaterialTheme.typography.bodySmall)
+                                    Text("Off by default. Review the source list before enabling.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
-                                if (localContextSelection.hits.size > 4) Text("+ ${localContextSelection.hits.size - 4} more source(s)", style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                        if (useWorkspaceContext && !localContextSelection.isEmpty) {
+                            Surface(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.52f), shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+                                Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                                    Text(if (contextForThisRequest) "Context preview · included in this request" else "Context preview · stays on this device", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                    localContextSelection.hits.take(4).forEach { hit ->
+                                        Text("${hit.type} · ${hit.title}", style = MaterialTheme.typography.labelMedium)
+                                        Text(hit.excerpt.take(150), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                    }
+                                    if (localContextSelection.hits.size > 4) Text("+ ${localContextSelection.hits.size - 4} more source(s)", style = MaterialTheme.typography.labelSmall)
+                                }
                             }
                         }
                     }
@@ -386,35 +411,34 @@ fun ChatsWorkspaceScreen(
                 }
                 items(selectedConversation.messages, key = { it.id }) { message ->
                     val isUser = message.role == "USER"
-                    val isSource = message.role == "SOURCE"
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        color = when { isUser -> MaterialTheme.colorScheme.primaryContainer; isSource -> MaterialTheme.colorScheme.tertiaryContainer; else -> MaterialTheme.colorScheme.surface },
-                        contentColor = when { isUser -> MaterialTheme.colorScheme.onPrimaryContainer; isSource -> MaterialTheme.colorScheme.onTertiaryContainer; else -> MaterialTheme.colorScheme.onSurface },
-                        shape = RoundedCornerShape(18.dp),
-                        border = if (isUser) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+                    MemoMessageBubble(
+                        isUser = isUser,
+                        isSource = message.role == "SOURCE",
+                        label = when (message.role) { "USER" -> "YOU"; "ASSISTANT" -> message.modelId.ifBlank { "MEMO AI" }; "SOURCE" -> "IMPORTED SOURCE"; else -> message.sourceType },
+                        timestamp = formatWorkspaceDate(message.createdAt),
+                        content = message.content
                     ) {
-                        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(when (message.role) { "USER" -> "YOU"; "ASSISTANT" -> message.modelId.ifBlank { "MEMO AI" }; "SOURCE" -> "IMPORTED SOURCE"; else -> message.sourceType }, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold)
-                                Spacer(Modifier.weight(1f))
-                                Text(formatWorkspaceDate(message.createdAt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                if (message.role == "USER" || message.role == "ASSISTANT") {
-                                    IconButton(onClick = { messageEditTarget = message; messageEditText = message.content }, modifier = Modifier.size(30.dp)) {
-                                        Icon(Icons.Rounded.Edit, contentDescription = "Edit message", modifier = Modifier.size(17.dp))
-                                    }
-                                    IconButton(onClick = { messageDeleteTarget = message }, modifier = Modifier.size(30.dp)) {
-                                        Icon(Icons.Rounded.Delete, contentDescription = "Delete message", modifier = Modifier.size(17.dp))
-                                    }
+                        if (message.role == "USER" || message.role == "ASSISTANT") {
+                            IconButton(onClick = { messageEditTarget = message; messageEditText = message.content }, modifier = Modifier.size(30.dp)) {
+                                Icon(Icons.Rounded.Edit, contentDescription = "Edit message", modifier = Modifier.size(17.dp))
+                            }
+                            IconButton(onClick = { messageDeleteTarget = message }, modifier = Modifier.size(30.dp)) {
+                                Icon(Icons.Rounded.Delete, contentDescription = "Delete message", modifier = Modifier.size(17.dp))
+                            }
+                            if (message.role == "ASSISTANT") {
+                                IconButton(
+                                    onClick = { promoteMessageTarget = message; promoteIntent = message.content },
+                                    modifier = Modifier.size(30.dp)
+                                ) {
+                                    Icon(Icons.Rounded.TaskAlt, contentDescription = "Promote this response to Work", modifier = Modifier.size(17.dp))
                                 }
                             }
-                            SelectionContainer { Text(message.content, style = MaterialTheme.typography.bodyMedium) }
                         }
                     }
                 }
                 if (runtimeState.running) {
                     item {
-                        SurfaceCard {
+                        MemoPanel {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                 CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                                 Column(Modifier.weight(1f)) {
@@ -538,21 +562,14 @@ fun ChatsWorkspaceScreen(
                             placeholder = { Text("Message Memo…") },
                             minLines = 1,
                             maxLines = 5,
-                            shape = RoundedCornerShape(18.dp),
+                            shape = RoundedCornerShape(MemoTokens.Radius.large),
                             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                             enabled = !runtimeState.running
                         )
                         IconButton(
-                            onClick = {
-                                if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                                    speechPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                                } else {
-                                    runCatching { speechResultLauncher.launch(voiceIntent()) }
-                                        .onFailure { onShowMessage(MemoLocalization.translate("Voice input is unavailable. Try typing or check your Android speech service.", uiLanguage)) }
-                                }
-                            },
+                            onClick = launchVoiceInput,
                             enabled = !runtimeState.running,
-                            modifier = Modifier.size(48.dp)
+                            modifier = Modifier.size(MemoTokens.Spacing.minimumTouch)
                         ) { Icon(Icons.Rounded.Mic, contentDescription = MemoLocalization.translate("Voice input", uiLanguage), tint = MaterialTheme.colorScheme.primary) }
                         IconButton(
                             onClick = {
@@ -598,6 +615,52 @@ fun ChatsWorkspaceScreen(
                 }
             }
         }
+    }
+
+
+    if (promoteMessageTarget != null && selectedConversation != null) {
+        val sourceMessage = promoteMessageTarget!!
+        AlertDialog(
+            onDismissRequest = { promoteMessageTarget = null },
+            title = { Text("Promote response to Work") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        "Review the outcome or next action Memo should turn into a plan. The source conversation and exact message will stay linked.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text("SOURCE · ${selectedConversation.title}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                    Text(sourceMessage.content.take(360), style = MaterialTheme.typography.bodySmall, maxLines = 5, overflow = TextOverflow.Ellipsis)
+                    OutlinedTextField(
+                        value = promoteIntent,
+                        onValueChange = { if (it.length <= 6_000) promoteIntent = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Outcome and next action") },
+                        minLines = 4,
+                        maxLines = 9
+                    )
+                    Text("Creates a local draft plan only. Nothing is sent, published or executed.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    viewModel.createIntentPlan(
+                        rawIntent = promoteIntent,
+                        sourceConversationId = selectedConversation.id,
+                        sourceMessageId = sourceMessage.id
+                    ).fold(
+                        onSuccess = {
+                            promoteMessageTarget = null
+                            onShowMessage("Draft plan created and linked to this exact message. Review it in Work before starting.")
+                            onOpenWork()
+                        },
+                        onFailure = { error -> onShowMessage(error.message ?: "Could not create the Work plan.") }
+                    )
+                }, enabled = promoteIntent.isNotBlank() && !runtimeState.running) { Text("Create draft plan") }
+            },
+            dismissButton = { TextButton(onClick = { promoteMessageTarget = null }) { Text("Cancel") } }
+        )
     }
 
     if (showImport) ImportConversationDialog(
@@ -713,12 +776,194 @@ private fun ImportConversationDialog(onDismiss: () -> Unit, onImport: (String, S
 }
 
 @Composable
+private fun TodayWorkScreen(
+    snapshot: AppSnapshot,
+    onSetTaskPriority: (String, String) -> Unit,
+    onSetJobPriority: (String, String) -> Unit,
+    onOpenPlans: () -> Unit,
+    onOpenEvidence: (String) -> Unit,
+    onOpenEntity: (EntityRecord) -> Unit
+) {
+    val activeTasks = snapshot.tasks.filter { it.status != app.memo.android.data.TaskStatus.COMPLETED }
+        .sortedByDescending { it.updatedAt }
+    val activeJobs = snapshot.jobs.filter { it.status !in setOf("SUCCEEDED", "CANCELLED") }
+        .sortedByDescending { it.updatedAt }
+    val today = app.memo.android.data.todayPriorityDay()
+    val priorities = listOf(
+        "UNSORTED" to "Needs sorting",
+        "MUST" to "Must",
+        "SHOULD" to "Should",
+        "COULD" to "Could",
+        "NOT_TODAY" to "Not today"
+    )
+    val openEntities = snapshot.entities.filter { it.reviewStatus !in setOf("REJECTED", "MERGED") }
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.sm),
+        verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)
+    ) {
+        item {
+            MemoPanel {
+                Text("Your active work, from the encrypted workspace.", style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    "${activeTasks.size + activeJobs.size} open item(s) · Outcomes, next checkpoints and source records stay connected.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (activeTasks.isEmpty() && activeJobs.isEmpty()) {
+                    Text("Nothing active yet. Browser tasks and saved plans will appear here when you create them.")
+                }
+            }
+        }
+        priorities.forEach { (priority, label) ->
+            val tasks = activeTasks.filter { effectiveTodayPriority(it.todayPriority, it.todayPriorityDate, today) == priority }
+            val jobs = activeJobs.filter { effectiveTodayPriority(it.todayPriority, it.todayPriorityDate, today) == priority }
+            item(key = "today-heading-$priority") {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.weight(1f))
+                    Text("${tasks.size + jobs.size}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            if (tasks.isEmpty() && jobs.isEmpty()) {
+                item(key = "today-empty-$priority") {
+                    Text(
+                        if (priority == "UNSORTED") "Everything has a priority." else "Nothing assigned here.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = MemoTokens.Spacing.sm, bottom = MemoTokens.Spacing.xs)
+                    )
+                }
+            }
+            items(tasks, key = { "task-${it.id}" }) { task ->
+                val taskEvidence = snapshot.evidence.filter { it.taskId == task.id }.sortedByDescending { it.capturedAt }
+                TodayPriorityCard(
+                    title = task.title,
+                    detail = "${task.kind.label} · ${task.status.label} · ${task.lastMessage.take(220)}",
+                    priority = effectiveTodayPriority(task.todayPriority, task.todayPriorityDate, today),
+                    onPriorityChange = { onSetTaskPriority(task.id, it) },
+                    outcome = task.query.takeIf { it.isNotBlank() }?.let { "Intent · ${it.take(220)}" },
+                    evidence = taskEvidence.take(3),
+                    onOpenEvidence = onOpenEvidence
+                )
+            }
+            items(jobs, key = { "job-${it.id}" }) { job ->
+                val completed = job.steps.count { it.status == "COMPLETED" }
+                val runningStep = job.steps.firstOrNull { it.status == "RUNNING" }
+                val reviewStep = job.steps.firstOrNull { it.status == "NEEDS_REVIEW" }
+                val failedStep = job.steps.firstOrNull { it.status == "FAILED" }
+                val pendingStep = job.steps.firstOrNull { it.status == "PENDING" }
+                val nextAction = runningStep?.let { "In progress · ${it.title}" }
+                    ?: reviewStep?.let { "Needs review · ${it.title}" }
+                    ?: failedStep?.let { "Blocked checkpoint · ${it.title}" }
+                    ?: pendingStep?.let { "Next checkpoint · ${it.title}" }
+                val lastOutcome = job.steps.filter { it.status == "COMPLETED" && it.evidence.isNotBlank() }
+                    .maxByOrNull { it.updatedAt }?.evidence
+                val relatedEntities = openEntities.filter { it.sourceJobId == job.id }
+                TodayPriorityCard(
+                    title = job.title,
+                    detail = "${job.status.lowercase().replace('_', ' ')} · $completed/${job.steps.size} checkpoints complete",
+                    priority = effectiveTodayPriority(job.todayPriority, job.todayPriorityDate, today),
+                    onPriorityChange = { onSetJobPriority(job.id, it) },
+                    onOpen = onOpenPlans,
+                    openLabel = "Open plan",
+                    outcome = lastOutcome?.let { "Latest outcome · $it" }
+                        ?: job.goal.substringBefore("\n\nMemo route:").takeIf { it.isNotBlank() }?.let { "Desired outcome · ${it.take(240)}" },
+                    nextAction = nextAction,
+                    relatedEntities = relatedEntities,
+                    onOpenEntity = onOpenEntity
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TodayPriorityCard(
+    title: String,
+    detail: String,
+    priority: String,
+    onPriorityChange: (String) -> Unit,
+    onOpen: (() -> Unit)? = null,
+    openLabel: String = "",
+    outcome: String? = null,
+    nextAction: String? = null,
+    evidence: List<EvidenceRecord> = emptyList(),
+    relatedEntities: List<EntityRecord> = emptyList(),
+    onOpenEvidence: (String) -> Unit = {},
+    onOpenEntity: (EntityRecord) -> Unit = {}
+) {
+    var menuOpen by remember { mutableStateOf(false) }
+    MemoPanel {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                Text(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Box {
+                TextButton(onClick = { menuOpen = true }) {
+                    Text(when (priority) {
+                        "MUST" -> "Must"
+                        "SHOULD" -> "Should"
+                        "COULD" -> "Could"
+                        "NOT_TODAY" -> "Not today"
+                        else -> "Needs sorting"
+                    })
+                }
+                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                    listOf("MUST" to "Must", "SHOULD" to "Should", "COULD" to "Could", "NOT_TODAY" to "Not today", "UNSORTED" to "Needs sorting").forEach { (value, label) ->
+                        DropdownMenuItem(
+                            text = { Text(label) },
+                            onClick = { menuOpen = false; onPriorityChange(value) }
+                        )
+                    }
+                }
+            }
+        }
+        outcome?.let {
+            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        nextAction?.let {
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Rounded.TaskAlt, null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp))
+                Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.secondary)
+            }
+        }
+        if (relatedEntities.isNotEmpty()) {
+            Text("Linked work", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                relatedEntities.take(4).forEach { entity ->
+                    FilterChip(
+                        selected = false,
+                        onClick = { onOpenEntity(entity) },
+                        label = { Text(entity.title, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                    )
+                }
+            }
+        }
+        if (evidence.isNotEmpty()) {
+            Text("Evidence", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            evidence.forEach { record ->
+                TextButton(onClick = { onOpenEvidence(record.id) }) {
+                    Icon(Icons.Rounded.Description, null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(5.dp))
+                    Text(record.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+        }
+        if (onOpen != null) {
+            TextButton(onClick = onOpen) { Text(openLabel) }
+        }
+    }
+}
+
+@Composable
 fun WorkWorkspaceScreen(
     snapshot: AppSnapshot,
     viewModel: MemoWorkspaceViewModel,
     runtime: AiRuntimeViewModel,
     runtimeState: ModelRuntimeUiState,
-    initialSection: String = "ENTITIES",
+    initialSection: String = "TODAY",
     onSectionChanged: (String) -> Unit = {},
     onOpenConversation: (String) -> Unit,
     onOpenApprovals: () -> Unit = {},
@@ -729,6 +974,7 @@ fun WorkWorkspaceScreen(
     var section by remember { mutableStateOf(initialSection) }
     var search by remember { mutableStateOf("") }
     var showCreateEntity by remember { mutableStateOf(false) }
+    var showCreateSalesAccount by remember { mutableStateOf(false) }
     var selectedEntity by remember { mutableStateOf<EntityRecord?>(null) }
     var editingEntity by remember { mutableStateOf<EntityRecord?>(null) }
     var mergingEntity by remember { mutableStateOf<EntityRecord?>(null) }
@@ -748,37 +994,48 @@ fun WorkWorkspaceScreen(
 
     Column(Modifier.fillMaxSize()) {
         Column(Modifier.padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.md), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
-            MemoPageHeader(
-                title = "Work",
-                eyebrow = "MEMO / WORK",
-                description = "Conversations become projects, tasks, decisions and linked knowledge. Every proposal keeps its source."
-            )
+            MemoPageHeader(title = "Work", eyebrow = "MEMO / WORK", description = "Conversations become projects, tasks, decisions and linked knowledge. Every proposal keeps its source.")
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(selected = section == "TODAY", onClick = { section = "TODAY"; onSectionChanged("TODAY") }, label = { Text("Today") })
                 FilterChip(selected = section == "ENTITIES", onClick = { section = "ENTITIES"; onSectionChanged("ENTITIES") }, label = { Text("Entities · ${snapshot.entities.count { it.reviewStatus !in setOf("REJECTED", "MERGED") }}") })
                 FilterChip(selected = section == "ARCHIVE", onClick = { section = "ARCHIVE"; onSectionChanged("ARCHIVE") }, label = { Text("Archive · ${snapshot.entities.count { it.reviewStatus in setOf("REJECTED", "MERGED") }}") })
                 FilterChip(selected = section == "JOBS", onClick = { section = "JOBS"; onSectionChanged("JOBS") }, label = { Text("Plans · ${snapshot.jobs.size}") })
             }
         }
-        if (section != "JOBS") {
+        if (section == "TODAY") {
+            TodayWorkScreen(
+                snapshot = snapshot,
+                onSetTaskPriority = viewModel::setTaskTodayPriority,
+                onSetJobPriority = viewModel::setJobTodayPriority,
+                onOpenPlans = { section = "JOBS"; onSectionChanged("JOBS") },
+                onOpenEvidence = onOpenEvidence,
+                onOpenEntity = { selectedEntity = it }
+            )
+        } else if (section != "JOBS") {
             Row(Modifier.padding(horizontal = MemoTokens.Spacing.pageMargin), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = search, onValueChange = { search = it }, modifier = Modifier.weight(1f),
                     placeholder = { Text(if (section == "ARCHIVE") "Find archived entities" else "Find entities") }, leadingIcon = { Icon(Icons.Rounded.Search, null) }, singleLine = true,
-                    shape = RoundedCornerShape(14.dp)
+                    shape = RoundedCornerShape(MemoTokens.Radius.medium)
                 )
                 if (section == "ENTITIES") {
+                    OutlinedButton(onClick = { showCreateSalesAccount = true }) { Text("Account") }
                     IconButton(onClick = { showCreateEntity = true }, modifier = Modifier.size(52.dp)) { Icon(Icons.Rounded.Add, "Create entity") }
                 }
             }
             if (section == "ENTITIES" && pending.isNotEmpty()) {
-                Surface(color = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer, shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.xs)) {
-                    Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Rounded.CheckCircle, null)
-                        Column(Modifier.weight(1f).padding(start = 10.dp)) {
-                            Text("${pending.size} proposed outcome(s) need review", style = MaterialTheme.typography.titleSmall)
-                            Text("Approve only what is supported. Rejected proposals are removed from the active graph.", style = MaterialTheme.typography.bodySmall)
-                        }
-                    }
+                MemoPanel(
+                    modifier = Modifier.padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.xs)
+                ) {
+                    MemoStatusTag(
+                        label = "${pending.size} proposed outcome(s) need review",
+                        tone = MemoStatusTone.WARNING
+                    )
+                    Text(
+                        "Approve only what is supported. Rejected proposals are removed from the active graph.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
             if (visibleEntities.isEmpty()) {
@@ -809,6 +1066,8 @@ fun WorkWorkspaceScreen(
                         JobCard(
                             job,
                             sourceTitle = snapshot.conversations.firstOrNull { it.id == job.sourceConversationId }?.title,
+                            sourceMessageExcerpt = snapshot.conversations.firstOrNull { it.id == job.sourceConversationId }
+                                ?.messages?.firstOrNull { it.id == job.sourceMessageId }?.content?.take(280),
                             onOpenSource = { if (job.sourceConversationId.isNotBlank()) onOpenConversation(job.sourceConversationId) },
                             onStartStep = { stepId -> viewModel.startJobStep(job.id, stepId).fold(onSuccess = { onShowMessage("Checkpoint started. Work on the real deliverable, then record the observed outcome.") }, onFailure = { onShowMessage(it.message ?: "Could not start checkpoint.") }) },
                             onRecordOutcome = { stepId, outcome -> viewModel.recordJobCheckpoint(job.id, stepId, outcome).fold(onSuccess = { onShowMessage("Checkpoint outcome saved.") }, onFailure = { onShowMessage(it.message ?: "Could not record checkpoint.") }) },
@@ -884,6 +1143,18 @@ fun WorkWorkspaceScreen(
         onCreate = { type, title, description ->
             val error = viewModel.createEntity(type, title, description)
             if (error == null) { showCreateEntity = false; onShowMessage("Entity created.") } else onShowMessage(error)
+        }
+    )
+    if (showCreateSalesAccount) SalesAccountDialog(
+        onDismiss = { showCreateSalesAccount = false },
+        onCreate = { title, description, profile ->
+            viewModel.createSalesAccount(title, description, profile).fold(
+                onSuccess = { id ->
+                    showCreateSalesAccount = false
+                    onShowMessage("Account saved as a proposal for review · $id")
+                },
+                onFailure = { error -> onShowMessage(error.message ?: "Could not save the account.") }
+            )
         }
     )
     if (selectedEntity != null) {
@@ -1183,7 +1454,14 @@ fun SelfModelStudioScreen(
     Column(modifier.fillMaxSize()) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.sm), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
             item {
-                SurfaceCard {
+                MemoPageHeader(
+                    title = "Studio",
+                    eyebrow = "MEMO / STUDIO",
+                    description = "Create private, evidence-backed artifacts from facts you approve. Nothing is submitted or published."
+                )
+            }
+            item {
+                MemoPanel {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(14.dp), modifier = Modifier.size(46.dp)) {
                             Box(contentAlignment = Alignment.Center) { Icon(Icons.Rounded.Person, null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(24.dp)) }
@@ -1208,7 +1486,7 @@ fun SelfModelStudioScreen(
                 }
             }
             item {
-                SurfaceCard {
+                MemoPanel {
                     Text("Ingest profile source", style = MaterialTheme.typography.titleMedium)
                     Text("Paste text from a CV, LinkedIn export, project summary or notes. The original source is preserved separately from extracted candidate facts.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     OutlinedTextField(sourceTitle, { sourceTitle = it.take(240) }, modifier = Modifier.fillMaxWidth(), label = { Text("Source name") }, singleLine = true)
@@ -1227,23 +1505,23 @@ fun SelfModelStudioScreen(
                 }
             }
             item {
-                SurfaceCard {
+                MemoPanel {
                     Text("Artifact Studio", style = MaterialTheme.typography.titleMedium)
                     Text("Create a CV summary, targeted cover letter, LinkedIn About draft or project brief from approved facts. The local model cannot submit or publish the result.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         listOf("CV summary", "Cover letter", "LinkedIn About", "Project brief").forEach { kind -> FilterChip(selected = artifactKind == kind, onClick = { artifactKind = kind }, enabled = !runtimeState.running, label = { Text(kind) }) }
                     }
                     OutlinedTextField(targetNotes, { if (it.length <= 3_000) targetNotes = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Target role or brief (optional)") }, placeholder = { Text("Paste the target job requirements or describe the intended audience…") }, minLines = 2, maxLines = 5)
-                    Button(onClick = { generateArtifact() }, enabled = approvedFacts.isNotEmpty() && selectedModel != null && !runtimeState.running, modifier = Modifier.fillMaxWidth().height(48.dp)) {
+                    Button(onClick = { generateArtifact() }, enabled = approvedFacts.isNotEmpty() && selectedModel != null && !runtimeState.running, modifier = Modifier.fillMaxWidth().height(MemoTokens.Spacing.minimumTouch)) {
                         Icon(Icons.Rounded.AutoAwesome, null); Spacer(Modifier.width(7.dp)); Text("Generate $artifactKind locally")
                     }
                     Text("Only approved Self Model facts are allowed as claims about you. Missing facts are marked for confirmation rather than invented.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             if (sources.isNotEmpty()) {
-                item { SectionHeading("Preserved source material", "Original text used to validate candidate facts") }
+                item { MemoSectionHeading("Preserved source material", supporting = "Original text used to validate candidate facts") }
                 items(sources, key = { it.id }) { source ->
-                    SurfaceCard {
+                    MemoPanel {
                         Text(source.title, style = MaterialTheme.typography.titleSmall)
                         Text(source.summary.ifBlank { source.content.take(180) }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 3, overflow = TextOverflow.Ellipsis)
                         TextButton(onClick = { onOpenEvidence(source.id) }) { Icon(Icons.Rounded.Description, null); Spacer(Modifier.width(5.dp)); Text("Open preserved source") }
@@ -1251,9 +1529,9 @@ fun SelfModelStudioScreen(
                 }
             }
             if (proposedFacts.isNotEmpty()) {
-                item { SectionHeading("Review extracted facts", "Each proposed fact is linked to an exact source excerpt") }
+                item { MemoSectionHeading("Review extracted facts", supporting = "Each proposed fact is linked to an exact source excerpt") }
                 items(proposedFacts, key = { it.id }) { fact ->
-                    SurfaceCard {
+                    MemoPanel {
                         Text(fact.title, style = MaterialTheme.typography.titleSmall)
                         Text(fact.description, style = MaterialTheme.typography.bodySmall)
                         if (fact.sourceExcerpt.isNotBlank()) Text("Source quote · “${fact.sourceExcerpt}”", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
@@ -1266,9 +1544,9 @@ fun SelfModelStudioScreen(
                 }
             }
             if (approvedFacts.isNotEmpty()) {
-                item { SectionHeading("Approved profile facts", "You control what Artifact Studio may use") }
+                item { MemoSectionHeading("Approved profile facts", supporting = "You control what Artifact Studio may use") }
                 items(approvedFacts, key = { it.id }) { fact ->
-                    SurfaceCard {
+                    MemoPanel {
                         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Icon(Icons.Rounded.CheckCircle, null, tint = MaterialTheme.colorScheme.tertiary)
                             Column(Modifier.weight(1f)) {
@@ -1282,9 +1560,9 @@ fun SelfModelStudioScreen(
                 }
             }
             if (artifacts.isNotEmpty()) {
-                item { SectionHeading("Your generated artifacts", "Saved drafts remain editable and exportable") }
+                item { MemoSectionHeading("Your generated artifacts", supporting = "Saved drafts remain editable and exportable") }
                 items(artifacts, key = { it.id }) { artifact ->
-                    SurfaceCard(modifier = Modifier.clickable { onOpenEvidence(artifact.id) }) {
+                    MemoPanel(modifier = Modifier.clickable { onOpenEvidence(artifact.id) }) {
                         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Icon(Icons.Rounded.Description, null, tint = MaterialTheme.colorScheme.primary)
                             Column(Modifier.weight(1f)) {
@@ -1366,22 +1644,14 @@ private fun SelfModelFactDialog(onDismiss: () -> Unit, onSave: (String, String, 
 
 @Composable
 private fun EntityCard(entity: EntityRecord, relationshipCount: Int, sourceTitle: String?, onOpen: () -> Unit, onApprove: () -> Unit, onReject: () -> Unit) {
-    SurfaceCard {
+    MemoPanel {
         Column(Modifier.fillMaxWidth().clickable(onClick = onOpen), verticalArrangement = Arrangement.spacedBy(7.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(8.dp)) {
-                    Text(entity.type, modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
-                }
+                MemoStatusTag(label = entity.type, tone = MemoStatusTone.INFO)
                 when (entity.reviewStatus) {
-                    "PROPOSED" -> Surface(color = MaterialTheme.colorScheme.tertiaryContainer, shape = RoundedCornerShape(100.dp)) {
-                        Text("Needs review", modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onTertiaryContainer)
-                    }
-                    "MERGED" -> Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(100.dp)) {
-                        Text("Merged source", modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall)
-                    }
-                    "REJECTED" -> Surface(color = MaterialTheme.colorScheme.errorContainer, shape = RoundedCornerShape(100.dp)) {
-                        Text("Rejected", modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onErrorContainer)
-                    }
+                    "PROPOSED" -> MemoStatusTag(label = "Needs review", tone = MemoStatusTone.WARNING)
+                    "MERGED" -> MemoStatusTag(label = "Merged source", tone = MemoStatusTone.NEUTRAL)
+                    "REJECTED" -> MemoStatusTag(label = "Rejected", tone = MemoStatusTone.ERROR)
                 }
                 Spacer(Modifier.weight(1f))
                 Text("$relationshipCount links", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -1620,6 +1890,60 @@ private fun CreateEntityDialog(onDismiss: () -> Unit, onCreate: (String, String,
 }
 
 @Composable
+private fun SalesAccountDialog(
+    onDismiss: () -> Unit,
+    onCreate: (String, String, SalesAccountProfile) -> Unit
+) {
+    var title by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
+    var website by remember { mutableStateOf("https://") }
+    var location by remember { mutableStateOf("") }
+    var employeeRange by remember { mutableStateOf("") }
+    var segment by remember { mutableStateOf(SalesAccountSegment.CNC_METALWORKING) }
+    var accessRoute by remember { mutableStateOf(SalesAccessRoute.UNKNOWN) }
+    var segmentMenu by remember { mutableStateOf(false) }
+    var routeMenu by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add industrial account") },
+        text = {
+            Column(Modifier.heightIn(max = 560.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("Create a company record in Work. No contacts or messages are collected.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                OutlinedTextField(title, { title = it.take(240) }, label = { Text("Company name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(website, { website = it.take(512) }, label = { Text("Company website") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(location, { location = it.take(200) }, label = { Text("Location (or Unknown)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(employeeRange, { employeeRange = it.take(80) }, label = { Text("Approximate size (optional)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                Box {
+                    OutlinedButton(onClick = { segmentMenu = true }, modifier = Modifier.fillMaxWidth()) { Text(segment.name.replace('_', ' ')) }
+                    DropdownMenu(expanded = segmentMenu, onDismissRequest = { segmentMenu = false }) {
+                        SalesAccountSegment.entries.forEach { option -> DropdownMenuItem(text = { Text(option.name.replace('_', ' ')) }, onClick = { segment = option; segmentMenu = false }) }
+                    }
+                }
+                Box {
+                    OutlinedButton(onClick = { routeMenu = true }, modifier = Modifier.fillMaxWidth()) { Text("Access route · ${accessRoute.name.replace('_', ' ')}") }
+                    DropdownMenu(expanded = routeMenu, onDismissRequest = { routeMenu = false }) {
+                        SalesAccessRoute.entries.forEach { option -> DropdownMenuItem(text = { Text(option.name.replace('_', ' ')) }, onClick = { accessRoute = option; routeMenu = false }) }
+                    }
+                }
+                OutlinedTextField(description, { if (it.length <= 12_000) description = it }, label = { Text("Research notes (optional)") }, minLines = 2, maxLines = 5, modifier = Modifier.fillMaxWidth())
+                Text("All six ICP factors start as Unknown. Add source evidence and score them later; Memo will not invent fit or mark this account ready.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                onCreate(title, description, SalesAccountProfile(
+                    website = website.trim(), location = location.trim(), segment = segment,
+                    employeeRange = employeeRange.trim(), accessRoute = accessRoute,
+                    researchState = SalesAccountResearchState.RESEARCH_NEEDED
+                ))
+            }, enabled = title.isNotBlank() && website.startsWith("http") && location.isNotBlank()) { Text("Save for research") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
+}
+
+@Composable
 private fun RelationDialog(fromEntity: EntityRecord, targets: List<EntityRecord>, onDismiss: () -> Unit, onCreate: (String, String) -> Unit) {
     var targetId by remember { mutableStateOf(targets.firstOrNull()?.id.orEmpty()) }
     var relationType by remember { mutableStateOf("RELATED_TO") }
@@ -1674,6 +1998,7 @@ private fun IntentPlanEditDialog(
 private fun JobCard(
     job: WorkJobRecord,
     sourceTitle: String?,
+    sourceMessageExcerpt: String?,
     onOpenSource: () -> Unit,
     onStartStep: (String) -> Unit,
     onRecordOutcome: (String, String) -> Unit,
@@ -1690,7 +2015,7 @@ private fun JobCard(
     val activeStep = job.steps.firstOrNull { it.status == "RUNNING" }
     val nextStep = job.steps.firstOrNull { it.status == "PENDING" || it.status == "NEEDS_REVIEW" }
     val completed = job.steps.count { it.status == "COMPLETED" }
-    SurfaceCard {
+    MemoPanel {
         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Surface(color = if (job.status == "FAILED") MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(10.dp), modifier = Modifier.size(42.dp)) {
                 Box(contentAlignment = Alignment.Center) { Icon(Icons.Rounded.PlayArrow, null, tint = if (job.status == "FAILED") MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer) }
@@ -1698,9 +2023,15 @@ private fun JobCard(
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 Text(job.title, style = MaterialTheme.typography.titleMedium)
                 Text(job.goal.substringBefore("\n\nMemo route:"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 3, overflow = TextOverflow.Ellipsis)
-                Surface(color = statusColor(job.status), shape = RoundedCornerShape(100.dp)) {
-                    Text(job.status.lowercase().replace('_', ' '), modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp), style = MaterialTheme.typography.labelSmall)
-                }
+                MemoStatusTag(
+                    label = job.status.lowercase().replace('_', ' '),
+                    tone = when (job.status) {
+                        "FAILED", "BLOCKED" -> MemoStatusTone.ERROR
+                        "NEEDS_REVIEW", "WAITING_FOR_USER" -> MemoStatusTone.WARNING
+                        "SUCCEEDED", "COMPLETED" -> MemoStatusTone.SUCCESS
+                        else -> MemoStatusTone.INFO
+                    }
+                )
                 Text("Runtime · ${job.runtimeId.ifBlank { "not assigned" }} · $completed/${job.steps.size} checkpoints", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (job.status == "DRAFT" && job.steps.all { it.status == "PENDING" }) {
                     TextButton(onClick = { showPlanEditor = true }) {
@@ -1725,9 +2056,7 @@ private fun JobCard(
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Text(step.title, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
                                 if (step.requiresApproval || step.checkpointKind == "EXTERNAL_ACTION") {
-                                    Surface(color = MaterialTheme.colorScheme.tertiaryContainer, shape = RoundedCornerShape(100.dp)) {
-                                        Text("APPROVAL", modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onTertiaryContainer)
-                                    }
+                                    MemoStatusTag(label = "APPROVAL", tone = MemoStatusTone.WARNING)
                                 }
                             }
                             if (step.detail.isNotBlank()) Text(step.detail, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -1775,7 +2104,13 @@ private fun JobCard(
             Spacer(Modifier.height(7.dp))
             Text(job.resultSummary, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        if (!sourceTitle.isNullOrBlank()) TextButton(onClick = onOpenSource) { Icon(Icons.Rounded.OpenInNew, null); Spacer(Modifier.width(5.dp)); Text("Open source conversation · $sourceTitle") }
+        if (!sourceTitle.isNullOrBlank()) {
+            if (!sourceMessageExcerpt.isNullOrBlank()) {
+                Text("Promoted from this message", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                Text(sourceMessageExcerpt, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            }
+            TextButton(onClick = onOpenSource) { Icon(Icons.Rounded.OpenInNew, null); Spacer(Modifier.width(5.dp)); Text("Open source conversation · $sourceTitle") }
+        }
     }
     if (showPlanEditor) {
         IntentPlanEditDialog(

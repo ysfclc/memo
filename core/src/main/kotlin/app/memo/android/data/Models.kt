@@ -2,6 +2,9 @@ package app.memo.android.data
 
 import org.json.JSONArray
 import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.UUID
 
 private const val MAX_TASKS = 200
@@ -22,9 +25,18 @@ const val MAX_WORKSPACE_BACKUP_BYTES = 40 * 1024 * 1024
 private const val MAX_SERIALIZED_BYTES = MAX_WORKSPACE_BACKUP_BYTES
 private const val MAX_URL_CHARS = 2_048
 
+val TODAY_PRIORITY_VALUES = setOf("MUST", "SHOULD", "COULD", "NOT_TODAY", "UNSORTED")
+
 fun newId(): String = UUID.randomUUID().toString()
 
 fun nowMillis(): Long = System.currentTimeMillis()
+
+/** Local calendar day used to scope MUST / SHOULD / COULD / NOT TODAY decisions. */
+fun todayPriorityDay(): String = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(Date())
+
+/** Return a priority only when it was explicitly assigned for the current local day. */
+fun effectiveTodayPriority(priority: String, assignedDay: String, today: String = todayPriorityDay()): String =
+    if (assignedDay == today && priority in TODAY_PRIORITY_VALUES) priority else "UNSORTED"
 
 enum class TaskKind(val label: String, val description: String) {
     CAPTURE_PAGE("Capture page", "Save readable page content and source metadata."),
@@ -60,7 +72,9 @@ data class TaskRecord(
     val status: TaskStatus = TaskStatus.QUEUED,
     val lastMessage: String = "Ready to run",
     val createdAt: Long = nowMillis(),
-    val updatedAt: Long = nowMillis()
+    val updatedAt: Long = nowMillis(),
+    val todayPriority: String = "UNSORTED",
+    val todayPriorityDate: String = ""
 )
 
 data class EvidenceRecord(
@@ -176,11 +190,14 @@ data class WorkJobRecord(
     val status: String = "DRAFT",
     val runtimeId: String = "",
     val sourceConversationId: String = "",
+    val sourceMessageId: String = "",
     val steps: List<JobStepRecord> = emptyList(),
     val resultSummary: String = "",
     val createdAt: Long = nowMillis(),
     val updatedAt: Long = nowMillis(),
-    val workflowGraphJson: String = ""
+    val workflowGraphJson: String = "",
+    val todayPriority: String = "UNSORTED",
+    val todayPriorityDate: String = ""
 )
 
 data class AppSnapshot(
@@ -281,7 +298,7 @@ data class AppSnapshot(
                 index++
             }
         }
-        tasks.forEach { add(it.id); add(it.title); add(it.targetUrl); add(it.query); add(it.lastMessage) }
+        tasks.forEach { add(it.id); add(it.title); add(it.targetUrl); add(it.query); add(it.lastMessage); add(it.todayPriority); add(it.todayPriorityDate) }
         evidence.forEach { add(it.id); add(it.taskId); add(it.title); add(it.sourceUrl); add(it.kind); add(it.content); add(it.summary); add(it.metadata) }
         activity.forEach { add(it.id); add(it.level); add(it.message); add(it.taskId) }
         councilRuns.forEach { run ->
@@ -300,7 +317,7 @@ data class AppSnapshot(
         }
         relationships.forEach { add(it.id); add(it.fromEntityId); add(it.toEntityId); add(it.relationType); add(it.sourceConversationId) }
         jobs.forEach { job ->
-            add(job.id); add(job.title); add(job.goal); add(job.status); add(job.runtimeId); add(job.sourceConversationId); add(job.resultSummary); add(job.workflowGraphJson)
+            add(job.id); add(job.title); add(job.goal); add(job.status); add(job.runtimeId); add(job.sourceConversationId); add(job.sourceMessageId); add(job.resultSummary); add(job.workflowGraphJson); add(job.todayPriority); add(job.todayPriorityDate)
             job.steps.forEach { add(it.id); add(it.title); add(it.detail); add(it.status); add(it.evidence) }
         }
         actionApprovals.forEach { action ->
@@ -344,6 +361,8 @@ data class AppSnapshot(
                     put("lastMessage", task.lastMessage.take(activityMessageLimit))
                     put("createdAt", task.createdAt)
                     put("updatedAt", task.updatedAt)
+                    put("todayPriority", task.todayPriority)
+                    put("todayPriorityDate", task.todayPriorityDate.take(10))
                 })
             }
         })
@@ -477,8 +496,11 @@ data class AppSnapshot(
                     put("status", job.status.take(32))
                     put("runtimeId", job.runtimeId.take(80))
                     put("sourceConversationId", job.sourceConversationId.take(128))
+                    put("sourceMessageId", job.sourceMessageId.take(128))
                     put("resultSummary", job.resultSummary.take(4_000))
                     put("workflowGraphJson", job.workflowGraphJson.take(64_000))
+                    put("todayPriority", job.todayPriority)
+                    put("todayPriorityDate", job.todayPriorityDate.take(10))
                     put("createdAt", job.createdAt)
                     put("updatedAt", job.updatedAt)
                     put("steps", JSONArray().apply {
@@ -569,7 +591,9 @@ data class AppSnapshot(
                     status = TaskStatus.from(row.optString("status")),
                     lastMessage = row.safeString("lastMessage").take(1_000),
                     createdAt = row.optLong("createdAt", nowMillis()),
-                    updatedAt = row.optLong("updatedAt", nowMillis())
+                    updatedAt = row.optLong("updatedAt", nowMillis()),
+                    todayPriority = row.safeString("todayPriority").takeIf { it in TODAY_PRIORITY_VALUES && row.safeString("todayPriorityDate").matches(Regex("\\d{4}-\\d{2}-\\d{2}")) } ?: "UNSORTED",
+                    todayPriorityDate = row.safeString("todayPriorityDate").takeIf { it.matches(Regex("\\d{4}-\\d{2}-\\d{2}")) }.orEmpty()
                 )
             }
             val usedEvidenceIds = mutableSetOf<String>()
@@ -719,11 +743,14 @@ data class AppSnapshot(
                     status = row.safeString("status").take(32).ifBlank { "DRAFT" },
                     runtimeId = row.safeString("runtimeId").take(80),
                     sourceConversationId = row.safeString("sourceConversationId").take(128),
+                    sourceMessageId = row.safeString("sourceMessageId").take(128),
                     steps = steps,
                     resultSummary = row.safeString("resultSummary").take(4_000),
                     createdAt = row.optLong("createdAt", nowMillis()),
                     updatedAt = row.optLong("updatedAt", nowMillis()),
-                    workflowGraphJson = row.safeString("workflowGraphJson").take(64_000)
+                    workflowGraphJson = row.safeString("workflowGraphJson").take(64_000),
+                    todayPriority = row.safeString("todayPriority").takeIf { it in TODAY_PRIORITY_VALUES && row.safeString("todayPriorityDate").matches(Regex("\\d{4}-\\d{2}-\\d{2}")) } ?: "UNSORTED",
+                    todayPriorityDate = row.safeString("todayPriorityDate").takeIf { it.matches(Regex("\\d{4}-\\d{2}-\\d{2}")) }.orEmpty()
                 )
             }
             val actionApprovals = if (schema < 4) emptyList() else root.optJSONArray("actionApprovals").toTypedRecords(MAX_ACTION_APPROVALS) { row ->

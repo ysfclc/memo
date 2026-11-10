@@ -208,7 +208,7 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         val current = _snapshot.value
         val conversation = current.conversations.firstOrNull { it.id == conversationId } ?: return "Conversation no longer exists."
         val message = conversation.messages.firstOrNull { it.id == messageId } ?: return "Message no longer exists."
-        ConversationMutationPolicy.messageMutationBlockReason(message, current.entities)?.let { return it }
+        ConversationMutationPolicy.messageMutationBlockReason(message, current.entities, current.jobs)?.let { return it }
         if (message.content == cleanContent) return null
         updateSnapshot { snapshot ->
             snapshot.copy(conversations = snapshot.conversations.map { item ->
@@ -225,7 +225,7 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         val current = _snapshot.value
         val conversation = current.conversations.firstOrNull { it.id == conversationId } ?: return "Conversation no longer exists."
         val message = conversation.messages.firstOrNull { it.id == messageId } ?: return "Message no longer exists."
-        ConversationMutationPolicy.messageMutationBlockReason(message, current.entities)?.let { reason ->
+        ConversationMutationPolicy.messageMutationBlockReason(message, current.entities, current.jobs)?.let { reason ->
             return if (reason.contains("cited by")) "This message is cited by a workspace record. Remove or update that record's source link before deleting the message." else reason
         }
         updateSnapshot { snapshot ->
@@ -292,6 +292,32 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             if (current.relationships.none { it.id == relationshipId }) current
             else current.copy(relationships = current.relationships.filterNot { it.id == relationshipId }).withActivity("Relationship deleted.")
         }
+    }
+
+    /**
+     * Create an evidence-backed industrial account as a proposed ORGANIZATION.
+     * Duplicate matches are returned as a review blocker; no existing record is merged or changed.
+     */
+    fun createSalesAccount(title: String, description: String, profile: SalesAccountProfile): Result<String> {
+        if (!_vaultReady.value || _vaultError.value != null) {
+            return Result.failure(IllegalStateException("Unlock the workspace before saving an account."))
+        }
+        val current = _snapshot.value
+        val errors = SalesAccountResearch.validate(profile, current.evidence)
+        if (errors.isNotEmpty()) return Result.failure(IllegalArgumentException(errors.joinToString("\n")))
+        val duplicates = SalesAccountResearch.findPotentialDuplicates(title, profile, current.entities)
+        if (duplicates.isNotEmpty()) {
+            val candidates = duplicates.joinToString("; ") { "${it.title} (${it.reason})" }
+            return Result.failure(IllegalStateException("Possible existing account found. Review before creating: $candidates"))
+        }
+        val properties = SalesAccountResearch.toProperties(profile)
+        if (properties.size > 40) return Result.failure(IllegalStateException("Account profile exceeds the supported property limit."))
+        val existingIds = current.entities.mapTo(mutableSetOf()) { it.id }
+        val error = createEntity(type = "ORGANIZATION", title = title, description = description, properties = properties, reviewStatus = "PROPOSED")
+        if (error != null) return Result.failure(IllegalArgumentException(error))
+        val created = _snapshot.value.entities.firstOrNull { it.id !in existingIds && it.type == "ORGANIZATION" && it.title == title.trim() }
+            ?: return Result.failure(IllegalStateException("The account was not committed to the workspace."))
+        return Result.success(created.id)
     }
 
     fun createEntity(
@@ -560,7 +586,8 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
     fun createIntentPlan(
         rawIntent: String,
         language: String = _uiLanguage.value,
-        sourceConversationId: String = ""
+        sourceConversationId: String = "",
+        sourceMessageId: String = ""
     ): Result<String> {
         if (!_vaultReady.value) return Result.failure(IllegalStateException("Unlock the workspace before creating work."))
         if (_vaultError.value != null) return Result.failure(IllegalStateException("Workspace persistence is unavailable. Resolve the workspace issue before creating work."))
@@ -568,8 +595,13 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             .getOrElse { return Result.failure(it) }
         val current = _snapshot.value
         val sourceId = sourceConversationId.trim().take(128)
-        if (sourceId.isNotBlank() && current.conversations.none { it.id == sourceId }) {
+        val messageId = sourceMessageId.trim().take(128)
+        val sourceConversation = current.conversations.firstOrNull { it.id == sourceId }
+        if (sourceId.isNotBlank() && sourceConversation == null) {
             return Result.failure(IllegalArgumentException("The source conversation no longer exists."))
+        }
+        if (messageId.isNotBlank() && (sourceConversation == null || sourceConversation.messages.none { it.id == messageId })) {
+            return Result.failure(IllegalArgumentException("The source message no longer exists in that conversation."))
         }
         if (current.jobs.size >= 240) return Result.failure(IllegalStateException("The 240-job limit has been reached. Export a backup before removing older jobs."))
         val compiledCapabilities = CapabilityCompiler.compile(plan, runtimeRegistry.listRuntimes(), plan.goal)
@@ -587,6 +619,7 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             status = "DRAFT",
             runtimeId = "app.jobs",
             sourceConversationId = sourceId,
+            sourceMessageId = messageId,
             steps = plan.steps.map { step ->
                 JobStepRecord(
                     title = step.title,
@@ -742,6 +775,11 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
+    fun setJobTodayPriority(jobId: String, priority: String) {
+        val valid = priority.uppercase(Locale.ROOT).takeIf { it in TODAY_PRIORITY_VALUES } ?: return
+        updateJob(jobId) { it.copy(todayPriority = valid, todayPriorityDate = todayPriorityDay()) }
+    }
+
     fun updateJobStep(jobId: String, stepId: String, status: String, detail: String = "", evidence: String = "") {
         val valid = status.uppercase(Locale.ROOT).takeIf { it in setOf("PENDING", "RUNNING", "COMPLETED", "FAILED", "NEEDS_REVIEW", "SKIPPED") } ?: return
         updateJob(jobId) { job -> job.copy(steps = job.steps.map { step ->
@@ -861,6 +899,11 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
                 .withActivity("Task created: ${task.title}", task.id)
         }
         return null
+    }
+
+    fun setTaskTodayPriority(id: String, priority: String) {
+        val valid = priority.uppercase(Locale.ROOT).takeIf { it in TODAY_PRIORITY_VALUES } ?: return
+        updateSnapshot { current -> current.updateTask(id) { it.copy(todayPriority = valid, todayPriorityDate = todayPriorityDay(), updatedAt = nowMillis()) } }
     }
 
     fun markTaskRunning(id: String, message: String = "Waiting for the page. Sign in if needed, then continue.") {

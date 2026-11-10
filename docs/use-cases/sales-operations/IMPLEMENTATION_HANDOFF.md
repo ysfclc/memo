@@ -28,7 +28,9 @@ Relevant source areas inspected on that branch include:
 - `app/src/main/java/app/memo/android/ui/AppsWorkspaceScreen.kt`
 - `remote-runner/server.py`
 
-**Important source-of-truth warning:** This use-case pack was committed on branch `feature/sales-operations-use-cases-2026-11-10`, based on `memo-workflow-governance-2026-11-09`. The repository's `main` branch was a smaller source snapshot at inspection time. Before coding, compare the active/default branch and any newer user-selected branch. Do not silently merge, reset, or replace the owner's chosen source of truth. Preserve the source archive/build workflow and existing product contracts.
+**Current source-of-truth:** the repository was consolidated into `main` on 10 November 2026. The full Android Gradle project now lives at the repository root; `main` is the integration baseline. Feature implementation is performed in separate Git worktrees and branches, with one meaningful feature per PR. The current account-research implementation branch is `feature/sales-ops-account-research`.
+
+Before coding a follow-on slice, compare its branch with current `main`, preserve the product contract, and do not overwrite or recreate the root source archive. The root Gradle project is authoritative; `incoming/memo.zip` is only a legacy snapshot-import path.
 
 The social-platform spec inspected on the governance branch describes a broad social product direction; it does not prove that Meta, LinkedIn or other integrations are currently connected or fully implemented. Audit each capability against executable code, permissions and live tests.
 

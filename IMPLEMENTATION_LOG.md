@@ -106,3 +106,10 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - **Local verification:** Static source assertions, `tools/verify_source.py`, source-manifest integrity, archive CRC/mode checks, and remote-runner tests are rerun for this package. Full Gradle execution is unavailable locally because the pinned Gradle distribution and Android SDK are not installed.
 - **CI status:** The run #74 source snapshot is not green. The next Actions run must confirm lint passes and proceed through APK assembly/signature verification; do not claim an APK until an artifact is produced.
 - **Status:** `[~]` permission fix packaged; awaiting authoritative CI validation.
+
+
+### 2026-11-10 — Security, experience and Work capability consolidation
+
+- Integrated the fail-closed native action policy and Talk draft-preservation changes with the Signal & Graphite design foundation, unified experience/navigation rebuild, Today priority model, and evidence-backed industrial account intake.
+- Preserved the mainline product scope and existing execution history; did not replace the main task ledger with the shortened feature-branch copy.
+- Verification remains open: run authoritative Gradle unit tests, lint and Android APK pipeline against the integrated commit. No APK or device acceptance is claimed by this source merge.

@@ -25,11 +25,7 @@ import app.memo.android.data.AppSnapshot
 import app.memo.android.data.TaskRecord
 import app.memo.android.data.TaskStatus
 import app.memo.android.browser.BrowserWorkflowUiState
-import app.memo.android.ui.components.DotLabel
 import app.memo.android.ui.components.EmptyState
-import app.memo.android.ui.components.SectionHeading
-import app.memo.android.ui.components.StatusPill
-import app.memo.android.ui.components.SurfaceCard
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -62,22 +58,18 @@ fun LiveWorkspaceScreen(
         verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.md)
     ) {
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.xs)) {
-                DotLabel("MEMO / LIVE CONTROL")
-                Text("Live", style = MaterialTheme.typography.headlineLarge)
-                Text(
-                    "See active work, browser sessions, checkpoints and decisions in one place. Memo only reports completion when it has an observable result.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            MemoPageHeader(
+                title = "Live",
+                eyebrow = "MEMO / LIVE CONTROL",
+                description = "See active work, browser sessions, checkpoints and decisions in one place. Memo only reports completion when it has an observable result."
+            )
         }
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = onOpenBrowser, modifier = Modifier.weight(1f)) { Text("Browser session") }
-                OutlinedButton(onClick = onOpenApps, modifier = Modifier.weight(1f)) { Text("Phone apps") }
+                OutlinedButton(onClick = onOpenBrowser, modifier = Modifier.weight(1f).height(MemoTokens.Spacing.minimumTouch)) { Text("Browser session") }
+                OutlinedButton(onClick = onOpenApps, modifier = Modifier.weight(1f).height(MemoTokens.Spacing.minimumTouch)) { Text("Phone apps") }
             }
-            OutlinedButton(onClick = onOpenApprovals, modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(onClick = onOpenApprovals, modifier = Modifier.fillMaxWidth().height(MemoTokens.Spacing.minimumTouch)) {
                 if (reviewActions.isEmpty()) {
                     Text("Approval inbox")
                 } else {
@@ -89,8 +81,8 @@ fun LiveWorkspaceScreen(
             }
         }
         item {
-            SurfaceCard {
-                SectionHeading("Current browser session", "Visible frontier-AI and website work")
+            MemoPanel {
+                MemoSectionHeading("Current browser session", supporting = "Visible frontier-AI and website work")
                 Spacer(Modifier.height(8.dp))
                 if (browserState.isActive) {
                     Text(
@@ -118,7 +110,7 @@ fun LiveWorkspaceScreen(
                 }
             }
         }
-        item { SectionHeading("Work in motion", "Resumable plans and tasks that need attention") }
+        item { MemoSectionHeading("Work in motion", supporting = "Resumable plans and tasks that need attention") }
         if (activeJobs.isEmpty() && attentionTasks.isEmpty()) {
             item {
                 EmptyState(
@@ -128,7 +120,7 @@ fun LiveWorkspaceScreen(
             }
         } else {
             items(activeJobs.take(6), key = { "job-${it.id}" }) { job ->
-                SurfaceCard(modifier = Modifier.clickable(onClick = onOpenWork)) {
+                MemoPanel(modifier = Modifier.clickable(onClick = onOpenWork)) {
                     Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(job.title, style = MaterialTheme.typography.titleMedium)
@@ -153,13 +145,20 @@ fun LiveWorkspaceScreen(
                 }
             }
             items(attentionTasks.take(6), key = { "task-${it.id}" }) { task ->
-                SurfaceCard {
+                MemoPanel {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(task.title, style = MaterialTheme.typography.titleSmall)
                             Text(task.lastMessage, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
                         }
-                        StatusPill(task.status)
+                        MemoStatusTag(
+                            label = task.status.name.replace('_', ' '),
+                            tone = when (task.status) {
+                                TaskStatus.NEEDS_REVIEW -> MemoStatusTone.WARNING
+                                TaskStatus.FAILED, TaskStatus.BLOCKED -> MemoStatusTone.ERROR
+                                else -> MemoStatusTone.INFO
+                            }
+                        )
                     }
                     if (task.status in setOf(TaskStatus.QUEUED, TaskStatus.NEEDS_REVIEW, TaskStatus.FAILED, TaskStatus.BLOCKED)) {
                         OutlinedButton(onClick = { onResumeTask(task) }, modifier = Modifier.fillMaxWidth()) {
@@ -170,8 +169,8 @@ fun LiveWorkspaceScreen(
             }
         }
         item {
-            SurfaceCard {
-                SectionHeading("Action decisions", "External actions stay blocked until you approve the exact proposal")
+            MemoPanel {
+                MemoSectionHeading("Action decisions", supporting = "External actions stay blocked until you approve the exact proposal")
                 Spacer(Modifier.height(8.dp))
                 if (reviewActions.isEmpty()) {
                     Text("No external action is waiting for a decision.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -181,14 +180,21 @@ fun LiveWorkspaceScreen(
                 }
             }
         }
-        item { SectionHeading("Recent activity", "Recorded events from this workspace") }
+        item { MemoSectionHeading("Recent activity", supporting = "Recorded events from this workspace") }
         if (recentActivity.isEmpty()) {
             item { EmptyState("No activity recorded yet", "Memo will record meaningful workflow, capture and review events here.") }
         } else {
             items(recentActivity, key = { it.id }) { event ->
-                SurfaceCard {
+                MemoPanel {
                     Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                        DotLabel(event.level, if (event.level == "ERROR" || event.level == "WARN") MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary)
+                        MemoStatusTag(
+                            label = event.level,
+                            tone = when (event.level) {
+                                "ERROR" -> MemoStatusTone.ERROR
+                                "WARN" -> MemoStatusTone.WARNING
+                                else -> MemoStatusTone.INFO
+                            }
+                        )
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                             Text(event.message, style = MaterialTheme.typography.bodySmall)
                             Text(formatLiveTime(event.at), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -205,7 +211,16 @@ private fun ActionSummary(action: ActionApprovalRecord, onOpen: () -> Unit) {
     Column(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
         Text(action.title, style = MaterialTheme.typography.titleSmall)
         Text(action.destination, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
-        Text("${action.status.replace('_', ' ')} · ${action.runtimeId} · ${action.capabilityId}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+        MemoStatusTag(
+            label = action.status.replace('_', ' '),
+            tone = when (action.status) {
+                "PENDING", "NEEDS_REVIEW" -> MemoStatusTone.WARNING
+                "FAILED", "BLOCKED" -> MemoStatusTone.ERROR
+                "COMPLETED", "SUCCEEDED" -> MemoStatusTone.SUCCESS
+                else -> MemoStatusTone.INFO
+            }
+        )
+        Text("${action.runtimeId} · ${action.capabilityId}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         TextButton(onClick = onOpen) { Text("Review exact action") }
     }
 }

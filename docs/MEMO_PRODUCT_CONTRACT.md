@@ -203,3 +203,8 @@ No feature is complete because a screen or button exists. Require source changes
 Memo can support a one-person, evidence-backed B2B sales-operations practice through the existing Talk / Work / Live / Studio product. The domain sequence is Discover → Research → Qualify → Permissioned route → Approved interaction → Proposal → Delivery → Report. The six detailed use cases, operator constraints, service hypothesis, compliance gates and acceptance criteria live in [docs/use-cases/sales-operations/README.md](use-cases/sales-operations/README.md).
 
 This does not create a separate CRM or authorise scraping, cold-message automation, fabricated company facts, inferred consent, unapproved external actions or legal/tax decisions. The first implementation milestone is account research using existing Work entities and source evidence; outbound actions are explicitly outside that first slice.
+
+
+## 10 November 2026 — Unified experience implementation
+
+The Android experience rebuild implements the first integrated foundation for the broader product direction in [MEMO_EXPERIENCE_NAVIGATION_REBUILD.md](product/MEMO_EXPERIENCE_NAVIGATION_REBUILD.md), using the [Signal & Graphite design system](product/MEMO_DESIGN_SYSTEM.md). This does not narrow Memo to sales or make social/business workflows separate products. They remain capabilities connected through Memo's shared personal/work graph, intent interface, execution timeline, approvals and studio.
