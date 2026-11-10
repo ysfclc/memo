@@ -9,7 +9,7 @@ import app.memo.android.runtime.RuntimeDescriptor
  *
  * This is deliberately not a runtime dispatcher: it can start a safe checkpoint and record
  * a user-reported outcome, but it cannot invoke a browser, Android app, model or external write.
- * Runtime execution must be added behind a separate verified dispatcher contract.
+ * Legacy jobs without a graph retain their original sequential checkpoint behavior.
  */
 object WorkflowCheckpointCoordinator {
     fun start(
@@ -24,47 +24,55 @@ object WorkflowCheckpointCoordinator {
         require(job.status in setOf("DRAFT", "READY", "RUNNING", "WAITING_FOR_USER")) {
             "This plan cannot start a checkpoint from ${job.status}."
         }
-        require(job.workflowGraphJson.isNotBlank()) {
-            "This plan has no validated workflow graph. Rebuild the plan before starting it."
-        }
-        val graph = WorkflowGraph.fromJson(job.workflowGraphJson)
-        val node = graph.nodes.firstOrNull { it.id == stepId }
-            ?: error("This checkpoint is not part of the saved workflow graph.")
         val step = job.steps.firstOrNull { it.id == stepId }
             ?: error("This checkpoint no longer exists.")
-        require(job.steps.map { it.id }.toSet() == graph.nodes.map { it.id }.toSet() &&
-            job.steps.size == graph.nodes.size) {
-            "The saved checkpoints do not match the workflow graph. Review or rebuild this plan."
-        }
-        require(graph.nodes.none {
-            it.externalWrite || it.externalSideEffect || it.requiresApproval ||
-                it.kind == WorkflowNodeKind.APPROVAL || it.runtimeId == "app.approvals"
-        }) {
-            "This workflow contains an approval-gated or external action. Use its dedicated approval flow."
-        }
-        require(step.status in setOf("PENDING", "NEEDS_REVIEW")) {
-            "This checkpoint is not startable from ${step.status}."
-        }
         require(job.steps.none { it.status == "RUNNING" }) {
             "Another checkpoint is already active. Finish or review it before starting another."
         }
-        val completed = job.steps.filter { it.status == "COMPLETED" }.map { it.id }.toSet()
-        require(node.dependsOn.all { it in completed }) {
-            "This checkpoint is waiting for dependencies: ${node.dependsOn.filterNot { it in completed }.joinToString(", ")}."
-        }
-        val runtimesById = registeredRuntimes.associateBy { it.id }
-        require(runtimesById.size == registeredRuntimes.size) { "The runtime registry contains duplicate runtime IDs." }
-        graph.nodes.forEach { candidate ->
-            val runtime = runtimesById[candidate.runtimeId]
-                ?: error("Workflow runtime '${candidate.runtimeId}' is not registered.")
-            require(runtime.status == "AVAILABLE") {
-                "Workflow runtime '${candidate.runtimeId}' is not currently available (${runtime.status})."
+
+        val graph = job.workflowGraphJson.takeIf { it.isNotBlank() }?.let { WorkflowGraph.fromJson(it) }
+        if (graph == null) {
+            require(!step.requiresApproval && step.checkpointKind != "EXTERNAL_ACTION") {
+                "This checkpoint requires the dedicated exact-content action approval flow."
             }
-            candidate.requiredCapabilities.forEach { capabilityId ->
-                require(runtime.capabilities.any { it.id == capabilityId }) {
-                    "Capability '${candidate.runtimeId}:$capabilityId' is no longer registered."
+            val index = job.steps.indexOfFirst { it.id == stepId }
+            require(job.steps.take(index).all { it.status == "COMPLETED" }) {
+                "Complete earlier checkpoints in order first."
+            }
+        } else {
+            val node = graph.nodes.firstOrNull { it.id == stepId }
+                ?: error("This checkpoint is not part of the saved workflow graph.")
+            require(job.steps.map { it.id }.toSet() == graph.nodes.map { it.id }.toSet() &&
+                job.steps.size == graph.nodes.size) {
+                "The saved checkpoints do not match the workflow graph. Review or rebuild this plan."
+            }
+            require(graph.nodes.none {
+                it.externalWrite || it.externalSideEffect || it.requiresApproval ||
+                    it.kind == WorkflowNodeKind.APPROVAL || it.runtimeId == "app.approvals"
+            }) {
+                "This workflow contains an approval-gated or external action. Use its dedicated approval flow."
+            }
+            val completed = job.steps.filter { it.status == "COMPLETED" }.map { it.id }.toSet()
+            require(node.dependsOn.all { it in completed }) {
+                "This checkpoint is waiting for dependencies: ${node.dependsOn.filterNot { it in completed }.joinToString(", ")}."
+            }
+            val runtimesById = registeredRuntimes.associateBy { it.id }
+            require(runtimesById.size == registeredRuntimes.size) { "The runtime registry contains duplicate runtime IDs." }
+            graph.nodes.forEach { candidate ->
+                val runtime = runtimesById[candidate.runtimeId]
+                    ?: error("Workflow runtime '${candidate.runtimeId}' is not registered.")
+                require(runtime.status == "AVAILABLE") {
+                    "Workflow runtime '${candidate.runtimeId}' is not currently available (${runtime.status})."
+                }
+                candidate.requiredCapabilities.forEach { capabilityId ->
+                    require(runtime.capabilities.any { it.id == capabilityId }) {
+                        "Capability '${candidate.runtimeId}:$capabilityId' is no longer registered."
+                    }
                 }
             }
+        }
+        require(step.status in setOf("PENDING", "NEEDS_REVIEW")) {
+            "This checkpoint is not startable from ${step.status}."
         }
 
         val updatedStep = step.copy(
@@ -98,13 +106,23 @@ object WorkflowCheckpointCoordinator {
         val clean = outcome.trim().take(2_000)
         require(clean.length >= 6) { "Record a concrete outcome of at least six characters." }
         val job = snapshot.jobs.firstOrNull { it.id == jobId } ?: error("This work plan no longer exists.")
-        val graph = job.workflowGraphJson.takeIf { it.isNotBlank() }?.let { WorkflowGraph.fromJson(it) }
-            ?: error("This plan has no validated workflow graph.")
-        val node = graph.nodes.firstOrNull { it.id == stepId } ?: error("This checkpoint is not in the saved workflow graph.")
         val step = job.steps.firstOrNull { it.id == stepId } ?: error("This checkpoint no longer exists.")
-        require(!node.externalWrite && !node.externalSideEffect && !node.requiresApproval &&
-            node.kind != WorkflowNodeKind.APPROVAL && node.runtimeId != "app.approvals") {
-            "External actions cannot be completed by writing a note. Use the dedicated approval and runtime flow."
+        val graph = job.workflowGraphJson.takeIf { it.isNotBlank() }?.let { WorkflowGraph.fromJson(it) }
+        val node = graph?.nodes?.firstOrNull { it.id == stepId }
+        if (graph != null) {
+            require(node != null) { "This checkpoint is not in the saved workflow graph." }
+            require(!node.externalWrite && !node.externalSideEffect && !node.requiresApproval &&
+                node.kind != WorkflowNodeKind.APPROVAL && node.runtimeId != "app.approvals") {
+                "External actions cannot be completed by writing a note. Use the dedicated approval and runtime flow."
+            }
+        } else {
+            require(!step.requiresApproval && step.checkpointKind != "EXTERNAL_ACTION") {
+                "External actions cannot be completed by writing a note. Use the dedicated approval and runtime flow."
+            }
+            val index = job.steps.indexOfFirst { it.id == stepId }
+            require(job.steps.take(index).all { it.status == "COMPLETED" }) {
+                "Complete earlier checkpoints in order first."
+            }
         }
         require(step.status in setOf("RUNNING", "NEEDS_REVIEW")) {
             "Start this checkpoint or open its review before recording an outcome."
