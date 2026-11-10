@@ -26,7 +26,13 @@ if ! command -v java >/dev/null 2>&1 || ! java -version 2>&1 | grep -q '17\\.'; 
     --output "$TMP_JDK/jdk17.tar.gz"
   mkdir -p "$JAVA_HOME"
   tar -xzf "$TMP_JDK/jdk17.tar.gz" -C "$TMP_JDK"
-  JDK_EXTRACTED="$(find "$TMP_JDK" -mindepth 1 -maxdepth 1 -type d -name 'jdk-*' | head -n 1)"
+  JDK_EXTRACTED=""
+  for candidate in "$TMP_JDK"/jdk-*; do
+    if [ -d "$candidate" ]; then
+      JDK_EXTRACTED="$candidate"
+      break
+    fi
+  done
   if [ -z "$JDK_EXTRACTED" ]; then
     echo "Could not locate extracted JDK 17 directory." >&2
     exit 1
@@ -85,7 +91,7 @@ Variant: debug
 Commit: $COMMIT
 Branch: ${VERCEL_GIT_COMMIT_REF:-unknown}
 Gradle tasks: :core:test :app:assembleDebug
-Java: $(java -version 2>&1 | head -n 1)
+Java: $(java -version 2>&1 | sed -n '1p')
 EOF
 
 echo "Build artifact:"
