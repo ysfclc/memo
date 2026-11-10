@@ -5,6 +5,7 @@ name: Memo — Import source ZIP and build Android APK
     branches:
       - main
     paths:
+      - '.circleci/**'
       - 'incoming/memo.zip'
       - '.github/workflows/build-apk.yml'
       - 'app/**'
@@ -79,55 +80,73 @@ jobs:
             exit 1
           fi
 
+          CHANGED_FILES="$(git diff --name-only "$GITHUB_SHA^1" "$GITHUB_SHA" 2>/dev/null || git diff-tree --root --no-commit-id --name-only -r "$GITHUB_SHA")"
+          DIRECT_SOURCE_CHANGE="$(printf '%s\n' "$CHANGED_FILES" | grep -Ec '^(.circleci/|.github/workflows/build-apk.yml|app/|core/|gradle/|tools/|docs/|README[.]md$|TASKS[.]md$|ROADMAP[.]md$|FEATURE_AUDIT[.]md$|PRODUCT_GAP_REGISTRY[.]md$|MEMO2_ALIGNMENT_MATRIX[.]md$|CHANGELOG[.]md$|.*[.]gradle([.]kts)?$|gradle[.]properties$|settings[.]gradle([.]kts)?$)' || true)"
+          INCOMING_ARCHIVE_CHANGE="$(printf '%s\n' "$CHANGED_FILES" | grep -Ec '^incoming/memo[.]zip$' || true)"
           mapfile -t PRESENT_ZIPS < <(find incoming -maxdepth 1 -type f -iname '*.zip' -print 2>/dev/null | sort)
-          if [[ ! -s incoming/memo.zip ]]; then
-            if [[ "$GITHUB_EVENT_NAME" == "push" && "${#PRESENT_ZIPS[@]}" -eq 0 ]]; then
-              echo 'No incoming ZIP remains. Treating this as a cleanup-only commit; no build is needed.'
+
+          SOURCE_ONLY=false
+          ALREADY_IMPORTED=false
+          UPLOAD_COMMIT=''
+          ARCHIVE_SHA=''
+
+          if [[ -s incoming/memo.zip ]]; then
+            if [[ "${#PRESENT_ZIPS[@]}" -ne 1 || "${PRESENT_ZIPS[0]}" != 'incoming/memo.zip' ]]; then
+              echo "::error::Keep exactly one ZIP directly inside incoming/, named memo.zip. Found ${#PRESENT_ZIPS[@]} ZIP file(s)."
+              printf ' - %s\n' "${PRESENT_ZIPS[@]:-none}"
+              exit 1
+            fi
+
+            UPLOAD_COMMIT="$(git log -1 --format=%H "$GITHUB_SHA" -- incoming/memo.zip)"
+            if [[ ! "$UPLOAD_COMMIT" =~ ^[0-9a-f]{40}$ ]]; then
+              echo '::error::Could not identify the commit that uploaded incoming/memo.zip.'
+              exit 1
+            fi
+            ARCHIVE_SHA="$(sha256sum incoming/memo.zip | awk '{print $1}')"
+
+            git fetch --no-tags origin "$GITHUB_REF_NAME"
+            NOTE_PATH="notes/imports/${UPLOAD_COMMIT}.md"
+            if git cat-file -e "FETCH_HEAD:$NOTE_PATH" 2>/dev/null; then
+              ALREADY_IMPORTED=true
+              echo 'This exact archive upload commit already has an import note.'
+            fi
+
+            if [[ "$GITHUB_EVENT_NAME" == "push" && "$DIRECT_SOURCE_CHANGE" -gt 0 && "$INCOMING_ARCHIVE_CHANGE" -eq 0 ]]; then
+              # Direct source changes take precedence over the immutable historical ZIP.
+              SOURCE_ONLY=true
+              ALREADY_IMPORTED=false
+              UPLOAD_COMMIT="$GITHUB_SHA"
+              ARCHIVE_SHA="$(sha256sum SOURCE_SHA256SUMS.txt | awk '{print $1}')"
+              echo 'Direct source verification requested; building the checked-out source without re-extracting the historical ZIP.'
+            fi
+          else
+            if [[ "${#PRESENT_ZIPS[@]}" -ne 0 ]]; then
+              echo "::error::Expected the only incoming ZIP to be incoming/memo.zip."
+              printf ' - %s\n' "${PRESENT_ZIPS[@]}"
+              exit 1
+            fi
+            if [[ "$GITHUB_EVENT_NAME" == "push" && "$DIRECT_SOURCE_CHANGE" -gt 0 ]]; then
+              # Source-only commits do not require a historical upload ZIP.
+              SOURCE_ONLY=true
+              UPLOAD_COMMIT="$GITHUB_SHA"
+              ARCHIVE_SHA="$(sha256sum SOURCE_SHA256SUMS.txt | awk '{print $1}')"
+              echo 'Direct source verification requested; no incoming ZIP is required.'
+            elif [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+              echo 'No incoming ZIP and no direct source changes. Treating this as a cleanup-only commit.'
               {
                 echo 'skip_no_upload=true'
                 echo 'already_imported=false'
                 echo 'upload_commit='
                 echo 'archive_sha='
-              echo 'source_only=false'
+                echo 'source_only=false'
               } >> "$GITHUB_OUTPUT"
               exit 0
+            else
+              echo '::error::Expected the complete source archive at incoming/memo.zip.'
+              exit 1
             fi
-            echo '::error::Expected the complete source archive at incoming/memo.zip.'
-            exit 1
-          fi
-          if [[ "${#PRESENT_ZIPS[@]}" -ne 1 || "${PRESENT_ZIPS[0]}" != 'incoming/memo.zip' ]]; then
-            echo "::error::Keep exactly one ZIP directly inside incoming/, named memo.zip. Found ${#PRESENT_ZIPS[@]} ZIP file(s)."
-            printf ' - %s\n' "${PRESENT_ZIPS[@]:-none}"
-            exit 1
           fi
 
-          UPLOAD_COMMIT="$(git log -1 --format=%H "$GITHUB_SHA" -- incoming/memo.zip)"
-          if [[ ! "$UPLOAD_COMMIT" =~ ^[0-9a-f]{40}$ ]]; then
-            echo '::error::Could not identify the commit that uploaded incoming/memo.zip.'
-            exit 1
-          fi
-          ARCHIVE_SHA="$(sha256sum incoming/memo.zip | awk '{print $1}')"
-
-          git fetch --no-tags origin "$GITHUB_REF_NAME"
-          NOTE_PATH="notes/imports/${UPLOAD_COMMIT}.md"
-          ALREADY_IMPORTED=false
-          SOURCE_ONLY=false
-          if git cat-file -e "FETCH_HEAD:$NOTE_PATH" 2>/dev/null; then
-            ALREADY_IMPORTED=true
-            echo 'This exact archive upload commit already has an import note.'
-          fi
-          CHANGED_FILES="$(git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA")"
-          DIRECT_SOURCE_CHANGE="$(printf '%s\n' "$CHANGED_FILES" | grep -Ec '^(.github/workflows/build-apk.yml|app/|core/|gradle/|tools/|docs/|README[.]md$|TASKS[.]md$|ROADMAP[.]md$|FEATURE_AUDIT[.]md$|PRODUCT_GAP_REGISTRY[.]md$|MEMO2_ALIGNMENT_MATRIX[.]md$|CHANGELOG[.]md$|.*[.]gradle([.]kts)?$|gradle[.]properties$|settings[.]gradle([.]kts)?$)' || true)"
-          INCOMING_ARCHIVE_CHANGE="$(printf '%s\n' "$CHANGED_FILES" | grep -Ec '^incoming/memo[.]zip$' || true)"
-          if [[ "$GITHUB_EVENT_NAME" == "push" && "$DIRECT_SOURCE_CHANGE" -gt 0 && "$INCOMING_ARCHIVE_CHANGE" -eq 0 ]]; then
-            # Direct source changes must always build the checked-out revision. The historical
-            # upload ZIP is immutable and may be older; do not re-extract it over newer source.
-            SOURCE_ONLY=true
-            ALREADY_IMPORTED=false
-            UPLOAD_COMMIT="$GITHUB_SHA"
-            ARCHIVE_SHA="$(sha256sum SOURCE_SHA256SUMS.txt | awk '{print $1}')"
-            echo 'Direct source verification requested; building the checked-out source without re-extracting the historical ZIP.'
-          fi
           {
             echo 'skip_no_upload=false'
             echo "already_imported=$ALREADY_IMPORTED"
