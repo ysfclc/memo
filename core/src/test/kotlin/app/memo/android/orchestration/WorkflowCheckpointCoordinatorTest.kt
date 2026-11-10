@@ -143,4 +143,33 @@ class WorkflowCheckpointCoordinatorTest {
         assertTrue(result.isFailure)
         assertFalse(result.isSuccess)
     }
+    @Test fun legacySequentialJobsRemainUsableWithoutAWorkflowGraph() {
+        val job = WorkJobRecord(
+            id = "legacy", title = "Legacy job", goal = "Older manual work plan",
+            steps = listOf(
+                JobStepRecord(id = "first", title = "First checkpoint"),
+                JobStepRecord(id = "second", title = "Second checkpoint")
+            )
+        )
+        val initial = AppSnapshot(jobs = listOf(job))
+        val started = WorkflowCheckpointCoordinator.start(initial, "legacy", "first", runtimes, 10L).getOrThrow()
+        val completed = WorkflowCheckpointCoordinator.recordUserOutcome(
+            started, "legacy", "first", "Finished the first checkpoint.", 20L
+        ).getOrThrow()
+        val next = WorkflowCheckpointCoordinator.start(completed, "legacy", "second", runtimes, 30L).getOrThrow()
+        assertEquals("RUNNING", next.jobs.single().steps.last().status)
+    }
+
+    @Test fun legacyManualJobsCannotStartAnExternalActionShortcut() {
+        val job = WorkJobRecord(
+            id = "legacy-external", title = "Legacy action", goal = "Older action plan",
+            steps = listOf(JobStepRecord(
+                id = "send", title = "Send message", checkpointKind = "EXTERNAL_ACTION"
+            ))
+        )
+        val result = WorkflowCheckpointCoordinator.start(AppSnapshot(jobs = listOf(job)), "legacy-external", "send", runtimes, 10L)
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull()?.message.orEmpty().contains("dedicated exact-content action approval"))
+    }
+
 }
