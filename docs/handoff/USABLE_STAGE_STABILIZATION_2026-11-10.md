@@ -178,3 +178,16 @@ This checkpoint supersedes the earlier branch-head/file-count snapshot above.
 - Latest GitHub Actions attempt: run `42916291369`. The preflight job completed as failure with `steps: null` and no logs URL; build, signing and source-write jobs were skipped. This is not a source compilation result.
 - No Kotlin tests, source verifier, lint, APK build, emulator install or device/upgrade acceptance have been completed. No APK is available for this head.
 - CircleCI is not required or configured as a prerequisite.
+
+
+## 2026-11-11 — Dependency-aware workflow checkpoint coordination
+
+- Added `WorkflowCheckpointCoordinator` as the shared core transition boundary used by Work's start and outcome-recording actions.
+- Graph-backed plans now require an exact match between saved graph nodes and persisted job steps. A checkpoint can start only when all declared dependencies are complete, no other checkpoint is running, every referenced runtime is currently registered/available, and every capability still belongs to the exact runtime.
+- The generic Work path rejects workflows containing approval-gated nodes, external side effects or the dedicated approval runtime. Those actions remain in the exact-content approval ledger and cannot be completed with a note.
+- User-entered outcomes are stored as `USER_REPORTED` and explicitly described as not independently verified. This does not assert that a browser, Android app, remote provider or external service completed the action.
+- Work now exposes dependency-ready branches instead of forcing graph-backed plans into a simple list order. Only one checkpoint can be active at a time.
+- Backward compatibility: older jobs without a graph retain sequential checkpoint behavior; legacy external-action shortcuts remain blocked.
+- Added regression coverage for dependency gating, deterministic branch progression, active-step exclusion, runtime revalidation, external-effect rejection and legacy-job compatibility. Static source-contract checks were extended.
+- **Boundary:** this is durable checkpoint coordination, not automatic runtime execution. Memo still needs the registered runtime dispatcher, attempt/idempotency journal, typed runtime evidence, timeout/cancellation, pause/resume and verified postcondition protocol before it can truthfully claim autonomous execution.
+- **Validation:** source files and tests are committed to the stabilization branch. GitHub Actions run `42920165450` again failed in preflight with no exposed steps or logs; downstream build/test/sign jobs were skipped. No Gradle tests, Kotlin compilation, lint, APK assembly, emulator/device acceptance or upgrade test has run on this head. Do not treat the source additions as compiled or release-ready.
