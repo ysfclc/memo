@@ -2244,7 +2244,10 @@ private fun JobCard(
     val completedStepIds = job.steps.filter { it.status == "COMPLETED" }.map { it.id }.toSet()
     val dependencyReadyStepIds = workflowGraph?.nodes
         ?.filter { node -> node.dependsOn.all { it in completedStepIds } }
-        ?.map { it.id }?.toSet().orEmpty()
+        ?.map { it.id }?.toSet()
+        ?: setOfNotNull(job.steps.firstOrNull {
+            it.status == "PENDING" || it.status == "NEEDS_REVIEW"
+        }?.id)
     val completed = job.steps.count { it.status == "COMPLETED" }
     MemoPanel {
         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
