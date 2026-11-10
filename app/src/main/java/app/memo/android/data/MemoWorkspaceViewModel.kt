@@ -294,6 +294,38 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
+    /**
+     * Create an evidence-backed industrial account as a proposed ORGANIZATION.
+     * Duplicate matches are returned as a review blocker; no existing record is merged or changed.
+     */
+    fun createSalesAccount(title: String, description: String, profile: SalesAccountProfile): Result<String> {
+        if (!_vaultReady.value || _vaultError.value != null) {
+            return Result.failure(IllegalStateException("Unlock the workspace before saving an account."))
+        }
+        val current = _snapshot.value
+        val errors = SalesAccountResearch.validate(profile, current.evidence)
+        if (errors.isNotEmpty()) return Result.failure(IllegalArgumentException(errors.joinToString("\n")))
+        val duplicates = SalesAccountResearch.findPotentialDuplicates(title, profile, current.entities)
+        if (duplicates.isNotEmpty()) {
+            val candidates = duplicates.joinToString("; ") { "${it.title} (${it.reason})" }
+            return Result.failure(IllegalStateException("Possible existing account found. Review before creating: $candidates"))
+        }
+        val properties = SalesAccountResearch.toProperties(profile)
+        if (properties.size > 40) return Result.failure(IllegalStateException("Account profile exceeds the supported property limit."))
+        val existingIds = current.entities.mapTo(mutableSetOf()) { it.id }
+        val error = createEntity(
+            type = "ORGANIZATION",
+            title = title,
+            description = description,
+            properties = properties,
+            reviewStatus = "PROPOSED"
+        )
+        if (error != null) return Result.failure(IllegalArgumentException(error))
+        val created = _snapshot.value.entities.firstOrNull { it.id !in existingIds && it.type == "ORGANIZATION" && it.title == title.trim() }
+            ?: return Result.failure(IllegalStateException("The account was not committed to the workspace."))
+        return Result.success(created.id)
+    }
+
     fun createEntity(
         type: String,
         title: String,
