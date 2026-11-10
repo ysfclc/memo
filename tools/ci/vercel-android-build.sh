@@ -65,7 +65,14 @@ if [ ! -x "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" ]; then
   mv "$TMP_DIR/cmdline-tools" "$ANDROID_SDK_ROOT/cmdline-tools/latest"
 fi
 
+set +o pipefail
 yes | sdkmanager --sdk_root="$ANDROID_SDK_ROOT" --licenses >/dev/null
+LICENSE_STATUS="${PIPESTATUS[1]}"
+set -o pipefail
+if [ "$LICENSE_STATUS" -ne 0 ]; then
+  echo "Android SDK license acceptance failed with status $LICENSE_STATUS." >&2
+  exit "$LICENSE_STATUS"
+fi
 sdkmanager --sdk_root="$ANDROID_SDK_ROOT" \
   "platform-tools" \
   "platforms;android-35" \
