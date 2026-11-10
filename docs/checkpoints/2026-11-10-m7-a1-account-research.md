@@ -14,10 +14,19 @@
 - Duplicate matching checks normalized website domain and normalized company name, returns warnings only and excludes rejected/merged records. It never mutates or merges existing entities.
 - MemoWorkspaceViewModel.createSalesAccount requires an unlocked/healthy vault, validates against captured workspace evidence, blocks creation when potential duplicates exist, and creates a proposed ORGANIZATION through existing Work entity persistence.
 
+## Work intake UI
+
+- Added an Account action in Work's entity section and a focused industrial-account intake dialog.
+- The dialog captures company name, website, location, optional size, segment, access route and notes.
+- New profiles start with all six ICP factors Unknown and RESEARCH_NEEDED. The UI explicitly tells the operator that evidence must be captured before scoring; it does not fabricate fit.
+- Save calls the vault-gated ViewModel API and stores a proposed ORGANIZATION for normal Work review.
+- Evidence-backed factor editing and the richer account detail/review surface remain the next UI slice.
+
 ## Verification
 
 - Focused isolated JVM harness: **11/11 scenarios passed** for weights, unknowns, score coverage, source validation, review gating, disqualification, profile round-trip, future schema rejection, duplicate warnings, archived candidate exclusion and invalid score bounds.
 - This is not yet the real Gradle test task result. Run ./gradlew :core:test on this branch before merge.
+- PR #7 Actions run 42832369499 failed in the preflight job with zero steps and no logs; build/test/sign jobs were skipped. This is a runner/preflight infrastructure failure, not a Gradle compiler or test result.
 - Full Android compile/lint/APK and device acceptance remain open. The existing 8 November APK is historical evidence for its own source commit only, not this branch.
 
 ## Remaining M7.A1 work
