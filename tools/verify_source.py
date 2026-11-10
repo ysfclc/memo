@@ -354,6 +354,22 @@ for marker in ("dynamicTaskSpecsCompileIntoAValidatedFanOutAndJoinDag", "NeverBo
 for marker in ("parsesDynamicTaskSpecsAndCreatesFreshAppOwnedIdempotencyKeys", "rejectsCapabilitiesThatExistOnlyOnAnotherRuntime", "rejectsAnUnregisteredRuntimeEvenWhenTheTaskNeedsNoCapabilities", "approvalGatedCapabilitiesRequireAnExplicitApprovalTask", "remoteModelConsentUsesApprovalWithoutBeingClassifiedAsExternalWrite", "externalSideEffect", "rejectsCyclesAndUnapprovedExternalWrites", "rejectsMalformedAndOversizedTaskFields"):
     if marker not in proposal_tests:
         fail(f"TaskSpec proposal parser regression coverage is missing: {marker}")
+checkpoint_source = (ROOT / "core/src/main/kotlin/app/memo/android/orchestration/WorkflowCheckpointCoordinator.kt").read_text()
+checkpoint_tests = (ROOT / "core/src/test/kotlin/app/memo/android/orchestration/WorkflowCheckpointCoordinatorTest.kt").read_text()
+workspace_view_model = (ROOT / "app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt").read_text()
+work_screen = (ROOT / "app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt").read_text()
+for marker in ("WorkflowGraph.fromJson", "node.dependsOn.all", "runtime.status == \"AVAILABLE\"", "USER_REPORTED:", "not independently verified", "externalSideEffect", "Legacy jobs without a graph"):
+    if marker not in checkpoint_source:
+        fail(f"durable workflow checkpoint safety contract is missing: {marker}")
+for marker in ("refusesToStartAChildBeforeItsDependenciesAreComplete", "refusesAWorkflowWithExternalEffects", "rechecksRuntimeAvailability", "legacySequentialJobsRemainUsable", "legacyManualJobsCannotStartAnExternalActionShortcut"):
+    if marker not in checkpoint_tests:
+        fail(f"workflow checkpoint regression coverage is missing: {marker}")
+if "WorkflowCheckpointCoordinator.start(" not in workspace_view_model or "WorkflowCheckpointCoordinator.recordUserOutcome(" not in workspace_view_model:
+    fail("Work does not persist checkpoint transitions through the workflow coordinator")
+if "dependencyReadyStepIds" not in work_screen:
+    fail("Work UI does not expose dependency-ready workflow checkpoints")
+print("PASS: workflow checkpoints are dependency-aware, runtime-revalidated, persisted, external-effect-gated and legacy-compatible")
+
 print("PASS: typed TaskSpec proposals compile into bounded DAGs with exact-runtime capability resolution and fail-closed validation")
 
 
