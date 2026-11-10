@@ -362,6 +362,7 @@ fun BrowserWorkflowScreen(
                     summary = "Captured from a visible frontier chat webpage. Submission and a new stable response were observed; the model's claims have not been independently verified.",
                     metadata = JSONObject().apply {
                         put("providerId", response.providerId)
+                        put("stepId", activeStepIds.getOrNull(providerStepOffset + index).orEmpty())
                         put("startedAt", response.startedAt)
                         put("completedAt", response.completedAt)
                         put("workflowMode", mode.name)

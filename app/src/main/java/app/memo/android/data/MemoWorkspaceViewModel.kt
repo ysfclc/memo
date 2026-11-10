@@ -10,6 +10,8 @@ import app.memo.android.runtime.RuntimeRegistry
 import app.memo.android.orchestration.IntentPlanner
 import app.memo.android.orchestration.CapabilityCompiler
 import app.memo.android.orchestration.WorkflowGraphCompiler
+import app.memo.android.orchestration.WorkflowGraph
+import app.memo.android.orchestration.WorkflowProposalApplier
 import org.json.JSONObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -641,6 +643,29 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         }
         val saved = _snapshot.value.jobs.any { it.id == job.id }
         return if (saved) Result.success(job.id) else Result.failure(IllegalStateException("The plan could not be persisted. Check workspace status."))
+    }
+
+    /**
+     * Replace an untouched template plan with a validated non-external TaskSpec proposal.
+     * The model proposal is recompiled against the current runtime registry and never executed.
+     */
+    fun applyValidatedWorkflowProposal(jobId: String, proposal: WorkflowGraph): Result<Unit> {
+        if (!_vaultReady.value) return Result.failure(IllegalStateException("Unlock the workspace before expanding a plan."))
+        if (_vaultError.value != null) return Result.failure(IllegalStateException("Workspace persistence is unavailable. Resolve the workspace issue before expanding a plan."))
+        val expectedGraphJson = runCatching { proposal.toJson() }
+            .getOrElse { return Result.failure(it) }
+        var applyError: Throwable? = null
+        updateSnapshot { current ->
+            runCatching {
+                WorkflowProposalApplier.apply(current, jobId, proposal, runtimeRegistry.listRuntimes(), nowMillis())
+            }.onFailure { applyError = it }.getOrDefault(current)
+        }
+        if (applyError != null) return Result.failure(applyError!!)
+        val committed = _snapshot.value.jobs.any {
+            it.id == jobId && it.status == "DRAFT" && it.workflowGraphJson == expectedGraphJson
+        }
+        return if (committed) Result.success(Unit)
+        else Result.failure(IllegalStateException("The expanded proposal was not committed. The original plan remains unchanged."))
     }
 
     /** Revise an untouched draft plan and regenerate its deterministic checkpoints. This never performs side effects. */

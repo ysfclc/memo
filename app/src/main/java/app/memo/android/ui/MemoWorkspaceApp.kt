@@ -397,7 +397,7 @@ fun MemoWorkspaceApp(
         }
     }
 
-    fun startTalkIntent(rawIntent: String): Boolean {
+    fun startTalkIntent(rawIntent: String, expandWithLocalModel: Boolean): Boolean {
         val clean = rawIntent.trim().take(6_000)
         if (clean.isBlank()) return false
         val title = clean.lineSequence().firstOrNull().orEmpty().take(64).ifBlank { "New conversation" }
@@ -412,12 +412,27 @@ fun MemoWorkspaceApp(
                 snack("Your draft was not saved: $captureError")
                 return false
             }
-            viewModel.createIntentPlan(clean, uiLanguage, sourceConversationId = sourceId).fold(
+            val sourceMessageId = viewModel.snapshot.value.conversations.firstOrNull { it.id == sourceId }?.messages?.lastOrNull()?.id.orEmpty()
+            if (sourceMessageId.isBlank()) {
+                activeConversationId = sourceId
+                tab = AppTab.HOME
+                snack("The request is saved in Talk, but its source message could not be linked to Work.")
+                return true
+            }
+            viewModel.createIntentPlan(clean, uiLanguage, sourceConversationId = sourceId, sourceMessageId = sourceMessageId).fold(
                 onSuccess = { jobId ->
                     workSectionRequest = "JOBS"
                     tab = AppTab.WORK
                     val checkpoints = viewModel.snapshot.value.jobs.firstOrNull { it.id == jobId }?.steps?.size ?: 0
                     snack("Draft plan created with $checkpoints checkpoints and linked to its source conversation. Review it before starting; no external action has run.")
+                    if (expandWithLocalModel) {
+                        val localModel = modelState.installedModels.firstOrNull()
+                        if (localModel == null) {
+                            snack("No local model is currently installed. The original draft plan is ready in Work.")
+                        } else {
+                            expandDraftWorkflowWithLocalModel(jobId, localModel.id, aiRuntime, viewModel, ::snack)
+                        }
+                    }
                 },
                 onFailure = { error ->
                     activeConversationId = sourceId

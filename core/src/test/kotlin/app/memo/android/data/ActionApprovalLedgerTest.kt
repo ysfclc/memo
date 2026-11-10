@@ -12,14 +12,22 @@ class ActionApprovalLedgerTest {
     private val destination = "https://chatgpt.com/"
     private val payload = "Exact prompt\nDo not modify this text."
 
+    private fun snapshotWithJob(): AppSnapshot {
+        val step = JobStepRecord(id = "step-1", title = "Send prompt")
+        val job = WorkJobRecord(
+            id = "job-1", title = "Approval test", goal = "Send the exact prompt", steps = listOf(step)
+        )
+        return AppSnapshot(jobs = listOf(job))
+    }
+
     private fun proposed(): ActionLedgerTransition = ActionApprovalLedger.propose(
-        snapshot = AppSnapshot(), jobId = "job-1", stepId = "step-1", runtimeId = runtime,
+        snapshot = snapshotWithJob(), jobId = "job-1", stepId = "step-1", runtimeId = runtime,
         capabilityId = capability, destination = destination, title = "Send prompt", payload = payload, now = 1_000L
     )
 
     @Test fun browserEnvelopeRequiresCleanHttpsDestination() {
         fun attempt(url: String) = ActionApprovalLedger.propose(
-            snapshot = AppSnapshot(), jobId = "job-1", stepId = "step-1", runtimeId = runtime,
+            snapshot = snapshotWithJob(), jobId = "job-1", stepId = "step-1", runtimeId = runtime,
             capabilityId = capability, destination = url, title = "Send prompt", payload = payload, now = 1_000L
         )
         assertTrue(attempt(destination).accepted)
@@ -27,6 +35,91 @@ class ActionApprovalLedgerTest {
         assertFalse(attempt("https://user:pass@chatgpt.com/").accepted)
         assertFalse(attempt("https://chatgpt.com/?session=secret").accepted)
         assertFalse(attempt("https://chatgpt.com/#fragment").accepted)
+    }
+
+    @Test fun externalActionRequiresARealJobAndStepBinding() {
+        fun attempt(jobId: String, stepId: String) = ActionApprovalLedger.propose(
+            snapshot = snapshotWithJob(), jobId = jobId, stepId = stepId, runtimeId = runtime,
+            capabilityId = capability, destination = destination, title = "Send prompt", payload = payload, now = 1_000L
+        )
+        assertFalse(attempt("", "step-1").accepted)
+        assertFalse(attempt("job-1", "").accepted)
+        assertFalse(attempt(" ".repeat(2), "step-1").accepted)
+        assertFalse(attempt("missing-job", "step-1").accepted)
+        assertFalse(attempt("job-1", "missing-step").accepted)
+        assertTrue(attempt("job-1", "step-1").accepted)
+    }
+
+    @Test fun auditChainBindsActionToItsOriginalJobAndStep() {
+        val proposal = proposed()
+        val action = assertNotNullAndReturn(proposal.action)
+        val changedJob = proposal.snapshot.copy(actionApprovals = proposal.snapshot.actionApprovals.map {
+            if (it.id == action.id) it.copy(jobId = "another-job") else it
+        })
+        val changedStep = proposal.snapshot.copy(actionApprovals = proposal.snapshot.actionApprovals.map {
+            if (it.id == action.id) it.copy(stepId = "another-step") else it
+        })
+        assertTrue(ActionApprovalLedger.verifyLedger(proposal.snapshot))
+        assertFalse(ActionApprovalLedger.verifyLedger(changedJob))
+        assertFalse(ActionApprovalLedger.verifyLedger(changedStep))
+    }
+
+    @Test fun auditedJobStepBindingCannotBeAmbiguouslySplitOnSeparators() {
+        val step = JobStepRecord(id = "c", title = "Send prompt")
+        val job = WorkJobRecord(id = "a|b", title = "Delimiter test", goal = "Send prompt", steps = listOf(step))
+        val proposal = ActionApprovalLedger.propose(
+            snapshot = AppSnapshot(jobs = listOf(job)), jobId = "a|b", stepId = "c", runtimeId = runtime,
+            capabilityId = capability, destination = destination, title = "Send prompt", payload = payload, now = 1_000L
+        )
+        val action = assertNotNullAndReturn(proposal.action)
+        val ambiguousSplit = proposal.snapshot.copy(actionApprovals = proposal.snapshot.actionApprovals.map {
+            if (it.id == action.id) it.copy(jobId = "a", stepId = "b|c") else it
+        })
+        assertTrue(ActionApprovalLedger.verifyLedger(proposal.snapshot))
+        assertFalse(ActionApprovalLedger.verifyLedger(ambiguousSplit))
+    }
+
+    @Test fun emptyJobBindingCannotUseUnassignedEvidenceToClaimCompletion() {
+        val proposal = proposed()
+        val action = assertNotNullAndReturn(proposal.action)
+        val approved = ActionApprovalLedger.approve(proposal.snapshot, action.id, action.contentHash, now = 1_100L)
+        val started = ActionApprovalLedger.beginExecution(
+            approved.snapshot, action.id, runtime, capability, destination, payload, now = 1_200L
+        )
+        val unbound = started.snapshot.copy(
+            actionApprovals = started.snapshot.actionApprovals.map {
+                if (it.id == action.id) it.copy(jobId = "", stepId = "") else it
+            },
+            evidence = listOf(EvidenceRecord(
+                id = "unassigned", taskId = "", title = "Unassigned observation", sourceUrl = destination,
+                kind = "FRONTIER_BROWSER_RESPONSE", content = "An observation without a linked job.",
+                summary = "Not attributable to a saved job."
+            ))
+        )
+        val result = ActionApprovalLedger.completeVerified(unbound, action.id, "evidence:unassigned", now = 1_300L)
+        assertFalse(result.accepted)
+        assertEquals("IN_PROGRESS", result.action?.status)
+        assertFalse(ActionApprovalLedger.verifyLedger(unbound))
+    }
+
+    @Test fun evidenceFromAnotherStepCannotCompleteTheAction() {
+        val proposal = proposed()
+        val action = assertNotNullAndReturn(proposal.action)
+        val approved = ActionApprovalLedger.approve(proposal.snapshot, action.id, action.contentHash, now = 1_100L)
+        val started = ActionApprovalLedger.beginExecution(
+            approved.snapshot, action.id, runtime, capability, destination, payload, now = 1_200L
+        )
+        val evidence = EvidenceRecord(
+            id = "wrong-step", taskId = "job-1", title = "Unrelated provider response", sourceUrl = destination,
+            kind = "FRONTIER_BROWSER_RESPONSE", content = "A response from another step.",
+            summary = "Not the response for the approved action.",
+            metadata = org.json.JSONObject().put("stepId", "another-step").toString()
+        )
+        val result = ActionApprovalLedger.completeVerified(
+            started.snapshot.copy(evidence = listOf(evidence)), action.id, "evidence:wrong-step", now = 1_300L
+        )
+        assertTrue(result.accepted)
+        assertEquals("NEEDS_REVIEW", result.action?.status)
     }
 
     @Test fun contentHashBindsRuntimeCapabilityDestinationAndExactPayload() {
@@ -64,7 +157,8 @@ class ActionApprovalLedgerTest {
         val withEvidence = nextStarted.snapshot.copy(evidence = listOf(EvidenceRecord(
             id = "response-1", taskId = "job-1", title = "Observed provider response", sourceUrl = destination,
             kind = "FRONTIER_BROWSER_RESPONSE", content = "A stable response is visible.",
-            summary = "Observed in the browser workflow."
+            summary = "Observed in the browser workflow.",
+            metadata = org.json.JSONObject().put("stepId", "step-1").toString()
         )))
         val verified = ActionApprovalLedger.completeVerified(withEvidence, nextAction.id, "evidence:response-1", now = 1_400L)
         assertTrue(verified.accepted)

@@ -33,6 +33,73 @@ class WorkflowGraphTest {
         assertFalse(plan.requiresExternalApproval)
     }
 
+    @Test fun plannedCapabilitiesAlwaysBelongToTheExactNodeRuntime() {
+        val runtimes = app.memo.android.runtime.RuntimeRegistry().listRuntimes()
+            .associate { runtime -> runtime.id to runtime.capabilities.map { it.id }.toSet() }
+        val goals = listOf(
+            "Build an Android app feature",
+            "Prepare a CV for this role",
+            "Create a social media post",
+            "Capture and organize this note"
+        )
+        goals.forEach { goal ->
+            val plan = IntentPlanner.plan(goal)
+            val manifest = CapabilityCompiler.compile(plan, app.memo.android.runtime.RuntimeRegistry().listRuntimes())
+            val graph = WorkflowGraphCompiler.compile(plan, manifest)
+            graph.nodes.forEach { node ->
+                val registered = runtimes[node.runtimeId].orEmpty()
+                node.requiredCapabilities.forEach { capability ->
+                    assertTrue(
+                        "Goal '$goal' assigned '$capability' to '${node.runtimeId}', which does not register it.",
+                        capability in registered
+                    )
+                }
+            }
+        }
+
+        val buildPlan = IntentPlanner.plan("Build an Android app feature")
+        val buildManifest = CapabilityCompiler.compile(buildPlan, app.memo.android.runtime.RuntimeRegistry().listRuntimes())
+        val buildDomain = WorkflowGraphCompiler.compile(buildPlan, buildManifest).nodes.single { it.id == "domain" }
+        assertTrue(buildDomain.outputContract.contains("proposal"))
+        assertTrue(buildDomain.postcondition.contains("repository mutation"))
+    }
+
+    @Test fun intentRoutesResolveDuplicateCapabilityNamesOnTheirDeclaredRuntime() {
+        val base = app.memo.android.runtime.RuntimeRegistry().listRuntimes()
+        val browser = base.single { it.id == "runtime.browser" }
+        val models = base.single { it.id == "app.models" }.copy(
+            capabilities = base.single { it.id == "app.models" }.capabilities + app.memo.android.runtime.RuntimeCapability(
+                id = "browser.inspect_page",
+                label = "Shadow browser inspection",
+                description = "A deliberately conflicting capability used to verify exact runtime routing."
+            )
+        )
+        val runtimes = base.filterNot { it.id == "runtime.browser" || it.id == "app.models" } + browser + models
+        val plan = IntentPlanner.plan("Research current local AI models and compare sources")
+        val manifest = CapabilityCompiler.compile(plan, runtimes)
+        val inspected = manifest.capabilities.single { it.capabilityId == "browser.inspect_page" }
+
+        assertEquals("runtime.browser", inspected.runtimeId)
+        val graph = WorkflowGraphCompiler.compile(plan, manifest)
+        assertEquals(WorkflowParticipant.BROWSER, graph.nodes.single { it.id == "domain" }.participant)
+    }
+
+    @Test fun unavailableModelCapabilityFallsBackToAnExplicitUserCheckpoint() {
+        val runtimes = app.memo.android.runtime.RuntimeRegistry().listRuntimes()
+        val plan = IntentPlanner.plan("Build an Android app feature")
+        val fullManifest = CapabilityCompiler.compile(plan, runtimes)
+        val manifest = fullManifest.copy(
+            capabilities = fullManifest.capabilities.filterNot {
+                it.runtimeId == "app.models" && it.capabilityId == "model.generate"
+            }
+        )
+        val graph = WorkflowGraphCompiler.compile(plan, manifest)
+        assertEquals(WorkflowParticipant.USER, graph.nodes.single { it.id == "domain" }.participant)
+        assertEquals(WorkflowParticipant.USER, graph.nodes.single { it.id == "artifact" }.participant)
+        assertTrue(graph.nodes.single { it.id == "domain" }.requiredCapabilities.isEmpty())
+        assertTrue(graph.nodes.single { it.id == "artifact" }.requiredCapabilities.isEmpty())
+    }
+
     @Test fun externalWriteIsAnIsolatedApprovalCheckpoint() {
         val plan = IntentPlanner.plan("Publish this post to LinkedIn")
         val manifest = CapabilityCompiler.compile(plan, app.memo.android.runtime.RuntimeRegistry().listRuntimes())

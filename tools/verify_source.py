@@ -18,10 +18,16 @@ REQUIRED = [
     "core/build.gradle",
     "core/src/main/kotlin/app/memo/android/data/Models.kt",
     "core/src/main/kotlin/app/memo/android/data/ActionApprovalLedger.kt",
+    "core/src/main/kotlin/app/memo/android/data/LiveTimelineProjector.kt",
+    "core/src/main/kotlin/app/memo/android/data/WorkArtifactFactory.kt",
+    "core/src/main/kotlin/app/memo/android/orchestration/WorkflowProposalApplier.kt",
     "core/src/main/kotlin/app/memo/android/data/OutcomeParser.kt",
     "core/src/main/kotlin/app/memo/android/runtime/RuntimeContracts.kt",
     "core/src/test/kotlin/app/memo/android/data/OutcomeParserTest.kt",
     "core/src/test/kotlin/app/memo/android/data/ActionApprovalLedgerTest.kt",
+    "core/src/test/kotlin/app/memo/android/data/LiveTimelineProjectorTest.kt",
+    "core/src/test/kotlin/app/memo/android/data/WorkArtifactFactoryTest.kt",
+    "core/src/test/kotlin/app/memo/android/orchestration/WorkflowProposalApplierTest.kt",
     "app/build.gradle",
     "app/src/main/AndroidManifest.xml",
     "app/src/main/java/app/memo/android/MainActivity.kt",
@@ -84,6 +90,47 @@ for marker in ("Approve exact external prompt?", "workflowState.currentPrompt", 
     if marker not in workflow_screen:
         fail(f"browser workflow UI is missing exact-content approval behavior: {marker}")
 print("PASS: exact-content action ledger, regression tests, visible prompt gate and evidence completion are wired in source")
+
+live_timeline = (ROOT / "core/src/main/kotlin/app/memo/android/data/LiveTimelineProjector.kt").read_text()
+live_timeline_test = (ROOT / "core/src/test/kotlin/app/memo/android/data/LiveTimelineProjectorTest.kt").read_text()
+live_screen = (ROOT / "app/src/main/java/app/memo/android/ui/LiveWorkspaceScreen.kt").read_text()
+for marker in ("object LiveTimelineProjector", "snapshot.actionAuditEvents", "snapshot.evidence", "sortedWith"):
+    if marker not in live_timeline:
+        fail(f"Live timeline projection is missing: {marker}")
+for marker in ("combinesWorkspaceRecordsIntoOneNewestFirstTimeline", "legacyActionWithoutAuditEventsAppearsOnceUsingItsLatestKnownTimestamp", "timelineLimitIsAppliedAfterNewestFirstOrdering"):
+    if marker not in live_timeline_test:
+        fail(f"Live timeline regression coverage is missing: {marker}")
+if "LiveTimelineProjector.build(snapshot)" not in live_screen or "Workspace timeline" not in live_screen:
+    fail("Live does not render the durable cross-workspace timeline")
+print("PASS: Live combines durable activity, jobs, checkpoints, tasks, action audit and evidence records")
+
+studio_source = (ROOT / "app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt").read_text()
+artifact_factory = (ROOT / "core/src/main/kotlin/app/memo/android/data/WorkArtifactFactory.kt").read_text()
+artifact_factory_test = (ROOT / "core/src/test/kotlin/app/memo/android/data/WorkArtifactFactoryTest.kt").read_text()
+for marker in ("StudioDraftDialog(", "WorkArtifactFactory.create(title, kind, content)", '"WORK_ARTIFACT", "ARTIFACT_DRAFT", "SELF_MODEL_ARTIFACT"'):
+    if marker not in studio_source:
+        fail(f"Studio's general private-draft flow is missing: {marker}")
+for marker in ('"user-authored"', '"requiresHumanReview"', "MAX_CONTENT_CHARS"):
+    if marker not in artifact_factory:
+        fail(f"Private artifact factory is missing: {marker}")
+for marker in ("createsPrivateUserAuthoredDraftWithReviewRequiredMetadata", "rejectsMissingTitleTypeAndContent", "enforcesThePersistedArtifactBounds"):
+    if marker not in artifact_factory_test:
+        fail(f"Private artifact factory regression coverage is missing: {marker}")
+print("PASS: Studio creates validated private drafts in the existing editable artifact store")
+
+work_source = (ROOT / "app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt").read_text()
+proposal_applier = (ROOT / "core/src/main/kotlin/app/memo/android/orchestration/WorkflowProposalApplier.kt").read_text()
+proposal_applier_test = (ROOT / "core/src/test/kotlin/app/memo/android/orchestration/WorkflowProposalApplierTest.kt").read_text()
+for marker in ("expandDraftWorkflowWithLocalModel(", "WorkflowTaskProposalParser.parse(raw, intent, runtimes)", "viewModel.applyValidatedWorkflowProposal(jobId", "Expand with local model", "Expand the plan with a local model", "onStartConversation(intent, expandWithLocalModel)", "canExpandCurrentDraft", "IntentPlanner.shouldCreateWorkflow(draft)"):
+    if marker not in work_source:
+        fail(f"Talk/Work local TaskSpec expansion is missing: {marker}")
+for marker in ("original user goal", "runtimeStatus != \"AVAILABLE\"", "externalSideEffect", "No nodes were executed"):
+    if marker not in proposal_applier:
+        fail(f"Validated workflow proposal application is missing: {marker}")
+for marker in ("appliesValidatedDraftGraphWithoutExecutingNodes", "Depends on: scope", "refusesToReplaceAPlanThatHasAlreadyStarted", "refusesAProposalThatChangesTheOriginalUserGoal", "refusesCapabilitiesOnAnOptionalRuntimeThatIsNotAvailable", "refusesApprovalRuntimeEvenWhenTheNodeIsNotMarkedAsAnExternalWrite", "refusesApprovalGatedOrExternalWriteProposalsInTheDraftOnlyExpansionFlow"):
+    if marker not in proposal_applier_test:
+        fail(f"Workflow proposal applier regression coverage is missing: {marker}")
+print("PASS: local TaskSpec expansion is validated against the current runtime registry and stays draft-only")
 approval_inbox = (ROOT / "app/src/main/java/app/memo/android/ui/ActionApprovalInboxScreen.kt").read_text()
 app_navigation = (ROOT / "app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt").read_text()
 for marker in ("Action queue", "Needs review", "History", "Exact outbound payload", "Open live approval", "Mark outcome for review"):
@@ -167,7 +214,7 @@ if "interface Listener" not in bridge.read_text() or "openForExternalCapture" no
     fail("Memo runtime bridge is missing listeners or capture entry points")
 home = (ROOT / "app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt").read_text()
 chat = (ROOT / "app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt").read_text()
-for marker in ("onContinueWithMemo", "IntentPlanner.shouldCreateWorkflow", "RecognizerIntent.ACTION_RECOGNIZE_SPEECH", "speechResultLauncher", "Manifest.permission.RECORD_AUDIO", "Make sense of what matters.", "Needs your decision"):
+for marker in ("onContinueWithMemo", "IntentPlanner.shouldCreateWorkflow", "RecognizerIntent.ACTION_RECOGNIZE_SPEECH", "speechResultLauncher", "Manifest.permission.RECORD_AUDIO", "Make sense of what matters.", "Needs your decision", "sourceMessageId = sourceMessageId"):
     if marker not in home:
         fail(f"Memo-first home is missing product marker: {marker}")
 for marker in ("initialPrompt", "onInitialPromptConsumed", "draft = initialPrompt.take(6_000)"):
@@ -193,7 +240,7 @@ view_model = (ROOT / "app/src/main/java/app/memo/android/data/MemoWorkspaceViewM
 for marker in ('sourceConversationId: String = ""', 'sourceConversationId = sourceId'):
     if marker not in view_model:
         fail(f"Work-plan source conversation linkage is missing: {marker}")
-for marker in ("Start with Memo", "Continue in Talk", "onOpenCouncil", "onStartConversation"):
+for marker in ("Start with Memo", "Continue in Talk", "onOpenCouncil", "onStartConversation", "onStartConversation: (String, Boolean) -> Boolean"):
     if marker not in chat:
         fail(f"Talk entry/composer is missing: {marker}")
 print("PASS: one Memo Activity, universal Talk intent router, linked source conversations, four product surfaces, and safe draft handoff")

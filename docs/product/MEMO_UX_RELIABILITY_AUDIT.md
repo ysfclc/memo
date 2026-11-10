@@ -13,12 +13,12 @@ Do not redesign by adding more cards, buttons, tabs, or decorative dashboard met
 Inspected the active Android Compose source on this security branch, based on ysfclc-patch-1.
 
 1. **Navigation is conceptually four-surface but implementation routes are broader.** The bottom bar exposes Talk, Live, Work and Studio, while Browser, Apps, Approvals, Council, Models and Settings are secondary destinations. This is directionally consistent with the product contract. The header's More route is the entry to system functions; keep those secondary.
-2. **Talk entry and legacy home are not yet a single clean mental model.** The Talk destination currently routes to a HomeScreen with workspace search, a capture composer, conversation shortcuts, connected-work shortcuts, Studio shortcut, metrics, review status and recent items; the separate ChatsWorkspaceScreen is another route. This creates a home/dashboard layer between the primary Talk surface and the actual conversation list/composer. The user should not have to understand that internal distinction.
-3. **The entry screen has competing actions.** The capture composer is the main action, but Conversations, Connected work and Self Model & Artifact Studio appear directly below it, alongside global search and dashboard sections. This competes with the single-intent-entry principle and makes the first screen longer and more administrative than it needs to be.
+2. **Talk now has one conversation-first destination.** The primary Talk route uses `ChatsWorkspaceScreen`, combining a text/voice intent composer, searchable conversation history and the active conversation in one surface. The legacy `HomeScreen` remains in source but is not the primary route. File/image attachments and fully dynamic intent-to-workflow routing remain incomplete.
+3. **Talk still has secondary choices around the composer.** Council and transcript import are visible on the conversation-list state, while model/context/privacy controls remain available for a selected conversation. Keep the intent composer dominant and move specialist actions into contextual overflow as the screen evolves.
 4. **Global search is a local in-memory scan, not a unified indexed search.** It searches conversations/messages, entities, jobs and evidence directly from the current snapshot, caps each result type at three, and returns different destinations (entities go to Work rather than the matching record). The field is honestly labelled local in its result state, but "Search everything" can imply broader coverage. Search needs one result model, stable deep links, type filters and an explicit scope/coverage statement.
 5. **More is too implementation-facing.** It exposes a runtime registry and raw capability descriptors. That may help diagnostics, but it is not an everyday user task. Keep diagnostics available under an advanced/system section, and present user-facing controls in terms of what the user can accomplish.
 6. **Screen ownership is fragmented across large files.** MemoWorkspaceApp.kt and WorkspaceScreens.kt are each about 1,900 lines and contain navigation/orchestration alongside screen implementations. This increases regression risk and makes it harder to test individual journeys. Refactor by feature and state ownership, not by cosmetic file splitting alone.
-7. **Live is currently a summary with links.** It surfaces active jobs/tasks, approvals and recent activity, then sends the user to separate Browser and Apps screens. The product contract calls for one chronological cross-runtime execution timeline with pause, resume, takeover, cancellation, evidence and uncertainty. Do not call a summary dashboard a complete control room.
+7. **Live has its first unified persisted timeline, but is not yet a complete control room.** The screen now combines workspace activity, jobs/checkpoints, tasks, action-audit transitions and captured evidence in newest-first order, while retaining the active browser session as a visible panel. Native app sessions and runtime controls are still separate; the feed is a projection of persisted records, not a durable cross-runtime event journal. Pause/resume/takeover and independently verified postconditions remain open.
 8. **Social platform is a product-scope gap, not a design omission.** No first-class social publishing, inbox, feed, discovery, engagement or analytics journey is represented in the four primary surfaces. Preserve this requirement in the product roadmap; do not silently omit it or add a disconnected social dashboard.
 
 ## Follow-up usability fix
@@ -32,9 +32,9 @@ The Talk capture handoff previously cleared the composer before the parent had c
 ## UX implementation sequence
 
 ### UX-1 — Make Talk a true single entry point
-- Reshape the current Talk landing state so its primary purpose is unmistakable: one composer for text/voice/share/attachments as capabilities become real.
-- Keep conversation history and resume actions within Talk, not as a competing top-level concept.
-- Remove the three competing shortcut buttons from the primary capture card; expose contextual destinations after intent interpretation or in the relevant surface.
+- Extend the current single Talk composer with real file/image attachments and explicit selected-context preview; preserve URI permissions and original-source provenance.
+- Work now offers optional local-model TaskSpec expansion for untouched drafts, validated against exact runtime IDs and capability availability; it remains draft-only and rejects external/approval-gated tasks. Talk now exposes the optional local-model expansion directly from Start with Memo. Next add execution journaling and runtime-backed controls.
+- Keep conversation history and resume actions within Talk; move Council/import to contextual overflow as the entry surface is refined.
 - Preserve explicit review-before-run and no-external-send-by-default behavior.
 - Never clear a draft before its handoff has been durably accepted. Show recoverable errors and preserve user text on failure.
 
@@ -50,7 +50,7 @@ The Talk capture handoff previously cleared the composer before the parent had c
 - Every record search result must open the matching record, not merely its containing section.
 
 ### UX-4 — Make Studio a real deliverable workspace
-- Consistent editor, autosave status, revision history, compare/restore, evidence links and export.
+- A general private-draft composer now creates typed user-authored artifacts in the encrypted workspace; existing editing/export and revision-snapshot storage are reused. Still required: autosave status, revision history browsing, compare/restore, richer evidence links and export formats.
 - Private drafts by default. Publishing remains a separate destination-bound approval flow.
 - Remove Self Model as a standalone dead-end; make it a source for grounded artifacts.
 
