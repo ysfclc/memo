@@ -81,8 +81,10 @@ sdkmanager --sdk_root="$ANDROID_SDK_ROOT" \
 chmod +x ./gradlew
 GRADLE_LOG="$(mktemp)"
 if ! ./gradlew --no-daemon --console=plain --stacktrace --info :core:test :app:assembleDebug >"$GRADLE_LOG" 2>&1; then
-  echo "Gradle failed. Last 240 lines follow:"
-  tail -n 240 "$GRADLE_LOG"
+  echo "Gradle failed. Kotlin/compiler diagnostics (up to 160 matching lines):"
+  grep -nE '(^e: |^w: |error:|Errors occurred while compiling|Compilation error|Could not resolve|Could not find|What went wrong|FAILURE:)' "$GRADLE_LOG" | tail -n 160 || true
+  echo "Gradle failure context (last 100 lines):"
+  tail -n 100 "$GRADLE_LOG"
   rm -f "$GRADLE_LOG"
   exit 1
 fi
