@@ -2238,7 +2238,13 @@ private fun JobCard(
     var outcomeDraft by remember(job.id) { mutableStateOf("") }
     var showPlanEditor by remember(job.id) { mutableStateOf(false) }
     val activeStep = job.steps.firstOrNull { it.status == "RUNNING" }
-    val nextStep = job.steps.firstOrNull { it.status == "PENDING" || it.status == "NEEDS_REVIEW" }
+    val workflowGraph = remember(job.workflowGraphJson) {
+        runCatching { app.memo.android.orchestration.WorkflowGraph.fromJson(job.workflowGraphJson) }.getOrNull()
+    }
+    val completedStepIds = job.steps.filter { it.status == "COMPLETED" }.map { it.id }.toSet()
+    val dependencyReadyStepIds = workflowGraph?.nodes
+        ?.filter { node -> node.dependsOn.all { it in completedStepIds } }
+        ?.map { it.id }?.toSet().orEmpty()
     val completed = job.steps.count { it.status == "COMPLETED" }
     MemoPanel {
         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -2312,7 +2318,9 @@ private fun JobCard(
                             if (step.evidence.isNotBlank()) Text("Outcome · ${step.evidence}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
                         }
                     }
-                    val isNext = nextStep?.id == step.id && activeStep == null && job.status !in setOf("SUCCEEDED", "CANCELLED")
+                    val isNext = step.id in dependencyReadyStepIds &&
+                        step.status in setOf("PENDING", "NEEDS_REVIEW") &&
+                        activeStep == null && job.status !in setOf("SUCCEEDED", "CANCELLED")
                     when {
                         step.status == "NEEDS_REVIEW" && step.evidence.startsWith("evidence:") -> {
                             val evidenceId = step.evidence.substringAfter("evidence:").substringBefore(";")
