@@ -111,9 +111,17 @@ object WorkflowCheckpointCoordinator {
         val node = graph?.nodes?.firstOrNull { it.id == stepId }
         if (graph != null) {
             require(node != null) { "This checkpoint is not in the saved workflow graph." }
+            require(job.steps.map { it.id }.toSet() == graph.nodes.map { it.id }.toSet() &&
+                job.steps.size == graph.nodes.size) {
+                "The saved checkpoints do not match the workflow graph. Review or rebuild this plan."
+            }
             require(!node.externalWrite && !node.externalSideEffect && !node.requiresApproval &&
                 node.kind != WorkflowNodeKind.APPROVAL && node.runtimeId != "app.approvals") {
                 "External actions cannot be completed by writing a note. Use the dedicated approval and runtime flow."
+            }
+            val completed = job.steps.filter { it.status == "COMPLETED" }.map { it.id }.toSet()
+            require(node.dependsOn.all { it in completed }) {
+                "This checkpoint cannot be completed before its dependencies."
             }
         } else {
             require(!step.requiresApproval && step.checkpointKind != "EXTERNAL_ACTION") {
