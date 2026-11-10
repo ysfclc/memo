@@ -50,5 +50,4 @@ workflows:
           filters:
             branches:
               only:
-                - ux/experience-navigation-rebuild-2026-11-09
-                - ysfclc-patch-1
+                - main
