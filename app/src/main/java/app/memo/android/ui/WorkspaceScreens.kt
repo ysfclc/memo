@@ -101,6 +101,10 @@ import app.memo.android.data.ConversationRecord
 import app.memo.android.data.ChatMessageRecord
 import app.memo.android.data.EntityRecord
 import app.memo.android.data.EntityRelationship
+import app.memo.android.data.SalesAccountProfile
+import app.memo.android.data.SalesAccountSegment
+import app.memo.android.data.SalesAccessRoute
+import app.memo.android.data.SalesAccountResearchState
 import app.memo.android.data.EvidenceRecord
 import app.memo.android.data.OutcomeParser
 import app.memo.android.data.SelfModelFactualityGuard
@@ -729,6 +733,7 @@ fun WorkWorkspaceScreen(
     var section by remember { mutableStateOf(initialSection) }
     var search by remember { mutableStateOf("") }
     var showCreateEntity by remember { mutableStateOf(false) }
+    var showCreateSalesAccount by remember { mutableStateOf(false) }
     var selectedEntity by remember { mutableStateOf<EntityRecord?>(null) }
     var editingEntity by remember { mutableStateOf<EntityRecord?>(null) }
     var mergingEntity by remember { mutableStateOf<EntityRecord?>(null) }
@@ -767,6 +772,7 @@ fun WorkWorkspaceScreen(
                     shape = RoundedCornerShape(14.dp)
                 )
                 if (section == "ENTITIES") {
+                    OutlinedButton(onClick = { showCreateSalesAccount = true }) { Text("Account") }
                     IconButton(onClick = { showCreateEntity = true }, modifier = Modifier.size(52.dp)) { Icon(Icons.Rounded.Add, "Create entity") }
                 }
             }
@@ -884,6 +890,18 @@ fun WorkWorkspaceScreen(
         onCreate = { type, title, description ->
             val error = viewModel.createEntity(type, title, description)
             if (error == null) { showCreateEntity = false; onShowMessage("Entity created.") } else onShowMessage(error)
+        }
+    )
+    if (showCreateSalesAccount) SalesAccountDialog(
+        onDismiss = { showCreateSalesAccount = false },
+        onCreate = { title, description, profile ->
+            viewModel.createSalesAccount(title, description, profile).fold(
+                onSuccess = { id ->
+                    showCreateSalesAccount = false
+                    onShowMessage("Account saved as a proposal for review · $id")
+                },
+                onFailure = { error -> onShowMessage(error.message ?: "Could not save the account.") }
+            )
         }
     )
     if (selectedEntity != null) {
@@ -1615,6 +1633,81 @@ private fun CreateEntityDialog(onDismiss: () -> Unit, onCreate: (String, String,
             }
         },
         confirmButton = { Button(onClick = { onCreate(if (type == "CUSTOM") customType else type, title, description) }, enabled = title.isNotBlank() && (type != "CUSTOM" || customType.isNotBlank())) { Text("Create entity") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
+}
+
+@Composable
+private fun SalesAccountDialog(
+    onDismiss: () -> Unit,
+    onCreate: (String, String, SalesAccountProfile) -> Unit
+) {
+    var title by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
+    var website by remember { mutableStateOf("https://") }
+    var location by remember { mutableStateOf("") }
+    var employeeRange by remember { mutableStateOf("") }
+    var segment by remember { mutableStateOf(SalesAccountSegment.CNC_METALWORKING) }
+    var accessRoute by remember { mutableStateOf(SalesAccessRoute.UNKNOWN) }
+    var segmentMenu by remember { mutableStateOf(false) }
+    var routeMenu by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add industrial account") },
+        text = {
+            Column(
+                Modifier.heightIn(max = 560.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text("Create a company record in Work. No contacts or messages are collected.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                OutlinedTextField(title, { title = it.take(240) }, label = { Text("Company name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(website, { website = it.take(512) }, label = { Text("Company website") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(location, { location = it.take(200) }, label = { Text("Location (or Unknown)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(employeeRange, { employeeRange = it.take(80) }, label = { Text("Approximate size (optional)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                Box {
+                    OutlinedButton(onClick = { segmentMenu = true }, modifier = Modifier.fillMaxWidth()) {
+                        Text(segment.name.replace('_', ' '))
+                    }
+                    DropdownMenu(expanded = segmentMenu, onDismissRequest = { segmentMenu = false }) {
+                        SalesAccountSegment.entries.forEach { option ->
+                            DropdownMenuItem(text = { Text(option.name.replace('_', ' ')) }, onClick = { segment = option; segmentMenu = false })
+                        }
+                    }
+                }
+                Box {
+                    OutlinedButton(onClick = { routeMenu = true }, modifier = Modifier.fillMaxWidth()) {
+                        Text("Access route · ${accessRoute.name.replace('_', ' ')}")
+                    }
+                    DropdownMenu(expanded = routeMenu, onDismissRequest = { routeMenu = false }) {
+                        SalesAccessRoute.entries.forEach { option ->
+                            DropdownMenuItem(text = { Text(option.name.replace('_', ' ')) }, onClick = { accessRoute = option; routeMenu = false })
+                        }
+                    }
+                }
+                OutlinedTextField(description, { if (it.length <= 12_000) description = it }, label = { Text("Research notes (optional)") }, minLines = 2, maxLines = 5, modifier = Modifier.fillMaxWidth())
+                Text("All six ICP factors start as Unknown. Add source evidence and score them later; Memo will not invent fit or mark this account ready.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onCreate(
+                        title,
+                        description,
+                        SalesAccountProfile(
+                            website = website.trim(),
+                            location = location.trim(),
+                            segment = segment,
+                            employeeRange = employeeRange.trim(),
+                            accessRoute = accessRoute,
+                            researchState = SalesAccountResearchState.RESEARCH_NEEDED
+                        )
+                    )
+                },
+                enabled = title.isNotBlank() && website.startsWith("http") && location.isNotBlank()
+            ) { Text("Save for research") }
+        },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }
