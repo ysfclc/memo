@@ -1,0 +1,9 @@
+Memo ZIP import validation: PASS
+Archive: memo.zip
+Archive bytes: 381525
+ZIP entries checked: 178
+Regular files/directories extracted: 178
+Source manifest entries verified: 104
+Detected project root: Memo-Android
+Project markers: settings.gradle(.kts), gradlew, build.gradle(.kts), app/build.gradle(.kts), AndroidManifest.xml
+Uploaded .github workflows will not replace the active repository workflows.

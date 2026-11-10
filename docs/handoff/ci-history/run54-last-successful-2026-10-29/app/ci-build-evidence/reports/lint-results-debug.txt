@@ -1,0 +1,402 @@
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/com/synthos/runtime/ai/JobCompiler.java:34: Warning: Implicitly using the default locale is a common source of bugs: Use toUpperCase(Locale) instead. For strings meant to be internal use Locale.ROOT, otherwise Locale.getDefault(). [DefaultLocale]
+            ChatMessage m = history.get(i); p.append(m.role.toUpperCase()).append(": ").append(limit(m.text, 260)).append('\n');
+                                                            ~~~~~~~~~~~
+
+   Explanation for issues of type "DefaultLocale":
+   Calling String#toLowerCase() or #toUpperCase() without specifying an
+   explicit locale is a common source of bugs. The reason for that is that
+   those methods will use the current locale on the user's device, and even
+   though the code appears to work correctly when you are developing the app,
+   it will fail in some locales. For example, in the Turkish locale, the
+   uppercase replacement for i is not I.
+
+   If you want the methods to just perform ASCII replacement, for example to
+   convert an enum name, call String#toUpperCase(Locale.ROOT) instead. If you
+   really want to use the current locale, call
+   String#toUpperCase(Locale.getDefault()) instead.
+
+   https://developer.android.com/reference/java/util/Locale.html#default_locale
+
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/build.gradle:14: Warning: Not targeting the latest versions of Android; compatibility modes apply. Consider testing and updating this version. Consult the android.os.Build.VERSION_CODES javadoc for details. [OldTargetApi]
+        targetSdk 35
+        ~~~~~~~~~~~~
+
+   Explanation for issues of type "OldTargetApi":
+   When your application or sdk runs on a version of Android that is more
+   recent than your targetSdkVersion specifies that it has been tested with,
+   various compatibility modes kick in. This ensures that your application
+   continues to work, but it may look out of place. For example, if the
+   targetSdkVersion is less than 14, your app may get an option button in the
+   UI.
+
+   To fix this issue, set the targetSdkVersion to the highest available value.
+   Then test your app to make sure everything works correctly. You may want to
+   consult the compatibility notes to see what changes apply to each version
+   you are adding support for:
+   https://developer.android.com/reference/android/os/Build.VERSION_CODES.html
+   as well as follow this guide:
+   https://developer.android.com/distribute/best-practices/develop/target-sdk.
+   html
+
+   https://developer.android.com/distribute/best-practices/develop/target-sdk.html
+
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/build.gradle:9: Warning: A newer version of compileSdkVersion than 35 is available: 36 [GradleDependency]
+    compileSdk 35
+    ~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/build.gradle:47: Warning: A newer version of androidx.core:core-ktx than 1.15.0 is available: 1.19.1 [GradleDependency]
+    implementation 'androidx.core:core-ktx:1.15.0'
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/build.gradle:48: Warning: A newer version of androidx.activity:activity-compose than 1.9.3 is available: 1.13.0 [GradleDependency]
+    implementation 'androidx.activity:activity-compose:1.9.3'
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/build.gradle:49: Warning: A newer version of androidx.activity:activity-ktx than 1.9.3 is available: 1.13.0 [GradleDependency]
+    implementation 'androidx.activity:activity-ktx:1.9.3'
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/build.gradle:50: Warning: A newer version of androidx.lifecycle:lifecycle-runtime-ktx than 2.8.7 is available: 2.11.0 [GradleDependency]
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.7'
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/build.gradle:51: Warning: A newer version of androidx.lifecycle:lifecycle-viewmodel-ktx than 2.8.7 is available: 2.11.0 [GradleDependency]
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.8.7'
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/build.gradle:52: Warning: A newer version of androidx.lifecycle:lifecycle-viewmodel-compose than 2.8.7 is available: 2.11.0 [GradleDependency]
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7'
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/build.gradle:54: Warning: A newer version of com.google.ai.edge.litertlm:litertlm-android than 0.18.0 is available: 0.18.1 [GradleDependency]
+    implementation 'com.google.ai.edge.litertlm:litertlm-android:0.18.0'
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/build.gradle:56: Warning: A newer version of androidx.compose:compose-bom than 2024.12.01 is available: 2026.09.00 [GradleDependency]
+    implementation platform('androidx.compose:compose-bom:2024.12.01')
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "GradleDependency":
+   This detector looks for usages of libraries where the version you are using
+   is not the current stable release. Using older versions is fine, and there
+   are cases where you deliberately want to stick with an older version.
+   However, you may simply not be aware that a more recent version is
+   available, and that is what this lint check helps find.
+
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/build.gradle:62: Warning: A newer version of org.jetbrains.kotlinx:kotlinx-coroutines-android than 1.9.0 is available: 1.11.0 [NewerVersionAvailable]
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0'
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/build.gradle:65: Warning: A newer version of org.json:json than 20240303 is available: 20260814 [NewerVersionAvailable]
+    testImplementation 'org.json:json:20240303'
+                       ~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "NewerVersionAvailable":
+   This detector checks with a central repository to see if there are newer
+   versions available for the dependencies used by this project. This is
+   similar to the GradleDependency check, which checks for newer versions
+   available in the Android SDK tools and libraries, but this works with any
+   MavenCentral dependency, and connects to the library every time, which
+   makes it more flexible but also much slower.
+
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/ui/AppsWorkspaceScreen.kt:239: Warning: Unnecessary; SDK_INT is always >= 29 [ObsoleteSdkInt]
+                    else if (Build.VERSION.SDK_INT >= 23 && !Settings.canDrawOverlays(context)) {
+                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/com/synthos/runtime/engine/AutomationAccessibilityService.java:602: Warning: Unnecessary; SDK_INT is always >= 29 [ObsoleteSdkInt]
+        int type = Build.VERSION.SDK_INT >= 26 ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY : WindowManager.LayoutParams.TYPE_PHONE;
+                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/notifications/MemoNotificationCenter.kt:33: Warning: Unnecessary; SDK_INT is always >= 29 [ObsoleteSdkInt]
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "ObsoleteSdkInt":
+   This check flags version checks that are not necessary, because the
+   minSdkVersion (or surrounding known API level) is already at least as high
+   as the version checked for.
+
+   Similarly, it also looks for resources in -vNN folders, such as values-v14
+   where the version qualifier is less than or equal to the minSdkVersion,
+   where the contents should be merged into the best folder.
+
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/com/synthos/runtime/engine/AutomationAccessibilityService.java:42: Warning: Do not place Android context classes in static fields (static reference to AutomationAccessibilityService which has field overlayRoot pointing to View); this is a memory leak [StaticFieldLeak]
+    private static volatile AutomationAccessibilityService active;
+            ~~~~~~
+
+   Explanation for issues of type "StaticFieldLeak":
+   A static field will leak contexts.
+
+   Non-static inner classes have an implicit reference to their outer class.
+   If that outer class is for example a Fragment or Activity, then this
+   reference means that the long-running handler/loader/task will hold a
+   reference to the activity which prevents it from getting garbage
+   collected.
+
+   Similarly, direct field references to activities and fragments from these
+   longer running instances can cause leaks.
+
+   ViewModel classes should never point to Views or non-application Contexts.
+
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/ui/AppsWorkspaceScreen.kt:102: Hint: Prefer mutableIntStateOf instead of mutableStateOf [AutoboxingStateCreation from androidx.compose.runtime]
+    var refreshCounter by remember { mutableStateOf(0) }
+                                     ~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/browser/BrowserSession.kt:55: Hint: Prefer mutableIntStateOf instead of mutableStateOf [AutoboxingStateCreation from androidx.compose.runtime]
+    var progress by mutableStateOf(0)
+                    ~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/ui/BrowserWorkflowScreen.kt:101: Hint: Prefer mutableIntStateOf instead of mutableStateOf [AutoboxingStateCreation from androidx.compose.runtime]
+    var providerEntitySaveFailures by remember { mutableStateOf(0) }
+                                                 ~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/ui/BrowserWorkflowScreen.kt:103: Hint: Prefer mutableIntStateOf instead of mutableStateOf [AutoboxingStateCreation from androidx.compose.runtime]
+    var providerStepOffset by remember { mutableStateOf(0) }
+                                         ~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/ui/BrowserWorkflowScreen.kt:104: Hint: Prefer mutableIntStateOf instead of mutableStateOf [AutoboxingStateCreation from androidx.compose.runtime]
+    var finalStepIndex by remember { mutableStateOf(0) }
+                                     ~~~~~~~~~~~~~~
+
+   Explanation for issues of type "AutoboxingStateCreation":
+   Calling mutableStateOf<T>() when T is either backed by a primitive type on
+   the JVM or is a value class results in a state implementation that requires
+   all state values to be boxed. This usually causes an additional allocation
+   for each state write, and adds some additional work to auto-unbox values
+   when reading the value of the state. Instead, prefer to use a specialized
+   primitive state implementation for Int, Long, Float, and Double when the
+   state does not need to track null values and does not override the default
+   SnapshotMutationPolicy. See mutableIntStateOf(), mutableLongStateOf(),
+   mutableFloatStateOf(), and mutableDoubleStateOf() for more information.
+
+   Vendor: Jetpack Compose
+   Identifier: androidx.compose.runtime
+   Feedback: https://issuetracker.google.com/issues/new?component=612128
+
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/res/drawable/ic_launcher.xml:1: Warning: The resource R.drawable.ic_launcher appears to be unused [UnusedResources]
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+^
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/res/values/strings.xml:2: Warning: The resource R.string.app_name appears to be unused [UnusedResources]
+    <string name="app_name">Memo</string>
+            ~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "UnusedResources":
+   Unused resources make applications larger and slow down builds.
+
+
+   The unused resource check can ignore tests. If you want to include
+   resources that are only referenced from tests, consider packaging them in a
+   test source set instead.
+
+   You can include test sources in the unused resource check by setting the
+   system property lint.unused-resources.include-tests =true, and to exclude
+   them (usually for performance reasons), use
+   lint.unused-resources.exclude-tests =true.
+   ,
+
+   Available options:
+
+   **skip-libraries** (default is true):
+   Whether the unused resource check should skip reporting unused resources in libraries.
+
+   Many libraries will declare resources that are part of the library surface; other modules depending on the library will also reference the resources. To avoid reporting all these resources as unused (in the context of a library), the unused resource check normally skips reporting unused resources in libraries. Instead, run the unused resource check on the consuming app module (along with `checkDependencies=true`).
+
+   However, there are cases where you want to check that all the resources declared in a library are used; in that case, you can disable the skip option.
+
+   To configure this option, use a `lint.xml` file with an <option> like this:
+
+   ```xml
+   <lint>
+       <issue id="UnusedResources">
+           <option name="skip-libraries" value="true" />
+       </issue>
+   </lint>
+   ```
+
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/ui/AppsWorkspaceScreen.kt:240: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+                        runCatching { context.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+                                                                                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/ui/AppsWorkspaceScreen.kt:278: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
+                                    remotePrefs.edit().putString("status", lastRemoteJobStatus).apply()
+                                    ~~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/ui/AppsWorkspaceScreen.kt:516: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
+                            remotePrefs.edit().putString("jobId", lastRemoteJobId).putString("status", lastRemoteJobStatus).apply()
+                            ~~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/browser/BrowserSession.kt:139: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+                        if (Uri.parse(url).host.orEmpty().equals("accounts.google.com", ignoreCase = true)) {
+                            ~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/browser/BrowserSession.kt:152: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+                        this@BrowserSession.pageTitle = view?.title?.take(240)?.ifBlank { Uri.parse(finalUrl).host ?: "Website" } ?: "Website"
+                                                                                          ~~~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/browser/BrowserSession.kt:219: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+            input.any { it.isWhitespace() } || !looksLikeHost -> Uri.parse("https://www.google.com/search")
+                                                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/browser/BrowserSession.kt:223: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+        val uri = runCatching { Uri.parse(candidate) }.getOrNull()
+                                ~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/browser/BrowserSession.kt:249: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+        val host = Uri.parse(currentUrl).host.orEmpty().lowercase(Locale.ROOT).removePrefix("www.")
+                   ~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/browser/BrowserSession.kt:272: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(target)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                                    ~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/browser/BrowserSession.kt:402: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+        val uri = Uri.parse(url)
+                  ~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/browser/BrowserSession.kt:620: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+        val host = Uri.parse(url).host.orEmpty().lowercase(Locale.ROOT).removePrefix("www.")
+                   ~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/browser/BrowserSession.kt:660: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+            val message = "The open page does not match the task's target site. Return to ${Uri.parse(task.targetUrl).host} before continuing."
+                                                                                            ~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/browser/BrowserSession.kt:752: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+            preparedHost = Uri.parse(currentUrl).host.orEmpty().lowercase(Locale.ROOT).removePrefix("www.")
+                           ~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/browser/BrowserSession.kt:753: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+            preparedSite = Uri.parse(currentUrl).host.orEmpty()
+                           ~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/browser/BrowserSession.kt:773: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+        browserMessage = "Saved evidence from ${Uri.parse(url).host ?: "the current page"}."
+                                                ~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/browser/BrowserSession.kt:789: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+        val currentHost = Uri.parse(currentUrl).host.orEmpty().lowercase(Locale.ROOT).removePrefix("www.")
+                          ~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/browser/BrowserSession.kt:931: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+        val host = Uri.parse(url).host.orEmpty().lowercase(Locale.ROOT).removePrefix("www.")
+                   ~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/browser/BrowserSession.kt:942: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+        val targetUri = Uri.parse(target)
+                        ~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/browser/BrowserSession.kt:943: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+        val activeUri = Uri.parse(active)
+                        ~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/browser/BrowserSession.kt:951: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+        val expected = canonical(Uri.parse(target).host)
+                                 ~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/browser/BrowserSession.kt:952: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+        val actual = canonical(Uri.parse(active).host)
+                               ~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/MainActivity.kt:75: Warning: Use the KTX extension function String.toColorInt instead? [UseKtx]
+                    val barColor = android.graphics.Color.parseColor(if (darkBars) "#11131D" else "#F6F7FB")
+                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/notifications/MemoNotificationCenter.kt:52: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean(WORKFLOW_NOTIFICATIONS_ENABLED, enabled).apply()
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/notifications/MemoNotificationCenter.kt:62: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
+        app.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt:266: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+                val host = runCatching { Uri.parse(url).host.orEmpty().removePrefix("www.") }.getOrDefault("")
+                                         ~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt:304: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
+                        remoteReceipt.edit().putString("status", remoteStatus).apply()
+                        ~~~~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt:1616: Warning: Use the KTX extension function String.toUri instead? [UseKtx]
+        Text(Uri.parse(site.url).host.orEmpty(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+             ~~~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt:100: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
+        preferences.edit().putString("theme_mode", normalized).apply()
+        ~~~~~~~~~~~~~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt:107: Warning: Use the KTX extension function SharedPreferences.edit instead? [UseKtx]
+        preferences.edit().putString("ui_language", normalized).apply()
+        ~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "UseKtx":
+   The Android KTX libraries decorates the Android platform SDK as well as
+   various libraries with more convenient extension functions available from
+   Kotlin, allowing you to use default parameters, named parameters, and
+   more.
+
+   Available options:
+
+   **remove-defaults** (default is true):
+   Whether to skip arguments that match the defaults provided by the extension.
+
+   Extensions often provide default values for some of the parameters. For example:
+   ```kotlin
+   fun Path.readLines(charset: Charset = Charsets.UTF_8): List<String> { return Files.readAllLines(this, charset) }
+   ```
+   This lint check will by default automatically omit parameters that match the default, so if your code was calling
+
+   ```kotlin
+   Files.readAllLines(file, Charset.UTF_8)
+   ```
+   lint would replace this with
+   ```kotlin
+   file.readLines()
+   ```
+   rather than
+
+   ```kotlin
+   file.readLines(Charset.UTF_8
+   ```
+   You can turn this behavior off using this option.
+
+   To configure this option, use a `lint.xml` file with an <option> like this:
+
+   ```xml
+   <lint>
+       <issue id="UseKtx">
+           <option name="remove-defaults" value="true" />
+       </issue>
+   </lint>
+   ```
+
+   **require-present** (default is true):
+   Whether to only offer extensions already available.
+
+   This option lets you only have lint suggest extension replacements if those extensions are already available on the class path (in other words, you're already depending on the library containing the extension method.)
+
+   To configure this option, use a `lint.xml` file with an <option> like this:
+
+   ```xml
+   <lint>
+       <issue id="UseKtx">
+           <option name="require-present" value="true" />
+       </issue>
+   </lint>
+   ```
+
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/com/synthos/runtime/engine/AutomationAccessibilityService.java:558: Warning: Custom view `LinearLayout` has setOnTouchListener called on it but does not override performClick [ClickableViewAccessibility]
+        head.setOnTouchListener(new View.OnTouchListener() {
+        ^
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/com/synthos/runtime/engine/AutomationAccessibilityService.java:560: Warning: onTouch should call View#performClick when a click is detected [ClickableViewAccessibility]
+            @Override public boolean onTouch(View v, MotionEvent e) {
+                                     ~~~~~~~
+
+   Explanation for issues of type "ClickableViewAccessibility":
+   If a View that overrides onTouchEvent or uses an OnTouchListener does not
+   also implement performClick and call it when clicks are detected, the View
+   may not handle accessibility actions properly. Logic handling the click
+   actions should ideally be placed in View#performClick as some accessibility
+   services invoke performClick when a click action should occur.
+
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/com/synthos/runtime/engine/AutomationAccessibilityService.java:598: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+            if (overlayTitle != null) overlayTitle.setText("MEMO");
+                                                           ~~~~~~
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/com/synthos/runtime/engine/AutomationAccessibilityService.java:671: Warning: String literal in setText can not be translated. Use Android resources instead. [SetTextI18n]
+            overlayStatus.setText("READY · menu available over other apps");
+                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Explanation for issues of type "SetTextI18n":
+   When calling TextView#setText
+   * Never call Number#toString() to format numbers; it will not handle
+   fraction separators and locale-specific digits properly. Consider using
+   String#format with proper format specifications (%d or %f) instead.
+   * Do not pass a string literal (e.g. "Hello") to display text. Hardcoded
+   text can not be properly translated to other languages. Consider using
+   Android resource strings instead.
+   * Do not build messages by concatenating text chunks. Such messages can not
+   be properly translated.
+
+   https://developer.android.com/guide/topics/resources/localization.html
+
+/home/runner/work/memo/memo/_memo_source/Memo-Android/app/src/main/java/com/synthos/runtime/engine/AutomationAccessibilityService.java:606: Warning: Use "Gravity.END" instead of "Gravity.RIGHT" to ensure correct behavior in right-to-left locales [RtlHardcoded]
+        overlayParams.gravity = Gravity.RIGHT | Gravity.CENTER_VERTICAL;
+                                        ~~~~~
+
+   Explanation for issues of type "RtlHardcoded":
+   Using Gravity#LEFT and Gravity#RIGHT can lead to problems when a layout is
+   rendered in locales where text flows from right to left. Use Gravity#START
+   and Gravity#END instead. Similarly, in XML gravity and layout_gravity
+   attributes, use start rather than left.
+
+   For XML attributes such as paddingLeft and layout_marginLeft, use
+   paddingStart and layout_marginStart. NOTE: If your minSdkVersion is less
+   than 17, you should add both the older left/right attributes as well as the
+   new start/end attributes. On older platforms, where RTL is not supported
+   and the start/end attributes are unknown and therefore ignored, you need
+   the older left/right attributes. There is a separate lint check which
+   catches that type of error.
+
+   (Note: For Gravity#LEFT and Gravity#START, you can use these constants even
+   when targeting older platforms, because the start bitmask is a superset of
+   the left bitmask. Therefore, you can use gravity="start" rather than
+   gravity="left|start".)
+
+0 errors, 53 warnings, 5 hints
