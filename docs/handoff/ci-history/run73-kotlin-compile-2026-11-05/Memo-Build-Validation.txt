@@ -1,0 +1,532 @@
+Branch: ysfclc-patch-1
+Upload commit: 1fe27603eab915d177c56db935b5e49c02335b59
+Archive SHA-256: af55ae68b413f9e45748f0b19541d3e5e9f1f5bf7c12c29ae908234fe9a8078f
+Loading package information...                                                  Loading local repository...                                                     [                                       ] 3% Loading local repository...        [                                       ] 3% Fetch remote repository...         [=                                      ] 3% Fetch remote repository...         [=                                      ] 4% Fetch remote repository...         [=                                      ] 5% Fetch remote repository...         [==                                     ] 5% Fetch remote repository...         [==                                     ] 6% Fetch remote repository...         [==                                     ] 7% Fetch remote repository...         [==                                     ] 7% Computing updates...               [===                                    ] 8% Computing updates...               [===                                    ] 10% Computing updates...              [=======================================] 100% Computing updates...             
+
+af55ae68b413f9e45748f0b19541d3e5e9f1f5bf7c12c29ae908234fe9a8078f  /home/runner/work/memo/memo/incoming/memo.zip
+Memo ZIP validation: PASS
+Archive bytes: 646948
+ZIP entries inspected: 185
+Source checksum entries verified: 182
+Detected Android project root: Memo-Android
+Import mode: exact project snapshot (stale source files are removed)
+Protected repository paths: .git/, .github/, incoming/, notes/
+
+Detected source root: /home/runner/work/_temp/memo-source-staging/Memo-Android
+Exact source snapshot synchronized. Old root ZIPs, stale source files and prior project-only files were removed.
+Persistent signing configured for a consistent APK certificate.
+./.github/workflows/build-apk.yml: OK
+./BUILD_STATUS.md: OK
+./CHANGELOG.md: OK
+./DEVICE_ACCEPTANCE_CHECKLIST.md: OK
+./FEATURE_AUDIT.md: OK
+./IMPLEMENTATION_CONTRACT.md: OK
+./IMPLEMENTATION_LOG.md: OK
+./MEMO-PATCH1-AUDIT.md: OK
+./MEMO2_ALIGNMENT_MATRIX.md: OK
+./PRODUCT_GAP_REGISTRY.md: OK
+./README.md: OK
+./REMOTE_RUNNER_SETUP.md: OK
+./TASKS.md: OK
+./app/build.gradle: OK
+./app/proguard-rules.pro: OK
+./app/src/main/AndroidManifest.xml: OK
+./app/src/main/java/app/memo/android/MainActivity.kt: OK
+./app/src/main/java/app/memo/android/ai/AiRuntimeViewModel.kt: OK
+./app/src/main/java/app/memo/android/ai/LocalModelRunner.kt: OK
+./app/src/main/java/app/memo/android/ai/ModelCatalog.kt: OK
+./app/src/main/java/app/memo/android/ai/OpenAiCompatibleClient.kt: OK
+./app/src/main/java/app/memo/android/ai/ProviderSettingsStore.kt: OK
+./app/src/main/java/app/memo/android/browser/BrowserScripts.kt: OK
+./app/src/main/java/app/memo/android/browser/BrowserSession.kt: OK
+./app/src/main/java/app/memo/android/browser/BrowserWorkflow.kt: OK
+./app/src/main/java/app/memo/android/data/EncryptedVault.kt: OK
+./app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt: OK
+./app/src/main/java/app/memo/android/notifications/MemoNotificationCenter.kt: OK
+./app/src/main/java/app/memo/android/runtime/MemoRuntimeBridge.java: OK
+./app/src/main/java/app/memo/android/ui/ActionApprovalInboxScreen.kt: OK
+./app/src/main/java/app/memo/android/ui/AiScreens.kt: OK
+./app/src/main/java/app/memo/android/ui/AppsWorkspaceScreen.kt: OK
+./app/src/main/java/app/memo/android/ui/BrowserWorkflowScreen.kt: OK
+./app/src/main/java/app/memo/android/ui/MemoLocalization.kt: OK
+./app/src/main/java/app/memo/android/ui/MemoTheme.kt: OK
+./app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt: OK
+./app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt: OK
+./app/src/main/java/app/memo/android/ui/components/Primitives.kt: OK
+./app/src/main/java/com/synthos/runtime/ai/JobCompiler.java: OK
+./app/src/main/java/com/synthos/runtime/ai/LocalModelRuntime.kt: OK
+./app/src/main/java/com/synthos/runtime/ai/PlanProposalParser.java: OK
+./app/src/main/java/com/synthos/runtime/ai/SkillRegistry.java: OK
+./app/src/main/java/com/synthos/runtime/data/AppCapability.java: OK
+./app/src/main/java/com/synthos/runtime/data/CaptureRecord.java: OK
+./app/src/main/java/com/synthos/runtime/data/ChatMessage.java: OK
+./app/src/main/java/com/synthos/runtime/data/DeviceAiScanner.java: OK
+./app/src/main/java/com/synthos/runtime/data/JobRecord.java: OK
+./app/src/main/java/com/synthos/runtime/data/MemoRecord.java: OK
+./app/src/main/java/com/synthos/runtime/data/RunRecord.java: OK
+./app/src/main/java/com/synthos/runtime/data/SynthStore.java: OK
+./app/src/main/java/com/synthos/runtime/data/TaskRecord.java: OK
+./app/src/main/java/com/synthos/runtime/data/Workflow.java: OK
+./app/src/main/java/com/synthos/runtime/data/WorkflowStep.java: OK
+./app/src/main/java/com/synthos/runtime/engine/AutomationAccessibilityService.java: OK
+./app/src/main/java/com/synthos/runtime/engine/WorkflowPolicy.java: OK
+./app/src/main/java/com/synthos/runtime/remote/RemoteRunnerClient.java: OK
+./app/src/main/res/drawable/ic_launcher.xml: OK
+./app/src/main/res/drawable/ic_memo.xml: OK
+./app/src/main/res/drawable/ic_notification.xml: OK
+./app/src/main/res/values-pl/strings.xml: OK
+./app/src/main/res/values-tr/strings.xml: OK
+./app/src/main/res/values/strings.xml: OK
+./app/src/main/res/values/styles.xml: OK
+./app/src/main/res/xml/accessibility_service_config.xml: OK
+./app/src/main/res/xml/data_extraction_rules.xml: OK
+./app/src/test/java/app/memo/android/browser/BrowserWorkflowPromptsTest.kt: OK
+./app/src/test/java/app/memo/android/ui/MemoLocalizationTest.kt: OK
+./app/src/test/java/com/synthos/runtime/engine/WorkflowPolicyTest.java: OK
+./build.gradle: OK
+./core/build.gradle: OK
+./core/src/main/kotlin/app/memo/android/automation/TaskRules.kt: OK
+./core/src/main/kotlin/app/memo/android/context/WorkspaceContextRetriever.kt: OK
+./core/src/main/kotlin/app/memo/android/data/ActionApprovalLedger.kt: OK
+./core/src/main/kotlin/app/memo/android/data/EncryptedBackupCodec.kt: OK
+./core/src/main/kotlin/app/memo/android/data/FollowUpTaskFactory.kt: OK
+./core/src/main/kotlin/app/memo/android/data/Models.kt: OK
+./core/src/main/kotlin/app/memo/android/data/OutcomeParser.kt: OK
+./core/src/main/kotlin/app/memo/android/data/SelfModelFactualityGuard.kt: OK
+./core/src/main/kotlin/app/memo/android/orchestration/CapabilityCompiler.kt: OK
+./core/src/main/kotlin/app/memo/android/orchestration/IntentPlanner.kt: OK
+./core/src/main/kotlin/app/memo/android/runtime/RuntimeContracts.kt: OK
+./core/src/test/kotlin/app/memo/android/automation/TaskRulesTest.kt: OK
+./core/src/test/kotlin/app/memo/android/context/WorkspaceContextRetrieverTest.kt: OK
+./core/src/test/kotlin/app/memo/android/data/ActionApprovalLedgerTest.kt: OK
+./core/src/test/kotlin/app/memo/android/data/CouncilBackupTest.kt: OK
+./core/src/test/kotlin/app/memo/android/data/EncryptedBackupCodecTest.kt: OK
+./core/src/test/kotlin/app/memo/android/data/FollowUpTaskFactoryTest.kt: OK
+./core/src/test/kotlin/app/memo/android/data/InterruptedTaskRecoveryTest.kt: OK
+./core/src/test/kotlin/app/memo/android/data/OutcomeParserTest.kt: OK
+./core/src/test/kotlin/app/memo/android/data/SelfModelFactualityGuardTest.kt: OK
+./core/src/test/kotlin/app/memo/android/data/WorkspaceSchemaV3Test.kt: OK
+./core/src/test/kotlin/app/memo/android/orchestration/CapabilityCompilerTest.kt: OK
+./core/src/test/kotlin/app/memo/android/orchestration/IntentPlannerTest.kt: OK
+./core/src/test/kotlin/app/memo/android/runtime/RuntimeRegistryTest.kt: OK
+./docs/handoff/MEMO-FRESH-START-MASTER-LEDGER.md: OK
+./docs/handoff/Memo-Phase-1-CI-Diagnostics.md: OK
+./docs/handoff/Memo-Signing-Setup.md: OK
+./docs/handoff/Memo_Architecture_Design_Blueprint.md: OK
+./docs/handoff/Memo_Architecture_Diagram.svg: OK
+./docs/handoff/SOURCE-SNAPSHOT-PROVENANCE.md: OK
+./docs/handoff/ZIP-IMPORT-OPERATIONS.md: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/app/ci-build-evidence/reports/lint-results-debug.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/app/ci-build-evidence/reports/lint-results-debug.txt: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/app/ci-build-evidence/reports/lint-results-debug.xml: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/app/ci-build-evidence/reports/tests/testDebugUnitTest/classes/app.memo.android.browser.BrowserWorkflowPromptsTest.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/app/ci-build-evidence/reports/tests/testDebugUnitTest/classes/app.memo.android.ui.MemoLocalizationTest.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/app/ci-build-evidence/reports/tests/testDebugUnitTest/classes/com.synthos.runtime.engine.WorkflowPolicyTest.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/app/ci-build-evidence/reports/tests/testDebugUnitTest/css/base-style.css: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/app/ci-build-evidence/reports/tests/testDebugUnitTest/css/style.css: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/app/ci-build-evidence/reports/tests/testDebugUnitTest/index.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/app/ci-build-evidence/reports/tests/testDebugUnitTest/js/report.js: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/app/ci-build-evidence/reports/tests/testDebugUnitTest/packages/app.memo.android.browser.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/app/ci-build-evidence/reports/tests/testDebugUnitTest/packages/app.memo.android.ui.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/app/ci-build-evidence/reports/tests/testDebugUnitTest/packages/com.synthos.runtime.engine.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/app/ci-build-evidence/test-results/testDebugUnitTest/TEST-app.memo.android.browser.BrowserWorkflowPromptsTest.xml: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/app/ci-build-evidence/test-results/testDebugUnitTest/TEST-app.memo.android.ui.MemoLocalizationTest.xml: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/app/ci-build-evidence/test-results/testDebugUnitTest/TEST-com.synthos.runtime.engine.WorkflowPolicyTest.xml: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/ci-build-evidence/reports/problems/problems-report.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/reports/tests/test/classes/app.memo.android.automation.TaskRulesTest.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/reports/tests/test/classes/app.memo.android.context.TextSourcePolicyTest.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/reports/tests/test/classes/app.memo.android.context.WorkspaceContextRetrieverTest.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/reports/tests/test/classes/app.memo.android.data.ActionApprovalLedgerTest.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/reports/tests/test/classes/app.memo.android.data.CouncilBackupTest.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/reports/tests/test/classes/app.memo.android.data.EncryptedBackupCodecTest.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/reports/tests/test/classes/app.memo.android.data.FollowUpTaskFactoryTest.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/reports/tests/test/classes/app.memo.android.data.InterruptedTaskRecoveryTest.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/reports/tests/test/classes/app.memo.android.data.OutcomeParserTest.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/reports/tests/test/classes/app.memo.android.data.SelfModelFactualityGuardTest.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/reports/tests/test/classes/app.memo.android.data.WorkflowExecutionEngineTest.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/reports/tests/test/classes/app.memo.android.data.WorkspaceSchemaV3Test.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/reports/tests/test/classes/app.memo.android.orchestration.CapabilityCompilerTest.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/reports/tests/test/classes/app.memo.android.orchestration.DiscoveredCapabilitySchemaTest.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/reports/tests/test/classes/app.memo.android.orchestration.IntentPlannerTest.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/reports/tests/test/classes/app.memo.android.orchestration.LearnedWorkflowRecipeTest.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/reports/tests/test/classes/app.memo.android.orchestration.PageSchemaInterpretationParserTest.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/reports/tests/test/classes/app.memo.android.orchestration.WorkflowGraphPolicyTest.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/reports/tests/test/classes/app.memo.android.runtime.RuntimeRegistryTest.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/reports/tests/test/css/base-style.css: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/reports/tests/test/css/style.css: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/reports/tests/test/index.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/reports/tests/test/js/report.js: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/reports/tests/test/packages/app.memo.android.automation.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/reports/tests/test/packages/app.memo.android.context.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/reports/tests/test/packages/app.memo.android.data.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/reports/tests/test/packages/app.memo.android.orchestration.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/reports/tests/test/packages/app.memo.android.runtime.html: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/test-results/test/TEST-app.memo.android.automation.TaskRulesTest.xml: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/test-results/test/TEST-app.memo.android.context.TextSourcePolicyTest.xml: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/test-results/test/TEST-app.memo.android.context.WorkspaceContextRetrieverTest.xml: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/test-results/test/TEST-app.memo.android.data.ActionApprovalLedgerTest.xml: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/test-results/test/TEST-app.memo.android.data.CouncilBackupTest.xml: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/test-results/test/TEST-app.memo.android.data.EncryptedBackupCodecTest.xml: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/test-results/test/TEST-app.memo.android.data.FollowUpTaskFactoryTest.xml: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/test-results/test/TEST-app.memo.android.data.InterruptedTaskRecoveryTest.xml: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/test-results/test/TEST-app.memo.android.data.OutcomeParserTest.xml: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/test-results/test/TEST-app.memo.android.data.SelfModelFactualityGuardTest.xml: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/test-results/test/TEST-app.memo.android.data.WorkflowExecutionEngineTest.xml: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/test-results/test/TEST-app.memo.android.data.WorkspaceSchemaV3Test.xml: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/test-results/test/TEST-app.memo.android.orchestration.CapabilityCompilerTest.xml: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/test-results/test/TEST-app.memo.android.orchestration.DiscoveredCapabilitySchemaTest.xml: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/test-results/test/TEST-app.memo.android.orchestration.IntentPlannerTest.xml: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/test-results/test/TEST-app.memo.android.orchestration.LearnedWorkflowRecipeTest.xml: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/test-results/test/TEST-app.memo.android.orchestration.PageSchemaInterpretationParserTest.xml: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/test-results/test/TEST-app.memo.android.orchestration.WorkflowGraphPolicyTest.xml: OK
+./docs/handoff/ci-history/run54-last-successful-2026-10-29/core/ci-build-evidence/test-results/test/TEST-app.memo.android.runtime.RuntimeRegistryTest.xml: OK
+./docs/handoff/ci-history/run68-latest-failure-2026-11-03/Memo-Build-Validation.txt: OK
+./docs/handoff/ci-history/run68-latest-failure-2026-11-03/Memo-Import-Failure.md: OK
+./docs/handoff/ci-history/run68-latest-failure-2026-11-03/memo-zip-staging/Memo-Project-Root-Detection.txt: OK
+./docs/handoff/ci-history/run68-latest-failure-2026-11-03/memo/ci-build-evidence/reports/problems/problems-report.html: OK
+./docs/handoff/ci-history/run71-failure-2026-11-05/CapabilityCompilerTest.html: OK
+./docs/handoff/ci-history/run71-failure-2026-11-05/README.md: OK
+./docs/handoff/ci-history/run71-failure-2026-11-05/TEST-app.memo.android.orchestration.CapabilityCompilerTest.xml: OK
+./docs/handoff/ci-history/run72-zip-metadata-2026-11-05/README.md: OK
+./docs/handoff/legacy/memo1-task-runbook-README.txt: OK
+./gradle.properties: OK
+./gradle/wrapper/gradle-wrapper.properties: OK
+./gradlew: OK
+./gradlew.bat: OK
+./remote-runner/server.py: OK
+./remote-runner/tests/test_runner.py: OK
+./settings.gradle: OK
+./tools/verify_source.py: OK
+Source checksum manifest regenerated and verified.
+PASS: 32 required integration files exist
+PASS: platform-independent domain module is isolated from Android framework imports
+PASS: exact-content action ledger, regression tests, visible prompt gate and evidence completion are wired in source
+PASS: central approval inbox is integrated; stale proposals cannot be approved from history; live rejection stops the awaiting workflow
+PASS: top-level stop requests local AI/browser/native cancellation, marks uncertain external actions for review, and reports remote cancellation honestly
+PASS: 10 Android XML files parse
+PASS: microphone/notification/boot permissions and notification receivers are declared
+PASS: exactly one Memo launcher Activity is declared
+PASS: local reminder scheduling/cancellation, monochrome notification icon, private lock-screen visibility, and opt-in workflow alerts are present
+PASS: English, Polish, Turkish and voice/notification translations are represented
+PASS: one Memo Activity, narrow runtime bridge, conversation-first home, and safe draft handoff
+PASS: 363/363 static UI Text literals requiring translation are present in the catalog (449 literals scanned; URLs/placeholders excluded)
+PASS: CI builds only the canonical ZIP, verifies its source manifest, checks the one-Activity boundary, and runs Android unit tests/lint/APK assembly
+PASS: remote runner test suite is present (1 test module(s)); run it separately with unittest
+NOTE: This script does not compile Kotlin, run Gradle, prove Android runtime behavior, or verify a device.
+test_api_rejects_unapproved_submission (test_runner.RunnerTests.test_api_rejects_unapproved_submission) ... ok
+test_api_requires_bearer_token_and_supports_health (test_runner.RunnerTests.test_api_requires_bearer_token_and_supports_health) ... ok
+test_health_declares_local_only (test_runner.RunnerTests.test_health_declares_local_only) ... ok
+test_job_survives_store_restart_and_running_is_interrupted (test_runner.RunnerTests.test_job_survives_store_restart_and_running_is_interrupted) ... ok
+test_missing_postcondition_is_unverified (test_runner.RunnerTests.test_missing_postcondition_is_unverified) ... ok
+test_rejects_missing_postcondition (test_runner.RunnerTests.test_rejects_missing_postcondition) ... ok
+test_rejects_sensitive_text (test_runner.RunnerTests.test_rejects_sensitive_text) ... ok
+test_rejects_shell_or_unknown_step (test_runner.RunnerTests.test_rejects_shell_or_unknown_step) ... ok
+test_rejects_too_many_steps (test_runner.RunnerTests.test_rejects_too_many_steps) ... ok
+test_requires_explicit_approval_and_connected_guest (test_runner.RunnerTests.test_requires_explicit_approval_and_connected_guest) ... ok
+test_valid_workflow_is_bounded_and_normalized (test_runner.RunnerTests.test_valid_workflow_is_bounded_and_normalized) ... ok
+test_verified_only_after_final_text_observed (test_runner.RunnerTests.test_verified_only_after_final_text_observed) ... ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 1.077s
+
+OK
+
+Welcome to Gradle 8.14.6!
+
+Here are the highlights of this release:
+ - Java 24 support
+ - GraalVM Native Image toolchain selection
+ - Enhancements to test reporting
+ - Build Authoring improvements
+
+For more details see https://docs.gradle.org/8.14.6/release-notes.html
+
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.14.6/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :core:processResources NO-SOURCE
+> Task :core:processTestResources NO-SOURCE
+> Task :app:checkDebugAarMetadata
+> Task :app:processDebugNavigationResources
+> Task :app:generateDebugResValues
+> Task :app:compileDebugNavigationResources
+> Task :app:mapDebugSourceSetPaths
+> Task :app:generateDebugResources
+> Task :app:packageDebugResources
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug
+> Task :app:parseDebugLocalResources
+> Task :app:mergeDebugResources
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :app:processDebugManifestForPackage
+> Task :app:javaPreCompileDebug
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileDebugUnitTest FROM-CACHE
+> Task :app:mergeDebugShaders
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets
+> Task :app:processDebugUnitTestManifest
+> Task :app:preDebugAndroidTestBuild SKIPPED
+> Task :app:generateDebugAndroidTestResValues FROM-CACHE
+> Task :app:extractProguardFiles
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:compressDebugAssets
+> Task :app:desugarDebugFileDependencies
+> Task :app:processDebugResources
+> Task :app:packageDebugUnitTestForUnitTest
+> Task :app:generateDebugUnitTestConfig
+> Task :app:mergeDebugJniLibFolders
+> Task :app:checkDebugDuplicateClasses
+> Task :app:validateSigningDebug
+> Task :core:compileKotlin
+> Task :app:mergeExtDexDebug
+> Task :core:compileJava NO-SOURCE
+> Task :core:classes UP-TO-DATE
+> Task :core:jar
+> Task :core:compileTestKotlin
+> Task :core:compileTestJava NO-SOURCE
+> Task :core:testClasses UP-TO-DATE
+> Task :core:test
+> Task :app:mergeLibDexDebug
+> Task :app:writeDebugAppMetadata
+> Task :app:writeDebugSigningConfigVersions
+> Task :app:mergeDebugNativeLibs
+
+> Task :app:stripDebugDebugSymbols
+Unable to strip the following libraries, packaging them as they are: libandroidx.graphics.path.so, liblitertlm_jni.so. Run with --info option to learn more.
+
+> Task :app:compileDebugKotlin FAILED
+e: file:///home/runner/work/memo/memo/app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt:707:29 Smart cast to 'ActionApprovalRecord' is impossible, because 'action' is a public API property declared in different module.
+e: file:///home/runner/work/memo/memo/app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt:708:95 Smart cast to 'ActionApprovalRecord' is impossible, because 'action' is a public API property declared in different module.
+e: file:///home/runner/work/memo/memo/app/src/main/java/app/memo/android/ui/ActionApprovalInboxScreen.kt:173:52 Unresolved reference 'heightIn' on receiver of type 'Modifier'.
+e: file:///home/runner/work/memo/memo/app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt:246:9 Unresolved reference 'browser'.
+e: file:///home/runner/work/memo/memo/app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt:247:9 Unresolved reference 'browser'.
+e: file:///home/runner/work/memo/memo/app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt:1575:163 Unresolved reference 'Edit'.
+e: file:///home/runner/work/memo/memo/app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt:149:62 Only safe (?.) or non-null asserted (!!.) calls are allowed on a nullable receiver of type 'ConversationRecord?'.
+e: file:///home/runner/work/memo/memo/app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt:1114:163 Unresolved reference 'Bookmark'.
+e: file:///home/runner/work/memo/memo/app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt:1622:50 Unresolved reference 'Divider'.
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/android_build-1793851998108.json
+
+[Incubating] Problems report is available at: file:///home/runner/work/memo/memo/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileDebugKotlin'.
+> A failure occurred while executing org.jetbrains.kotlin.compilerRunner.btapi.BuildToolsApiCompilationWork
+   > Compilation error. See log for more details
+
+* Try:
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+* Exception is:
+org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':app:compileDebugKotlin'.
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.lambda$executeIfValid$1(ExecuteActionsTaskExecuter.java:130)
+	at org.gradle.internal.Try$Failure.ifSuccessfulOrElse(Try.java:293)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:128)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:116)
+	at org.gradle.api.internal.tasks.execution.ProblemsTaskPathTrackingTaskExecuter.execute(ProblemsTaskPathTrackingTaskExecuter.java:41)
+	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+	at org.gradle.execution.plan.LocalTaskNodeExecutor.execute(LocalTaskNodeExecutor.java:42)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:331)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:318)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:314)
+	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:314)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:303)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+Caused by: org.gradle.workers.internal.DefaultWorkerExecutor$WorkExecutionException: A failure occurred while executing org.jetbrains.kotlin.compilerRunner.btapi.BuildToolsApiCompilationWork
+	at org.gradle.workers.internal.DefaultWorkerExecutor$WorkItemExecution.waitForCompletion(DefaultWorkerExecutor.java:287)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.lambda$waitForItemsAndGatherFailures$2(DefaultAsyncWorkTracker.java:130)
+	at org.gradle.internal.Factories$1.create(Factories.java:31)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:335)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLocks(DefaultWorkerLeaseService.java:318)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withoutLock(DefaultWorkerLeaseService.java:323)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForItemsAndGatherFailures(DefaultAsyncWorkTracker.java:126)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForItemsAndGatherFailures(DefaultAsyncWorkTracker.java:92)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForAll(DefaultAsyncWorkTracker.java:78)
+	at org.gradle.internal.work.DefaultAsyncWorkTracker.waitForCompletion(DefaultAsyncWorkTracker.java:66)
+	at org.gradle.api.internal.tasks.execution.TaskExecution$3.run(TaskExecution.java:252)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:30)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$1.execute(DefaultBuildOperationRunner.java:27)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.run(DefaultBuildOperationRunner.java:48)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.executeAction(TaskExecution.java:229)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.executeActions(TaskExecution.java:212)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.executeWithPreviousOutputFiles(TaskExecution.java:195)
+	at org.gradle.api.internal.tasks.execution.TaskExecution.execute(TaskExecution.java:162)
+	at org.gradle.internal.execution.steps.ExecuteStep.executeInternal(ExecuteStep.java:105)
+	at org.gradle.internal.execution.steps.ExecuteStep.access$000(ExecuteStep.java:44)
+	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:59)
+	at org.gradle.internal.execution.steps.ExecuteStep$1.call(ExecuteStep.java:56)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:56)
+	at org.gradle.internal.execution.steps.ExecuteStep.execute(ExecuteStep.java:44)
+	at org.gradle.internal.execution.steps.CancelExecutionStep.execute(CancelExecutionStep.java:42)
+	at org.gradle.internal.execution.steps.TimeoutStep.executeWithoutTimeout(TimeoutStep.java:75)
+	at org.gradle.internal.execution.steps.TimeoutStep.execute(TimeoutStep.java:55)
+	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:50)
+	at org.gradle.internal.execution.steps.PreCreateOutputParentsStep.execute(PreCreateOutputParentsStep.java:28)
+	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.execute(RemovePreviousOutputsStep.java:67)
+	at org.gradle.internal.execution.steps.RemovePreviousOutputsStep.execute(RemovePreviousOutputsStep.java:37)
+	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:61)
+	at org.gradle.internal.execution.steps.BroadcastChangingOutputsStep.execute(BroadcastChangingOutputsStep.java:26)
+	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:69)
+	at org.gradle.internal.execution.steps.CaptureOutputsAfterExecutionStep.execute(CaptureOutputsAfterExecutionStep.java:46)
+	at org.gradle.internal.execution.steps.ResolveInputChangesStep.execute(ResolveInputChangesStep.java:40)
+	at org.gradle.internal.execution.steps.ResolveInputChangesStep.execute(ResolveInputChangesStep.java:29)
+	at org.gradle.internal.execution.steps.BuildCacheStep.executeWithoutCache(BuildCacheStep.java:189)
+	at org.gradle.internal.execution.steps.BuildCacheStep.executeAndStoreInCache(BuildCacheStep.java:145)
+	at org.gradle.internal.execution.steps.BuildCacheStep.lambda$executeWithCache$4(BuildCacheStep.java:101)
+	at org.gradle.internal.execution.steps.BuildCacheStep.lambda$executeWithCache$5(BuildCacheStep.java:101)
+	at org.gradle.internal.Try$Success.map(Try.java:175)
+	at org.gradle.internal.execution.steps.BuildCacheStep.executeWithCache(BuildCacheStep.java:85)
+	at org.gradle.internal.execution.steps.BuildCacheStep.lambda$execute$0(BuildCacheStep.java:74)
+	at org.gradle.internal.Either$Left.fold(Either.java:115)
+	at org.gradle.internal.execution.caching.CachingState.fold(CachingState.java:62)
+	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:73)
+	at org.gradle.internal.execution.steps.BuildCacheStep.execute(BuildCacheStep.java:48)
+	at org.gradle.internal.execution.steps.StoreExecutionStateStep.execute(StoreExecutionStateStep.java:46)
+	at org.gradle.internal.execution.steps.StoreExecutionStateStep.execute(StoreExecutionStateStep.java:35)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.executeBecause(SkipUpToDateStep.java:75)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.lambda$execute$2(SkipUpToDateStep.java:53)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:53)
+	at org.gradle.internal.execution.steps.SkipUpToDateStep.execute(SkipUpToDateStep.java:35)
+	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:37)
+	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsFinishedStep.execute(MarkSnapshottingInputsFinishedStep.java:27)
+	at org.gradle.internal.execution.steps.ResolveIncrementalCachingStateStep.executeDelegate(ResolveIncrementalCachingStateStep.java:49)
+	at org.gradle.internal.execution.steps.ResolveIncrementalCachingStateStep.executeDelegate(ResolveIncrementalCachingStateStep.java:27)
+	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:71)
+	at org.gradle.internal.execution.steps.AbstractResolveCachingStateStep.execute(AbstractResolveCachingStateStep.java:39)
+	at org.gradle.internal.execution.steps.ResolveChangesStep.execute(ResolveChangesStep.java:65)
+	at org.gradle.internal.execution.steps.ResolveChangesStep.execute(ResolveChangesStep.java:36)
+	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:107)
+	at org.gradle.internal.execution.steps.ValidateStep.execute(ValidateStep.java:56)
+	at org.gradle.internal.execution.steps.AbstractCaptureStateBeforeExecutionStep.execute(AbstractCaptureStateBeforeExecutionStep.java:64)
+	at org.gradle.internal.execution.steps.AbstractCaptureStateBeforeExecutionStep.execute(AbstractCaptureStateBeforeExecutionStep.java:43)
+	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.executeWithNonEmptySources(AbstractSkipEmptyWorkStep.java:125)
+	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.execute(AbstractSkipEmptyWorkStep.java:61)
+	at org.gradle.internal.execution.steps.AbstractSkipEmptyWorkStep.execute(AbstractSkipEmptyWorkStep.java:36)
+	at org.gradle.internal.execution.steps.legacy.MarkSnapshottingInputsStartedStep.execute(MarkSnapshottingInputsStartedStep.java:38)
+	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.execute(LoadPreviousExecutionStateStep.java:36)
+	at org.gradle.internal.execution.steps.LoadPreviousExecutionStateStep.execute(LoadPreviousExecutionStateStep.java:23)
+	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.execute(HandleStaleOutputsStep.java:75)
+	at org.gradle.internal.execution.steps.HandleStaleOutputsStep.execute(HandleStaleOutputsStep.java:41)
+	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.lambda$execute$0(AssignMutableWorkspaceStep.java:35)
+	at org.gradle.api.internal.tasks.execution.TaskExecution$4.withWorkspace(TaskExecution.java:289)
+	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.execute(AssignMutableWorkspaceStep.java:31)
+	at org.gradle.internal.execution.steps.AssignMutableWorkspaceStep.execute(AssignMutableWorkspaceStep.java:22)
+	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:40)
+	at org.gradle.internal.execution.steps.ChoosePipelineStep.execute(ChoosePipelineStep.java:23)
+	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.lambda$execute$2(ExecuteWorkBuildOperationFiringStep.java:67)
+	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:67)
+	at org.gradle.internal.execution.steps.ExecuteWorkBuildOperationFiringStep.execute(ExecuteWorkBuildOperationFiringStep.java:39)
+	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:46)
+	at org.gradle.internal.execution.steps.IdentityCacheStep.execute(IdentityCacheStep.java:34)
+	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:48)
+	at org.gradle.internal.execution.steps.IdentifyStep.execute(IdentifyStep.java:35)
+	at org.gradle.internal.execution.impl.DefaultExecutionEngine$1.execute(DefaultExecutionEngine.java:64)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.executeIfValid(ExecuteActionsTaskExecuter.java:127)
+	at org.gradle.api.internal.tasks.execution.ExecuteActionsTaskExecuter.execute(ExecuteActionsTaskExecuter.java:116)
+	at org.gradle.api.internal.tasks.execution.ProblemsTaskPathTrackingTaskExecuter.execute(ProblemsTaskPathTrackingTaskExecuter.java:41)
+	at org.gradle.api.internal.tasks.execution.FinalizePropertiesTaskExecuter.execute(FinalizePropertiesTaskExecuter.java:46)
+	at org.gradle.api.internal.tasks.execution.ResolveTaskExecutionModeExecuter.execute(ResolveTaskExecutionModeExecuter.java:51)
+	at org.gradle.api.internal.tasks.execution.SkipTaskWithNoActionsExecuter.execute(SkipTaskWithNoActionsExecuter.java:57)
+	at org.gradle.api.internal.tasks.execution.SkipOnlyIfTaskExecuter.execute(SkipOnlyIfTaskExecuter.java:74)
+	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.executeTask(EventFiringTaskExecuter.java:77)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:55)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter$1.call(EventFiringTaskExecuter.java:52)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.api.internal.tasks.execution.EventFiringTaskExecuter.execute(EventFiringTaskExecuter.java:52)
+	at org.gradle.execution.plan.LocalTaskNodeExecutor.execute(LocalTaskNodeExecutor.java:42)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:331)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$InvokeNodeExecutorsAction.execute(DefaultTaskExecutionGraph.java:318)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.lambda$execute$0(DefaultTaskExecutionGraph.java:314)
+	at org.gradle.internal.operations.CurrentBuildOperationRef.with(CurrentBuildOperationRef.java:85)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:314)
+	at org.gradle.execution.taskgraph.DefaultTaskExecutionGraph$BuildOperationAwareExecutionAction.execute(DefaultTaskExecutionGraph.java:303)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.execute(DefaultPlanExecutor.java:459)
+	at org.gradle.execution.plan.DefaultPlanExecutor$ExecutorWorker.run(DefaultPlanExecutor.java:376)
+	at org.gradle.internal.concurrent.ExecutorPolicy$CatchAndRecordFailures.onExecute(ExecutorPolicy.java:64)
+	at org.gradle.internal.concurrent.AbstractManagedExecutor$1.run(AbstractManagedExecutor.java:48)
+Caused by: org.jetbrains.kotlin.gradle.tasks.CompilationErrorException: Compilation error. See log for more details
+	at org.jetbrains.kotlin.gradle.tasks.TasksUtilsKt.throwExceptionIfCompilationFailed(tasksUtils.kt:21)
+	at org.jetbrains.kotlin.compilerRunner.btapi.BuildToolsApiCompilationWork.execute(BuildToolsApiCompilationWork.kt:214)
+	at org.gradle.workers.internal.DefaultWorkerServer.execute(DefaultWorkerServer.java:63)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:66)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1$1.create(NoIsolationWorkerFactory.java:62)
+	at org.gradle.internal.classloader.ClassLoaderUtils.executeInClassloader(ClassLoaderUtils.java:100)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.lambda$execute$0(NoIsolationWorkerFactory.java:62)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:44)
+	at org.gradle.workers.internal.AbstractWorker$1.call(AbstractWorker.java:41)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:210)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$CallableBuildOperationWorker.execute(DefaultBuildOperationRunner.java:205)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:67)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner$2.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:167)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.execute(DefaultBuildOperationRunner.java:60)
+	at org.gradle.internal.operations.DefaultBuildOperationRunner.call(DefaultBuildOperationRunner.java:54)
+	at org.gradle.workers.internal.AbstractWorker.executeWrappedInBuildOperation(AbstractWorker.java:41)
+	at org.gradle.workers.internal.NoIsolationWorkerFactory$1.execute(NoIsolationWorkerFactory.java:59)
+	at org.gradle.workers.internal.DefaultWorkerExecutor.lambda$submitWork$0(DefaultWorkerExecutor.java:174)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runExecution(DefaultConditionalExecutionQueue.java:194)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.access$700(DefaultConditionalExecutionQueue.java:127)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner$1.run(DefaultConditionalExecutionQueue.java:169)
+	at org.gradle.internal.Factories$1.create(Factories.java:31)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.withLocks(DefaultWorkerLeaseService.java:263)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:127)
+	at org.gradle.internal.work.DefaultWorkerLeaseService.runAsWorkerThread(DefaultWorkerLeaseService.java:132)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.runBatch(DefaultConditionalExecutionQueue.java:164)
+	at org.gradle.internal.work.DefaultConditionalExecutionQueue$ExecutionRunner.run(DefaultConditionalExecutionQueue.java:133)
+	... 2 more
+
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.14.6/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD FAILED in 2m 56s
+40 actionable tasks: 38 executed, 2 from cache

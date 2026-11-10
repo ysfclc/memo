@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.memo.android.data.WorkflowExecutionEngineTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-29T19:46:37.299Z" hostname="runnervm48cm3" time="0.067">
+  <properties/>
+  <testcase name="timeoutReturnsToPendingOnlyWithinBoundedRetryBudget" classname="app.memo.android.data.WorkflowExecutionEngineTest" time="0.027"/>
+  <testcase name="generatedArtifactRequiresCurrentTokenAndExactStepProvenance" classname="app.memo.android.data.WorkflowExecutionEngineTest" time="0.006"/>
+  <testcase name="workflowAuditTamperingBlocksFurtherExecutionAndExport" classname="app.memo.android.data.WorkflowExecutionEngineTest" time="0.001"/>
+  <testcase name="restartInvalidatesInFlightTokenAndAddsRecoveryEvent" classname="app.memo.android.data.WorkflowExecutionEngineTest" time="0.007"/>
+  <testcase name="workflowAuditAndExecutionMetadataRoundTripThroughSchemaSix" classname="app.memo.android.data.WorkflowExecutionEngineTest" time="0.009"/>
+  <testcase name="staleExecutorResultsAndWrongTokensAreNeverApplied" classname="app.memo.android.data.WorkflowExecutionEngineTest" time="0.001"/>
+  <testcase name="globalStopStillRevokesTokensWhenAuditChainIsDamaged" classname="app.memo.android.data.WorkflowExecutionEngineTest" time="0.001"/>
+  <testcase name="startAndUserOutcomeAreAuditedAndRemainExplicitlyUserReported" classname="app.memo.android.data.WorkflowExecutionEngineTest" time="0.006"/>
+  <testcase name="genericEngineCannotStartExternalWritesAndCancelInvalidatesTokens" classname="app.memo.android.data.WorkflowExecutionEngineTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Memo</string>
+    <string name="accessibility_service_description">Kullanıcının istediği uygulamalar arası işlemleri sağlar: düzenlenebilir olmayan görünür arayüz etiketlerini okur ve açıkça seçilen kontrolleri uygular. Yakalama kullanıcı tarafından başlatılır; parola ve düzenlenebilir alan değerlerini içermez.</string>
+</resources>

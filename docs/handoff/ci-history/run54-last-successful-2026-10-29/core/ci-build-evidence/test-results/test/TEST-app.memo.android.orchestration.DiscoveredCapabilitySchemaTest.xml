@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.memo.android.orchestration.DiscoveredCapabilitySchemaTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-29T19:46:37.445Z" hostname="runnervm48cm3" time="0.019">
+  <properties/>
+  <testcase name="unsafeOriginAndCriticalAutoApprovalFailValidation" classname="app.memo.android.orchestration.DiscoveredCapabilitySchemaTest" time="0.005"/>
+  <testcase name="codecRoundTripsVersionedSchemasAndRejectsDuplicateVersions" classname="app.memo.android.orchestration.DiscoveredCapabilitySchemaTest" time="0.008"/>
+  <testcase name="observedSchemaIsValidButCannotBeReusedBeforeApproval" classname="app.memo.android.orchestration.DiscoveredCapabilitySchemaTest" time="0.001"/>
+  <testcase name="reuseRequiresMatchingHttpsOriginAndPathScope" classname="app.memo.android.orchestration.DiscoveredCapabilitySchemaTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

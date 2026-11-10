@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.memo.android.data.ActionApprovalLedgerTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-29T19:46:36.299Z" hostname="runnervm48cm3" time="0.167">
+  <properties/>
+  <testcase name="browserEnvelopeRequiresCleanHttpsDestination" classname="app.memo.android.data.ActionApprovalLedgerTest" time="0.02"/>
+  <testcase name="happyPathRequiresHumanApprovalAndEvidenceBackedCompletion" classname="app.memo.android.data.ActionApprovalLedgerTest" time="0.051"/>
+  <testcase name="restartAndImportInvalidatePortableApprovalsAndFlagInFlightAction" classname="app.memo.android.data.ActionApprovalLedgerTest" time="0.006"/>
+  <testcase name="tamperedStoredPayloadAndTamperedAuditEventFailClosed" classname="app.memo.android.data.ActionApprovalLedgerTest" time="0.006"/>
+  <testcase name="ledgerRejectsOrphanedAuditEventsAndExpiredApprovals" classname="app.memo.android.data.ActionApprovalLedgerTest" time="0.005"/>
+  <testcase name="contentHashBindsRuntimeCapabilityDestinationAndExactPayload" classname="app.memo.android.data.ActionApprovalLedgerTest" time="0.002"/>
+  <testcase name="changedPayloadOrDestinationCannotReuseApproval" classname="app.memo.android.data.ActionApprovalLedgerTest" time="0.007"/>
+  <testcase name="schemaFourRoundTripsApprovalAndRejectsTamperedPayload" classname="app.memo.android.data.ActionApprovalLedgerTest" time="0.036"/>
+  <testcase name="cancellingParentWorkflowInvalidatesUnusedApprovalsAndFlagsInFlightActions" classname="app.memo.android.data.ActionApprovalLedgerTest" time="0.027"/>
+  <testcase name="oldSchemaStillImportsWithoutApprovalRecords" classname="app.memo.android.data.ActionApprovalLedgerTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
