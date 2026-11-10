@@ -79,7 +79,14 @@ sdkmanager --sdk_root="$ANDROID_SDK_ROOT" \
   "build-tools;35.0.0"
 
 chmod +x ./gradlew
-./gradlew --no-daemon --stacktrace :core:test :app:assembleDebug
+GRADLE_LOG="$(mktemp)"
+if ! ./gradlew --no-daemon --console=plain --stacktrace --info :core:test :app:assembleDebug >"$GRADLE_LOG" 2>&1; then
+  echo "Gradle failed. Last 240 lines follow:"
+  tail -n 240 "$GRADLE_LOG"
+  rm -f "$GRADLE_LOG"
+  exit 1
+fi
+rm -f "$GRADLE_LOG"
 
 APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
 if [ ! -s "$APK_PATH" ]; then
