@@ -992,6 +992,84 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         else Result.failure(IllegalStateException("The artifact could not be committed to the workspace."))
     }
 
+    /**
+     * Atomically retain a local-model draft and move its active checkpoint to human review.
+     * The artifact and workflow state must commit together so a process interruption cannot
+     * leave a saved draft attached to a permanently RUNNING checkpoint (or vice versa).
+     */
+    fun saveWorkArtifactForReview(jobId: String, stepId: String, evidence: EvidenceRecord): Result<Unit> {
+        if (!_vaultReady.value || _vaultError.value != null) return Result.failure(IllegalStateException("Workspace persistence is unavailable."))
+        if (evidence.kind != "WORK_ARTIFACT" || evidence.taskId != jobId) {
+            return Result.failure(IllegalArgumentException("The draft artifact is not linked to this work plan."))
+        }
+        var rejection: String? = null
+        updateSnapshot { current ->
+            val job = current.jobs.firstOrNull { it.id == jobId }
+            val step = job?.steps?.firstOrNull { it.id == stepId }
+            when {
+                job == null || step == null -> { rejection = "This work checkpoint no longer exists."; current }
+                step.status != "RUNNING" -> { rejection = "This checkpoint is no longer active. Reopen Work before saving the draft."; current }
+                current.evidence.size >= 150 -> { rejection = "Evidence storage is full. Export a workspace backup and remove older evidence before creating another artifact."; current }
+                current.evidence.any { it.id == evidence.id } -> { rejection = "An artifact with this identity already exists."; current }
+                else -> {
+                    val now = nowMillis()
+                    val updatedStep = step.copy(
+                        status = "NEEDS_REVIEW",
+                        detail = "Local model produced a draft artifact. Review it before recording the checkpoint outcome.",
+                        evidence = "evidence:${evidence.id}; model:" + evidence.metadata.let {
+                            runCatching { org.json.JSONObject(it).optString("modelId") }.getOrDefault("")
+                        },
+                        updatedAt = now
+                    )
+                    val updatedJob = job.copy(
+                        status = "WAITING_FOR_USER",
+                        steps = job.steps.map { if (it.id == stepId) updatedStep else it },
+                        resultSummary = "A local draft was saved to Evidence. Review the actual output before continuing; it is not an independently verified result.",
+                        updatedAt = now
+                    )
+                    current.copy(
+                        evidence = listOf(evidence) + current.evidence,
+                        jobs = current.jobs.map { if (it.id == jobId) updatedJob else it },
+                        activity = (listOf(ActivityRecord(at = now, message = "Local Work draft saved for review: ${evidence.title}", taskId = jobId)) + current.activity).take(500)
+                    )
+                }
+            }
+        }
+        if (rejection != null) return Result.failure(IllegalStateException(rejection))
+        val committed = _snapshot.value
+        return if (committed.evidence.any { it.id == evidence.id } &&
+            committed.jobs.firstOrNull { it.id == jobId }?.let { job ->
+                job.status == "WAITING_FOR_USER" && job.steps.any { it.id == stepId && it.status == "NEEDS_REVIEW" }
+            } == true) Result.success(Unit)
+        else Result.failure(IllegalStateException("The draft and review state could not be committed together."))
+    }
+
+    /** Keep a failed local inference from leaving its checkpoint in RUNNING state. */
+    fun markJobStepNeedsReview(jobId: String, stepId: String, detail: String, resultSummary: String): Boolean {
+        if (!_vaultReady.value || _vaultError.value != null) return false
+        var changed = false
+        updateSnapshot { current ->
+            val job = current.jobs.firstOrNull { it.id == jobId } ?: return@updateSnapshot current
+            if (job.steps.none { it.id == stepId && it.status == "RUNNING" }) return@updateSnapshot current
+            val now = nowMillis()
+            changed = true
+            current.copy(
+                jobs = current.jobs.map { candidate ->
+                    if (candidate.id != jobId) candidate else candidate.copy(
+                        status = "WAITING_FOR_USER",
+                        steps = candidate.steps.map { step ->
+                            if (step.id == stepId) step.copy(status = "NEEDS_REVIEW", detail = detail.trim().take(2_000), updatedAt = now) else step
+                        },
+                        resultSummary = resultSummary.trim().take(4_000),
+                        updatedAt = now
+                    )
+                },
+                activity = (listOf(ActivityRecord(at = now, level = "WARN", message = "Local Work checkpoint needs review: ${stepId}", taskId = jobId)) + current.activity).take(500)
+            )
+        }
+        return changed
+    }
+
     fun addCouncilRun(run: CouncilRunRecord) {
         updateSnapshot { current ->
             current.copy(councilRuns = (listOf(run) + current.councilRuns.filterNot { it.id == run.id }).take(60))
