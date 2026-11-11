@@ -141,16 +141,16 @@ console.log('BLOB_DOWNLOAD_URL=' + blob.downloadUrl);
 console.log('BLOB_ETAG=' + blob.etag);
 NODE
   BLOB_RESULT="$(node "$BLOB_TOOL_DIR/upload.mjs" "artifacts/Memo-release-$SHORT_COMMIT.apk" "memo/Memo-release-$SHORT_COMMIT.apk")"
-  printf '%s\\n' "$BLOB_RESULT"
-  BLOB_DOWNLOAD_URL="$(printf '%s\\n' "$BLOB_RESULT" | sed -n 's/^BLOB_DOWNLOAD_URL=//p')"
+  printf '%s\n' "$BLOB_RESULT"
+  BLOB_DOWNLOAD_URL="$(printf '%s\n' "$BLOB_RESULT" | sed -n 's/^BLOB_DOWNLOAD_URL=//p')"
   if [ -z "$BLOB_DOWNLOAD_URL" ]; then
     echo "Blob upload completed without returning a download URL." >&2
     exit 1
   fi
-  printf '%s\\n' "$BLOB_DOWNLOAD_URL" > artifacts/APK_DOWNLOAD_URL.txt
+  printf '%s\n' "$BLOB_DOWNLOAD_URL" > artifacts/APK_DOWNLOAD_URL.txt
   EXPECTED_SIZE="$(wc -c < "artifacts/Memo-release-$SHORT_COMMIT.apk" | tr -d ' ')"
   REMOTE_HEADERS="$(curl --fail --silent --show-error --location --head "$BLOB_DOWNLOAD_URL")"
-  REMOTE_SIZE="$(printf '%s\\n' "$REMOTE_HEADERS" | awk 'BEGIN{IGNORECASE=1} /^content-length:/ {gsub(/\\r/,"",$2); size=$2} END{print size}')"
+  REMOTE_SIZE="$(printf '%s\n' "$REMOTE_HEADERS" | awk 'BEGIN{IGNORECASE=1} /^content-length:/ {gsub(/\\r/,"",$2); size=$2} END{print size}')"
   if [ -n "$REMOTE_SIZE" ] && [ "$REMOTE_SIZE" != "$EXPECTED_SIZE" ]; then
     echo "Blob size verification failed: local=$EXPECTED_SIZE remote=$REMOTE_SIZE" >&2
     exit 1
