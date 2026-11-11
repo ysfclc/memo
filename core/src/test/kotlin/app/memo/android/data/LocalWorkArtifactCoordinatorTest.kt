@@ -1,0 +1,76 @@
+package app.memo.android.data
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class LocalWorkArtifactCoordinatorTest {
+    private fun snapshot(status: String = "RUNNING"): AppSnapshot {
+        val step = JobStepRecord(id = "step-1", title = "Prepare deliverable", status = status)
+        return AppSnapshot(jobs = listOf(WorkJobRecord(
+            id = "job-1",
+            title = "Prepare a report",
+            goal = "Create a sourced report",
+            status = "RUNNING",
+            steps = listOf(step)
+        )))
+    }
+
+    private fun artifact(id: String = "evidence-1", jobId: String = "job-1") = EvidenceRecord(
+        id = id,
+        taskId = jobId,
+        title = "Draft report",
+        sourceUrl = "",
+        kind = "WORK_ARTIFACT",
+        content = "A draft that requires review.",
+        summary = "Draft report",
+        metadata = """{"modelId":"local:test","requiresHumanReview":true}"""
+    )
+
+    @Test fun savesDraftAndMovesStepAndJobToReviewInOneSnapshot() {
+        val result = LocalWorkArtifactCoordinator.saveForReview(snapshot(), "job-1", "step-1", artifact(), 42L).getOrThrow()
+        assertEquals("evidence-1", result.evidence.single().id)
+        assertEquals("NEEDS_REVIEW", result.jobs.single().steps.single().status)
+        assertEquals("WAITING_FOR_USER", result.jobs.single().status)
+        assertTrue(result.jobs.single().steps.single().evidence.contains("evidence:evidence-1"))
+        assertEquals(42L, result.activity.first().at)
+    }
+
+    @Test fun refusesToAttachAnArtifactToAStaleCheckpoint() {
+        val result = LocalWorkArtifactCoordinator.saveForReview(snapshot("NEEDS_REVIEW"), "job-1", "step-1", artifact(), 42L)
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull()?.message.orEmpty().contains("no longer active"))
+        assertTrue(snapshot("NEEDS_REVIEW").evidence.isEmpty())
+    }
+
+    @Test fun refusesAnArtifactThatBelongsToAnotherJob() {
+        val result = LocalWorkArtifactCoordinator.saveForReview(snapshot(), "job-1", "step-1", artifact(jobId = "job-2"), 42L)
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull()?.message.orEmpty().contains("not linked"))
+    }
+
+    @Test fun refusesDuplicateEvidenceIdentity() {
+        val initial = snapshot().copy(evidence = listOf(artifact()))
+        val result = LocalWorkArtifactCoordinator.saveForReview(initial, "job-1", "step-1", artifact(), 42L)
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull()?.message.orEmpty().contains("already exists"))
+    }
+
+    @Test fun failureTransitionMovesOnlyTheActiveStepToReview() {
+        val initial = snapshot().copy(jobs = listOf(snapshot().jobs.single().copy(steps = listOf(
+            JobStepRecord(id = "step-1", title = "Prepare deliverable", status = "RUNNING"),
+            JobStepRecord(id = "step-2", title = "Next checkpoint", status = "PENDING")
+        ))))
+        val result = LocalWorkArtifactCoordinator.markNeedsReview(initial, "job-1", "step-1", "Model failed.", "No draft was saved.", 99L).getOrThrow()
+        assertEquals("NEEDS_REVIEW", result.jobs.single().steps[0].status)
+        assertEquals("PENDING", result.jobs.single().steps[1].status)
+        assertEquals("WAITING_FOR_USER", result.jobs.single().status)
+        assertFalse(result.evidence.isNotEmpty())
+    }
+
+    @Test fun refusesFailureTransitionForACheckpointThatIsNotRunning() {
+        val result = LocalWorkArtifactCoordinator.markNeedsReview(snapshot("PENDING"), "job-1", "step-1", "Model failed.", "No draft.", 99L)
+        assertTrue(result.isFailure)
+    }
+}
