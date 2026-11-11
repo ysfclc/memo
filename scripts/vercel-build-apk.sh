@@ -61,7 +61,14 @@ if [[ ! -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]]; then
 import urllib.request
 import xml.etree.ElementTree as ET
 url = "https://dl.google.com/android/repository/repository2-1.xml"
-with urllib.request.urlopen(url, timeout=45) as response:
+request = urllib.request.Request(
+    url,
+    headers={
+        "User-Agent": "Mozilla/5.0 (compatible; MemoAndroidBuild/1.0)",
+        "Accept": "application/xml,text/xml,*/*",
+    },
+)
+with urllib.request.urlopen(request, timeout=45) as response:
     root = ET.fromstring(response.read())
 local = lambda element: element.tag.rsplit("}", 1)[-1]
 for package in root.iter():
