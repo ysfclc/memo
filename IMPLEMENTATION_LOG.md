@@ -113,3 +113,15 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - Integrated the fail-closed native action policy and Talk draft-preservation changes with the Signal & Graphite design foundation, unified experience/navigation rebuild, Today priority model, and evidence-backed industrial account intake.
 - Preserved the mainline product scope and existing execution history; did not replace the main task ledger with the shortened feature-branch copy.
 - Verification remains open: run authoritative Gradle unit tests, lint and Android APK pipeline against the integrated commit. No APK or device acceptance is claimed by this source merge.
+
+
+### 2026-11-11 — Local-model Work checkpoint lifecycle
+
+- **Requirements:** MEMO-ORCH-001, MEMO-LIVE-001, MEMO-AI-001; TASKS M3.A3, M3.A4, M3.8.A7.
+- **Baseline:** `stabilization/usable-stage-2026-11-10` at `3d9db9b7ace91a751803b7c476eb5dc8c36007b7`; fresh-start checkpoint `docs/checkpoints/2026-11-11-local-work-execution.md`.
+- **Gap found:** the Work local-model callback invoked inference directly. It did not reserve/start the saved checkpoint through `WorkflowCheckpointCoordinator`, so the dependency/runtime gate and persisted RUNNING transition could be bypassed.
+- **Implementation:** Work now calls `startJobStep` before building the execution context or invoking local inference. It reads the post-start workspace snapshot for context. A successful response is still saved as a private `WORK_ARTIFACT` requiring human review. Model failure and evidence-save failure both move the checkpoint to `NEEDS_REVIEW` and the job to `WAITING_FOR_USER`; neither path leaves a phantom active step or reports completion.
+- **Regression guard:** `tools/verify_source.py` now checks that local inference is ordered after the persisted start gate and that review/failure states remain wired. Existing `WorkflowCheckpointCoordinatorTest` covers dependency refusal, active-step exclusion, runtime/capability revalidation, external-action refusal and truthful user-reported completion.
+- **Validation:** source-level changes committed; automated source verifier and Gradle suites have not yet been executed against this head. PR validation is expected from the open PR #8 workflow. No build, emulator or physical-device success is claimed.
+- **Boundary:** this is one local-model runtime adapter path, not a durable cross-runtime DAG executor. Attempt journal/idempotency, typed runtime receipts, timeout/cancellation propagation, pause/resume/recovery and postcondition verification remain open.
+- **Status:** implemented in source; verification pending.
