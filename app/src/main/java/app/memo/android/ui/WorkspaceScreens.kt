@@ -1148,28 +1148,35 @@ fun WorkWorkspaceScreen(
                                     ) { response, error ->
                                         if (response == null) {
                                             val message = (error ?: "No response returned.").take(180)
-                                            viewModel.updateJobStep(currentJob.id, currentStep.id, "NEEDS_REVIEW", "Local execution did not produce a draft. Review the error and retry when ready: $message")
-                                            viewModel.updateJobStatus(currentJob.id, "WAITING_FOR_USER", "The local-model checkpoint did not produce an artifact. No work was marked complete.")
+                                            viewModel.markJobStepNeedsReview(
+                                                currentJob.id,
+                                                currentStep.id,
+                                                "Local execution did not produce a draft. Review the error and retry when ready: $message",
+                                                "The local-model checkpoint did not produce an artifact. No work was marked complete."
+                                            )
                                             onShowMessage("Local step needs review: $message")
                                         } else {
                                             val artifact = EvidenceRecord(
                                                 title = "${currentJob.title} — ${currentStep.title}".take(240),
+                                                taskId = currentJob.id,
                                                 sourceUrl = "",
                                                 kind = "WORK_ARTIFACT",
                                                 content = response,
                                                 summary = response.lineSequence().firstOrNull().orEmpty().take(1_000),
                                                 metadata = org.json.JSONObject().put("jobId", currentJob.id).put("stepId", currentStep.id).put("modelId", modelId).put("provenance", "local-model-draft").put("requiresHumanReview", true).toString()
                                             )
-                                            viewModel.saveWorkArtifact(artifact).fold(
+                                            viewModel.saveWorkArtifactForReview(currentJob.id, currentStep.id, artifact).fold(
                                                 onSuccess = {
-                                                    viewModel.updateJobStep(currentJob.id, currentStep.id, "NEEDS_REVIEW", "Local model produced a draft artifact. Review it before recording the checkpoint outcome.", "evidence:${artifact.id}; model:$modelId")
-                                                    viewModel.updateJobStatus(currentJob.id, "WAITING_FOR_USER", "A local draft was saved to Evidence. Review the actual output before continuing; it is not an independently verified result.")
                                                     onShowMessage("Draft saved to Evidence for review. No external action was performed.")
                                                 },
                                                 onFailure = { error ->
                                                     val message = (error.message ?: "The draft could not be saved.").take(180)
-                                                    viewModel.updateJobStep(currentJob.id, currentStep.id, "NEEDS_REVIEW", "The model response could not be saved as evidence. Review and retry: $message")
-                                                    viewModel.updateJobStatus(currentJob.id, "WAITING_FOR_USER", "The local-model response was not saved; the checkpoint remains unverified.")
+                                                    viewModel.markJobStepNeedsReview(
+                                                        currentJob.id,
+                                                        currentStep.id,
+                                                        "The model response could not be saved as evidence. Review and retry: $message",
+                                                        "The local-model response was not saved; the checkpoint remains unverified."
+                                                    )
                                                     onShowMessage("Draft not saved: $message")
                                                 }
                                             )
