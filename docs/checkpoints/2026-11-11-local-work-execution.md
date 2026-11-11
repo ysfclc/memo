@@ -4,6 +4,7 @@
 **Repository:** `ysfclc/memo`  
 **Branch:** `stabilization/usable-stage-2026-11-10`  
 **Baseline HEAD:** `3d9db9b7ace91a751803b7c476eb5dc8c36007b7`  
+**Implementation HEAD at documentation update:** `1c9ae262cd26edf37ca3f7532957b281c9f3edef`  
 **Base / PR:** `main` / draft PR #8  
 **Working tree:** Remote GitHub source inspected; no local checkout available in this session.  
 **Product requirements:** MEMO-ORCH-001, MEMO-LIVE-001, MEMO-AI-001  
@@ -45,6 +46,21 @@ This is a first vertical slice toward the durable DAG executor. It is not a clai
 | Emulator / physical device | not run |
 | APK | intentionally out of scope |
 
+## Work completed
+
+- `WorkspaceScreens.kt`: local-model Work execution now calls `startJobStep` before context assembly and inference. The persisted coordinator therefore gates dependency readiness, exact runtime/capability availability, active-step exclusion and external-action refusal before the model is invoked.
+- The prompt is assembled from the post-start workspace snapshot. Successful inference still creates a `WORK_ARTIFACT` marked `requiresHumanReview`, then moves the step to `NEEDS_REVIEW` and job to `WAITING_FOR_USER`.
+- Model failure and artifact-save failure both move the checkpoint to `NEEDS_REVIEW` and the job to `WAITING_FOR_USER`; no failure path leaves a phantom RUNNING step or reports completion.
+- `tools/verify_source.py` now checks the gate-before-inference ordering and review/failure lifecycle wiring.
+- `TASKS.md`, `PRODUCT_GAP_REGISTRY.md` and `IMPLEMENTATION_LOG.md` now describe this as a partial first local-runtime dispatch slice, not a completed DAG executor.
+
+## Verification and current blocker
+
+- Existing core tests cover the checkpoint coordinator's dependency, runtime/capability, active-step and external-action rules. The new source verifier assertion is committed.
+- GitHub Actions PR runs #379–#383 all failed in the preflight job before exposing any steps/logs; build, Gradle tests, lint and APK assembly were skipped. This is an existing pipeline/preflight blocker, not evidence of a Kotlin compile failure or success.
+- No local Gradle/Android SDK environment or device execution was available in this session. Source-level compilation and physical-device behavior remain unverified.
+- PR #8 remains draft; `main` and Memo 2 remain untouched. No APK was built or distributed.
+
 ## Next action
 
-Implement the focused local-model Work lifecycle slice, add/update tests and documentation, then run every available source/core/Android validation. Keep PR #8 draft and main untouched until exact-head CI and device acceptance exist.
+Repair the PR preflight failure so exact-head CI can reach source verification, Gradle tests, lint and Android compilation. Then continue the durable per-node runtime journal/adapter work; do not package an APK until meaningful product behavior and validation justify it.
