@@ -7,7 +7,7 @@ dd3d203254c11eda212933be2fdad09d4219b7869ac1a0fb74166ad103cb9ed2  ./scripts/verc
 27a75bf71bfa1da44ba4c0fcf483b010cab683e19f33f308a150a248cdae81aa  ./DEVICE_ACCEPTANCE_CHECKLIST.md
 8366bdfaccc58d711b844fe09100a713410e02e87a6f3350f21e3133cc03f378  ./FEATURE_AUDIT.md
 dd455fac6e27fc3a4f55b917d345ce0bf7b523cf25cff35beaa85cb8d8d14886  ./IMPLEMENTATION_CONTRACT.md
-67919d91e7885a3e3e9452c2e62fc58696a4138ad0c7263529fb961b446a5d68  ./IMPLEMENTATION_LOG.md
+feddc5a77a736ef91d18671feb6d08d485ee25b02b2a78e93d2e57b9eddcbf7f  ./IMPLEMENTATION_LOG.md
 413fe1482fb424a3676febd4acedabb3c671e9bc45a034abdf899ac097eb45f0  ./MEMO-PATCH1-AUDIT.md
 918ac512072584dabb677b559a0e54f353b42c94d0e1607e07e9abeef8e8937f  ./MEMO2_ALIGNMENT_MATRIX.md
 a02c1b79af0bcf3078104a6185e68abebf6f59a56cfe6a73aee1143f2e7db51c  ./PRODUCT_GAP_REGISTRY.md
@@ -201,4 +201,4 @@ a1453a88e5bc19e7b20a521b56d36acbaec90fc742b79fb49fca11b7ddda73af  ./remote-runne
 fe0a38d79b3524578e3a785381612ce6d7ed0f2792ce4da07110e0fa75ebc966  ./tools/verify_source.py
 fa31b06bb76bf24d6caa6cf658197be574ffb9a2b2a51c66d0547ea99a38d33e  ./core/src/main/kotlin/app/memo/android/data/LocalWorkArtifactCoordinator.kt
 3f5b30ec4d7c74cee98f92df481ef3f8d7b461ed56013b340433a726f50410be  ./core/src/test/kotlin/app/memo/android/data/LocalWorkArtifactCoordinatorTest.kt
-979ee7188f5aae345a956e554061195657f0ecd45688a4bd9903e9c065728c83  ./docs/checkpoints/2026-11-11-vercel-android-build.md
+11ef9d881f771b1d43227af2089c418d46e1b2e3c9009e11d42065bb1a07f12e  ./docs/checkpoints/2026-11-11-vercel-android-build.md
