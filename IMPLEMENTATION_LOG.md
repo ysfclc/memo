@@ -141,3 +141,6 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - **Vercel bootstrap correction:** the first preview run (# deployment `dpl_HCqXbg6z4dpxtbxsD5CxZm1ZKM3L`) started the custom build but Adoptium metadata returned HTTP 403 before JDK installation. Replaced that dependency with a pinned Temurin 17.0.20.1+1 GitHub release asset and its SHA-256. Retry is pending.
 
 - **Retry blocked:** after pinning Temurin 17.0.20.1+1, Vercel refused a new deployment with HTTP 402 `api-deployments-free-per-day` (>100 deployments/day; retry-after 86,400 seconds). The Vercel Sandbox API also rejected creation. The current branch is prepared, but no APK has been produced. Do not call this a successful Vercel build.
+
+
+2026-11-11 — Vercel build diagnosis corrected: the failed deployment ran the pre-fix commit and actually failed when Python urllib fetched Google's Android SDK repository manifest (HTTP 403), before SDK installation. Added explicit browser-compatible User-Agent and XML Accept headers to that manifest request. Updated checkpoint; awaiting an exact-head Vercel build to validate the change. No APK produced or claimed.
