@@ -29,25 +29,16 @@ echo "Commit: ${VERCEL_GIT_COMMIT_SHA:-unknown}"
 echo "Branch: ${VERCEL_GIT_COMMIT_REF:-unknown}"
 echo "Version code: $MEMO_VERSION_CODE"
 
-# Vercel's Node build image does not guarantee a Java runtime. Resolve Temurin
-# 17 GA from Adoptium and verify the provider-published SHA-256 before use.
+# Pin Eclipse Temurin 17 directly to its official GitHub release asset. The
+# Adoptium metadata API returned HTTP 403 from Vercel's build network, so do not
+# depend on that API at build time. Verify the published release SHA-256.
 if command -v java >/dev/null 2>&1 && java -version 2>&1 | grep -qE 'version "17([.]|")'; then
   JAVA_BIN="$(readlink -f "$(command -v java)")"
   JAVA_HOME="$(dirname "$(dirname "$JAVA_BIN")")"
 else
-  echo "Installing checksum-verified Eclipse Temurin JDK 17..."
-  python3 - <<'PY' > "$BUILD_ROOT/jdk-package.txt"
-import json, urllib.request
-url = "https://api.adoptium.net/v3/assets/latest/17/hotspot?architecture=x64&image_type=jdk&os=linux&vendor=eclipse"
-with urllib.request.urlopen(url, timeout=30) as response:
-    assets = json.load(response)
-package = assets[0]["binary"]["package"]
-print(package["link"])
-print(package["checksum"])
-PY
-  JDK_URL="$(sed -n '1p' "$BUILD_ROOT/jdk-package.txt")"
-  JDK_SHA="$(sed -n '2p' "$BUILD_ROOT/jdk-package.txt")"
-  test -n "$JDK_URL" && [[ "$JDK_SHA" =~ ^[0-9a-fA-F]{64}$ ]]
+  echo "Installing checksum-verified Eclipse Temurin JDK 17.0.20.1+1..."
+  JDK_URL="https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.20.1%2B1/OpenJDK17U-jdk_x64_linux_hotspot_17.0.20.1_1.tar.gz"
+  JDK_SHA="3808d1d15e3ec6bd5b84057fb5d84c33d8a1536a258146bcea2e603fc726e08e"
   curl --fail --location --retry 3 --retry-delay 2 "$JDK_URL" -o "$BUILD_ROOT/temurin17.tar.gz"
   echo "$JDK_SHA  $BUILD_ROOT/temurin17.tar.gz" | sha256sum -c -
   mkdir -p "$BUILD_ROOT/jdk-extract"

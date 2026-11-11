@@ -11,7 +11,7 @@ The linked Vercel project was previously reporting READY while its build log sho
 
 ## Build contract
 
-- Install JDK 17 from Eclipse Temurin after resolving the official Adoptium package metadata; verify its published SHA-256 before extraction.
+- Install pinned Eclipse Temurin JDK 17.0.20.1+1 from its official GitHub release asset; verify the published SHA-256 before extraction.
 - Resolve Google's current Linux Android command-line tools package from the official SDK repository manifest and verify its published SHA-1/SHA-256.
 - Install Android platform 35 and build-tools 35.0.0.
 - Run the source verifier, remote-runner Python tests, core JVM tests, app JVM tests, Android lint, Android test APK assembly, and debug APK assembly.

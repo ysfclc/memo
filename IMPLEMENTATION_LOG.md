@@ -137,3 +137,5 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - The Vercel output contains the APK, build identity, and SHA-256 checksums. When the configured Blob token is available, the APK is uploaded to a commit-addressed public Blob path so deployment SSO does not block the download.
 - The Vercel project currently has no persistent Memo upload-keystore credentials. This experiment therefore produces an ephemeral debug-key-signed test APK, not an upgrade-compatible replacement for the pinned-certificate APK. Do not uninstall the existing app to test it.
 - Preview deployment and exact build results are pending. See `docs/checkpoints/2026-11-11-vercel-android-build.md`.
+
+- **Vercel bootstrap correction:** the first preview run (# deployment `dpl_HCqXbg6z4dpxtbxsD5CxZm1ZKM3L`) started the custom build but Adoptium metadata returned HTTP 403 before JDK installation. Replaced that dependency with a pinned Temurin 17.0.20.1+1 GitHub release asset and its SHA-256. Retry is pending.
