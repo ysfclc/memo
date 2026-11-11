@@ -159,9 +159,9 @@ PACKAGE_LINE="$("$BUILD_TOOLS/aapt" dump badging "$APK" | grep -m1 '^package:')"
 }
 "$BUILD_TOOLS/zipalign" -c -p 4 "$APK"
 SIGNATURE="$("$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK" 2>&1)"
-printf '%s\\n' "$SIGNATURE"
+printf '%s\n' "$SIGNATURE"
 if [[ "$SIGNING_COUNT" -eq 4 ]]; then
-  CERT="$(printf '%s\\n' "$SIGNATURE" | sed -nE 's/.*certificate SHA-256 digest: ([0-9a-fA-F]+).*/\\1/p' | head -n1 | tr '[:upper:]' '[:lower:]')"
+  CERT="$(printf '%s\n' "$SIGNATURE" | sed -nE 's/.*certificate SHA-256 digest: ([0-9a-fA-F]+).*/\1/p' | head -n1 | tr '[:upper:]' '[:lower:]')"
   EXPECTED_MEMO_CERT_SHA256='a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a'
   [[ "$CERT" == "$EXPECTED_MEMO_CERT_SHA256" ]] || {
     echo "::error::Persistent Memo signing certificate mismatch. Refusing to publish this APK."
