@@ -120,6 +120,26 @@ python3 tools/verify_source.py
   PYTHONPATH=. python3 -m unittest discover -s tests -v
 )
 
+# Prefer the existing pinned upload certificate when the project owner has
+# provisioned all four credentials as protected Vercel environment variables.
+# A partial configuration is an error; never silently fall back from a broken key.
+SIGNING_VALUES="${MEMO_UPLOAD_KEYSTORE_BASE64:-}|${MEMO_UPLOAD_STORE_PASSWORD:-}|${MEMO_UPLOAD_KEY_ALIAS:-}|${MEMO_UPLOAD_KEY_PASSWORD:-}"
+SIGNING_COUNT=0
+IFS='|' read -r -a SIGNING_PARTS <<< "$SIGNING_VALUES"
+for value in "${SIGNING_PARTS[@]}"; do [[ -n "$value" ]] && SIGNING_COUNT=$((SIGNING_COUNT + 1)); done
+if [[ "$SIGNING_COUNT" -ne 0 && "$SIGNING_COUNT" -ne 4 ]]; then
+  echo "::error::Memo signing is partially configured. Supply all four protected signing variables or none."
+  exit 1
+fi
+SIGNING_DESCRIPTION="ephemeral Android debug key (not update-compatible with the pinned Memo certificate)"
+if [[ "$SIGNING_COUNT" -eq 4 ]]; then
+  export MEMO_UPLOAD_KEYSTORE_FILE="$BUILD_ROOT/memo-upload.jks"
+  printf '%s' "$MEMO_UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$MEMO_UPLOAD_KEYSTORE_FILE"
+  chmod 600 "$MEMO_UPLOAD_KEYSTORE_FILE"
+  test -s "$MEMO_UPLOAD_KEYSTORE_FILE"
+  SIGNING_DESCRIPTION="pinned Memo upload certificate"
+fi
+
 echo "== Gradle tests, lint and APK assembly =="
 bash ./gradlew --no-daemon --stacktrace \
   :core:test \
@@ -148,7 +168,7 @@ BRANCH="${VERCEL_GIT_COMMIT_REF:-$(git branch --show-current)}"
   echo "Branch: $BRANCH"
   echo "Variant: debug"
   echo "Package: app.memo.android.debug"
-  echo "Signing: Android debug signing key (not the persistent upload certificate)"
+  echo "Signing: $SIGNING_DESCRIPTION"
   echo "Gradle: 8.14.6"
   echo "Compile SDK: 35"
   echo "APK bytes: $APK_BYTES"
@@ -162,6 +182,7 @@ BRANCH="${VERCEL_GIT_COMMIT_REF:-$(git branch --show-current)}"
 
 # A public Blob URL avoids Vercel Deployment Protection on the static preview.
 # Never print or persist the read/write token; only print the returned public URL.
+DOWNLOAD_URL="./Memo-Android-debug.apk"
 if [[ -n "${BLOB_READ_WRITE_TOKEN:-}" ]]; then
   echo "Uploading verified APK to the configured Vercel Blob store..."
   BLOB_RESPONSE="$(
@@ -178,6 +199,7 @@ if [[ -n "${BLOB_READ_WRITE_TOKEN:-}" ]]; then
   BLOB_URL="$(python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("downloadUrl") or d.get("url") or "")' <<< "$BLOB_RESPONSE")"
   [[ "$BLOB_URL" == https://* ]] || { echo "::error::Blob upload did not return a public HTTPS URL."; exit 1; }
   printf '%s\n' "$BLOB_URL" > "$DIST/APK-DOWNLOAD-URL.txt"
+  DOWNLOAD_URL="$BLOB_URL"
   echo "Public APK URL: $BLOB_URL"
 else
   echo "::warning::BLOB_READ_WRITE_TOKEN is unavailable; the APK will only be in the Vercel deployment output and may require SSO."
@@ -201,12 +223,12 @@ small{color:#aab8ca}.download{display:inline-block;margin:18px 0;padding:12px 18
 <body><main>
 <h1>Memo Android build</h1>
 <p>This is a test build from the stabilization branch. It is not a production release.</p>
-<p><a class="download" href="./Memo-Android-debug.apk" download>Download Memo APK</a></p>
+<p><a class="download" href="$DOWNLOAD_URL" download>Download Memo APK</a></p>
 <p>Package: <code>app.memo.android.debug</code></p>
 <p>Commit: <code>$COMMIT</code></p>
 <p>SHA-256: <code>$APK_SHA</code></p>
 <p><a href="./BUILD-INFO.txt">Build information</a> · <a href="./SHA256SUMS.txt">Checksums</a></p>
-<small>Signed with the ephemeral Android debug key. This APK is not guaranteed to update an installation signed with Memo's persistent upload certificate.</small>
+<small>Signing: $SIGNING_DESCRIPTION. If this uses the ephemeral debug key, Android will not allow it to update an installation signed with Memo's persistent upload certificate.</small>
 </main></body></html>
 HTML
 
