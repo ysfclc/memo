@@ -27,7 +27,7 @@ a330e300b15c7d2166d057836ebe2bee26cedfdaea45f30fb33a186bd75cad1f  ./app/src/main
 7d6f79794264bb01258230c830bf729ad7037a0321f8545273fb7176ff5751e1  ./app/src/main/java/app/memo/android/browser/BrowserSession.kt
 1cfc5334fc1c4da3afe944e915b2370b1f8ec65c7496ef5dd1f2cbf98b50cd33  ./app/src/main/java/app/memo/android/browser/BrowserWorkflow.kt
 3e6b51759f9929c47d39a109898bc7554bb0f721206683a93b5373a0d61c7795  ./app/src/main/java/app/memo/android/data/EncryptedVault.kt
-1cc7d84e8db2bec38c0507b669703ce7f3d5901ddfb5bf870c4bd475cf15e3e5  ./app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt
+ae49c818e2658a71f500633c10880c41ea332fcb7b9cdf7f2a745a7dbdf7e045  ./app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt
 f608bddf49f49c35679c84ac52d1fef8e66363af0ab6f00005adaccc87a36363  ./app/src/main/java/app/memo/android/notifications/MemoNotificationCenter.kt
 5becd4fe59b752a4390ad8dbc245574774cbf15fbe64fc9e5e4b43237a8315c1  ./app/src/main/java/app/memo/android/runtime/MemoRuntimeBridge.java
 b25b80d9ecff0b166d50cb205fa783597209d77ad5d993335bf880bfeaef1cc4  ./app/src/main/java/app/memo/android/ui/ActionApprovalInboxScreen.kt
@@ -196,4 +196,6 @@ d82dc17d418f2ce0b7f3b68b7304901400290e60aa3de8515fbfa8f2f617492d  ./gradle.prope
 8e9a143da05745224225fa8c815e990a9759efff3d22f34f1d9fc2187358d7a2  ./remote-runner/server.py
 a1453a88e5bc19e7b20a521b56d36acbaec90fc742b79fb49fca11b7ddda73af  ./remote-runner/tests/test_runner.py
 19280c23fb304e503d1037eb423b17d0a14dd2a6fbb3e916574f4c5be17dfebf  ./settings.gradle
-057724f42da6d72b7498f238bab62cdd3ff0351a5c8b0e416e3f55c268f72539  ./tools/verify_source.py
+fe0a38d79b3524578e3a785381612ce6d7ed0f2792ce4da07110e0fa75ebc966  ./tools/verify_source.py
+fa31b06bb76bf24d6caa6cf658197be574ffb9a2b2a51c66d0547ea99a38d33e  ./core/src/main/kotlin/app/memo/android/data/LocalWorkArtifactCoordinator.kt
+3f5b30ec4d7c74cee98f92df481ef3f8d7b461ed56013b340433a726f50410be  ./core/src/test/kotlin/app/memo/android/data/LocalWorkArtifactCoordinatorTest.kt
