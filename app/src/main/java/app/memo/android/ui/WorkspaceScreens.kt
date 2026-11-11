@@ -1110,25 +1110,30 @@ fun WorkWorkspaceScreen(
                             localModel = runtimeState.installedModels.firstOrNull(),
                             modelRunning = runtimeState.running,
                             onRunWithModel = { stepId, modelId ->
-                                val currentJob = viewModel.snapshot.value.jobs.firstOrNull { it.id == job.id }
-                                val currentStep = currentJob?.steps?.firstOrNull { it.id == stepId }
-                                if (currentJob == null || currentStep == null) {
-                                    onShowMessage("This plan step no longer exists.")
+                                val startResult = viewModel.startJobStep(job.id, stepId)
+                                if (startResult.isFailure) {
+                                    onShowMessage(startResult.exceptionOrNull()?.message ?: "This checkpoint could not be started.")
                                 } else {
+                                    val executionSnapshot = viewModel.snapshot.value
+                                    val currentJob = executionSnapshot.jobs.firstOrNull { it.id == job.id }
+                                    val currentStep = currentJob?.steps?.firstOrNull { it.id == stepId }
+                                    if (currentJob == null || currentStep == null) {
+                                        onShowMessage("This plan step no longer exists.")
+                                    } else {
                                     val query = "${currentJob.title} ${currentJob.goal.take(500)} ${currentStep.title} ${currentStep.detail.take(300)}"
                                     val contextCandidates = buildList {
-                                        snapshot.conversations.forEach { conversation ->
+                                        executionSnapshot.conversations.forEach { conversation ->
                                             val body = conversation.messages.takeLast(10).joinToString("\n") { "${it.role}: ${it.content.take(900)}" }
                                             add(ContextCandidate(conversation.id, "CONVERSATION", conversation.title, body, conversation.updatedAt, "Memo conversation · ${conversation.title}"))
                                         }
-                                        snapshot.entities.filter { it.reviewStatus == "APPROVED" }.forEach { entity ->
+                                        executionSnapshot.entities.filter { it.reviewStatus == "APPROVED" }.forEach { entity ->
                                             val props = entity.properties.entries.joinToString("; ") { "${it.key}=${it.value}" }
                                             add(ContextCandidate(entity.id, entity.type, entity.title, "${entity.description}\n$props\nSource excerpt: ${entity.sourceExcerpt}".take(5_000), entity.updatedAt, "Memo graph · ${entity.type}"))
                                         }
-                                        snapshot.jobs.filter { it.id != currentJob.id }.forEach { previous ->
+                                        executionSnapshot.jobs.filter { it.id != currentJob.id }.forEach { previous ->
                                             add(ContextCandidate(previous.id, "WORK_JOB", previous.title, "${previous.goal}\n${previous.resultSummary}\n" + previous.steps.joinToString("; ") { "${it.title}: ${it.status} ${it.evidence}" }.take(2_000), previous.updatedAt, "Memo work plan · ${previous.status}"))
                                         }
-                                        snapshot.evidence.forEach { evidence ->
+                                        executionSnapshot.evidence.forEach { evidence ->
                                             add(ContextCandidate(evidence.id, evidence.kind, evidence.title, "${evidence.summary}\n${evidence.content.take(2_000)}", evidence.capturedAt, evidence.sourceUrl.ifBlank { "Memo saved evidence" }))
                                         }
                                     }
@@ -1142,7 +1147,10 @@ fun WorkWorkspaceScreen(
                                         false
                                     ) { response, error ->
                                         if (response == null) {
-                                            onShowMessage("Local step failed: ${(error ?: "No response returned.").take(180)}")
+                                            val message = (error ?: "No response returned.").take(180)
+                                            viewModel.updateJobStep(currentJob.id, currentStep.id, "NEEDS_REVIEW", "Local execution did not produce a draft. Review the error and retry when ready: $message")
+                                            viewModel.updateJobStatus(currentJob.id, "WAITING_FOR_USER", "The local-model checkpoint did not produce an artifact. No work was marked complete.")
+                                            onShowMessage("Local step needs review: $message")
                                         } else {
                                             val artifact = EvidenceRecord(
                                                 title = "${currentJob.title} — ${currentStep.title}".take(240),
@@ -1158,10 +1166,16 @@ fun WorkWorkspaceScreen(
                                                     viewModel.updateJobStatus(currentJob.id, "WAITING_FOR_USER", "A local draft was saved to Evidence. Review the actual output before continuing; it is not an independently verified result.")
                                                     onShowMessage("Draft saved to Evidence for review. No external action was performed.")
                                                 },
-                                                onFailure = { error -> onShowMessage(error.message ?: "The draft could not be saved; the plan was left unchanged.") }
+                                                onFailure = { error ->
+                                                    val message = (error.message ?: "The draft could not be saved.").take(180)
+                                                    viewModel.updateJobStep(currentJob.id, currentStep.id, "NEEDS_REVIEW", "The model response could not be saved as evidence. Review and retry: $message")
+                                                    viewModel.updateJobStatus(currentJob.id, "WAITING_FOR_USER", "The local-model response was not saved; the checkpoint remains unverified.")
+                                                    onShowMessage("Draft not saved: $message")
+                                                }
                                             )
                                         }
                                     }
+                                }
                                 }
                             },
                             onOpenEvidence = onOpenEvidence
