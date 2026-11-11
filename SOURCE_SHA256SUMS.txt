@@ -27,7 +27,7 @@ a330e300b15c7d2166d057836ebe2bee26cedfdaea45f30fb33a186bd75cad1f  ./app/src/main
 7d6f79794264bb01258230c830bf729ad7037a0321f8545273fb7176ff5751e1  ./app/src/main/java/app/memo/android/browser/BrowserSession.kt
 1cfc5334fc1c4da3afe944e915b2370b1f8ec65c7496ef5dd1f2cbf98b50cd33  ./app/src/main/java/app/memo/android/browser/BrowserWorkflow.kt
 3e6b51759f9929c47d39a109898bc7554bb0f721206683a93b5373a0d61c7795  ./app/src/main/java/app/memo/android/data/EncryptedVault.kt
-f348540883fe1423b770a0f215dee3318d2f74d0fbe18b97486d7db766c8c451  ./app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt
+1cc7d84e8db2bec38c0507b669703ce7f3d5901ddfb5bf870c4bd475cf15e3e5  ./app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt
 f608bddf49f49c35679c84ac52d1fef8e66363af0ab6f00005adaccc87a36363  ./app/src/main/java/app/memo/android/notifications/MemoNotificationCenter.kt
 5becd4fe59b752a4390ad8dbc245574774cbf15fbe64fc9e5e4b43237a8315c1  ./app/src/main/java/app/memo/android/runtime/MemoRuntimeBridge.java
 b25b80d9ecff0b166d50cb205fa783597209d77ad5d993335bf880bfeaef1cc4  ./app/src/main/java/app/memo/android/ui/ActionApprovalInboxScreen.kt
@@ -38,7 +38,7 @@ c23d9d73f947dca41834299207c98cb522fbcf627615454078dc3d0bd22b645f  ./app/src/main
 1ae0fab9c440dff32d13f04f000be4bc8d0f2f9398fd71aeb7690265aa9edcd8  ./app/src/main/java/app/memo/android/ui/MemoLocalization.kt
 25fd0b5bd82b5894f4c76c289627058320d6d0188d39dd1d465d4fcc820d4e75  ./app/src/main/java/app/memo/android/ui/MemoTheme.kt
 a5ac84d6ad1fe9080e52c2d359527848ba7332a38f3fb815441f06d540b62719  ./app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt
-c09acd5de2331e63043db89c0d0c6124f6ed8cb0e7a09e57bc165a7e95509dad  ./app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt
+826bedcdf613a64331dd40b31a43a3282e2e86df19208e4c1e38187e322e3101  ./app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt
 f78be77d6fa771c78d14e15a0e2e1e1bad49d384637546ee596e47941b251472  ./app/src/main/java/app/memo/android/ui/components/Primitives.kt
 128544949e1092389370b43128707cf0c985f5531bd7d6c2dff832ede64e3184  ./app/src/main/java/com/synthos/runtime/ai/JobCompiler.java
 8951a538775e3afaaac1c00396cbaeb2b80593fd235d5be1ef1fcc4686d07851  ./app/src/main/java/com/synthos/runtime/ai/LocalModelRuntime.kt
@@ -196,4 +196,4 @@ d82dc17d418f2ce0b7f3b68b7304901400290e60aa3de8515fbfa8f2f617492d  ./gradle.prope
 8e9a143da05745224225fa8c815e990a9759efff3d22f34f1d9fc2187358d7a2  ./remote-runner/server.py
 a1453a88e5bc19e7b20a521b56d36acbaec90fc742b79fb49fca11b7ddda73af  ./remote-runner/tests/test_runner.py
 19280c23fb304e503d1037eb423b17d0a14dd2a6fbb3e916574f4c5be17dfebf  ./settings.gradle
-e9aebbf0377857086484517cfff16c5ae5a18adcad647674653ba18d55ccad86  ./tools/verify_source.py
+057724f42da6d72b7498f238bab62cdd3ff0351a5c8b0e416e3f55c268f72539  ./tools/verify_source.py
