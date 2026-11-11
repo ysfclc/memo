@@ -126,3 +126,5 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - **Boundary:** this is one local-model runtime adapter path, not a durable cross-runtime DAG executor. Attempt journal/idempotency, typed runtime receipts, timeout/cancellation propagation, pause/resume/recovery and postcondition verification remain open.
 - **Follow-up hardening:** local-model draft persistence now commits the evidence record, NEEDS_REVIEW step state, WAITING_FOR_USER job state and activity entry in one workspace snapshot. The failure path also moves the active checkpoint to review in one snapshot. A stale/non-RUNNING step is rejected rather than receiving an orphan artifact. Source verifier now guards these atomic paths.
 - **Status:** implemented in source; verification pending. Latest exact-head PR run #388 again failed before exposing any preflight steps/logs; no Gradle/build result is available.
+
+- Follow-up: extracted local Work artifact transitions into a pure-core coordinator with six JVM regression tests; Android ViewModel persists the returned snapshot atomically. Exact-head run #397 failed before steps/logs; tests remain unexecuted.
