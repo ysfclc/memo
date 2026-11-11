@@ -79,8 +79,9 @@ sdkmanager --sdk_root="$ANDROID_SDK_ROOT" \
   "build-tools;35.0.0"
 
 chmod +x ./gradlew
+export MEMO_VERSION_CODE="${MEMO_VERSION_CODE:-41}"
 GRADLE_LOG="$(mktemp)"
-if ! ./gradlew --no-daemon --console=plain --stacktrace --info :core:test :app:assembleDebug >"$GRADLE_LOG" 2>&1; then
+if ! ./gradlew --no-daemon --console=plain --stacktrace --info :core:test :app:assembleRelease >"$GRADLE_LOG" 2>&1; then
   echo "Gradle failed. Kotlin/compiler diagnostics (up to 160 matching lines):"
   grep -nE '(^e: |^w: |error:|Errors occurred while compiling|Compilation error|Could not resolve|Could not find|What went wrong|FAILURE:)' "$GRADLE_LOG" | tail -n 160 || true
   echo "Gradle failure context (last 100 lines):"
@@ -90,17 +91,27 @@ if ! ./gradlew --no-daemon --console=plain --stacktrace --info :core:test :app:a
 fi
 rm -f "$GRADLE_LOG"
 
-APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
+APK_PATH="app/build/outputs/apk/release/app-release.apk"
 if [ ! -s "$APK_PATH" ]; then
   echo "Expected APK not found: $APK_PATH" >&2
+  exit 1
+fi
+
+APKSIGNER="$ANDROID_SDK_ROOT/build-tools/35.0.0/apksigner"
+AAPT="$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt"
+"$APKSIGNER" verify --verbose --print-certs "$APK_PATH"
+BADGING="$("$AAPT" dump badging "$APK_PATH")"
+printf '%s\n' "$BADGING" | grep -E "^package:|^sdkVersion:|^targetSdkVersion:"
+if ! printf '%s\n' "$BADGING" | grep -q "package: name='app.memo.android'"; then
+  echo "Unexpected APK application ID." >&2
   exit 1
 fi
 
 mkdir -p artifacts
 COMMIT="${VERCEL_GIT_COMMIT_SHA:-local}"
 SHORT_COMMIT="${COMMIT:0:12}"
-cp "$APK_PATH" "artifacts/Memo-debug-$SHORT_COMMIT.apk"
-sha256sum "artifacts/Memo-debug-$SHORT_COMMIT.apk" > "artifacts/Memo-debug-$SHORT_COMMIT.apk.sha256"
+cp "$APK_PATH" "artifacts/Memo-release-$SHORT_COMMIT.apk"
+sha256sum "artifacts/Memo-release-$SHORT_COMMIT.apk" > "artifacts/Memo-release-$SHORT_COMMIT.apk.sha256"
 
 # Publish the APK to Blob storage rather than relying on a large static deployment file.
 # The downloadUrl forces attachment handling and is served from Blob's download CDN.
@@ -129,7 +140,7 @@ const blob = await put(pathname, file, {
 console.log('BLOB_DOWNLOAD_URL=' + blob.downloadUrl);
 console.log('BLOB_ETAG=' + blob.etag);
 NODE
-  BLOB_RESULT="$(node "$BLOB_TOOL_DIR/upload.mjs" "artifacts/Memo-debug-$SHORT_COMMIT.apk" "memo/Memo-debug-$SHORT_COMMIT.apk")"
+  BLOB_RESULT="$(node "$BLOB_TOOL_DIR/upload.mjs" "artifacts/Memo-release-$SHORT_COMMIT.apk" "memo/Memo-release-$SHORT_COMMIT.apk")"
   printf '%s\\n' "$BLOB_RESULT"
   BLOB_DOWNLOAD_URL="$(printf '%s\\n' "$BLOB_RESULT" | sed -n 's/^BLOB_DOWNLOAD_URL=//p')"
   if [ -z "$BLOB_DOWNLOAD_URL" ]; then
@@ -137,7 +148,7 @@ NODE
     exit 1
   fi
   printf '%s\\n' "$BLOB_DOWNLOAD_URL" > artifacts/APK_DOWNLOAD_URL.txt
-  EXPECTED_SIZE="$(wc -c < "artifacts/Memo-debug-$SHORT_COMMIT.apk" | tr -d ' ')"
+  EXPECTED_SIZE="$(wc -c < "artifacts/Memo-release-$SHORT_COMMIT.apk" | tr -d ' ')"
   REMOTE_HEADERS="$(curl --fail --silent --show-error --location --head "$BLOB_DOWNLOAD_URL")"
   REMOTE_SIZE="$(printf '%s\\n' "$REMOTE_HEADERS" | awk 'BEGIN{IGNORECASE=1} /^content-length:/ {gsub(/\\r/,"",$2); size=$2} END{print size}')"
   if [ -n "$REMOTE_SIZE" ] && [ "$REMOTE_SIZE" != "$EXPECTED_SIZE" ]; then
@@ -150,10 +161,10 @@ else
 fi
 cat > artifacts/BUILD_INFO.txt <<EOF
 Product: Memo Android
-Variant: debug
+Variant: release (debug-key signed for sideload testing)
 Commit: $COMMIT
 Branch: ${VERCEL_GIT_COMMIT_REF:-unknown}
-Gradle tasks: :core:test :app:assembleDebug
+Gradle tasks: :core:test :app:assembleRelease
 Java: $(java -version 2>&1 | sed -n '1p')
 EOF
 
