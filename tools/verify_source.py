@@ -131,6 +131,21 @@ for marker in ("appliesValidatedDraftGraphWithoutExecutingNodes", "Depends on: s
     if marker not in proposal_applier_test:
         fail(f"Workflow proposal applier regression coverage is missing: {marker}")
 print("PASS: local TaskSpec expansion is validated against the current runtime registry and stays draft-only")
+# A local-model Work step must pass the persisted dependency/runtime gate before inference.
+run_start = work_source.index("onRunWithModel = { stepId, modelId ->")
+run_end = work_source.index("onOpenEvidence = onOpenEvidence", run_start)
+local_run = work_source[run_start:run_end]
+if "viewModel.startJobStep(job.id, stepId)" not in local_run:
+    fail("local-model Work execution bypasses the persisted checkpoint start gate")
+if local_run.index("viewModel.startJobStep(job.id, stepId)") > local_run.index("runtime.runPrompt("):
+    fail("local-model inference starts before the checkpoint is reserved")
+for marker in ('"NEEDS_REVIEW"', '"WAITING_FOR_USER"', '"requiresHumanReview"', '"local-model-draft"'):
+    if marker not in local_run:
+        fail(f"local-model Work execution is missing its review/failure lifecycle: {marker}")
+if "executionSnapshot.evidence" not in local_run:
+    fail("local-model Work execution does not build context from the post-start workspace snapshot")
+print("PASS: local-model Work inference is gated by persisted checkpoint readiness and all outcomes remain reviewable")
+
 approval_inbox = (ROOT / "app/src/main/java/app/memo/android/ui/ActionApprovalInboxScreen.kt").read_text()
 app_navigation = (ROOT / "app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt").read_text()
 for marker in ("Action queue", "Needs review", "History", "Exact outbound payload", "Open live approval", "Mark outcome for review"):
