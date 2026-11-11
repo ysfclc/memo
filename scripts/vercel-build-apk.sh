@@ -150,6 +150,24 @@ bash ./gradlew --no-daemon --stacktrace \
 
 APK="$ROOT/app/build/outputs/apk/debug/app-debug.apk"
 test -s "$APK"
+BUILD_TOOLS="$ANDROID_HOME/build-tools/35.0.0"
+for tool in aapt apksigner zipalign; do test -x "$BUILD_TOOLS/$tool"; done
+PACKAGE_LINE="$("$BUILD_TOOLS/aapt" dump badging "$APK" | grep -m1 '^package:')"
+[[ "$PACKAGE_LINE" == *"name='app.memo.android.debug'"* ]] || {
+  echo "::error::Unexpected Memo APK application ID: $PACKAGE_LINE"
+  exit 1
+}
+"$BUILD_TOOLS/zipalign" -c -p 4 "$APK"
+SIGNATURE="$("$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK" 2>&1)"
+printf '%s\\n' "$SIGNATURE"
+if [[ "$SIGNING_COUNT" -eq 4 ]]; then
+  CERT="$(printf '%s\\n' "$SIGNATURE" | sed -nE 's/.*certificate SHA-256 digest: ([0-9a-fA-F]+).*/\\1/p' | head -n1 | tr '[:upper:]' '[:lower:]')"
+  EXPECTED_MEMO_CERT_SHA256='a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a'
+  [[ "$CERT" == "$EXPECTED_MEMO_CERT_SHA256" ]] || {
+    echo "::error::Persistent Memo signing certificate mismatch. Refusing to publish this APK."
+    exit 1
+  }
+fi
 APK_BYTES="$(wc -c < "$APK" | tr -d ' ')"
 if (( APK_BYTES > 95000000 )); then
   echo "::error::APK is ${APK_BYTES} bytes; exceeds the 95 MB Vercel static artifact safety limit."
