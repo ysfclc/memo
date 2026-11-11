@@ -35,3 +35,10 @@ A Vercel deployment marked READY is insufficient. Accept only when build logs sh
 The first custom Vercel build deployment (`dpl_HCqXbg6z4dpxtbxsD5CxZm1ZKM3L`, commit `6d9fb308809bc885789b4b1ab793de5c6f8a76c5`) ran the configured script and stopped before SDK installation because the Adoptium metadata endpoint returned HTTP 403. The JDK bootstrap has been changed to a pinned Temurin 17.0.20.1+1 GitHub release asset with SHA-256 verification.
 
 A retry could not be created: Vercel returned HTTP 402, resource `api-deployments-free-per-day`, stating more than 100 deployments had been created and to retry after 86,400 seconds. The Vercel Sandbox API also rejected sandbox creation. The pinned-JDK fix is committed at `c92bf4d1cfa50aee9e3364cbbf27a1b4b2f5cf7e`; the current branch additionally contains the manifest-ordering commit. No APK was produced by this attempt.
+
+
+## Follow-up diagnosis — 2026-11-11
+
+The first custom build log was from commit `6d9fb308809bc885789b4b1ab793de5c6f8a76c5`, which predates the pinned-JDK script change. Its actual traceback was Python's `urllib.request.urlopen` while reading Google's Android SDK repository manifest, returning HTTP 403. The failure was therefore at SDK-manifest retrieval, not evidence that the pinned Temurin GitHub asset failed.
+
+The manifest request now supplies an explicit browser-compatible User-Agent and XML Accept header. This is a narrow compatibility fix; it is not yet verified by a new Vercel build. The script checksum in `SOURCE_SHA256SUMS.txt` has been refreshed. The next exact-head deployment must confirm the manifest download, SDK install, Gradle checks, APK signature and Blob publication before an APK can be claimed.
