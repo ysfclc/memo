@@ -17,6 +17,8 @@ REQUIRED = [
     "build.gradle",
     "core/build.gradle",
     "core/src/main/kotlin/app/memo/android/data/Models.kt",
+    "core/src/main/kotlin/app/memo/android/data/LocalWorkArtifactCoordinator.kt",
+    "core/src/test/kotlin/app/memo/android/data/LocalWorkArtifactCoordinatorTest.kt",
     "core/src/main/kotlin/app/memo/android/data/ActionApprovalLedger.kt",
     "core/src/main/kotlin/app/memo/android/data/LiveTimelineProjector.kt",
     "core/src/main/kotlin/app/memo/android/data/WorkArtifactFactory.kt",
@@ -149,10 +151,18 @@ if "viewModel.saveWorkArtifactForReview(currentJob.id, currentStep.id, artifact)
 if "viewModel.markJobStepNeedsReview(" not in local_run:
     fail("local-model Work failure path can leave a checkpoint RUNNING")
 view_model_source = (ROOT / "app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt").read_text()
-for marker in ("fun saveWorkArtifactForReview(", "step.status != \"RUNNING\"", "evidence = listOf(evidence) + current.evidence", "status = \"WAITING_FOR_USER\"", "fun markJobStepNeedsReview("):
+local_artifact_coordinator = (ROOT / "core/src/main/kotlin/app/memo/android/data/LocalWorkArtifactCoordinator.kt").read_text()
+local_artifact_tests = (ROOT / "core/src/test/kotlin/app/memo/android/data/LocalWorkArtifactCoordinatorTest.kt").read_text()
+for marker in ("LocalWorkArtifactCoordinator.saveForReview(", "LocalWorkArtifactCoordinator.markNeedsReview("):
     if marker not in view_model_source:
-        fail(f"atomic local Work draft/review persistence is missing: {marker}")
-print("PASS: local-model Work inference is checkpoint-gated; draft evidence and review state commit atomically; failures leave no RUNNING checkpoint")
+        fail(f"ViewModel does not persist the tested local Work transition: {marker}")
+for marker in ("fun saveForReview(", "step.status == \"RUNNING\"", "evidence = \"evidence:", "status = \"WAITING_FOR_USER\"", "fun markNeedsReview("):
+    if marker not in local_artifact_coordinator:
+        fail(f"pure local Work transition coordinator is missing: {marker}")
+for marker in ("savesDraftAndMovesStepAndJobToReviewInOneSnapshot", "refusesToAttachAnArtifactToAStaleCheckpoint", "refusesAnArtifactThatBelongsToAnotherJob", "refusesDuplicateEvidenceIdentity", "failureTransitionMovesOnlyTheActiveStepToReview", "refusesFailureTransitionForACheckpointThatIsNotRunning"):
+    if marker not in local_artifact_tests:
+        fail(f"local Work transition regression coverage is missing: {marker}")
+print("PASS: local-model Work inference is checkpoint-gated; pure-core transitions atomically persist drafts/review state with regression tests")
 
 approval_inbox = (ROOT / "app/src/main/java/app/memo/android/ui/ActionApprovalInboxScreen.kt").read_text()
 app_navigation = (ROOT / "app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt").read_text()
