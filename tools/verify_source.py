@@ -144,7 +144,15 @@ for marker in ('"NEEDS_REVIEW"', '"WAITING_FOR_USER"', '"requiresHumanReview"', 
         fail(f"local-model Work execution is missing its review/failure lifecycle: {marker}")
 if "executionSnapshot.evidence" not in local_run:
     fail("local-model Work execution does not build context from the post-start workspace snapshot")
-print("PASS: local-model Work inference is gated by persisted checkpoint readiness and all outcomes remain reviewable")
+if "viewModel.saveWorkArtifactForReview(currentJob.id, currentStep.id, artifact)" not in local_run:
+    fail("local-model Work artifact and checkpoint review state are not committed atomically")
+if "viewModel.markJobStepNeedsReview(" not in local_run:
+    fail("local-model Work failure path can leave a checkpoint RUNNING")
+view_model_source = (ROOT / "app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt").read_text()
+for marker in ("fun saveWorkArtifactForReview(", "step.status != \"RUNNING\"", "evidence = listOf(evidence) + current.evidence", "status = \"WAITING_FOR_USER\"", "fun markJobStepNeedsReview("):
+    if marker not in view_model_source:
+        fail(f"atomic local Work draft/review persistence is missing: {marker}")
+print("PASS: local-model Work inference is checkpoint-gated; draft evidence and review state commit atomically; failures leave no RUNNING checkpoint")
 
 approval_inbox = (ROOT / "app/src/main/java/app/memo/android/ui/ActionApprovalInboxScreen.kt").read_text()
 app_navigation = (ROOT / "app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt").read_text()
