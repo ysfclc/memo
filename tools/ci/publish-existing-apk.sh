@@ -24,6 +24,7 @@ APK_PATH="$TMP_DIR/$APK_NAME"
 echo "Downloading the already-built and tested Memo APK from the prior deployment..."
 curl --fail --location --retry 5 --retry-all-errors --retry-delay 2 \
   --connect-timeout 30 --max-time 900 \
+  --cookie-jar "$TMP_DIR/cookies.txt" --cookie "$TMP_DIR/cookies.txt" \
   --output "$APK_PATH" "$MEMO_SOURCE_APK_URL"
 
 EXPECTED_SHA256="90dcc3f6f87770504a31bf55ee97c37468c74296e69850325e4a6824c0c53443"
