@@ -101,6 +101,53 @@ COMMIT="${VERCEL_GIT_COMMIT_SHA:-local}"
 SHORT_COMMIT="${COMMIT:0:12}"
 cp "$APK_PATH" "artifacts/Memo-debug-$SHORT_COMMIT.apk"
 sha256sum "artifacts/Memo-debug-$SHORT_COMMIT.apk" > "artifacts/Memo-debug-$SHORT_COMMIT.apk.sha256"
+
+# Publish the APK to Blob storage rather than relying on a large static deployment file.
+# The downloadUrl forces attachment handling and is served from Blob's download CDN.
+if [ -n "${BLOB_READ_WRITE_TOKEN:-}" ]; then
+  if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
+    echo "Node.js and npm are required to publish the APK to Vercel Blob." >&2
+    exit 1
+  fi
+  BLOB_TOOL_DIR="$(mktemp -d)"
+  trap 'rm -rf "$BLOB_TOOL_DIR"' EXIT
+  npm install --prefix "$BLOB_TOOL_DIR" --no-save --no-audit --no-fund @vercel/blob
+  cat > "$BLOB_TOOL_DIR/upload.mjs" <<'NODE'
+import { readFile } from 'node:fs/promises';
+import { put } from '@vercel/blob';
+
+const filePath = process.argv[2];
+const pathname = process.argv[3];
+const file = await readFile(filePath);
+const blob = await put(pathname, file, {
+  access: 'public',
+  addRandomSuffix: false,
+  allowOverwrite: true,
+  multipart: true,
+  contentType: 'application/vnd.android.package-archive',
+});
+console.log('BLOB_DOWNLOAD_URL=' + blob.downloadUrl);
+console.log('BLOB_ETAG=' + blob.etag);
+NODE
+  BLOB_RESULT="$(node "$BLOB_TOOL_DIR/upload.mjs" "artifacts/Memo-debug-$SHORT_COMMIT.apk" "memo/Memo-debug-$SHORT_COMMIT.apk")"
+  printf '%s\\n' "$BLOB_RESULT"
+  BLOB_DOWNLOAD_URL="$(printf '%s\\n' "$BLOB_RESULT" | sed -n 's/^BLOB_DOWNLOAD_URL=//p')"
+  if [ -z "$BLOB_DOWNLOAD_URL" ]; then
+    echo "Blob upload completed without returning a download URL." >&2
+    exit 1
+  fi
+  printf '%s\\n' "$BLOB_DOWNLOAD_URL" > artifacts/APK_DOWNLOAD_URL.txt
+  EXPECTED_SIZE="$(wc -c < "artifacts/Memo-debug-$SHORT_COMMIT.apk" | tr -d ' ')"
+  REMOTE_HEADERS="$(curl --fail --silent --show-error --location --head "$BLOB_DOWNLOAD_URL")"
+  REMOTE_SIZE="$(printf '%s\\n' "$REMOTE_HEADERS" | awk 'BEGIN{IGNORECASE=1} /^content-length:/ {gsub(/\\r/,"",$2); size=$2} END{print size}')"
+  if [ -n "$REMOTE_SIZE" ] && [ "$REMOTE_SIZE" != "$EXPECTED_SIZE" ]; then
+    echo "Blob size verification failed: local=$EXPECTED_SIZE remote=$REMOTE_SIZE" >&2
+    exit 1
+  fi
+  echo "Blob download URL verified; local APK size: $EXPECTED_SIZE bytes."
+else
+  echo "BLOB_READ_WRITE_TOKEN is not configured; skipping Blob publishing."
+fi
 cat > artifacts/BUILD_INFO.txt <<EOF
 Product: Memo Android
 Variant: debug
