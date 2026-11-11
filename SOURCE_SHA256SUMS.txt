@@ -199,6 +199,6 @@ a1453a88e5bc19e7b20a521b56d36acbaec90fc742b79fb49fca11b7ddda73af  ./remote-runne
 fe0a38d79b3524578e3a785381612ce6d7ed0f2792ce4da07110e0fa75ebc966  ./tools/verify_source.py
 fa31b06bb76bf24d6caa6cf658197be574ffb9a2b2a51c66d0547ea99a38d33e  ./core/src/main/kotlin/app/memo/android/data/LocalWorkArtifactCoordinator.kt
 3f5b30ec4d7c74cee98f92df481ef3f8d7b461ed56013b340433a726f50410be  ./core/src/test/kotlin/app/memo/android/data/LocalWorkArtifactCoordinatorTest.kt
-0c61f55cb6643d787ee942ed46776ad89bddb971053aeac187d3806183359663  ./scripts/vercel-build-apk.sh
+068d22ac324960d5ea6ae2f3e050cc713ab4bb71be5c0a1da1a78df30af141a0  ./scripts/vercel-build-apk.sh
 7d4c0c5cce39e5353ea260f973ef19d0c48bf422f2e596a0062810336149bbeb  ./vercel.json
 ff4c606d0741ed269f83502c9dfa6dc92997348f705a50ac3caaecea2cc2b84f  ./docs/checkpoints/2026-11-11-vercel-android-build.md
