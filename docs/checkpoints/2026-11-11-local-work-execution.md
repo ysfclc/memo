@@ -64,3 +64,10 @@ This is a first vertical slice toward the durable DAG executor. It is not a clai
 ## Next action
 
 Repair the PR preflight failure so exact-head CI can reach source verification, Gradle tests, lint and Android compilation. Then continue the durable per-node runtime journal/adapter work; do not package an APK until meaningful product behavior and validation justify it.
+
+
+## Follow-up hardening — 2026-11-11
+
+The local Work dispatch path now persists the draft EvidenceRecord and the checkpoint/job transition to `NEEDS_REVIEW` / `WAITING_FOR_USER` in one workspace snapshot. The save is accepted only while the exact checkpoint is still `RUNNING`, and the artifact is linked to the owning job. Model/save failures use one review transition instead of two independent writes. This closes the partial-commit window where evidence could be saved while the job still appeared active, or the job status could change without its step.
+
+The source verifier checks the atomic success and failure wiring. The source SHA-256 manifest was refreshed and independently cross-checked against an unchanged file entry. Exact-head PR run #388 still failed in the preflight job before exposing any steps or logs; Gradle, lint, APK assembly and device behavior remain unverified. Vercel's linked build project also reported its daily deployment API limit, so no preview build is available from this push.
