@@ -128,3 +128,12 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - **Status:** implemented in source; verification pending. Latest exact-head PR run #388 again failed before exposing any preflight steps/logs; no Gradle/build result is available.
 
 - Follow-up: extracted local Work artifact transitions into a pure-core coordinator with six JVM regression tests; Android ViewModel persists the returned snapshot atomically. Exact-head run #397 failed before steps/logs; tests remain unexecuted.
+
+
+### 2026-11-11 — Vercel Android APK build experiment
+
+- Inspected the linked `memo-android-build` Vercel project. Earlier READY deployments were empty no-op builds: Vercel ran its default build in 238 ms and published no APK.
+- Added a real preview build command that provisions checksum-verified JDK 17 and Android command-line tools, installs API 35/build-tools 35.0.0, runs source and Python checks, core/app JVM tests, lint, Android-test APK assembly, and debug APK assembly.
+- The Vercel output contains the APK, build identity, and SHA-256 checksums. When the configured Blob token is available, the APK is uploaded to a commit-addressed public Blob path so deployment SSO does not block the download.
+- The Vercel project currently has no persistent Memo upload-keystore credentials. This experiment therefore produces an ephemeral debug-key-signed test APK, not an upgrade-compatible replacement for the pinned-certificate APK. Do not uninstall the existing app to test it.
+- Preview deployment and exact build results are pending. See `docs/checkpoints/2026-11-11-vercel-android-build.md`.
