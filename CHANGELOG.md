@@ -134,3 +134,5 @@ Retained from the integrated source branch: visible browser-based frontier consu
 ## 2026-11-12 — Local inference safety
 
 - Added a 180-second local inference deadline and a distinct timeout failure, with cancellation propagated to the LiteRT conversation. Partial output is not promoted to a completed response. Full Android verification and device cancellation timing remain pending.
+
+- Work now exposes a visible Stop generation control during active local checkpoint generation, with partial output retained only in the live surface and no false completed-artifact save.
