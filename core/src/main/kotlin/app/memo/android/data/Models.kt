@@ -20,6 +20,7 @@ private const val MAX_JOBS = 240
 private const val MAX_JOB_STEPS = 100
 private const val MAX_ACTION_APPROVALS = ActionApprovalLedger.MAX_ACTIONS
 private const val MAX_ACTION_AUDIT_EVENTS = ActionApprovalLedger.MAX_EVENTS
+private const val MAX_WORKFLOW_ATTEMPTS = WorkflowAttemptJournal.MAX_ATTEMPTS
 private const val MAX_CONTENT_CHARS = 15_000
 const val MAX_WORKSPACE_BACKUP_BYTES = 40 * 1024 * 1024
 private const val MAX_SERIALIZED_BYTES = MAX_WORKSPACE_BACKUP_BYTES
@@ -211,20 +212,23 @@ data class AppSnapshot(
     val relationships: List<EntityRelationship> = emptyList(),
     val jobs: List<WorkJobRecord> = emptyList(),
     val actionApprovals: List<ActionApprovalRecord> = emptyList(),
-    val actionAuditEvents: List<ActionAuditEvent> = emptyList()
+    val actionAuditEvents: List<ActionAuditEvent> = emptyList(),
+    val workflowAttempts: List<WorkflowAttemptRecord> = emptyList()
 ) {
     /** A persisted RUNNING task has lost its WebView execution context after process death. */
     fun recoverInterruptedTasks(): AppSnapshot {
         val interrupted = tasks.count { it.status == TaskStatus.RUNNING }
         val interruptedJobs = jobs.count { it.status == "RUNNING" }
         val actionCandidates = actionApprovals.count { it.status in setOf("PENDING", "APPROVED", "IN_PROGRESS") }
-        if (interrupted == 0 && interruptedJobs == 0 && actionCandidates == 0) return this
+        val interruptedAttempts = workflowAttempts.count { it.status == "RUNNING" }
+        if (interrupted == 0 && interruptedJobs == 0 && actionCandidates == 0 && interruptedAttempts == 0) return this
+        val recoveredAt = nowMillis()
         val recovered = copy(
             tasks = tasks.map { task ->
                 if (task.status == TaskStatus.RUNNING) task.copy(
                     status = TaskStatus.NEEDS_REVIEW,
                     lastMessage = "Memo was closed while this task was active. Review the page and run it again.",
-                    updatedAt = nowMillis()
+                    updatedAt = recoveredAt
                 ) else task
             },
             jobs = jobs.map { job ->
@@ -232,13 +236,15 @@ data class AppSnapshot(
                     status = "WAITING_FOR_USER",
                     resultSummary = "Memo restarted during this job. Review the last step before resuming.",
                     steps = job.steps.map { step -> if (step.status == "RUNNING") step.copy(status = "NEEDS_REVIEW", detail = "Interrupted by application restart.", updatedAt = nowMillis()) else step },
-                    updatedAt = nowMillis()
+                    updatedAt = recoveredAt
                 ) else job
             },
             activity = (listOf(ActivityRecord(
-                message = "Recovered ${interrupted} interrupted ${if (interrupted == 1) "task" else "tasks"}, ${interruptedJobs} interrupted ${if (interruptedJobs == 1) "job" else "jobs"}, and invalidated or flagged ${actionCandidates} pending external ${if (actionCandidates == 1) "action" else "actions"}. Review is required before resuming.",
+                at = recoveredAt,
+                message = "Recovered ${interrupted} interrupted ${if (interrupted == 1) "task" else "tasks"}, ${interruptedJobs} interrupted ${if (interruptedJobs == 1) "job" else "jobs"}, ${interruptedAttempts} interrupted workflow ${if (interruptedAttempts == 1) "attempt" else "attempts"}, and invalidated or flagged ${actionCandidates} pending external ${if (actionCandidates == 1) "action" else "actions"}. Review is required before resuming.",
                 level = "WARN"
-            )) + activity).take(MAX_ACTIVITY)
+            )) + activity).take(MAX_ACTIVITY),
+            workflowAttempts = WorkflowAttemptJournal.recover(workflowAttempts, recoveredAt)
         )
         return ActionApprovalLedger.recoverAfterRestart(recovered)
     }
@@ -253,6 +259,8 @@ data class AppSnapshot(
         jobs.forEach { job -> if (job.workflowGraphJson.isNotBlank()) app.memo.android.orchestration.WorkflowGraph.fromJson(job.workflowGraphJson) }
         require(actionApprovals.size <= MAX_ACTION_APPROVALS) { "Workspace contains too many action approval records for a safe backup." }
         require(actionAuditEvents.size <= MAX_ACTION_AUDIT_EVENTS) { "Workspace contains too many audit events for a safe backup." }
+        require(workflowAttempts.size <= MAX_WORKFLOW_ATTEMPTS) { "Workspace contains too many workflow attempts for a safe backup." }
+        WorkflowAttemptJournal.validate(this)
         require(ActionApprovalLedger.verifyLedger(this)) { "The action ledger or audit chain failed verification; export is blocked to preserve evidence of tampering." }
         // Estimate escaped JSON size before constructing the full object tree. Every UTF-8 code point costs
         // at most four bytes; control characters may expand to six ASCII bytes when JSON-escaped.
@@ -320,6 +328,11 @@ data class AppSnapshot(
             add(job.id); add(job.title); add(job.goal); add(job.status); add(job.runtimeId); add(job.sourceConversationId); add(job.sourceMessageId); add(job.resultSummary); add(job.workflowGraphJson); add(job.todayPriority); add(job.todayPriorityDate)
             job.steps.forEach { add(it.id); add(it.title); add(it.detail); add(it.status); add(it.evidence) }
         }
+        workflowAttempts.forEach { attempt ->
+            add(attempt.id); add(attempt.jobId); add(attempt.stepId); add(attempt.attemptNumber.toString()); add(attempt.idempotencyKey)
+            add(attempt.runtimeId); attempt.capabilityIds.forEach { add(it) }; add(attempt.status); add(attempt.startedAt.toString())
+            add(attempt.finishedAt.toString()); add(attempt.evidenceId); add(attempt.detail); add(attempt.userOutcome); add(attempt.userOutcomeAt.toString())
+        }
         actionApprovals.forEach { action ->
             add(action.id); add(action.jobId); add(action.stepId); add(action.runtimeId); add(action.capabilityId); add(action.destination)
             add(action.title); add(action.payload); add(action.contentHash); add(action.risk); add(action.status); add(action.approvalHash); add(action.evidenceRef); add(action.resolution)
@@ -344,9 +357,9 @@ data class AppSnapshot(
         councilRunLimit: Int
     ): String {
         val root = JSONObject()
-        root.put("schemaVersion", 6)
-        root.put("schemaSemver", "6.0.0")
-        root.put("minimumReaderVersion", 6)
+        root.put("schemaVersion", 7)
+        root.put("schemaSemver", "7.0.0")
+        root.put("minimumReaderVersion", 7)
         root.put("exportedAt", nowMillis())
         root.put("themeMode", themeMode)
         root.put("tasks", JSONArray().apply {
@@ -545,6 +558,26 @@ data class AppSnapshot(
                 })
             }
         })
+        root.put("workflowAttempts", JSONArray().apply {
+            workflowAttempts.forEach { attempt ->
+                put(JSONObject().apply {
+                    put("id", attempt.id.take(128))
+                    put("jobId", attempt.jobId.take(128))
+                    put("stepId", attempt.stepId.take(128))
+                    put("attemptNumber", attempt.attemptNumber)
+                    put("idempotencyKey", attempt.idempotencyKey.take(64))
+                    put("runtimeId", attempt.runtimeId.take(120))
+                    put("capabilityIds", JSONArray(attempt.capabilityIds.take(20)))
+                    put("status", attempt.status.take(24))
+                    put("startedAt", attempt.startedAt)
+                    put("finishedAt", attempt.finishedAt)
+                    put("evidenceId", attempt.evidenceId.take(128))
+                    put("detail", attempt.detail.take(2_000))
+                    put("userOutcome", attempt.userOutcome.take(2_000))
+                    put("userOutcomeAt", attempt.userOutcomeAt)
+                })
+            }
+        })
         root.put("actionAuditEvents", JSONArray().apply {
             actionAuditEvents.forEach { event ->
                 put(JSONObject().apply {
@@ -572,13 +605,13 @@ data class AppSnapshot(
             require(raw.toByteArray(Charsets.UTF_8).size <= MAX_WORKSPACE_BACKUP_BYTES) { "Import file is larger than 40 MB." }
             val root = JSONObject(raw)
             val schema = root.optInt("schemaVersion", 0)
-            require(schema in 1..6) { "This backup format is not supported." }
+            require(schema in 1..7) { "This backup format is not supported." }
             val schemaSemver = root.safeString("schemaSemver")
             if (schemaSemver.isNotBlank()) {
                 val major = schemaSemver.substringBefore('.').toIntOrNull()
                 require(major == schema) { "Backup schema version metadata is inconsistent." }
             }
-            require(root.optInt("minimumReaderVersion", schema).coerceAtLeast(1) <= 6) { "This backup requires a newer Memo reader." }
+            require(root.optInt("minimumReaderVersion", schema).coerceAtLeast(1) <= 7) { "This backup requires a newer Memo reader." }
 
             val usedTaskIds = mutableSetOf<String>()
             val tasks = root.optJSONArray("tasks").toTypedRecords(MAX_TASKS) { row ->
@@ -787,8 +820,29 @@ data class AppSnapshot(
                     details = row.safeString("details").take(1_000)
                 )
             }
+            val workflowAttempts = if (schema < 7) emptyList() else root.optJSONArray("workflowAttempts").toTypedRecords(MAX_WORKFLOW_ATTEMPTS) { row ->
+                val capabilities = row.optJSONArray("capabilityIds") ?: JSONArray()
+                require(capabilities.length() <= 20) { "Workflow attempt capability list is too large." }
+                WorkflowAttemptRecord(
+                    id = row.safeString("id").take(128),
+                    jobId = row.safeString("jobId").take(128),
+                    stepId = row.safeString("stepId").take(128),
+                    attemptNumber = row.optInt("attemptNumber", 0),
+                    idempotencyKey = row.safeString("idempotencyKey").take(64),
+                    runtimeId = row.safeString("runtimeId").take(120),
+                    capabilityIds = (0 until capabilities.length()).map { capabilities.getString(it).take(120) },
+                    status = row.safeString("status").take(24),
+                    startedAt = row.optLong("startedAt", 0L),
+                    finishedAt = row.optLong("finishedAt", 0L),
+                    evidenceId = row.safeString("evidenceId").take(128),
+                    detail = row.safeString("detail").take(2_000),
+                    userOutcome = row.safeString("userOutcome").take(2_000),
+                    userOutcomeAt = row.optLong("userOutcomeAt", 0L)
+                )
+            }
             val theme = root.safeString("themeMode").uppercase().takeIf { it in setOf("SYSTEM", "LIGHT", "DARK") } ?: "SYSTEM"
-            val snapshot = AppSnapshot(tasks, evidence, activity, theme, councilRuns, conversations, entities, relationships, jobs, actionApprovals, actionAuditEvents)
+            val snapshot = AppSnapshot(tasks, evidence, activity, theme, councilRuns, conversations, entities, relationships, jobs, actionApprovals, actionAuditEvents, workflowAttempts)
+            WorkflowAttemptJournal.validate(snapshot)
             require(ActionApprovalLedger.verifyLedger(snapshot)) { "The imported action ledger or audit chain failed verification." }
             return snapshot
         }
