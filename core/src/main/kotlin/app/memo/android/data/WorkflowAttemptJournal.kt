@@ -234,7 +234,12 @@ object WorkflowAttemptJournal {
                         metadata.optBoolean("requiresHumanReview", false)) {
                         "A saved workflow attempt must reference its exact checkpoint-bound review artifact."
                     }
-                    if (attempt.detail.contains(WorkflowRuntimeReceipt.DETAIL_MARKER)) {
+                    val receiptMarker = attempt.detail.contains(WorkflowRuntimeReceipt.DETAIL_MARKER)
+                    val receiptMetadata = metadata?.has(WorkflowRuntimeReceipt.METADATA_KEY) == true
+                    require(receiptMarker == receiptMetadata) {
+                        "A runtime receipt must be present in both the artifact metadata and its attempt journal marker."
+                    }
+                    if (receiptMarker) {
                         val receipt = WorkflowRuntimeReceipt.fromEvidence(item)
                             ?: error("A receipt-backed runtime attempt is missing its typed receipt.")
                         receipt.validateAgainst(attempt, item)
