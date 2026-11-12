@@ -7,7 +7,7 @@ dd3d203254c11eda212933be2fdad09d4219b7869ac1a0fb74166ad103cb9ed2  ./scripts/verc
 27a75bf71bfa1da44ba4c0fcf483b010cab683e19f33f308a150a248cdae81aa  ./DEVICE_ACCEPTANCE_CHECKLIST.md
 a8b181972eb3ee0e1587ff09e49979b43acffe2d4c3ab9ea5b8a7e097d46beb0  ./FEATURE_AUDIT.md
 dd455fac6e27fc3a4f55b917d345ce0bf7b523cf25cff35beaa85cb8d8d14886  ./IMPLEMENTATION_CONTRACT.md
-0edcaedb8c5c339d9c5707f4ebb0161c475c2c22da3fc1328a0f96f91a600899  ./IMPLEMENTATION_LOG.md
+a43a46333b2e0db4b50c83bc9c15bf5de6eeeb7cfad163cb78af655a91fdc672  ./IMPLEMENTATION_LOG.md
 413fe1482fb424a3676febd4acedabb3c671e9bc45a034abdf899ac097eb45f0  ./MEMO-PATCH1-AUDIT.md
 918ac512072584dabb677b559a0e54f353b42c94d0e1607e07e9abeef8e8937f  ./MEMO2_ALIGNMENT_MATRIX.md
 6ccd18bce913c2ffe7f433aff994ba2a21f5c20982129352193e35ab97d5bd65  ./PRODUCT_GAP_REGISTRY.md
@@ -209,4 +209,4 @@ f90f52d0305cadf39fedc7a8f642d06c3016c5b582ca305174944bb927a292c0  ./core/src/mai
 8f4f770753f467bd215ca81e53ba9580c7c887e533ac66759938e2937d0c296b  ./core/src/test/kotlin/app/memo/android/orchestration/WorkflowCheckpointCoordinatorTest.kt
 093c236937fc8bc16b0d07919fc69e774f546d3c5665af07eba559b5323ba2ba  ./core/src/test/kotlin/app/memo/android/data/LiveTimelineProjectorTest.kt
 3f675f7bde9c1d87c45bda15df88e287a67f6a37aceb081d0ea353e41472906b  ./docs/REQUIREMENT_TRACEABILITY.md
-c59d9b70942ccd1f576a6c480cdb81ee0a4e9514998700f7d495a389c8e0042d  ./docs/checkpoints/2026-11-12-workflow-attempt-journal.md
+c28f114ed1e7b035663c5375b126af9c81525d91eb26fddca4739e2518d82fda  ./docs/checkpoints/2026-11-12-workflow-attempt-journal.md
