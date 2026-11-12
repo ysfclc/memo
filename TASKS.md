@@ -481,7 +481,7 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 
 - Added a 180-second deadline around serialized LiteRT inference, including engine initialization and streamed generation.
 - Timeout cancels the active LiteRT conversation through `Conversation.cancelProcess()` and surfaces a dedicated failure state; it is not reported as a user cancellation or successful completion.
-- Added policy regression coverage and source-verifier assertions.
+- Added policy regression coverage and source-verifier assertions. The timeout test now passes the required duration to the exception and exercises deadline mapping, cancellation of in-flight work, successful completion and preservation of parent cancellation; tests are added but not yet executed.
 - **Still open:** native-call cancellation responsiveness, Work-level cancel control wiring/visibility, full Gradle tests, lint, and real-device timing. The deadline is cooperative and is not a hard process kill.
 
 - **Follow-up UI:** Work now displays a Stop generation control during an active local checkpoint, shows a bounded tail of partial output, and explains that stopping leaves the checkpoint for review rather than saving partial text as a finished artifact.
