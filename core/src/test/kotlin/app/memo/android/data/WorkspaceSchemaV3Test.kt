@@ -30,8 +30,57 @@ class WorkspaceSchemaV3Test {
         assertEquals("WAITING_FOR_USER", restored.jobs.single().status)
         assertEquals("COMPLETED", restored.jobs.single().steps.single().status)
         assertEquals("USER_CHECKPOINT", restored.jobs.single().steps.single().checkpointKind)
-        assertEquals(6, org.json.JSONObject(snapshot.toJson()).optInt("schemaVersion"))
-        assertEquals("6.0.0", org.json.JSONObject(snapshot.toJson()).optString("schemaSemver"))
+        assertEquals(7, org.json.JSONObject(snapshot.toJson()).optInt("schemaVersion"))
+        assertEquals("7.0.0", org.json.JSONObject(snapshot.toJson()).optString("schemaSemver"))
+    }
+
+    @Test fun schemaSevenPersistsAttemptJournalAndSchemaSixMigratesAdditively() {
+        val job = WorkJobRecord(
+            id = "journal-job", title = "Prepare report", goal = "Create a sourced report",
+            runtimeId = "app.jobs", status = "WAITING_FOR_USER",
+            steps = listOf(JobStepRecord(id = "journal-step", title = "Draft", status = "NEEDS_REVIEW"))
+        )
+        val evidence = EvidenceRecord(
+            id = "journal-evidence", taskId = job.id, title = "Draft", sourceUrl = "",
+            kind = "WORK_ARTIFACT", content = "Private draft", summary = "Needs review"
+        )
+        val attempt = WorkflowAttemptRecord(
+            id = "attempt-1", jobId = job.id, stepId = "journal-step", attemptNumber = 1,
+            idempotencyKey = WorkflowAttemptJournal.legacyIdempotencyKey(job.id, "journal-step"),
+            runtimeId = "app.jobs", status = "OUTPUT_SAVED", startedAt = 10L, finishedAt = 20L,
+            evidenceId = evidence.id, detail = "Saved for review"
+        )
+        val original = AppSnapshot(jobs = listOf(job), evidence = listOf(evidence), workflowAttempts = listOf(attempt))
+        val json = org.json.JSONObject(original.toJson())
+        assertEquals(7, json.optInt("schemaVersion"))
+        assertEquals("7.0.0", json.optString("schemaSemver"))
+        val restored = AppSnapshot.fromJson(json.toString())
+        assertEquals(attempt, restored.workflowAttempts.single())
+
+        val schemaSix = org.json.JSONObject(original.copy(workflowAttempts = emptyList()).toJson())
+        schemaSix.put("schemaVersion", 6)
+        schemaSix.put("schemaSemver", "6.0.0")
+        schemaSix.put("minimumReaderVersion", 6)
+        schemaSix.remove("workflowAttempts")
+        val migrated = AppSnapshot.fromJson(schemaSix.toString())
+        assertTrue(migrated.workflowAttempts.isEmpty())
+        assertEquals(7, org.json.JSONObject(migrated.toJson()).optInt("schemaVersion"))
+    }
+
+    @Test fun tamperedAttemptReferencesAreRejected() {
+        val job = WorkJobRecord(
+            id = "journal-job", title = "Prepare report", goal = "Create a report",
+            runtimeId = "app.jobs", status = "RUNNING",
+            steps = listOf(JobStepRecord(id = "journal-step", title = "Draft", status = "RUNNING"))
+        )
+        val attempt = WorkflowAttemptRecord(
+            id = "attempt-1", jobId = job.id, stepId = "journal-step", attemptNumber = 1,
+            idempotencyKey = WorkflowAttemptJournal.legacyIdempotencyKey(job.id, "journal-step"),
+            runtimeId = "app.jobs", startedAt = 10L
+        )
+        val root = org.json.JSONObject(AppSnapshot(jobs = listOf(job), workflowAttempts = listOf(attempt)).toJson())
+        root.getJSONArray("workflowAttempts").getJSONObject(0).put("jobId", "missing-job")
+        assertTrue(runCatching { AppSnapshot.fromJson(root.toString()) }.isFailure)
     }
 
     @Test fun interruptedJobsAreRecoveredIntoReviewState() {
@@ -54,7 +103,7 @@ class WorkspaceSchemaV3Test {
         val restored = AppSnapshot.fromJson(root.toString())
         assertEquals("USER_CHECKPOINT", restored.jobs.single().steps.single().checkpointKind)
         assertEquals(false, restored.jobs.single().steps.single().requiresApproval)
-        assertEquals(6, org.json.JSONObject(restored.toJson()).optInt("schemaVersion"))
+        assertEquals(7, org.json.JSONObject(restored.toJson()).optInt("schemaVersion"))
     }
 
     @Test fun inconsistentSemverAndUnknownFutureSchemaAreRejected() {
