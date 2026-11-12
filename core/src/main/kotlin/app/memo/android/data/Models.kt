@@ -215,7 +215,7 @@ data class AppSnapshot(
     val actionAuditEvents: List<ActionAuditEvent> = emptyList(),
     val workflowAttempts: List<WorkflowAttemptRecord> = emptyList()
 ) {
-    /** A persisted RUNNING task has lost its WebView execution context after process death. */
+    /** Recover persisted tasks, jobs and workflow attempts whose live runtime context was lost on process death. */
     fun recoverInterruptedTasks(): AppSnapshot {
         val interrupted = tasks.count { it.status == TaskStatus.RUNNING }
         val actionCandidates = actionApprovals.count { it.status in setOf("PENDING", "APPROVED", "IN_PROGRESS") }
