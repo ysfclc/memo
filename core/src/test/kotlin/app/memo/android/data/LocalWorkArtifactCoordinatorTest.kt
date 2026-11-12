@@ -8,13 +8,19 @@ import org.junit.Test
 class LocalWorkArtifactCoordinatorTest {
     private fun snapshot(status: String = "RUNNING"): AppSnapshot {
         val step = JobStepRecord(id = "step-1", title = "Prepare deliverable", status = status)
-        return AppSnapshot(jobs = listOf(WorkJobRecord(
+        val initial = AppSnapshot(jobs = listOf(WorkJobRecord(
             id = "job-1",
             title = "Prepare a report",
             goal = "Create a sourced report",
-            status = "RUNNING",
+            status = if (status == "RUNNING") "RUNNING" else "WAITING_FOR_USER",
             steps = listOf(step)
         )))
+        if (status != "RUNNING") return initial
+        val attempt = WorkflowAttemptJournal.create(
+            initial, "job-1", "step-1", "app.jobs", emptyList(),
+            WorkflowAttemptJournal.legacyIdempotencyKey("job-1", "step-1"), 10L
+        )
+        return initial.copy(workflowAttempts = listOf(attempt))
     }
 
     private fun artifact(id: String = "evidence-1", jobId: String = "job-1") = EvidenceRecord(
@@ -35,6 +41,9 @@ class LocalWorkArtifactCoordinatorTest {
         assertEquals("WAITING_FOR_USER", result.jobs.single().status)
         assertTrue(result.jobs.single().steps.single().evidence.contains("evidence:evidence-1"))
         assertEquals(42L, result.activity.first().at)
+        assertEquals("OUTPUT_SAVED", result.workflowAttempts.single().status)
+        assertEquals("evidence-1", result.workflowAttempts.single().evidenceId)
+        assertEquals(42L, result.workflowAttempts.single().finishedAt)
     }
 
     @Test fun refusesToAttachAnArtifactToAStaleCheckpoint() {
@@ -66,6 +75,8 @@ class LocalWorkArtifactCoordinatorTest {
         assertEquals("NEEDS_REVIEW", result.jobs.single().steps[0].status)
         assertEquals("PENDING", result.jobs.single().steps[1].status)
         assertEquals("WAITING_FOR_USER", result.jobs.single().status)
+        assertEquals("FAILED", result.workflowAttempts.single().status)
+        assertEquals(99L, result.workflowAttempts.single().finishedAt)
         assertFalse(result.evidence.isNotEmpty())
     }
 
