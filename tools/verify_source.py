@@ -432,7 +432,7 @@ for marker in ('"schemaVersion", 7', '"workflowAttempts"', "WorkflowAttemptJourn
 for marker in ("ATTEMPT(", "snapshot.workflowAttempts.forEach"):
     if marker not in live_projector:
         fail(f"Live timeline does not project durable workflow attempts: {marker}")
-for marker in ("manualRetriesKeepOneIdempotencyIdentityAndStopAtFourAttempts", "canGenerateAnotherDraftWithoutDiscardingThePreviousReviewArtifact", "cannotRecordAUserOutcomeWhileLocalModelInferenceIsStillRunning", "rejectsAttemptHistoryThatContinuesAfterARunningAttempt", "refusesToStartAChildBeforeItsDependenciesAreComplete"):
+for marker in ("manualRetriesKeepOneIdempotencyIdentityAndStopAtFourAttempts", "canGenerateAnotherDraftWithoutDiscardingThePreviousReviewArtifact", "cannotRecordAUserOutcomeWhileLocalModelInferenceIsStillRunning", "startsAndRecordsAUserReportedCheckpointWithoutClaimingRuntimeVerification", "refusesToStartAChildBeforeItsDependenciesAreComplete"):
     if marker not in checkpoint_tests:
         fail(f"workflow attempt safety regression coverage is missing: {marker}")
 for marker in ("OUTPUT_SAVED", "FAILED", "refusesToAttachAnArtifactToAStaleCheckpoint", "refusesAnArtifactBoundToAnotherCheckpointInTheSameJob", "failureTransitionMovesOnlyTheActiveStepToReview"):
