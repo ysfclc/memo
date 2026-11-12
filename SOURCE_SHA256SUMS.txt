@@ -210,4 +210,4 @@ f90f52d0305cadf39fedc7a8f642d06c3016c5b582ca305174944bb927a292c0  ./core/src/mai
 093c236937fc8bc16b0d07919fc69e774f546d3c5665af07eba559b5323ba2ba  ./core/src/test/kotlin/app/memo/android/data/LiveTimelineProjectorTest.kt
 3f675f7bde9c1d87c45bda15df88e287a67f6a37aceb081d0ea353e41472906b  ./docs/REQUIREMENT_TRACEABILITY.md
 ca91a1fe9b0e4c4cbd759cea8e89eb2c1b3dde9dfef8da7dfea9c39614ce2f1a  ./docs/checkpoints/2026-11-12-workflow-attempt-journal.md
-78c4c777884108c2c5dd95999e77bcdc23946337cc897d7dee6c08808b228a5b  ./app/src/test/java/app/memo/android/ai/LocalModelRunnerPolicyTest.kt
+2e587f8d2de7a0aa4989c0c7af30b01f5a1315810a1f7d19d706acdd8bc8b5bd  ./app/src/test/java/app/memo/android/ai/LocalModelRunnerPolicyTest.kt
