@@ -283,7 +283,7 @@ view_model = (ROOT / "app/src/main/java/app/memo/android/data/MemoWorkspaceViewM
 for marker in ('sourceConversationId: String = ""', 'sourceConversationId = sourceId'):
     if marker not in view_model:
         fail(f"Work-plan source conversation linkage is missing: {marker}")
-for marker in ("Start with Memo", "Continue in Talk", "onOpenCouncil", "onStartConversation", "onStartConversation: (String, Boolean) -> Boolean"):
+for marker in ("Start with Memo", "onInitialPromptConsumed", "onOpenCouncil", "onStartConversation", "onStartConversation: (String, Boolean) -> Boolean"):
     if marker not in chat:
         fail(f"Talk entry/composer is missing: {marker}")
 print("PASS: one Memo Activity, universal Talk intent router, linked source conversations, four product surfaces, and safe draft handoff")
