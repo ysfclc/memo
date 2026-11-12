@@ -79,6 +79,18 @@ The current Talk composer opens a conversation draft; it does not yet parse an i
 - Added JVM tests for dynamic fan-out/join graphs, exact-runtime capability matching, deterministic capability manifests, fresh app-owned idempotency keys, budgets, cycles, malformed proposals and approval failures. tools/verify_source.py now checks that these safeguards and tests remain present.
 - Scope boundary at that checkpoint: typed proposal/compilation only. The 10 November increment now connects the parser to an optional local-model expansion action on untouched Work drafts. Talk still creates its deterministic template plan first; the optional expansion is draft-only, rejects external/approval-gated work and unavailable runtimes, and does not execute nodes. A durable DAG executor, per-node run journal, pause/resume scheduler, runtime dispatch and CI evidence remain open.
 
+## 12 November 2026 — Content-bound runtime receipts for local Work output
+
+- Added a typed `WorkflowRuntimeReceipt` in the pure core. A saved output receipt binds one attempt ID/number, job/checkpoint, exact runtime and capability IDs, stable idempotency key, start/completion timestamps, evidence ID and SHA-256 of the exact artifact bytes.
+- Local Work now creates and attaches the receipt in the same immutable snapshot as the review-required artifact and attempt transition. The receipt is persisted inside the existing evidence metadata, so no workspace schema bump or migration is needed.
+- Workspace integrity validation checks the receipt against the durable attempt and saved artifact. It requires the receipt marker in both the attempt journal and artifact metadata, rejects missing/mismatched receipts and detects later artifact-content mutation.
+- Compatibility: existing schema-7 output attempts without the new receipt marker remain readable; new output attempts are receipt-backed.
+- Honest completion boundary: `postconditionStatus=NOT_VERIFIED`. This proves the local runtime returned and Memo persisted those exact bytes; it does not prove the requested outcome. No external action is enabled by this increment.
+- Added regression tests for receipt creation/binding, journal validation and mutated output rejection; extended `tools/verify_source.py` to require the receipt source and guard markers.
+- Verification status: source and test changes are committed; Gradle/JVM tests, lint, APK and physical-device checks have not run on this head because the current GitHub runner and Vercel build paths remain blocked. Do not mark this slice verified until the exact-head test suite passes.
+- Next: introduce a shared runtime-adapter contract and deterministic postcondition evidence path, then connect browser and native adapters only after their existing approval/visibility boundaries are preserved.
+
+
 
 
 ## 1. Rules for using Memo 2's plan
