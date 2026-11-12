@@ -56,23 +56,26 @@ class LocalModelRunnerPolicyTest {
     @Test
     fun parentCancellationIsNotConvertedIntoAnInferenceTimeout() = runBlocking {
         val entered = CompletableDeferred<Unit>()
-        val observedCancellation = CompletableDeferred<Throwable>()
+        val observedFailure = CompletableDeferred<Throwable?>()
         val inference = launch {
             entered.complete(Unit)
-            try {
+            val failure = try {
                 withLocalInferenceTimeout(30_000L) {
                     awaitCancellation()
                 }
-            } catch (cancelled: CancellationException) {
-                observedCancellation.complete(cancelled)
+                null
+            } catch (error: Throwable) {
+                error
             }
+            observedFailure.complete(failure)
         }
 
         entered.await()
         inference.cancel()
-        val cancellation = observedCancellation.await()
+        val cancellation = observedFailure.await()
         inference.join()
 
+        assertTrue("Parent cancellation must remain cancellation, got $cancellation", cancellation is CancellationException)
         assertFalse(cancellation is LocalInferenceTimeoutException)
     }
 }
