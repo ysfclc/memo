@@ -218,9 +218,13 @@ data class AppSnapshot(
     /** A persisted RUNNING task has lost its WebView execution context after process death. */
     fun recoverInterruptedTasks(): AppSnapshot {
         val interrupted = tasks.count { it.status == TaskStatus.RUNNING }
-        val interruptedJobs = jobs.count { it.status == "RUNNING" }
         val actionCandidates = actionApprovals.count { it.status in setOf("PENDING", "APPROVED", "IN_PROGRESS") }
-        val interruptedAttempts = workflowAttempts.count { it.status == "RUNNING" }
+        val interruptedAttemptKeys = workflowAttempts.filter { it.status == "RUNNING" }
+            .map { it.jobId to it.stepId }.toSet()
+        val interruptedJobIds = (jobs.filter { it.status == "RUNNING" }.map { it.id } +
+            interruptedAttemptKeys.map { it.first }).toSet()
+        val interruptedJobs = interruptedJobIds.size
+        val interruptedAttempts = interruptedAttemptKeys.size
         if (interrupted == 0 && interruptedJobs == 0 && actionCandidates == 0 && interruptedAttempts == 0) return this
         val recoveredAt = nowMillis()
         val recovered = copy(
@@ -232,10 +236,17 @@ data class AppSnapshot(
                 ) else task
             },
             jobs = jobs.map { job ->
-                if (job.status == "RUNNING") job.copy(
+                val interruptedSteps = interruptedAttemptKeys.filter { it.first == job.id }.map { it.second }.toSet()
+                if (job.status == "RUNNING" || interruptedSteps.isNotEmpty()) job.copy(
                     status = "WAITING_FOR_USER",
                     resultSummary = "Memo restarted during this job. Review the last step before resuming.",
-                    steps = job.steps.map { step -> if (step.status == "RUNNING") step.copy(status = "NEEDS_REVIEW", detail = "Interrupted by application restart.", updatedAt = nowMillis()) else step },
+                    steps = job.steps.map { step ->
+                        if (step.status == "RUNNING" || step.id in interruptedSteps) step.copy(
+                            status = "NEEDS_REVIEW",
+                            detail = "Interrupted by application restart. Review before retrying.",
+                            updatedAt = recoveredAt
+                        ) else step
+                    },
                     updatedAt = recoveredAt
                 ) else job
             },
@@ -820,25 +831,31 @@ data class AppSnapshot(
                     details = row.safeString("details").take(1_000)
                 )
             }
-            val workflowAttempts = if (schema < 7) emptyList() else root.optJSONArray("workflowAttempts").toTypedRecords(MAX_WORKFLOW_ATTEMPTS) { row ->
-                val capabilities = row.optJSONArray("capabilityIds") ?: JSONArray()
-                require(capabilities.length() <= 20) { "Workflow attempt capability list is too large." }
-                WorkflowAttemptRecord(
-                    id = row.safeString("id").take(128),
-                    jobId = row.safeString("jobId").take(128),
-                    stepId = row.safeString("stepId").take(128),
-                    attemptNumber = row.optInt("attemptNumber", 0),
-                    idempotencyKey = row.safeString("idempotencyKey").take(64),
-                    runtimeId = row.safeString("runtimeId").take(120),
-                    capabilityIds = (0 until capabilities.length()).map { capabilities.getString(it).take(120) },
-                    status = row.safeString("status").take(24),
-                    startedAt = row.optLong("startedAt", 0L),
-                    finishedAt = row.optLong("finishedAt", 0L),
-                    evidenceId = row.safeString("evidenceId").take(128),
-                    detail = row.safeString("detail").take(2_000),
-                    userOutcome = row.safeString("userOutcome").take(2_000),
-                    userOutcomeAt = row.optLong("userOutcomeAt", 0L)
-                )
+            val workflowAttempts = if (schema < 7) emptyList() else {
+                val rows = root.optJSONArray("workflowAttempts")
+                    ?: error("Schema 7 backup is missing its workflow attempt journal.")
+                require(rows.length() <= MAX_WORKFLOW_ATTEMPTS) { "Workflow attempt history exceeds its safe storage limit." }
+                (0 until rows.length()).map { index ->
+                    val row = rows.optJSONObject(index) ?: error("Workflow attempt record is malformed.")
+                    val capabilities = row.optJSONArray("capabilityIds") ?: JSONArray()
+                    require(capabilities.length() <= 20) { "Workflow attempt capability list is too large." }
+                    WorkflowAttemptRecord(
+                        id = row.safeString("id").take(128),
+                        jobId = row.safeString("jobId").take(128),
+                        stepId = row.safeString("stepId").take(128),
+                        attemptNumber = row.optInt("attemptNumber", 0),
+                        idempotencyKey = row.safeString("idempotencyKey").take(64),
+                        runtimeId = row.safeString("runtimeId").take(120),
+                        capabilityIds = (0 until capabilities.length()).map { capabilities.getString(it).take(120) },
+                        status = row.safeString("status").take(24),
+                        startedAt = row.optLong("startedAt", 0L),
+                        finishedAt = row.optLong("finishedAt", 0L),
+                        evidenceId = row.safeString("evidenceId").take(128),
+                        detail = row.safeString("detail").take(2_000),
+                        userOutcome = row.safeString("userOutcome").take(2_000),
+                        userOutcomeAt = row.optLong("userOutcomeAt", 0L)
+                    )
+                }
             }
             val theme = root.safeString("themeMode").uppercase().takeIf { it in setOf("SYSTEM", "LIGHT", "DARK") } ?: "SYSTEM"
             val snapshot = AppSnapshot(tasks, evidence, activity, theme, councilRuns, conversations, entities, relationships, jobs, actionApprovals, actionAuditEvents, workflowAttempts)
