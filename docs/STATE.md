@@ -20,12 +20,12 @@ Memo is an Android-first, local-first personal AI execution environment. Talk ca
 | Browser | 🟡 bounded slice | Visible provider sessions and exact-content approval exist; no generic browser runtime adapter in the DAG executor. |
 | Native Android | 🟡 bounded / unverified | Accessibility workflows are opt-in and foreground/unlocked; not integrated as a generic DAG adapter. |
 | Security and storage | 🟡 partial | Encrypted workspace/native stores and migration safeguards exist; eventual single-store boundary and device acceptance remain open. |
-| CI / Android build | 🔴 blocked | Exact-head PR run #525 and retry attempt 2 fail before any job steps/runner assignment; logs unavailable. Gradle, lint and APK jobs are skipped. |
+| CI / Android build | 🔴 blocked | Exact-head PR runs #525 (including explicit retry attempt 2), #526 and #527 fail before any job steps/runner assignment; logs unavailable. Gradle, lint and APK jobs are skipped. |
 
 ## 3. Currently in flight
 
 - Draft PR #8, branch `stabilization/usable-stage-2026-11-10`. Latest source commit with the timeout test is `a44c6c35c013163aa649553c64fa34eda26a809e`; checksum manifest refresh is `d52ba948828fd28b003ea52f8518c54b16960126`. The current branch also contains the new checkpoint and state-ledger documentation. Keep the PR draft and do not merge without the exact-head gates.
-- M3.8.A8 regression coverage is present and documented, but **not executed**. Latest observed exact-head workflow run #525 on `1c3bde60a78232b82a8f1cfbb021bf11bf75a11d` failed with no recorded steps or runner assignment. Retrying its preflight as attempt 2 failed identically; the job-log endpoint returned `BlobNotFound`. Workflow source inspection confirms PR validation is intended to run source-only when the base is `main`; the observed failure occurs before the script's steps execute.
+- M3.8.A8 regression coverage is present and documented, but **not executed**. Latest observed exact-head workflow run #527 on `b7ee5c2496de60239a173e5a1e0add3da38ad100` failed with no recorded steps or runner assignment; its build/sign/commit jobs were skipped. Run #525 was explicitly retried as attempt 2 and failed identically; runs #526 and #527 show the same no-step failure. Job-log retrieval returns `BlobNotFound`. Workflow source inspection confirms PR validation is intended to run source-only when the base is `main`; the observed failure occurs before the script's steps execute.
 
 ## 4. Known gaps & stubs
 
@@ -43,7 +43,7 @@ Memo is an Android-first, local-first personal AI execution environment. Talk ca
 - Full source gate: `./gradlew --no-daemon --stacktrace :core:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug`.
 - Additional instrumentation package: `:app:assembleDebugAndroidTest`; the upgrade acceptance workflow requires an API 35 emulator.
 - Repository checkout is available through the connected GitHub integration. No local `/testbed` checkout or local Android SDK/Gradle execution environment is mounted in this session.
-- Current blocker: GitHub Actions run #525 attempt 1 and the explicit retry (attempt 2) both failed before steps/runner assignment. Job logs return `BlobNotFound`; validation, Gradle, lint, APK and signing jobs are skipped. The same pattern affects recent PR runs and a `main` push run. No local `/testbed`, Android SDK or Gradle executable is mounted here; network access to clone GitHub is unavailable. Do not infer a source compilation result from these failures.
+- Current blocker: GitHub Actions runs #525 (including retry attempt 2), #526 and #527 all failed before steps/runner assignment. Job logs return `BlobNotFound`; validation, Gradle, lint, APK and signing jobs are skipped. The same pattern affects recent PR runs and a `main` push run. No local `/testbed`, Android SDK or Gradle executable is mounted here; network access to clone GitHub is unavailable. Do not infer a source compilation result from these failures.
 
 ## 6. Next three increments
 
