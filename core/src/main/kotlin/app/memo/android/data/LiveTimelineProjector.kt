@@ -4,7 +4,7 @@ package app.memo.android.data
  * A read-only projection of durable workspace records into one chronological Live feed.
  *
  * Entries describe recorded state, not proof that an external side effect succeeded.
- * Only persisted activity, job/step, task, action-audit and evidence records are included.
+ * Persisted activity, job/step, task, attempt, action-audit and evidence records are included.
  */
 enum class LiveTimelineKind(val label: String) {
     ACTIVITY("Workspace event"),
