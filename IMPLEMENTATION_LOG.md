@@ -165,3 +165,15 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - Exact-head PR run #480 (`c50b22c581d404bd43524d2a3422a2cfae382be9`) repeated the preflight failure: incoming ZIP job failed before runner assignment (`runner_id: 0`, zero steps); all source validation, Gradle, lint and APK jobs were skipped. No full build result is available.
 
 - Latest exact-head run #483 (`9d098c33f94b656b241026559565459c07b53c91`) also failed before runner assignment: ZIP-preflight job `runner_id: 0`, zero steps; all downstream jobs skipped. This confirms the Actions runner/preflight blocker is still present on the current branch head.
+
+
+### 2026-11-12 — M3.8.A8 — Bound local inference and propagate cancellation
+
+- **Requirement:** Prevent a local model request from occupying the single LiteRT engine indefinitely; preserve cancellation semantics and never represent a timed-out response as completed output.
+- **Baseline:** `stabilization/usable-stage-2026-11-10` at the durable attempt-journal checkpoint; `WorkflowAttemptJournal` remains the durable Work attempt record.
+- **Files changed:** `app/src/main/java/app/memo/android/ai/LocalModelRunner.kt`, `app/src/test/java/app/memo/android/ai/LocalModelRunnerPolicyTest.kt`, `tools/verify_source.py`, `TASKS.md`, `CHANGELOG.md`, `docs/checkpoints/2026-11-12-workflow-attempt-journal.md`.
+- **Implementation:** Local inference now runs under a 180-second coroutine deadline that includes model initialization and response collection. Timeout cancellation reaches the LiteRT conversation's `cancelProcess()` handler and is surfaced as a dedicated inference-timeout failure; normal parent/user cancellation remains a coroutine cancellation. Partial chunks may remain visible, but the runner never returns them as a completed response.
+- **Tests added:** `LocalModelRunnerPolicyTest` asserts the bounded deadline and distinct timeout failure contract. `tools/verify_source.py` now guards the timeout wrapper, cancellation hook and test presence.
+- **Verification:** Source inspection confirms the timeout encloses the mutex and serialized engine dispatcher, and cancellation is caught inside the conversation lifecycle. Full Gradle/app unit tests, lint and device behavior remain unverified because the latest Actions preflight failed before runner assignment; no Kotlin build result is claimed.
+- **Risk / limitation:** Coroutine timeout is cooperative. If a native LiteRT call blocks without returning or checking cancellation, Kotlin cannot forcibly terminate that native call; the single-thread engine remains serialized until the native call unwinds. Device-level timeout/cancel latency must be measured.
+- **Status:** `[~]` implemented in source; pending Gradle and real-device acceptance.
