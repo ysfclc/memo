@@ -104,3 +104,13 @@
 - What remains incomplete: the tests have not run; local native cancellation has not been device-validated; the full cross-runtime DAG executor remains incomplete.
 - What was not tested: Gradle compilation, JVM tests, Android tests, lint, APK assembly/signing, emulator and physical-device behavior.
 - What requires user decision: nothing for this reversible test-only increment; PR #8 remains a draft and unmerged.
+
+
+## Follow-up — CI preflight retry (12 November 2026, 09:00 Europe/Warsaw)
+
+- Re-inspected `.github/workflows/build-apk.yml`. Its `pull_request` branch explicitly accepts PRs targeting `main`, sets `source_only=true`, and exits successfully without importing/signing/writing repository source. PR #8 base is confirmed as `main`.
+- Latest run #525, ID `43144626609`, at head `1c3bde60a78232b82a8f1cfbb021bf11bf75a11d`, failed in the preflight job. GitHub's jobs response contains `steps: null`; no runner ID/name is present; downstream build/sign/commit jobs were skipped.
+- Explicitly retried the failed preflight job (attempt 2). It failed again within seconds with `steps: null`; the log endpoint returned `BlobNotFound`.
+- The same no-step failure pattern is visible on recent PR runs and a push to `main` (run #507), which makes a PR base-branch guard or this test patch an unlikely cause. The workflow script itself did not execute, so no ZIP validation or Gradle failure has been demonstrated.
+- Environment check: no `/testbed` or Memo checkout exists in the execution container; no Gradle executable or Android SDK is installed; outbound DNS/network access to GitHub is unavailable, so a local clone/build could not be established.
+- **Conclusion:** verification is blocked before runner execution, not failed by a demonstrated source defect. Do not edit the workflow or application code to guess at an infrastructure error. Resume when a functioning GitHub Actions runner/service or an approved local CI environment is available.
