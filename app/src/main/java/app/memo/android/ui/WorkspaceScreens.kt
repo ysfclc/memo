@@ -1035,6 +1035,35 @@ fun WorkWorkspaceScreen(
                 FilterChip(selected = section == "JOBS", onClick = { section = "JOBS"; onSectionChanged("JOBS") }, label = { Text("Plans · ${snapshot.jobs.size}") })
             }
         }
+        val hasActiveWorkCheckpoint = snapshot.jobs.any { job ->
+            job.status == "RUNNING" && job.steps.any { it.status == "RUNNING" }
+        }
+        if (section == "JOBS" && runtimeState.running && hasActiveWorkCheckpoint) {
+            MemoPanel(modifier = Modifier.padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.xs)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Local work generation is running", style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            runtimeState.stage,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    TextButton(onClick = runtime::cancelRun) { Text("Stop generation") }
+                }
+                if (runtimeState.liveResponse.isNotBlank()) {
+                    Spacer(Modifier.height(6.dp))
+                    SelectionContainer {
+                        Text(runtimeState.liveResponse.takeLast(2_000), style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+                Text(
+                    "Stopping keeps the checkpoint in review. Any partial text is not saved as a completed artifact.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
         if (section == "TODAY") {
             TodayWorkScreen(
                 snapshot = snapshot,
