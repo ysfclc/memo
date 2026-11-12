@@ -4,6 +4,7 @@ name: Memo — Import source ZIP and build Android APK
   push:
     branches:
       - main
+      - stabilization/usable-stage-2026-11-10
     paths:
       - '.circleci/**'
       - 'incoming/memo.zip'
@@ -75,8 +76,8 @@ jobs:
             echo 'Pull-request source validation: no import, signing or repository write will run.'
             exit 0
           fi
-          if [[ "$GITHUB_REF_TYPE" != "branch" || "$GITHUB_REF_NAME" != "main" ]]; then
-            echo "::error::Memo source imports are restricted to main. Current ref: $GITHUB_REF"
+          if [[ "$GITHUB_REF_TYPE" != "branch" || ( "$GITHUB_REF_NAME" != "main" && "$GITHUB_REF_NAME" != "stabilization/usable-stage-2026-11-10" ) ]]; then
+            echo "::error::Memo source builds are restricted to main or the stabilization branch. Current ref: $GITHUB_REF"
             exit 1
           fi
 
@@ -746,7 +747,7 @@ jobs:
           echo 'PASS: signed in-place upgrade preserved app-private data and both real encrypted Memo stores; legacy recovery and corruption tests passed.' | tee -a "$MEMO_BUILD_LOG"
 
       - name: Update build status and create a permanent import note
-        if: success() && github.event_name != 'pull_request'
+        if: success() && github.ref_name == 'main' && github.event_name != 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
@@ -1005,7 +1006,7 @@ jobs:
   commit:
     name: Commit validated source in a separate write-only job
     needs: [preflight, build, sign]
-    if: github.event_name != 'pull_request' && needs.build.result == 'success' && needs.sign.result == 'success'
+    if: github.ref_name == 'main' && github.event_name != 'pull_request' && needs.build.result == 'success' && needs.sign.result == 'success'
     permissions:
       contents: write
     runs-on: ubuntu-latest

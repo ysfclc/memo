@@ -127,3 +127,14 @@
 ## Revised next action
 
 - Wait for Vercel's deployment quota reset or a functioning GitHub-hosted runner, then run the exact current branch head through the full Android gate. Avoid more intermediate deployments; the next build must target the latest branch head and produce the APK plus build information and checksums.
+
+## Follow-up — branch-specific pinned-signing build path (12 November 2026)
+
+- The Vercel build script has no MEMO_UPLOAD_KEYSTORE_* variables configured for the preview branch; its fallback is an ephemeral debug key and cannot be treated as update-compatible. The existing GitHub Actions workflow already has a separate signer that requires all four persistent signing secrets and verifies the pinned Memo certificate SHA-256.
+- Added the stabilization branch to the workflow's push allowlist and allowed its direct source-only build mode. This branch now runs the same source, remote-runner, core/app test, lint, APK and API 35 emulator upgrade gates as main, followed by the existing isolated pinned-certificate signing job.
+- Restricted the permanent import-note/status step and write-only repository commit job to main. A successful stabilization build can upload the pinned APK artifact without writing to main or committing build output back to this branch.
+- The workflow-file checksum and changelog fingerprint are refreshed in SOURCE_SHA256SUMS.txt. This commit itself should trigger the branch push workflow. Runner availability remains unverified; latest PR run #535 still failed before runner assignment. No APK is claimed until the full workflow and isolated signing job pass.
+
+## Next action
+
+- Inspect the workflow run triggered by this commit. If a runner is assigned, follow the complete gates and retrieve the pinned-certificate APK. If runner_id remains zero, the remaining blocker is GitHub-hosted runner service/capacity, not source code; wait for service recovery rather than changing app code or weakening acceptance gates.

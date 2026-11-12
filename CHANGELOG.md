@@ -1,5 +1,12 @@
 # Changelog
 
+## 12 November 2026 — stabilization branch signed-build path
+
+- Enabled a source-only push build for stabilization/usable-stage-2026-11-10 using the existing GitHub Actions Android build and API 35 emulator acceptance pipeline.
+- The stabilization build now reaches the existing isolated signing job, which requires all four persistent Memo signing secrets and verifies the pinned certificate. No ephemeral-key fallback is accepted by that signer.
+- Kept the permanent import-note/status step and repository write-back job restricted to main; the stabilization build can publish its APK artifact without modifying main.
+- The workflow change is committed but has not passed a runner yet. The latest GitHub Actions run before this change failed before runner assignment; Vercel's 100/day deployment API quota is exhausted. No clean APK is claimed.
+
 ## 12 November 2026 — Android build-gate and localization corrections
 
 - Ran the existing Vercel Android build path far enough to install checksum-verified JDK 17 and Android SDK 35 and execute the repository source verifier.
