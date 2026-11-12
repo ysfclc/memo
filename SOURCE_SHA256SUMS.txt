@@ -198,7 +198,7 @@ d82dc17d418f2ce0b7f3b68b7304901400290e60aa3de8515fbfa8f2f617492d  ./gradle.prope
 8e9a143da05745224225fa8c815e990a9759efff3d22f34f1d9fc2187358d7a2  ./remote-runner/server.py
 a1453a88e5bc19e7b20a521b56d36acbaec90fc742b79fb49fca11b7ddda73af  ./remote-runner/tests/test_runner.py
 19280c23fb304e503d1037eb423b17d0a14dd2a6fbb3e916574f4c5be17dfebf  ./settings.gradle
-76d7fee0286547aeec2dff9343cc1bfadf74fc873e18cb6b6cab0f72c9f91f9b  ./tools/verify_source.py
+24968e6bcf109a6411a482dddcd876ed6d1ea507991c5bdedd9ff69ddbc05810  ./tools/verify_source.py
 3392f9c80ec7282b8f3dde3c2ae9d08a102ceecb898e77ef0913b57518265b7d  ./core/src/main/kotlin/app/memo/android/data/LocalWorkArtifactCoordinator.kt
 41f852ea8e88e28c22a8bbe6277dc4513ee2bcff2e62254099949ff60a29778c  ./core/src/test/kotlin/app/memo/android/data/LocalWorkArtifactCoordinatorTest.kt
 11ef9d881f771b1d43227af2089c418d46e1b2e3c9009e11d42065bb1a07f12e  ./docs/checkpoints/2026-11-11-vercel-android-build.md
