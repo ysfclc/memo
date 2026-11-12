@@ -102,6 +102,39 @@ class LiveTimelineProjectorTest {
     }
 
     @Test
+    fun durableAttemptsAppearInLiveWithoutExposingModelPayloads() {
+        val job = WorkJobRecord(
+            id = "job-attempt", title = "Prepare a report", goal = "Prepare a report",
+            runtimeId = "app.jobs", status = "WAITING_FOR_USER",
+            steps = listOf(JobStepRecord(
+                id = "step-attempt", title = "Draft report", status = "NEEDS_REVIEW", updatedAt = 20L
+            )),
+            updatedAt = 20L
+        )
+        val attempt = WorkflowAttemptRecord(
+            id = "attempt-1", jobId = job.id, stepId = "step-attempt", attemptNumber = 1,
+            idempotencyKey = WorkflowAttemptJournal.legacyIdempotencyKey(job.id, "step-attempt"),
+            runtimeId = "app.jobs", status = "OUTPUT_SAVED", startedAt = 10L, finishedAt = 30L,
+            evidenceId = "evidence-1", detail = "Draft persisted for review"
+        )
+        val timeline = LiveTimelineProjector.build(AppSnapshot(
+            jobs = listOf(job),
+            evidence = listOf(EvidenceRecord(
+                id = "evidence-1", taskId = job.id, title = "Private model output", sourceUrl = "",
+                kind = "WORK_ARTIFACT", content = "secret model payload", summary = "Draft"
+            )),
+            workflowAttempts = listOf(attempt)
+        ))
+        val entry = timeline.first { it.id == "attempt:attempt-1" }
+        assertEquals(LiveTimelineKind.ATTEMPT, entry.kind)
+        assertEquals("OUTPUT_SAVED", entry.status)
+        assertEquals(30L, entry.occurredAt)
+        assertTrue(entry.detail.contains("app.jobs"))
+        assertTrue(entry.detail.contains("evidence-1"))
+        assertFalse(entry.detail.contains("secret model payload"))
+    }
+
+    @Test
     fun timelineLimitIsAppliedAfterNewestFirstOrdering() {
         val snapshot = AppSnapshot(
             activity = listOf(
