@@ -406,7 +406,7 @@ if "WorkflowCheckpointCoordinator.start(" not in workspace_view_model or "Workfl
     fail("Work does not persist checkpoint transitions through the workflow coordinator")
 if "dependencyReadyStepIds" not in work_screen:
     fail("Work UI does not expose dependency-ready workflow checkpoints")
-for marker in ("workflowAttempts = snapshot.workflowAttempts.filter", "val stepAttempts = workflowAttempts.filter", "latestAttempt.status", "MAX_ATTEMPTS_PER_STEP"):
+for marker in ("workflowAttempts = snapshot.workflowAttempts.filter", "val stepAttempts = workflowAttempts.filter", "latestAttempt.status", "MAX_ATTEMPTS_PER_STEP", "Local work generation is running", "onClick = runtime::cancelRun", "partial text is not saved as a completed artifact"):
     if marker not in work_screen:
         fail(f"Work UI does not expose or enforce checkpoint attempt state: {marker}")
 attempt_journal = (ROOT / "core/src/main/kotlin/app/memo/android/data/WorkflowAttemptJournal.kt").read_text()
