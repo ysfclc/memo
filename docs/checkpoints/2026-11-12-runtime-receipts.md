@@ -18,7 +18,7 @@ Memo must distinguish a runtime returning output from the user's requested outco
 - The attempt journal and Evidence metadata must both carry the receipt marker. Workspace validation rejects a missing or mismatched receipt and recomputes the output hash to detect later artifact mutation.
 - Receipt state explicitly remains `postconditionStatus=NOT_VERIFIED`. It does not mark the checkpoint complete, authorize an external effect or assert that a model's claims are true.
 - Existing schema-7 output attempts without the new receipt marker remain compatible; no workspace schema migration was introduced.
-- Added regression tests for exact receipt binding, workspace validation and mutated output rejection; extended the offline source verifier to require the receipt model and safety markers.
+- Added regression tests for exact receipt binding, workspace validation, mutated output rejection and legacy schema-7 compatibility. Live now displays a short output-hash fingerprint and the explicit unverified postcondition state without rendering model payloads; a privacy regression test covers that projection. The offline source verifier requires these receipt and Live safety markers.
 
 ## Changed source
 
@@ -26,6 +26,8 @@ Memo must distinguish a runtime returning output from the user's requested outco
 - `core/src/main/kotlin/app/memo/android/data/WorkflowAttemptJournal.kt`
 - `core/src/main/kotlin/app/memo/android/data/LocalWorkArtifactCoordinator.kt`
 - `core/src/test/kotlin/app/memo/android/data/LocalWorkArtifactCoordinatorTest.kt`
+- `core/src/main/kotlin/app/memo/android/data/LiveTimelineProjector.kt`
+- `core/src/test/kotlin/app/memo/android/data/LiveTimelineProjectorTest.kt`
 - `tools/verify_source.py`
 - `SOURCE_SHA256SUMS.txt`
 - `PRODUCT_GAP_REGISTRY.md`
