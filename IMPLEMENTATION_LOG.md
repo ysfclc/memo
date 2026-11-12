@@ -177,3 +177,6 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - **Verification:** Source inspection confirms the timeout encloses the mutex and serialized engine dispatcher, and cancellation is caught inside the conversation lifecycle. Full Gradle/app unit tests, lint and device behavior remain unverified because the latest Actions preflight failed before runner assignment; no Kotlin build result is claimed.
 - **Risk / limitation:** Coroutine timeout is cooperative. If a native LiteRT call blocks without returning or checking cancellation, Kotlin cannot forcibly terminate that native call; the single-thread engine remains serialized until the native call unwinds. Device-level timeout/cancel latency must be measured.
 - **Status:** `[~]` implemented in source; pending Gradle and real-device acceptance.
+
+
+- **Follow-up UI control:** `WorkWorkspaceScreen` now exposes a visible Stop generation action while a Work checkpoint is actively generating. It calls the same active inference cancellation path; the checkpoint is returned to review, and partial text is not saved as a completed artifact. Source verifier now guards this UI contract. This remains source-level evidence only until Android compilation and device interaction are verified.
