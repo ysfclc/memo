@@ -413,7 +413,7 @@ for marker in ("fun create(", "fun outputSaved(", "fun failed(", "fun recover(",
 for marker in ("WorkflowAttemptJournal.create(", "workflowAttempts = snapshot.workflowAttempts + attempt"):
     if marker not in checkpoint_source:
         fail(f"checkpoint start does not persist its attempt atomically: {marker}")
-for marker in ("WorkflowAttemptJournal.outputSaved(", "WorkflowAttemptJournal.failed("):
+for marker in ("WorkflowAttemptJournal.outputSaved(", "WorkflowAttemptJournal.failed(", "exact checkpoint"):
     if marker not in local_artifact_coordinator:
         fail(f"local Work transition does not close its durable attempt: {marker}")
 for marker in ('"schemaVersion", 7', '"workflowAttempts"', "WorkflowAttemptJournal.validate(this)", "WorkflowAttemptJournal.recover("):
@@ -425,7 +425,7 @@ for marker in ("ATTEMPT(", "snapshot.workflowAttempts.forEach"):
 for marker in ("manualRetriesKeepOneIdempotencyIdentityAndStopAtFourAttempts", "cannotRecordAUserOutcomeWhileLocalModelInferenceIsStillRunning", "refusesToStartAChildBeforeItsDependenciesAreComplete"):
     if marker not in checkpoint_tests:
         fail(f"workflow attempt safety regression coverage is missing: {marker}")
-for marker in ("OUTPUT_SAVED", "FAILED", "refusesToAttachAnArtifactToAStaleCheckpoint", "failureTransitionMovesOnlyTheActiveStepToReview"):
+for marker in ("OUTPUT_SAVED", "FAILED", "refusesToAttachAnArtifactToAStaleCheckpoint", "refusesAnArtifactBoundToAnotherCheckpointInTheSameJob", "failureTransitionMovesOnlyTheActiveStepToReview"):
     if marker not in local_artifact_tests:
         fail(f"local Work attempt lifecycle regression coverage is missing: {marker}")
 print("PASS: workflow checkpoints are dependency-aware, runtime-revalidated, attempt-journaled, external-effect-gated and legacy-compatible")
