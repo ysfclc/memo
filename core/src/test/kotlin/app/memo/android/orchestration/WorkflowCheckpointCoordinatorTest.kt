@@ -71,10 +71,7 @@ class WorkflowCheckpointCoordinatorTest {
         assertEquals(1, started.workflowAttempts.size)
         assertEquals("RUNNING", started.workflowAttempts.single().status)
         assertEquals("app.jobs", started.workflowAttempts.single().runtimeId)
-        assertEquals(
-            WorkflowAttemptJournal.legacyIdempotencyKey("job-1", "scope"),
-            started.workflowAttempts.single().idempotencyKey
-        )
+        assertEquals("a".repeat(64), started.workflowAttempts.single().idempotencyKey)
 
         val completed = WorkflowCheckpointCoordinator.recordUserOutcome(
             started, "job-1", "scope", "Reviewed the project scope and constraints.", 20L
