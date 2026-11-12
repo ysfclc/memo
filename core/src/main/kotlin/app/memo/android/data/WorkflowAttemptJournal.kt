@@ -130,8 +130,9 @@ object WorkflowAttemptJournal {
         if (clean.isBlank()) return attempts
         val latest = attempts.filter { it.jobId == jobId && it.stepId == stepId }
             .maxByOrNull { it.attemptNumber } ?: return attempts
-        require(latest.status != "RUNNING") { "Finish or review the active attempt before recording an outcome." }
-        require(now >= latest.finishedAt && now > 0L) { "User outcome time is invalid." }
+        require(now >= latest.startedAt && (latest.status == "RUNNING" || now >= latest.finishedAt)) {
+            "User outcome time is invalid."
+        }
         return attempts.map { candidate ->
             if (candidate.id == latest.id) candidate.copy(
                 status = if (latest.status == "RUNNING") "USER_REPORTED" else latest.status,
@@ -211,19 +212,26 @@ object WorkflowAttemptJournal {
                     require(attempt.evidenceId.isBlank()) { "Only an output-saved attempt may reference an artifact." }
                 }
                 if (attempt.userOutcome.isBlank()) {
-                    require(attempt.userOutcomeAt == 0L) { "An empty user outcome cannot have a timestamp." }
+                    require(attempt.userOutcomeAt == 0L && attempt.status != "USER_REPORTED") {
+                        "An empty user outcome cannot have a timestamp or user-reported status."
+                    }
                 } else {
                     require(attempt.userOutcomeAt >= attempt.finishedAt && attempt.userOutcomeAt > 0L) {
                         "A user-reported outcome timestamp is invalid."
                     }
                 }
+                if (attempt.status == "USER_REPORTED") {
+                    require(step.status == "COMPLETED") { "A user-reported attempt must belong to a completed checkpoint." }
+                }
                 val graph = job.workflowGraphJson.takeIf { it.isNotBlank() }?.let { WorkflowGraph.fromJson(it) }
                 val node = graph?.nodes?.firstOrNull { it.id == stepId }
                 if (graph != null) {
-                    require(node != null && attempt.runtimeId == node.runtimeId &&
+                    require(node != null && !node.externalWrite && !node.externalSideEffect &&
+                        !node.requiresApproval && node.kind != app.memo.android.orchestration.WorkflowNodeKind.APPROVAL &&
+                        node.runtimeId != "app.approvals" && attempt.runtimeId == node.runtimeId &&
                         attempt.capabilityIds == node.requiredCapabilities &&
                         attempt.idempotencyKey == node.idempotencyKey) {
-                        "A workflow attempt does not match its saved TaskSpec."
+                        "A workflow attempt does not match its saved safe TaskSpec."
                     }
                 } else {
                     require(attempt.runtimeId == job.runtimeId.ifBlank { "app.jobs" } &&
