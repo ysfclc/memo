@@ -429,6 +429,7 @@ for marker in ("workflowAttempts = snapshot.workflowAttempts.filter", "val stepA
 attempt_journal = (ROOT / "core/src/main/kotlin/app/memo/android/data/WorkflowAttemptJournal.kt").read_text()
 workspace_models = (ROOT / "core/src/main/kotlin/app/memo/android/data/Models.kt").read_text()
 live_projector = (ROOT / "core/src/main/kotlin/app/memo/android/data/LiveTimelineProjector.kt").read_text()
+live_projector_tests = (ROOT / "core/src/test/kotlin/app/memo/android/data/LiveTimelineProjectorTest.kt").read_text()
 for marker in ("fun create(", "fun outputSaved(", "fun failed(", "fun recover(", "fun validate(", "MAX_ATTEMPTS_PER_STEP = 4", "legacyIdempotencyKey"):
     if marker not in attempt_journal:
         fail(f"workflow attempt journal is missing a lifecycle or integrity guard: {marker}")
