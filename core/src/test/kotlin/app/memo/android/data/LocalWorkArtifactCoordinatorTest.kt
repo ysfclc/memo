@@ -31,7 +31,12 @@ class LocalWorkArtifactCoordinatorTest {
         kind = "WORK_ARTIFACT",
         content = "A draft that requires review.",
         summary = "Draft report",
-        metadata = """{"modelId":"local:test","requiresHumanReview":true}"""
+        metadata = org.json.JSONObject()
+            .put("jobId", jobId)
+            .put("stepId", "step-1")
+            .put("modelId", "local:test")
+            .put("requiresHumanReview", true)
+            .toString()
     )
 
     @Test fun savesDraftAndMovesStepAndJobToReviewInOneSnapshot() {
@@ -51,6 +56,19 @@ class LocalWorkArtifactCoordinatorTest {
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull()?.message.orEmpty().contains("no longer active"))
         assertTrue(snapshot("NEEDS_REVIEW").evidence.isEmpty())
+    }
+
+    @Test fun refusesAnArtifactBoundToAnotherCheckpointInTheSameJob() {
+        val wrongStep = artifact().copy(metadata = org.json.JSONObject()
+            .put("jobId", "job-1")
+            .put("stepId", "another-step")
+            .put("requiresHumanReview", true)
+            .toString())
+        val result = LocalWorkArtifactCoordinator.saveForReview(
+            snapshot(), "job-1", "step-1", wrongStep, 42L
+        )
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull()?.message.orEmpty().contains("exact checkpoint"))
     }
 
     @Test fun refusesAnArtifactThatBelongsToAnotherJob() {
