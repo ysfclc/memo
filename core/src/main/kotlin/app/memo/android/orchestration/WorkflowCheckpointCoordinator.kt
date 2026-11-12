@@ -8,8 +8,9 @@ import app.memo.android.runtime.RuntimeDescriptor
 /**
  * Dependency-aware, persisted checkpoint transitions for a workflow graph.
  *
- * This is deliberately not a runtime dispatcher: it can start a safe checkpoint and record
- * a user-reported outcome, but it cannot invoke a browser, Android app, model or external write.
+ * This is deliberately not a runtime dispatcher: it reserves a safe checkpoint and journals
+ * the attempt before any caller dispatches a permitted runtime. It cannot invoke a browser,
+ * Android app, model or external write itself.
  * Legacy jobs without a graph retain their original sequential checkpoint behavior.
  */
 object WorkflowCheckpointCoordinator {
