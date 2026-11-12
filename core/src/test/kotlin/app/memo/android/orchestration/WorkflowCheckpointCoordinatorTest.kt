@@ -190,6 +190,26 @@ class WorkflowCheckpointCoordinatorTest {
         assertEquals("RUNNING", next.jobs.single().steps.last().status)
     }
 
+    @Test fun canGenerateAnotherDraftWithoutDiscardingThePreviousReviewArtifact() {
+        val started = WorkflowCheckpointCoordinator.start(fixture(), "job-1", "scope", runtimes, 10L).getOrThrow()
+        val evidence = app.memo.android.data.EvidenceRecord(
+            id = "evidence-scope-1", taskId = "job-1", title = "First draft", sourceUrl = "",
+            kind = "WORK_ARTIFACT", content = "First draft output", summary = "Review this draft",
+            metadata = org.json.JSONObject().put("jobId", "job-1").put("stepId", "scope")
+                .put("requiresHumanReview", true).toString()
+        )
+        val saved = app.memo.android.data.LocalWorkArtifactCoordinator.saveForReview(
+            started, "job-1", "scope", evidence, 20L
+        ).getOrThrow()
+        val retried = WorkflowCheckpointCoordinator.start(saved, "job-1", "scope", runtimes, 30L).getOrThrow()
+        assertEquals(listOf(1, 2), retried.workflowAttempts.map { it.attemptNumber })
+        assertEquals("OUTPUT_SAVED", retried.workflowAttempts.first().status)
+        assertEquals("RUNNING", retried.workflowAttempts.last().status)
+        assertEquals("evidence-scope-1", retried.workflowAttempts.first().evidenceId)
+        assertTrue(retried.evidence.any { it.id == "evidence-scope-1" })
+        WorkflowAttemptJournal.validate(retried)
+    }
+
     @Test fun manualRetriesKeepOneIdempotencyIdentityAndStopAtFourAttempts() {
         var snapshot = fixture()
         repeat(4) { index ->
