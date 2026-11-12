@@ -86,6 +86,29 @@ class WorkflowCheckpointCoordinatorTest {
         assertEquals("Reviewed the project scope and constraints.", completed.workflowAttempts.single().userOutcome)
     }
 
+    @Test fun cannotRecordAUserOutcomeWhileLocalModelInferenceIsStillRunning() {
+        val modelNode = node(
+            "model", "app.models", listOf("model.generate"),
+            participant = WorkflowParticipant.LOCAL_MODEL
+        )
+        val manifest = CapabilityCompiler.compileForTasks("Draft a report", listOf(modelNode), runtimes)
+        val graph = WorkflowGraphCompiler.compile("Draft a report", listOf(modelNode), manifest)
+        val job = WorkJobRecord(
+            id = "model-job", title = "Draft report", goal = graph.goal, status = "DRAFT",
+            workflowGraphJson = graph.toJson(),
+            steps = listOf(JobStepRecord(id = "model", title = "Draft report"))
+        )
+        val started = WorkflowCheckpointCoordinator.start(
+            AppSnapshot(jobs = listOf(job)), "model-job", "model", runtimes, 10L
+        ).getOrThrow()
+        val result = WorkflowCheckpointCoordinator.recordUserOutcome(
+            started, "model-job", "model", "I finished the model draft manually.", 20L
+        )
+        assertTrue(result.isFailure)
+        assertEquals("RUNNING", started.workflowAttempts.single().status)
+        assertEquals("RUNNING", started.jobs.single().steps.single().status)
+    }
+
     @Test fun allowsDependencyReadyParallelBranchesInDeterministicTopologicalOrder() {
         val started = WorkflowCheckpointCoordinator.start(fixture(), "job-1", "scope", runtimes, 10L).getOrThrow()
         val completed = WorkflowCheckpointCoordinator.recordUserOutcome(
