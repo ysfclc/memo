@@ -64,7 +64,7 @@ object WorkflowAttemptJournal {
             "This checkpoint has reached its four-attempt safety limit. Create a reviewed new plan instead of replaying it."
         }
         require(previous.all { it.idempotencyKey == idempotencyKey }) {
-            "This checkpoint's idempotency identity changed between attempts. Review or rebuild the plan."
+            "This checkpoint's idempotency identity changed between attempts."
         }
         return WorkflowAttemptRecord(
             jobId = jobId,
@@ -81,11 +81,22 @@ object WorkflowAttemptJournal {
         attempts: List<WorkflowAttemptRecord>,
         jobId: String,
         stepId: String,
-        evidenceId: String,
+        evidence: EvidenceRecord,
+        receipt: WorkflowRuntimeReceipt,
         now: Long
-    ): List<WorkflowAttemptRecord> = finish(
-        attempts, jobId, stepId, "OUTPUT_SAVED", evidenceId, "Runtime output saved for human review.", now
-    )
+    ): List<WorkflowAttemptRecord> {
+        val active = attempts.filter { it.jobId == jobId && it.stepId == stepId && it.status == "RUNNING" }
+        require(active.size == 1) { "There is no single active attempt for this checkpoint." }
+        receipt.validateAgainst(active.single().copy(
+            status = "OUTPUT_SAVED",
+            finishedAt = now,
+            evidenceId = evidence.id
+        ), evidence)
+        return finish(
+            attempts, jobId, stepId, "OUTPUT_SAVED", evidence.id,
+            "Runtime output saved for human review. ${WorkflowRuntimeReceipt.DETAIL_MARKER}", now
+        )
+    }
 
     fun failed(
         attempts: List<WorkflowAttemptRecord>,
@@ -223,8 +234,16 @@ object WorkflowAttemptJournal {
                         metadata.optBoolean("requiresHumanReview", false)) {
                         "A saved workflow attempt must reference its exact checkpoint-bound review artifact."
                     }
+                    if (attempt.detail.contains(WorkflowRuntimeReceipt.DETAIL_MARKER)) {
+                        val receipt = WorkflowRuntimeReceipt.fromEvidence(item)
+                            ?: error("A receipt-backed runtime attempt is missing its typed receipt.")
+                        receipt.validateAgainst(attempt, item)
+                    }
                 } else {
                     require(attempt.evidenceId.isBlank()) { "Only an output-saved attempt may reference an artifact." }
+                    require(!attempt.detail.contains(WorkflowRuntimeReceipt.DETAIL_MARKER)) {
+                        "Only a receipt-backed output attempt may carry a runtime receipt marker."
+                    }
                 }
                 if (attempt.userOutcome.isBlank()) {
                     require(attempt.userOutcomeAt == 0L && attempt.status != "USER_REPORTED") {
