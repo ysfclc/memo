@@ -21,7 +21,7 @@ cf9961550854acab5317b4efa543fb1657e49e39b5de3f4a363565f85e2f704a  ./app/proguard
 a5e79842ebe67ebc05c611b64e1a48a8a7e18f96dbd86bdaf40227dc68ba7413  ./app/src/main/AndroidManifest.xml
 3b0a04fb49a44a022a59e7c5e87640c2692d7c29e149a8882592009c47eaad1d  ./app/src/main/java/app/memo/android/MainActivity.kt
 9c562d5fe1efdefd6b86089ab6fc9be383b2bb784521ce8af5539d5f7b0ebe76  ./app/src/main/java/app/memo/android/ai/AiRuntimeViewModel.kt
-9748680a861e1070abcac2d975c564f50c582c2a6533d8970707ee6b46290993  ./app/src/main/java/app/memo/android/ai/LocalModelRunner.kt
+0ff913cee9ff4f1854da08773ba57bd7730b0c895132badfb28c4662f66081b0  ./app/src/main/java/app/memo/android/ai/LocalModelRunner.kt
 9040408350a0a0149da1570fec95e90b621b78cb9548ce1305a030b763a51999  ./app/src/main/java/app/memo/android/ai/ModelCatalog.kt
 8c97925163148116d0965ee8dc65ae7d8478bdcb8659088b5c7846299d3875d4  ./app/src/main/java/app/memo/android/ai/OpenAiCompatibleClient.kt
 703fa8fc92ba4e5b924cc9ccfa87ad24e57cf92f957242e0d48fd0cf96c18447  ./app/src/main/java/app/memo/android/ai/ProviderSettingsStore.kt
@@ -69,7 +69,7 @@ a1547a86ad0e59c1d01857995723fd68785f837828ef27eb77a28bb202ea6ed4  ./app/src/main
 e4926a3e06cfe3df0f92d657d0b193d12c75856dcc1192d731bb0ee344d36ff7  ./app/src/main/res/values/styles.xml
 7dd1174c75e4afdbc5cd772d95a43f5638d3ebb7c6d870cd8871fbe874000f8f  ./app/src/main/res/xml/accessibility_service_config.xml
 5ad57e493e75dc52057329d72cfb3c00c0e03e9a2c380c8ba3671d4fdd25cd99  ./app/src/main/res/xml/data_extraction_rules.xml
-48cfc42eb077f2947710c0dd0b4f769e392a8f9083a5599c8fd9b95ad4e9f823  ./app/src/test/java/app/memo/android/ai/ModelCatalogTest.kt
+4abc13b40d6c8a803362214903c7009d3ec5b84097f0b9b19e00aa9b3ef037d7  ./app/src/test/java/app/memo/android/ai/ModelCatalogTest.kt
 b8356e5805b218704a74d664343346ac8867637840cc698cfdb20dc4a1d12805  ./app/src/test/java/app/memo/android/browser/BrowserWorkflowPromptsTest.kt
 db2a539ce067de6f13e5ffbe6aa3dd3ac5dc338ae4bad54bc28d8128e4695601  ./app/src/test/java/app/memo/android/ui/MemoLocalizationTest.kt
 b2a1bd5e918a0d0c153153bb0c707e2414bc5c1a2fcd8eeedca801d86bdf8a3b  ./app/src/test/java/com/synthos/runtime/engine/WorkflowPolicyTest.java
