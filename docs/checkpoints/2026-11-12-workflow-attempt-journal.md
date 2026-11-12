@@ -104,3 +104,9 @@ The journal, schema-7 persistence, lifecycle integration and regression tests ar
 - Run: https://github.com/ysfclc/memo/actions/runs/43139301026
 - The incoming ZIP preflight job again failed before runner assignment (`runner_id: 0`, zero steps); downstream validation, Gradle, lint and APK jobs were skipped. This is the latest exact-head CI result.
 - The prior run #462 was also retried and failed the same way on its second attempt. Repeated retries are not useful until GitHub Actions runner availability or repository Actions capacity is restored.
+
+## Current branch-head CI — run #483
+
+- Current branch head at this checkpoint: `9d098c33f94b656b241026559565459c07b53c91`.
+- Run: https://github.com/ysfclc/memo/actions/runs/43139439135
+- The incoming ZIP preflight job failed before runner assignment (`runner_id: 0`, zero steps); validation, tests, lint, APK build and signing were skipped. No source compile/test result is available.
