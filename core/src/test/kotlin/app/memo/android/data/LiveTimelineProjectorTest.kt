@@ -137,6 +137,46 @@ class LiveTimelineProjectorTest {
     }
 
     @Test
+    fun liveShowsReceiptFingerprintAndUnverifiedPostconditionWithoutModelPayload() {
+        val job = WorkJobRecord(
+            id = "job-receipt", title = "Prepare a report", goal = "Prepare a report",
+            status = "WAITING_FOR_USER",
+            steps = listOf(JobStepRecord(
+                id = "step-receipt", title = "Draft report", status = "NEEDS_REVIEW", updatedAt = 20L
+            )),
+            updatedAt = 20L
+        )
+        val running = WorkflowAttemptRecord(
+            id = "attempt-receipt", jobId = job.id, stepId = "step-receipt", attemptNumber = 1,
+            idempotencyKey = "c".repeat(64), runtimeId = "app.models",
+            capabilityIds = listOf("model.generate"), status = "RUNNING", startedAt = 10L
+        )
+        val draft = EvidenceRecord(
+            id = "evidence-receipt", taskId = job.id, title = "Private model output", sourceUrl = "",
+            kind = "WORK_ARTIFACT", content = "Sensitive draft content must stay out of Live.",
+            summary = "Draft",
+            metadata = org.json.JSONObject().put("jobId", job.id).put("stepId", "step-receipt")
+                .put("requiresHumanReview", true).toString()
+        )
+        val receipt = WorkflowRuntimeReceipt.create(running, draft, 30L)
+        val receiptedDraft = WorkflowRuntimeReceipt.attach(draft, receipt)
+        val finished = running.copy(
+            status = "OUTPUT_SAVED", finishedAt = 30L, evidenceId = draft.id,
+            detail = "Runtime output saved for human review. ${WorkflowRuntimeReceipt.DETAIL_MARKER}"
+        )
+
+        val entry = LiveTimelineProjector.build(AppSnapshot(
+            jobs = listOf(job),
+            evidence = listOf(receiptedDraft),
+            workflowAttempts = listOf(finished)
+        )).single { it.id == "attempt:attempt-receipt" }
+
+        assertTrue(entry.detail.contains("Output receipt SHA-256: ${receipt.outputSha256.take(12)}"))
+        assertTrue(entry.detail.contains("postcondition NOT_VERIFIED"))
+        assertFalse(entry.detail.contains("Sensitive draft content"))
+    }
+
+    @Test
     fun timelineLimitIsAppliedAfterNewestFirstOrdering() {
         val snapshot = AppSnapshot(
             activity = listOf(
