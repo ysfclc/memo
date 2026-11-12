@@ -1,5 +1,5 @@
 # State Ledger
-_Last updated: 2026-11-12 by ChatGPT engineering agent — session 4_
+_Last updated: 2026-11-12 by ChatGPT engineering agent — session 5_
 
 ## 1. Product snapshot
 
@@ -13,24 +13,24 @@ Memo is an Android-first, local-first personal AI execution environment. Talk ca
 | Talk | 🟡 partial | Persistent conversations and text/voice entry exist; local TaskSpec expansion is connected, but arbitrary dynamic planning/execution remains incomplete. |
 | Work graph | 🟡 partial | Typed TaskSpec DAG proposals, dependency-aware checkpoint reservation, durable attempts and first content-bound runtime receipts exist. Generic cross-runtime execution is not yet implemented. |
 | Local-model Work dispatch | 🟡 partial | A local-model checkpoint can be reserved, dispatched and saved as a review-required artifact. New output receipts bind the saved bytes to the exact attempt. |
-| Attempt journal | 🟡 implemented / unverified | Schema-7 per-node attempts, four-attempt cap, output/failure/interruption states and migration coverage exist in source. New output attempts require a matching typed receipt in both journal and artifact metadata. Gradle tests have not run. |
+| Attempt journal | 🟡 implemented / unverified | Schema-7 per-node attempts, four-attempt cap, output/failure/interruption states and migration coverage exist in source. New output attempts require a matching typed receipt in both journal and artifact metadata; legacy schema-7 output attempts remain compatible. Gradle tests have not run. |
 | Runtime postconditions | 🔴 incomplete | Receipts explicitly remain `NOT_VERIFIED`; independent deterministic/browser/native observers are not yet connected to the DAG. |
 | Local inference timeout | 🟡 implemented / unverified | 180-second coroutine deadline and Work stop control exist; five regression tests cover deadline, timeout mapping, cooperative cancellation, success and parent cancellation. Tests have not executed. |
-| Live | 🟡 partial | Timeline projection includes jobs, steps, action audit, evidence and attempts; cross-runtime pause/resume/takeover is incomplete. |
+| Live | 🟡 partial | Timeline projects jobs, steps, action audit, evidence and attempts. Receipt-backed attempts now show a short output-hash fingerprint and explicit `NOT_VERIFIED` postcondition state without exposing model payloads. Cross-runtime pause/resume/takeover remains incomplete. |
 | Studio | 🟡 partial | Private typed draft creation/edit/export foundation exists; richer revision comparison and artifact lifecycle remain. |
 | Browser | 🟡 bounded slice | Visible provider sessions and exact-content approval exist; no generic browser runtime adapter in the DAG executor. |
 | Native Android | 🟡 bounded / unverified | Accessibility workflows are opt-in and foreground/unlocked; not integrated as a generic DAG adapter. |
 | Security and storage | 🟡 partial | Encrypted workspace/native stores and migration safeguards exist; eventual single-store boundary and device acceptance remain open. |
-| CI / Android build | 🔴 blocked | GitHub Actions run #537 failed before runner assignment (`runner_id=0`, no steps). Vercel's next deployment was rejected with HTTP 402 due to the 100-deployments/day quota. No exact-head full test, lint or signed APK acceptance exists. |
+| CI / Android build | 🔴 blocked | GitHub Actions run #587 failed before runner assignment (`runner_id=0`, no steps). Vercel's next deployment was rejected with HTTP 402 due to the 100-deployments/day quota. No exact-head full test, lint or signed APK acceptance exists. |
 
 ## 3. Current branch and delivery state
 
 - Private repo: `ysfclc/memo`.
 - Development branch: `stabilization/usable-stage-2026-11-10`.
 - Draft PR #8 remains open and unmerged, targeting `main`: https://github.com/ysfclc/memo/pull/8
-- The source checkpoint for this session is `9e1c6f17b8f5c2db0b59f0f0fe140b139b0cadd3`; this state-ledger update follows it. Keep `main` untouched.
+- Latest source/documentation checkpoint before this ledger update: `fca5453aa02561bec33a4785d7b6fd2a0daa4214`. Keep `main` untouched.
 - Vercel build investigation: JDK 17 and Android SDK 35 installed; compilation and `:app:assembleDebug` were reached. The script then exited 141 (SIGPIPE) during package/certificate parsing. The parsing pipelines were replaced with full-stream-safe parsing and the source checksum refreshed. A subsequent deployment was rejected with HTTP 402 `api-deployments-free-per-day` (100 deployments/day; retry after 24 hours). No complete build result is claimed.
-- GitHub Actions latest inspected run #537 fails before any runner or step starts. This does not demonstrate a Kotlin/Gradle failure. Do not repeatedly trigger identical runs while the runner/account issue is unresolved.
+- GitHub Actions latest inspected run #587 fails before any runner or step starts. This does not demonstrate a Kotlin/Gradle failure. Do not repeatedly trigger identical runs while the runner/account issue is unresolved.
 - Vercel Preview still needs the existing four signing secrets configured by the user before a pinned-certificate upgrade APK can be produced. Never substitute an ephemeral signing key for the persistent Memo signer.
 - No production deployment, signing identity change, data migration or merge is authorized.
 
@@ -41,7 +41,8 @@ Memo is an Android-first, local-first personal AI execution environment. Talk ca
 - The receipt is attached atomically with the review-required artifact and attempt transition, inside existing Evidence metadata. No schema migration was introduced.
 - The journal marker and Evidence metadata must agree; workspace validation rechecks receipt identity and output hash. Schema-7 historical output attempts without a receipt marker remain compatible.
 - The receipt explicitly says `postconditionStatus=NOT_VERIFIED`. It proves only that Memo saved the exact runtime output; it does not prove the user's requested outcome or authorize an external action.
-- Regression tests were added for exact binding, validation and output mutation. `tools/verify_source.py` and `SOURCE_SHA256SUMS.txt` were updated.
+- Live now surfaces a short output-hash fingerprint and the unverified postcondition state for receipt-backed attempts, without rendering the saved model output.
+- Regression tests cover receipt binding, workspace validation, output mutation, legacy schema-7 compatibility and Live payload privacy. `tools/verify_source.py` and `SOURCE_SHA256SUMS.txt` were updated.
 - Full details: `docs/checkpoints/2026-11-12-runtime-receipts.md`.
 
 ## 5. Known gaps & stubs
@@ -59,7 +60,7 @@ Memo is an Android-first, local-first personal AI execution environment. Talk ca
 - Full source gate: `./gradlew --no-daemon --stacktrace :core:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug`.
 - Additional instrumentation package: `:app:assembleDebugAndroidTest`; upgrade acceptance requires an API 35 emulator.
 - No local `/testbed` checkout, Android SDK or Gradle executable is mounted in this session. Do not claim source tests ran.
-- The source manifest tracks the new receipt source, modified journal/coordinator/tests and source verifier. It was refreshed in commit `39c878147bf5b707b2983d0dae5751282ecbbfce`.
+- The source manifest tracks the new receipt source, modified journal/coordinator/tests, Live projection/tests and source verifier. It was refreshed in commit `f02dc633f450bf1be041c0f30a03be95b0736752`.
 
 ## 7. Next three increments
 
