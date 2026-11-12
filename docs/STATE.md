@@ -20,12 +20,12 @@ Memo is an Android-first, local-first personal AI execution environment. Talk ca
 | Browser | 🟡 bounded slice | Visible provider sessions and exact-content approval exist; no generic browser runtime adapter in the DAG executor. |
 | Native Android | 🟡 bounded / unverified | Accessibility workflows are opt-in and foreground/unlocked; not integrated as a generic DAG adapter. |
 | Security and storage | 🟡 partial | Encrypted workspace/native stores and migration safeguards exist; eventual single-store boundary and device acceptance remain open. |
-| CI / Android build | 🔴 blocked | Exact-head run #521 failed in ZIP preflight; validation, Gradle, lint and APK jobs were skipped. |
+| CI / Android build | 🔴 blocked | Exact-head PR run #525 and retry attempt 2 fail before any job steps/runner assignment; logs unavailable. Gradle, lint and APK jobs are skipped. |
 
 ## 3. Currently in flight
 
 - Draft PR #8, branch `stabilization/usable-stage-2026-11-10`. Latest source commit with the timeout test is `a44c6c35c013163aa649553c64fa34eda26a809e`; checksum manifest refresh is `d52ba948828fd28b003ea52f8518c54b16960126`. The current branch also contains the new checkpoint and state-ledger documentation. Keep the PR draft and do not merge without the exact-head gates.
-- M3.8.A8 regression coverage is present and documented, but **not executed**. Latest observed exact-head workflow run #524 on `7f9545ccb669967b650b6486863b30cb496ce3c1` failed in the incoming-ZIP preflight; all downstream jobs were skipped, and the job-log endpoint returned `BlobNotFound`.
+- M3.8.A8 regression coverage is present and documented, but **not executed**. Latest observed exact-head workflow run #525 on `1c3bde60a78232b82a8f1cfbb021bf11bf75a11d` failed with no recorded steps or runner assignment. Retrying its preflight as attempt 2 failed identically; the job-log endpoint returned `BlobNotFound`. Workflow source inspection confirms PR validation is intended to run source-only when the base is `main`; the observed failure occurs before the script's steps execute.
 
 ## 4. Known gaps & stubs
 
@@ -43,11 +43,11 @@ Memo is an Android-first, local-first personal AI execution environment. Talk ca
 - Full source gate: `./gradlew --no-daemon --stacktrace :core:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug`.
 - Additional instrumentation package: `:app:assembleDebugAndroidTest`; the upgrade acceptance workflow requires an API 35 emulator.
 - Repository checkout is available through the connected GitHub integration. No local `/testbed` checkout or local Android SDK/Gradle execution environment is mounted in this session.
-- Current blocker: GitHub Actions run #524 preflight failed with no step list or usable job log; validation, Gradle, lint, APK and signing jobs were skipped. Earlier PR runs show the same failure pattern. Do not infer a source compilation result from these failures.
+- Current blocker: GitHub Actions run #525 attempt 1 and the explicit retry (attempt 2) both failed before steps/runner assignment. Job logs return `BlobNotFound`; validation, Gradle, lint, APK and signing jobs are skipped. The same pattern affects recent PR runs and a `main` push run. No local `/testbed`, Android SDK or Gradle executable is mounted here; network access to clone GitHub is unavailable. Do not infer a source compilation result from these failures.
 
 ## 6. Next three increments
 
-1. Resolve the GitHub Actions incoming-ZIP preflight/runner blocker (run #521) or restore an approved equivalent CI path; do not keep blindly rerunning while no runner/diagnostic is available.
+1. Restore a functioning GitHub Actions runner/preflight path or an approved equivalent execution environment. Do not repeat retries without a changed runner/service condition; attempts 1 and 2 of run #525 both failed before any steps.
 2. On the exact PR head, run `:core:test`, `:app:testDebugUnitTest`, `:app:lintDebug` and `:app:assembleDebug`; record exact commit and results before making further execution-engine claims.
 3. Validate real LiteRT timeout and user Stop behavior on an Android device. After those gates pass, continue the next registered runtime adapter with typed receipts and visible Live state while preserving approval isolation and NEEDS_REVIEW recovery.
 
