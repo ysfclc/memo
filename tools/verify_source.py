@@ -18,6 +18,7 @@ REQUIRED = [
     "core/build.gradle",
     "core/src/main/kotlin/app/memo/android/data/Models.kt",
     "core/src/main/kotlin/app/memo/android/data/WorkflowAttemptJournal.kt",
+    "core/src/main/kotlin/app/memo/android/data/WorkflowRuntimeReceipt.kt",
     "core/src/main/kotlin/app/memo/android/data/LocalWorkArtifactCoordinator.kt",
     "core/src/test/kotlin/app/memo/android/data/LocalWorkArtifactCoordinatorTest.kt",
     "core/src/test/kotlin/app/memo/android/data/WorkspaceSchemaV3Test.kt",
@@ -169,10 +170,20 @@ for marker in ("LocalWorkArtifactCoordinator.saveForReview(", "LocalWorkArtifact
 for marker in ("fun saveForReview(", "step.status == \"RUNNING\"", "evidence = \"evidence:", "status = \"WAITING_FOR_USER\"", "fun markNeedsReview("):
     if marker not in local_artifact_coordinator:
         fail(f"pure local Work transition coordinator is missing: {marker}")
-for marker in ("savesDraftAndMovesStepAndJobToReviewInOneSnapshot", "refusesToAttachAnArtifactToAStaleCheckpoint", "refusesAnArtifactThatBelongsToAnotherJob", "refusesDuplicateEvidenceIdentity", "failureTransitionMovesOnlyTheActiveStepToReview", "refusesFailureTransitionForACheckpointThatIsNotRunning"):
+for marker in ("savesDraftAndMovesStepAndJobToReviewInOneSnapshot", "receiptBindsTheExactSavedBytesAndRejectsLaterArtifactMutation", "refusesToSaveOutputWhenThereIsNoUniqueActiveRuntimeAttempt", "refusesToAttachAnArtifactToAStaleCheckpoint", "refusesAnArtifactThatBelongsToAnotherJob", "refusesDuplicateEvidenceIdentity", "failureTransitionMovesOnlyTheActiveStepToReview", "refusesFailureTransitionForACheckpointThatIsNotRunning"):
     if marker not in local_artifact_tests:
         fail(f"local Work transition regression coverage is missing: {marker}")
 print("PASS: local-model Work inference is checkpoint-gated; pure-core transitions atomically persist drafts/review state with regression tests")
+receipt_source = (ROOT / "core/src/main/kotlin/app/memo/android/data/WorkflowRuntimeReceipt.kt").read_text()
+for marker in ("data class WorkflowRuntimeReceipt", "outputSha256", "postconditionStatus", "NOT_VERIFIED", "validateAgainst", "fromEvidence"):
+    if marker not in receipt_source:
+        fail(f"typed runtime receipt is missing a content-binding or honest-verification contract: {marker}")
+for marker in ("WorkflowRuntimeReceipt.create(", "WorkflowRuntimeReceipt.attach(", "receipt.validateAgainst("):
+    if marker not in local_artifact_coordinator:
+        fail(f"local Work output is not bound to a typed runtime receipt: {marker}")
+for marker in ("WorkflowRuntimeReceipt.DETAIL_MARKER", "receiptMarker == receiptMetadata", "receipt.validateAgainst(attempt, item)"):
+    if marker not in attempt_journal:
+        fail(f"workflow journal does not enforce durable runtime receipt integrity: {marker}")
 
 approval_inbox = (ROOT / "app/src/main/java/app/memo/android/ui/ActionApprovalInboxScreen.kt").read_text()
 app_navigation = (ROOT / "app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt").read_text()
