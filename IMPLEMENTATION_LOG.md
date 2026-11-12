@@ -163,3 +163,5 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - Latest exact-head GitHub Actions run #462 failed in the ZIP-preflight job before runner assignment (`runner_id: 0`, zero steps); downstream build/tests/lint/APK jobs were skipped. The log endpoint is unavailable. Full project verification remains pending.
 
 - Exact-head PR run #480 (`c50b22c581d404bd43524d2a3422a2cfae382be9`) repeated the preflight failure: incoming ZIP job failed before runner assignment (`runner_id: 0`, zero steps); all source validation, Gradle, lint and APK jobs were skipped. No full build result is available.
+
+- Latest exact-head run #483 (`9d098c33f94b656b241026559565459c07b53c91`) also failed before runner assignment: ZIP-preflight job `runner_id: 0`, zero steps; all downstream jobs skipped. This confirms the Actions runner/preflight blocker is still present on the current branch head.
