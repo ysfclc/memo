@@ -130,6 +130,9 @@ object WorkflowAttemptJournal {
         if (clean.isBlank()) return attempts
         val latest = attempts.filter { it.jobId == jobId && it.stepId == stepId }
             .maxByOrNull { it.attemptNumber } ?: return attempts
+        require(latest.status != "RUNNING" || latest.runtimeId != "app.models") {
+            "A local-model inference attempt must finish before its output can be reviewed."
+        }
         require(now >= latest.startedAt && (latest.status == "RUNNING" || now >= latest.finishedAt)) {
             "User outcome time is invalid."
         }
