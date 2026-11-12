@@ -180,3 +180,6 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 
 
 - **Follow-up UI control:** `WorkWorkspaceScreen` now exposes a visible Stop generation action while a Work checkpoint is actively generating. It calls the same active inference cancellation path; the checkpoint is returned to review, and partial text is not saved as a completed artifact. Source verifier now guards this UI contract. This remains source-level evidence only until Android compilation and device interaction are verified.
+
+- **Additional syntax check:** The exact `LocalModelRunner.kt` source was compiled with Kotlin 1.9.0 against lightweight LiteRT API stubs and the installed kotlinx-coroutines core JAR: **PASS**. This confirms Kotlin syntax and coroutine API usage only; the stubs do not verify Google LiteRT-LM binary compatibility, Android integration or native cancellation behavior.
+- **Latest branch-head CI:** run #43140775990 on `ade2d04eddc1a34d2ea894ac5c3df1522db9655e` failed in the incoming ZIP preflight; the preflight job exposed zero steps and all build/test/lint/signing jobs were skipped. The job log endpoint returned BlobNotFound. This is not a source compile/test failure or pass.
