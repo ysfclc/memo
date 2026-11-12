@@ -41,14 +41,19 @@ object LocalWorkArtifactCoordinator {
             evidence = "evidence:${evidence.id}; model:$modelId",
             updatedAt = now
         )
+        val attempts = WorkflowAttemptJournal.failed(snapshot.workflowAttempts, jobId, stepId, detail, now)
         val updatedJob = job.copy(
             status = "WAITING_FOR_USER",
             steps = job.steps.map { if (it.id == stepId) updatedStep else it },
             resultSummary = "A local draft was saved to Evidence. Review the actual output before continuing; it is not an independently verified result.",
             updatedAt = now
         )
+        val attempts = WorkflowAttemptJournal.outputSaved(
+            snapshot.workflowAttempts, jobId, stepId, evidence.id, now
+        )
         snapshot.copy(
             evidence = listOf(evidence) + snapshot.evidence,
+            workflowAttempts = attempts,
             jobs = snapshot.jobs.map { if (it.id == jobId) updatedJob else it },
             activity = (listOf(ActivityRecord(
                 at = now,
@@ -84,6 +89,7 @@ object LocalWorkArtifactCoordinator {
             updatedAt = now
         )
         snapshot.copy(
+            workflowAttempts = attempts,
             jobs = snapshot.jobs.map { if (it.id == jobId) updatedJob else it },
             activity = (listOf(ActivityRecord(
                 at = now,
