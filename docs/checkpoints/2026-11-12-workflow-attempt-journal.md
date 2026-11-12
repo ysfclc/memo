@@ -110,3 +110,12 @@ The journal, schema-7 persistence, lifecycle integration and regression tests ar
 - Current branch head at this checkpoint: `9d098c33f94b656b241026559565459c07b53c91`.
 - Run: https://github.com/ysfclc/memo/actions/runs/43139439135
 - The incoming ZIP preflight job failed before runner assignment (`runner_id: 0`, zero steps); validation, tests, lint, APK build and signing were skipped. No source compile/test result is available.
+
+
+## Follow-up implementation — bounded local inference — 12 November 2026
+
+- **Scope:** Add a finite timeout to the single-thread LiteRT inference runner without weakening durable Work attempt journaling or treating partial output as completion.
+- **Changed:** `app/src/main/java/app/memo/android/ai/LocalModelRunner.kt` now wraps mutex acquisition, engine initialization and response collection in a 180-second timeout. Timeout cancellation reaches `Conversation.cancelProcess()`; a dedicated `LocalInferenceTimeoutException` is surfaced to existing callers as a failed model operation. User/parent cancellation remains `CancellationException` and follows the existing partial-output/cancel path.
+- **Regression coverage:** `app/src/test/java/app/memo/android/ai/LocalModelRunnerPolicyTest.kt` checks the configured deadline and distinct timeout error. `tools/verify_source.py` guards the timeout and cancellation contract.
+- **Verification:** GitHub source was re-fetched after writes and the runner structure inspected. No full Gradle compile/test, lint, APK or device check is claimed. The timeout is cooperative; native calls that do not yield cannot be forcibly stopped by coroutine cancellation.
+- **Next:** verify on an Android runner/device; measure cancel/timeout latency on CPU and GPU; then connect a visible per-Work cancel control to the exact active inference job and preserve partial output as review-only evidence.
