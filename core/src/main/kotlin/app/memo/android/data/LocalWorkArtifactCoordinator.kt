@@ -4,8 +4,8 @@ package app.memo.android.data
  * Pure, bounded state transitions for local-model Work execution.
  *
  * A model response is an artifact draft, never proof that a workflow postcondition passed.
- * The artifact and review transition are returned as one immutable snapshot so callers can
- * persist them together.
+ * The artifact, content-bound runtime receipt and review transition are returned as one
+ * immutable snapshot so callers can persist them together.
  */
 object LocalWorkArtifactCoordinator {
     private const val MAX_EVIDENCE = 150
@@ -41,6 +41,19 @@ object LocalWorkArtifactCoordinator {
             "An artifact with this identity already exists."
         }
 
+        val activeAttempts = snapshot.workflowAttempts.filter {
+            it.jobId == jobId && it.stepId == stepId && it.status == "RUNNING"
+        }
+        require(activeAttempts.size == 1) {
+            "The active runtime attempt is missing or ambiguous. Keep this response for review and reopen the checkpoint."
+        }
+        val receipt = WorkflowRuntimeReceipt.create(activeAttempts.single(), evidence, now)
+        val receiptedEvidence = WorkflowRuntimeReceipt.attach(evidence, receipt)
+        receipt.validateAgainst(
+            activeAttempts.single().copy(status = "OUTPUT_SAVED", finishedAt = now, evidenceId = evidence.id),
+            receiptedEvidence
+        )
+
         val modelId = runCatching { org.json.JSONObject(evidence.metadata).optString("modelId") }.getOrDefault("")
         val updatedStep = step.copy(
             status = "NEEDS_REVIEW",
@@ -51,19 +64,19 @@ object LocalWorkArtifactCoordinator {
         val updatedJob = job.copy(
             status = "WAITING_FOR_USER",
             steps = job.steps.map { if (it.id == stepId) updatedStep else it },
-            resultSummary = "A local draft was saved to Evidence. Review the actual output before continuing; it is not an independently verified result.",
+            resultSummary = "A local draft was saved to Evidence. Its exact output hash and runtime attempt are recorded; the workflow postcondition is still unverified.",
             updatedAt = now
         )
         val attempts = WorkflowAttemptJournal.outputSaved(
-            snapshot.workflowAttempts, jobId, stepId, evidence.id, now
+            snapshot.workflowAttempts, jobId, stepId, receiptedEvidence, receipt, now
         )
         snapshot.copy(
-            evidence = listOf(evidence) + snapshot.evidence,
+            evidence = listOf(receiptedEvidence) + snapshot.evidence,
             workflowAttempts = attempts,
             jobs = snapshot.jobs.map { if (it.id == jobId) updatedJob else it },
             activity = (listOf(ActivityRecord(
                 at = now,
-                message = "Local Work draft saved for review: ${evidence.title}",
+                message = "Local Work draft saved with a content-bound runtime receipt: ${evidence.title}",
                 taskId = jobId
             )) + snapshot.activity).take(500)
         )
