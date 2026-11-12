@@ -69,7 +69,7 @@ a1547a86ad0e59c1d01857995723fd68785f837828ef27eb77a28bb202ea6ed4  ./app/src/main
 e4926a3e06cfe3df0f92d657d0b193d12c75856dcc1192d731bb0ee344d36ff7  ./app/src/main/res/values/styles.xml
 7dd1174c75e4afdbc5cd772d95a43f5638d3ebb7c6d870cd8871fbe874000f8f  ./app/src/main/res/xml/accessibility_service_config.xml
 5ad57e493e75dc52057329d72cfb3c00c0e03e9a2c380c8ba3671d4fdd25cd99  ./app/src/main/res/xml/data_extraction_rules.xml
-4abc13b40d6c8a803362214903c7009d3ec5b84097f0b9b19e00aa9b3ef037d7  ./app/src/test/java/app/memo/android/ai/ModelCatalogTest.kt
+43082dfa54d7eaa04fd7347bacb23a3680393bafac5b7f50228ea021b404bdec  ./app/src/test/java/app/memo/android/ai/ModelCatalogTest.kt
 b8356e5805b218704a74d664343346ac8867637840cc698cfdb20dc4a1d12805  ./app/src/test/java/app/memo/android/browser/BrowserWorkflowPromptsTest.kt
 db2a539ce067de6f13e5ffbe6aa3dd3ac5dc338ae4bad54bc28d8128e4695601  ./app/src/test/java/app/memo/android/ui/MemoLocalizationTest.kt
 b2a1bd5e918a0d0c153153bb0c707e2414bc5c1a2fcd8eeedca801d86bdf8a3b  ./app/src/test/java/com/synthos/runtime/engine/WorkflowPolicyTest.java
