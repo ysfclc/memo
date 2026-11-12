@@ -68,6 +68,13 @@ class WorkflowCheckpointCoordinatorTest {
         val started = WorkflowCheckpointCoordinator.start(initial, "job-1", "scope", runtimes, 10L).getOrThrow()
         assertEquals("RUNNING", started.jobs.single().status)
         assertEquals("RUNNING", started.jobs.single().steps.first { it.id == "scope" }.status)
+        assertEquals(1, started.workflowAttempts.size)
+        assertEquals("RUNNING", started.workflowAttempts.single().status)
+        assertEquals("app.jobs", started.workflowAttempts.single().runtimeId)
+        assertEquals(
+            WorkflowAttemptJournal.legacyIdempotencyKey("job-1", "scope"),
+            started.workflowAttempts.single().idempotencyKey
+        )
 
         val completed = WorkflowCheckpointCoordinator.recordUserOutcome(
             started, "job-1", "scope", "Reviewed the project scope and constraints.", 20L
@@ -77,6 +84,8 @@ class WorkflowCheckpointCoordinatorTest {
         assertTrue(scope.evidence.startsWith("USER_REPORTED:"))
         assertTrue(scope.detail.contains("not independently verified"))
         assertEquals("READY", completed.jobs.single().status)
+        assertEquals("USER_REPORTED", completed.workflowAttempts.single().status)
+        assertEquals("Reviewed the project scope and constraints.", completed.workflowAttempts.single().userOutcome)
     }
 
     @Test fun allowsDependencyReadyParallelBranchesInDeterministicTopologicalOrder() {
@@ -158,6 +167,21 @@ class WorkflowCheckpointCoordinatorTest {
         ).getOrThrow()
         val next = WorkflowCheckpointCoordinator.start(completed, "legacy", "second", runtimes, 30L).getOrThrow()
         assertEquals("RUNNING", next.jobs.single().steps.last().status)
+    }
+
+    @Test fun manualRetriesKeepOneIdempotencyIdentityAndStopAtFourAttempts() {
+        var snapshot = fixture()
+        repeat(4) { index ->
+            snapshot = WorkflowCheckpointCoordinator.start(snapshot, "job-1", "scope", runtimes, 10L + index * 2).getOrThrow()
+            snapshot = app.memo.android.data.LocalWorkArtifactCoordinator.markNeedsReview(
+                snapshot, "job-1", "scope", "Local inference failed.", "Review before retrying.", 11L + index * 2
+            ).getOrThrow()
+        }
+        assertEquals(listOf(1, 2, 3, 4), snapshot.workflowAttempts.map { it.attemptNumber })
+        assertEquals(1, snapshot.workflowAttempts.map { it.idempotencyKey }.distinct().size)
+        val refused = WorkflowCheckpointCoordinator.start(snapshot, "job-1", "scope", runtimes, 20L)
+        assertTrue(refused.isFailure)
+        assertTrue(refused.exceptionOrNull()?.message.orEmpty().contains("four-attempt safety limit"))
     }
 
     @Test fun legacyManualJobsCannotStartAnExternalActionShortcut() {
