@@ -20,6 +20,12 @@ object LocalWorkArtifactCoordinator {
         require(evidence.kind == "WORK_ARTIFACT" && evidence.taskId == jobId) {
             "The draft artifact is not linked to this work plan."
         }
+        val artifactMetadata = runCatching { org.json.JSONObject(evidence.metadata) }.getOrNull()
+        require(artifactMetadata?.optString("jobId") == jobId &&
+            artifactMetadata.optString("stepId") == stepId &&
+            artifactMetadata.optBoolean("requiresHumanReview", false)) {
+            "The draft artifact is not bound to this exact checkpoint and review state."
+        }
         val job = snapshot.jobs.firstOrNull { it.id == jobId }
             ?: error("This work checkpoint no longer exists.")
         val step = job.steps.firstOrNull { it.id == stepId }
