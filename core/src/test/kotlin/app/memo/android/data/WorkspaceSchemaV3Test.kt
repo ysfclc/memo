@@ -69,6 +69,29 @@ class WorkspaceSchemaV3Test {
         assertEquals(7, org.json.JSONObject(migrated.toJson()).optInt("schemaVersion"))
     }
 
+    @Test fun rejectsAttemptHistoryThatContinuesAfterARunningAttempt() {
+        val job = WorkJobRecord(
+            id = "journal-job", title = "Prepare report", goal = "Create a report",
+            runtimeId = "app.jobs", status = "RUNNING",
+            steps = listOf(JobStepRecord(id = "journal-step", title = "Draft", status = "RUNNING"))
+        )
+        val key = WorkflowAttemptJournal.legacyIdempotencyKey(job.id, "journal-step")
+        val attempts = listOf(
+            WorkflowAttemptRecord(
+                id = "attempt-1", jobId = job.id, stepId = "journal-step", attemptNumber = 1,
+                idempotencyKey = key, runtimeId = "app.jobs", status = "RUNNING", startedAt = 10L
+            ),
+            WorkflowAttemptRecord(
+                id = "attempt-2", jobId = job.id, stepId = "journal-step", attemptNumber = 2,
+                idempotencyKey = key, runtimeId = "app.jobs", status = "FAILED", startedAt = 20L,
+                finishedAt = 30L, detail = "Runtime failed"
+            )
+        )
+        assertTrue(runCatching {
+            WorkflowAttemptJournal.validate(AppSnapshot(jobs = listOf(job), workflowAttempts = attempts))
+        }.isFailure)
+    }
+
     @Test fun tamperedAttemptReferencesAreRejected() {
         val job = WorkJobRecord(
             id = "journal-job", title = "Prepare report", goal = "Create a report",
