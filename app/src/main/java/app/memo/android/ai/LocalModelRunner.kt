@@ -18,11 +18,11 @@ import java.io.File
 import java.util.concurrent.Executors
 
 /** Raised only after the bounded inference scope has cancelled its LiteRT conversation. */
-class LocalInferenceTimeoutException(timeoutMs: Long) : Exception("Local model inference timed out after ${timeoutMs / 1_000} seconds. The partial response was not saved as a completed result.")
+class LocalInferenceTimeoutException(timeoutMs: Long) : Exception("Local model inference timed out after ${if (timeoutMs < 1_000L) "$timeoutMs ms" else "${timeoutMs / 1_000} seconds"}. The partial response was not saved as a completed result.")
 
 /** Shared timeout boundary so the cancellation-to-timeout mapping is independently testable. */
 internal suspend fun <T> withLocalInferenceTimeout(timeoutMs: Long, block: suspend () -> T): T = try {
-    withTimeout(timeoutMs, block)
+    withTimeout(timeoutMs) { block() }
 } catch (timeout: TimeoutCancellationException) {
     throw LocalInferenceTimeoutException(timeoutMs)
 }
