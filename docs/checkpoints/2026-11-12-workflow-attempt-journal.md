@@ -97,3 +97,10 @@ The journal, schema-7 persistence, lifecycle integration and regression tests ar
 - The incoming ZIP preflight job ended with failure, `runner_id: 0`, no runner name and zero steps. The remaining validation/build/signing jobs were skipped. The job-log endpoint did not provide a diagnostic.
 - A separate local `kotlinc` harness for the attempt journal passed state-transition smoke checks (start, failure, retry identity, user outcome, recovery and validation). It used lightweight dependency stubs; it does not verify the full Android/core source tree.
 - Full Gradle JVM tests, source verifier, lint, APK assembly/signing and device acceptance remain unverified.
+
+## Latest CI update — exact-head run #480
+
+- Commit: `c50b22c581d404bd43524d2a3422a2cfae382be9`.
+- Run: https://github.com/ysfclc/memo/actions/runs/43139301026
+- The incoming ZIP preflight job again failed before runner assignment (`runner_id: 0`, zero steps); downstream validation, Gradle, lint and APK jobs were skipped. This is the latest exact-head CI result.
+- The prior run #462 was also retried and failed the same way on its second attempt. Repeated retries are not useful until GitHub Actions runner availability or repository Actions capacity is restored.
