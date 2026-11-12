@@ -61,6 +61,26 @@ class LocalWorkArtifactCoordinatorTest {
         WorkflowAttemptJournal.validate(result)
     }
 
+    @Test fun legacySchemaSevenOutputAttemptsWithoutReceiptsRemainValid() {
+        val initial = snapshot()
+        val job = initial.jobs.single().copy(
+            status = "WAITING_FOR_USER",
+            steps = listOf(initial.jobs.single().steps.single().copy(status = "NEEDS_REVIEW"))
+        )
+        val attempt = initial.workflowAttempts.single().copy(
+            status = "OUTPUT_SAVED",
+            finishedAt = 42L,
+            evidenceId = "evidence-legacy",
+            detail = "Runtime output saved for human review."
+        )
+        val legacy = initial.copy(
+            jobs = listOf(job),
+            evidence = listOf(artifact(id = "evidence-legacy")),
+            workflowAttempts = listOf(attempt)
+        )
+        WorkflowAttemptJournal.validate(legacy)
+    }
+
     @Test fun receiptBindsTheExactSavedBytesAndRejectsLaterArtifactMutation() {
         val saved = LocalWorkArtifactCoordinator.saveForReview(
             snapshot(), "job-1", "step-1", artifact(), 42L
