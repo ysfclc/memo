@@ -3,6 +3,7 @@ package app.memo.android.orchestration
 import app.memo.android.data.AppSnapshot
 import app.memo.android.data.JobStepRecord
 import app.memo.android.data.WorkJobRecord
+import app.memo.android.data.WorkflowAttemptJournal
 import app.memo.android.runtime.RuntimeRegistry
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
