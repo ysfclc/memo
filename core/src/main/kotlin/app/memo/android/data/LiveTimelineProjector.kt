@@ -10,6 +10,7 @@ enum class LiveTimelineKind(val label: String) {
     ACTIVITY("Workspace event"),
     JOB("Work plan"),
     JOB_STEP("Checkpoint"),
+    ATTEMPT("Execution attempt"),
     TASK("Task"),
     ACTION("External action"),
     EVIDENCE("Evidence")
@@ -78,6 +79,29 @@ object LiveTimelineProjector {
                     severity = if (step.status == "NEEDS_REVIEW") "WARN" else "INFO"
                 )
             }
+        }
+
+        val jobsById = snapshot.jobs.associateBy { it.id }
+        snapshot.workflowAttempts.forEach { attempt ->
+            val job = jobsById[attempt.jobId]
+            val step = job?.steps?.firstOrNull { it.id == attempt.stepId }
+            entries += LiveTimelineEntry(
+                id = "attempt:${attempt.id}",
+                occurredAt = attempt.finishedAt.takeIf { it > 0L } ?: attempt.startedAt,
+                kind = LiveTimelineKind.ATTEMPT,
+                title = "${step?.title ?: attempt.stepId} · Attempt ${attempt.attemptNumber}",
+                detail = listOf(
+                    job?.title,
+                    attempt.runtimeId,
+                    attempt.capabilityIds.joinToString(", "),
+                    attempt.detail.take(500),
+                    attempt.evidenceId.takeIf { it.isNotBlank() }?.let { "Evidence: $it" },
+                    attempt.userOutcome.takeIf { it.isNotBlank() }?.let { "User-reported: $it" }
+                ).filter { !it.isNullOrBlank() }.joinToString(" · "),
+                status = attempt.status,
+                relatedId = attempt.jobId,
+                severity = if (attempt.status in setOf("FAILED", "INTERRUPTED")) "WARN" else "INFO"
+            )
         }
 
         snapshot.tasks.forEach { task ->
