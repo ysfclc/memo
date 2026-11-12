@@ -49,6 +49,31 @@ class LocalWorkArtifactCoordinatorTest {
         assertEquals("OUTPUT_SAVED", result.workflowAttempts.single().status)
         assertEquals("evidence-1", result.workflowAttempts.single().evidenceId)
         assertEquals(42L, result.workflowAttempts.single().finishedAt)
+        val receipt = WorkflowRuntimeReceipt.fromEvidence(result.evidence.single())
+        assertTrue(receipt != null)
+        assertEquals("job-1", receipt?.jobId)
+        assertEquals("step-1", receipt?.stepId)
+        assertEquals("app.jobs", receipt?.runtimeId)
+        assertEquals(10L, receipt?.startedAt)
+        assertEquals(42L, receipt?.completedAt)
+        assertEquals("NOT_VERIFIED", receipt?.postconditionStatus)
+        receipt?.validateAgainst(result.workflowAttempts.single(), result.evidence.single())
+        WorkflowAttemptJournal.validate(result)
+    }
+
+    @Test fun receiptBindsTheExactSavedBytesAndRejectsLaterArtifactMutation() {
+        val saved = LocalWorkArtifactCoordinator.saveForReview(
+            snapshot(), "job-1", "step-1", artifact(), 42L
+        ).getOrThrow()
+        val mutated = saved.copy(evidence = listOf(saved.evidence.single().copy(content = "different output")))
+        assertTrue(runCatching { WorkflowAttemptJournal.validate(mutated) }.isFailure)
+    }
+
+    @Test fun refusesToSaveOutputWhenThereIsNoUniqueActiveRuntimeAttempt() {
+        val noAttempt = snapshot().copy(workflowAttempts = emptyList())
+        val result = LocalWorkArtifactCoordinator.saveForReview(noAttempt, "job-1", "step-1", artifact(), 42L)
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull()?.message.orEmpty().contains("active runtime attempt"))
     }
 
     @Test fun refusesToAttachAnArtifactToAStaleCheckpoint() {
