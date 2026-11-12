@@ -40,7 +40,7 @@ c23d9d73f947dca41834299207c98cb522fbcf627615454078dc3d0bd22b645f  ./app/src/main
 1ae0fab9c440dff32d13f04f000be4bc8d0f2f9398fd71aeb7690265aa9edcd8  ./app/src/main/java/app/memo/android/ui/MemoLocalization.kt
 25fd0b5bd82b5894f4c76c289627058320d6d0188d39dd1d465d4fcc820d4e75  ./app/src/main/java/app/memo/android/ui/MemoTheme.kt
 a5ac84d6ad1fe9080e52c2d359527848ba7332a38f3fb815441f06d540b62719  ./app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt
-826bedcdf613a64331dd40b31a43a3282e2e86df19208e4c1e38187e322e3101  ./app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt
+92d6dcb98fd140f38c41213d899988831f3045410debd809592a6ee1a4cc3917  ./app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt
 f78be77d6fa771c78d14e15a0e2e1e1bad49d384637546ee596e47941b251472  ./app/src/main/java/app/memo/android/ui/components/Primitives.kt
 128544949e1092389370b43128707cf0c985f5531bd7d6c2dff832ede64e3184  ./app/src/main/java/com/synthos/runtime/ai/JobCompiler.java
 8951a538775e3afaaac1c00396cbaeb2b80593fd235d5be1ef1fcc4686d07851  ./app/src/main/java/com/synthos/runtime/ai/LocalModelRuntime.kt
@@ -101,7 +101,7 @@ a3cdf0d39f49d50767062bae0b1e6360346c78d5c32ea033fbb8411a98d34d1f  ./core/src/tes
 5beeae5af5ef4473bf0a297038d8e64b99da1340071557b896b15ce3459f7bec  ./core/src/test/kotlin/app/memo/android/data/InterruptedTaskRecoveryTest.kt
 2ed1c28fc2751ecbc04d3c4a366c0bf89e89a20ea8cd510f6344ef8d9f3d2995  ./core/src/test/kotlin/app/memo/android/data/OutcomeParserTest.kt
 e269d6b46b92c2f78f9cbdc7d7329f0442b442e3ce9d5b6a8d7f58ab6f14a6f9  ./core/src/test/kotlin/app/memo/android/data/SelfModelFactualityGuardTest.kt
-eb048ef608e14f3f85792695f769a5de75c19f24d00594e73241f2dc8f05fc2e  ./core/src/test/kotlin/app/memo/android/data/WorkspaceSchemaV3Test.kt
+adbc222ea91b201790826effcdb225a8b6fa2f199f7d71b783434c70c57d2834  ./core/src/test/kotlin/app/memo/android/data/WorkspaceSchemaV3Test.kt
 1918783ca3fa284c2ff06aaad215b05b72051901f754e5724604e81309d68ed2  ./core/src/test/kotlin/app/memo/android/orchestration/CapabilityCompilerTest.kt
 440bd098baeb839c994d9357e6c7973bd9f7749538845b66906db5abf6285820  ./core/src/test/kotlin/app/memo/android/orchestration/IntentPlannerTest.kt
 f9040f47a7b0ab3ea12bc60f3bb9d4fdd4332abdddee180d28ff29e3b59f220b  ./core/src/test/kotlin/app/memo/android/orchestration/WorkflowGraphTest.kt
@@ -199,14 +199,14 @@ d82dc17d418f2ce0b7f3b68b7304901400290e60aa3de8515fbfa8f2f617492d  ./gradle.prope
 a1453a88e5bc19e7b20a521b56d36acbaec90fc742b79fb49fca11b7ddda73af  ./remote-runner/tests/test_runner.py
 19280c23fb304e503d1037eb423b17d0a14dd2a6fbb3e916574f4c5be17dfebf  ./settings.gradle
 76d930eb0aa63ff46b6d8a5207b9903b8a2f4665d8a28b554546587452e29527  ./tools/verify_source.py
-b4cd058493d7bbc44ef0914d35b8bba57949972e199f69cacaaf16834c723b1f  ./core/src/main/kotlin/app/memo/android/data/LocalWorkArtifactCoordinator.kt
-1b4195037f3d87e8f88b4920799767066ce5b85a3a16d7a1c008d3b699ebb9a8  ./core/src/test/kotlin/app/memo/android/data/LocalWorkArtifactCoordinatorTest.kt
+3392f9c80ec7282b8f3dde3c2ae9d08a102ceecb898e77ef0913b57518265b7d  ./core/src/main/kotlin/app/memo/android/data/LocalWorkArtifactCoordinator.kt
+41f852ea8e88e28c22a8bbe6277dc4513ee2bcff2e62254099949ff60a29778c  ./core/src/test/kotlin/app/memo/android/data/LocalWorkArtifactCoordinatorTest.kt
 11ef9d881f771b1d43227af2089c418d46e1b2e3c9009e11d42065bb1a07f12e  ./docs/checkpoints/2026-11-11-vercel-android-build.md
 
-f337e039fd70ce8de95015080cbd716bd0341d60ce104c516601b6d1833b9f9f  ./core/src/main/kotlin/app/memo/android/data/WorkflowAttemptJournal.kt
+a07ae4fcdf6a2be2128e142edd14e69c32e4b4c7eecdcd7d2b6b0944289c3faf  ./core/src/main/kotlin/app/memo/android/data/WorkflowAttemptJournal.kt
 0a5a393766dccdd8fb9183a8e030e2b130e9ce23005bfbab0443692deefab9b8  ./core/src/main/kotlin/app/memo/android/data/LiveTimelineProjector.kt
 91e60fd869108f2371fd65b36958d9be0297cb87267ee68bde82188dbb28407c  ./core/src/main/kotlin/app/memo/android/orchestration/WorkflowCheckpointCoordinator.kt
 c80efd9ace264cf98f8933d1a853b7a388ec23c62be4709ac6019ea0b066418a  ./core/src/test/kotlin/app/memo/android/orchestration/WorkflowCheckpointCoordinatorTest.kt
-6492296815cf4565e716d2b8fba51670e81104a20239adb38eddf4e5996ba038  ./core/src/test/kotlin/app/memo/android/data/LiveTimelineProjectorTest.kt
+093c236937fc8bc16b0d07919fc69e774f546d3c5665af07eba559b5323ba2ba  ./core/src/test/kotlin/app/memo/android/data/LiveTimelineProjectorTest.kt
 ed36dac5fef981c894f13da7ca3dd7f0783e367f9cd49257679746cd3d048a8d  ./docs/REQUIREMENT_TRACEABILITY.md
 c9ff3164b77c1429b5340e540ee31baf888174e743fa6719924f55ba5a14f0f3  ./docs/checkpoints/2026-11-12-workflow-attempt-journal.md
