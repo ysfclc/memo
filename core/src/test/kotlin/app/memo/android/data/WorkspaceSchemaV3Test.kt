@@ -84,10 +84,21 @@ class WorkspaceSchemaV3Test {
     }
 
     @Test fun interruptedJobsAreRecoveredIntoReviewState() {
-        val running = WorkJobRecord(title = "Extract outcomes", goal = "Extract outcomes", status = "RUNNING", steps = listOf(JobStepRecord(title = "Run model", status = "RUNNING")))
-        val recovered = AppSnapshot(jobs = listOf(running)).recoverInterruptedTasks()
+        val running = WorkJobRecord(
+            id = "interrupted-job", title = "Extract outcomes", goal = "Extract outcomes",
+            runtimeId = "app.jobs", status = "RUNNING",
+            steps = listOf(JobStepRecord(id = "interrupted-step", title = "Run model", status = "RUNNING"))
+        )
+        val attempt = WorkflowAttemptRecord(
+            id = "interrupted-attempt", jobId = running.id, stepId = "interrupted-step", attemptNumber = 1,
+            idempotencyKey = WorkflowAttemptJournal.legacyIdempotencyKey(running.id, "interrupted-step"),
+            runtimeId = "app.jobs", startedAt = 10L
+        )
+        val recovered = AppSnapshot(jobs = listOf(running), workflowAttempts = listOf(attempt)).recoverInterruptedTasks()
         assertEquals("WAITING_FOR_USER", recovered.jobs.single().status)
         assertEquals("NEEDS_REVIEW", recovered.jobs.single().steps.single().status)
+        assertEquals("INTERRUPTED", recovered.workflowAttempts.single().status)
+        assertTrue(recovered.workflowAttempts.single().finishedAt >= 10L)
         assertTrue(recovered.activity.first().message.contains("interrupted job"))
     }
 
