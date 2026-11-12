@@ -203,7 +203,7 @@ a1453a88e5bc19e7b20a521b56d36acbaec90fc742b79fb49fca11b7ddda73af  ./remote-runne
 41f852ea8e88e28c22a8bbe6277dc4513ee2bcff2e62254099949ff60a29778c  ./core/src/test/kotlin/app/memo/android/data/LocalWorkArtifactCoordinatorTest.kt
 11ef9d881f771b1d43227af2089c418d46e1b2e3c9009e11d42065bb1a07f12e  ./docs/checkpoints/2026-11-11-vercel-android-build.md
 
-a07ae4fcdf6a2be2128e142edd14e69c32e4b4c7eecdcd7d2b6b0944289c3faf  ./core/src/main/kotlin/app/memo/android/data/WorkflowAttemptJournal.kt
+0b6fcd178173131f41da022ebaa9c0d1bacb9e2068d6052f8d5e522de28b6864  ./core/src/main/kotlin/app/memo/android/data/WorkflowAttemptJournal.kt
 0a5a393766dccdd8fb9183a8e030e2b130e9ce23005bfbab0443692deefab9b8  ./core/src/main/kotlin/app/memo/android/data/LiveTimelineProjector.kt
 91e60fd869108f2371fd65b36958d9be0297cb87267ee68bde82188dbb28407c  ./core/src/main/kotlin/app/memo/android/orchestration/WorkflowCheckpointCoordinator.kt
 8f4f770753f467bd215ca81e53ba9580c7c887e533ac66759938e2937d0c296b  ./core/src/test/kotlin/app/memo/android/orchestration/WorkflowCheckpointCoordinatorTest.kt
