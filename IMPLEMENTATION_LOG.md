@@ -161,3 +161,5 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 
 - A standalone Kotlin compiler/smoke harness for the attempt state machine passed: start, failure closure, stable retry identity, user-reported outcome, process recovery and journal validation. This harness used lightweight stubs and is not a substitute for the real Gradle/JVM suite.
 - Latest exact-head GitHub Actions run #462 failed in the ZIP-preflight job before runner assignment (`runner_id: 0`, zero steps); downstream build/tests/lint/APK jobs were skipped. The log endpoint is unavailable. Full project verification remains pending.
+
+- Exact-head PR run #480 (`c50b22c581d404bd43524d2a3422a2cfae382be9`) repeated the preflight failure: incoming ZIP job failed before runner assignment (`runner_id: 0`, zero steps); all source validation, Gradle, lint and APK jobs were skipped. No full build result is available.
