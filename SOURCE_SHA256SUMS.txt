@@ -3,18 +3,18 @@ dd3d203254c11eda212933be2fdad09d4219b7869ac1a0fb74166ad103cb9ed2  ./scripts/verc
 555c1effb2d32525f058574bafe7f16b264ecbb3d02523fc71c158ff408a216a  ./.github/workflows/build-apk.yml
 35d51b623486a63a825aeffa712fe00e73c069ff4db4cb783affe14783203641  ./.gitignore
 3a12ecd53ead658782ea65ca54f71d7835324435cdfcd5d51e8ebdb09a1055c0  ./BUILD_STATUS.md
-3e2b58d31a52eec6b263e6c49fcf02aaf7ebbe32987d574377aa623e9ac0bae2  ./CHANGELOG.md
+3598908a4bd22f08f1917e56b16b07c0e1b0ba1e4a0e1c8a95ece6a9d9985d6c  ./CHANGELOG.md
 27a75bf71bfa1da44ba4c0fcf483b010cab683e19f33f308a150a248cdae81aa  ./DEVICE_ACCEPTANCE_CHECKLIST.md
 a8b181972eb3ee0e1587ff09e49979b43acffe2d4c3ab9ea5b8a7e097d46beb0  ./FEATURE_AUDIT.md
 dd455fac6e27fc3a4f55b917d345ce0bf7b523cf25cff35beaa85cb8d8d14886  ./IMPLEMENTATION_CONTRACT.md
-0d09175b711a56d28454ac783c8c4d0070511f1cf16f2935f8f48e6788a6ad27  ./IMPLEMENTATION_LOG.md
+df2b8296123b93e38d79bc3736f48549f1085f559b6921220d182121615e6f81  ./IMPLEMENTATION_LOG.md
 413fe1482fb424a3676febd4acedabb3c671e9bc45a034abdf899ac097eb45f0  ./MEMO-PATCH1-AUDIT.md
 918ac512072584dabb677b559a0e54f353b42c94d0e1607e07e9abeef8e8937f  ./MEMO2_ALIGNMENT_MATRIX.md
 6ccd18bce913c2ffe7f433aff994ba2a21f5c20982129352193e35ab97d5bd65  ./PRODUCT_GAP_REGISTRY.md
 f4163833232be58e399ecf84484edab74a94997301937c510caba4617942cdea  ./README.md
 ce2bcd53a712bd22e83da53d4a3961e3af299d3ee715e51f91898db29fa779c6  ./REMOTE_RUNNER_SETUP.md
 245f1e5ef2c16b4c80683a4acc48e4b2e2964a971700ae36f4c9579bb381bb22  ./ROADMAP.md
-898d0ceacfab32b99d637fad9845e93867b548ac2cfb7d57ad86ac0d1555d103  ./TASKS.md
+365d18060e833666b35216ea811ec2f72d900311939d0f57f18778b86af2cd88  ./TASKS.md
 24b925f839d27219398fdf89ca22833ac8fabdf6d87857430b0ff82bf40bcbc8  ./app/build.gradle
 cf9961550854acab5317b4efa543fb1657e49e39b5de3f4a363565f85e2f704a  ./app/proguard-rules.pro
 97b317ecef3a48b16a90786ca24cfaba247ade229fe3ef99c5a66fffdbceca16  ./app/src/androidTest/java/app/memo/android/data/EncryptedStoreUpgradeTest.kt
@@ -40,7 +40,7 @@ c23d9d73f947dca41834299207c98cb522fbcf627615454078dc3d0bd22b645f  ./app/src/main
 1ae0fab9c440dff32d13f04f000be4bc8d0f2f9398fd71aeb7690265aa9edcd8  ./app/src/main/java/app/memo/android/ui/MemoLocalization.kt
 25fd0b5bd82b5894f4c76c289627058320d6d0188d39dd1d465d4fcc820d4e75  ./app/src/main/java/app/memo/android/ui/MemoTheme.kt
 a5ac84d6ad1fe9080e52c2d359527848ba7332a38f3fb815441f06d540b62719  ./app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt
-85da37d84b36ae7b99542f4ffa7bdb282e018254bd2955eb29af68345fb95b53  ./app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt
+50f7cd1f9d19261ccb1981eac5d9d2b96e80815319e6187e69250c7c86270744  ./app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt
 f78be77d6fa771c78d14e15a0e2e1e1bad49d384637546ee596e47941b251472  ./app/src/main/java/app/memo/android/ui/components/Primitives.kt
 128544949e1092389370b43128707cf0c985f5531bd7d6c2dff832ede64e3184  ./app/src/main/java/com/synthos/runtime/ai/JobCompiler.java
 8951a538775e3afaaac1c00396cbaeb2b80593fd235d5be1ef1fcc4686d07851  ./app/src/main/java/com/synthos/runtime/ai/LocalModelRuntime.kt
@@ -198,7 +198,7 @@ d82dc17d418f2ce0b7f3b68b7304901400290e60aa3de8515fbfa8f2f617492d  ./gradle.prope
 8e9a143da05745224225fa8c815e990a9759efff3d22f34f1d9fc2187358d7a2  ./remote-runner/server.py
 a1453a88e5bc19e7b20a521b56d36acbaec90fc742b79fb49fca11b7ddda73af  ./remote-runner/tests/test_runner.py
 19280c23fb304e503d1037eb423b17d0a14dd2a6fbb3e916574f4c5be17dfebf  ./settings.gradle
-24dbcce4d374f6e14a62ca37e2df01ab5f6960b8f27763bc03267db471cfa77f  ./tools/verify_source.py
+87262408a62b975960fc4c4384a17fb0608472757be1ae211693c61d4dad716a  ./tools/verify_source.py
 3392f9c80ec7282b8f3dde3c2ae9d08a102ceecb898e77ef0913b57518265b7d  ./core/src/main/kotlin/app/memo/android/data/LocalWorkArtifactCoordinator.kt
 41f852ea8e88e28c22a8bbe6277dc4513ee2bcff2e62254099949ff60a29778c  ./core/src/test/kotlin/app/memo/android/data/LocalWorkArtifactCoordinatorTest.kt
 11ef9d881f771b1d43227af2089c418d46e1b2e3c9009e11d42065bb1a07f12e  ./docs/checkpoints/2026-11-11-vercel-android-build.md
@@ -209,5 +209,5 @@ f90f52d0305cadf39fedc7a8f642d06c3016c5b582ca305174944bb927a292c0  ./core/src/mai
 8f4f770753f467bd215ca81e53ba9580c7c887e533ac66759938e2937d0c296b  ./core/src/test/kotlin/app/memo/android/orchestration/WorkflowCheckpointCoordinatorTest.kt
 093c236937fc8bc16b0d07919fc69e774f546d3c5665af07eba559b5323ba2ba  ./core/src/test/kotlin/app/memo/android/data/LiveTimelineProjectorTest.kt
 3f675f7bde9c1d87c45bda15df88e287a67f6a37aceb081d0ea353e41472906b  ./docs/REQUIREMENT_TRACEABILITY.md
-7cb78ac378a045afa8bda6a7288eabc4cec8055aadb89d6fe68e50ef9c1a5e79  ./docs/checkpoints/2026-11-12-workflow-attempt-journal.md
+814224ebb1c0775b05e75e4c453135f87f995fa9972851ebce4422ba2ec4c58b  ./docs/checkpoints/2026-11-12-workflow-attempt-journal.md
 78c4c777884108c2c5dd95999e77bcdc23946337cc897d7dee6c08808b228a5b  ./app/src/test/java/app/memo/android/ai/LocalModelRunnerPolicyTest.kt
