@@ -208,8 +208,13 @@ object WorkflowAttemptJournal {
                 }
                 if (attempt.status == "OUTPUT_SAVED") {
                     val item = evidence[attempt.evidenceId]
-                    require(item != null && item.taskId == jobId && item.kind == "WORK_ARTIFACT") {
-                        "A saved workflow attempt must reference its persisted work artifact."
+                        ?: error("A saved workflow attempt references missing evidence.")
+                    val metadata = runCatching { org.json.JSONObject(item.metadata) }.getOrNull()
+                    require(item.taskId == jobId && item.kind == "WORK_ARTIFACT" &&
+                        metadata != null && metadata.optString("jobId") == jobId &&
+                        metadata.optString("stepId") == stepId &&
+                        metadata.optBoolean("requiresHumanReview", false)) {
+                        "A saved workflow attempt must reference its exact checkpoint-bound review artifact."
                     }
                 } else {
                     require(attempt.evidenceId.isBlank()) { "Only an output-saved attempt may reference an artifact." }
