@@ -170,7 +170,7 @@ for marker in ("LocalWorkArtifactCoordinator.saveForReview(", "LocalWorkArtifact
 for marker in ("fun saveForReview(", "step.status == \"RUNNING\"", "evidence = \"evidence:", "status = \"WAITING_FOR_USER\"", "fun markNeedsReview("):
     if marker not in local_artifact_coordinator:
         fail(f"pure local Work transition coordinator is missing: {marker}")
-for marker in ("savesDraftAndMovesStepAndJobToReviewInOneSnapshot", "receiptBindsTheExactSavedBytesAndRejectsLaterArtifactMutation", "refusesToSaveOutputWhenThereIsNoUniqueActiveRuntimeAttempt", "refusesToAttachAnArtifactToAStaleCheckpoint", "refusesAnArtifactThatBelongsToAnotherJob", "refusesDuplicateEvidenceIdentity", "failureTransitionMovesOnlyTheActiveStepToReview", "refusesFailureTransitionForACheckpointThatIsNotRunning"):
+for marker in ("savesDraftAndMovesStepAndJobToReviewInOneSnapshot", "receiptBindsTheExactSavedBytesAndRejectsLaterArtifactMutation", "legacySchemaSevenOutputAttemptsWithoutReceiptsRemainValid", "refusesToSaveOutputWhenThereIsNoUniqueActiveRuntimeAttempt", "refusesToAttachAnArtifactToAStaleCheckpoint", "refusesAnArtifactThatBelongsToAnotherJob", "refusesDuplicateEvidenceIdentity", "failureTransitionMovesOnlyTheActiveStepToReview", "refusesFailureTransitionForACheckpointThatIsNotRunning"):
     if marker not in local_artifact_tests:
         fail(f"local Work transition regression coverage is missing: {marker}")
 print("PASS: local-model Work inference is checkpoint-gated; pure-core transitions atomically persist drafts/review state with regression tests")
