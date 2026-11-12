@@ -29,3 +29,11 @@ This log records material product and engineering decisions. Add dated entries; 
 - **Reason:** Memo is an execution agent over sensitive personal data and external accounts; reliability and user control are product features.
 - **Consequences:** Every work package includes dependencies, security/privacy, failure states, acceptance and rollback/recovery. Production deployment, signing and destructive data changes remain approval-gated.
 - **Status:** Active.
+
+## 2026-11-12 — ORCH-006: Runtime output receipts are not postcondition proof
+
+- **Decision:** A runtime output receipt must bind the exact workflow attempt, runtime/capability manifest, idempotency identity, timestamps, evidence ID and output hash. A receipt records only that output was returned and durably saved; it must retain an explicit `NOT_VERIFIED` postcondition state until an independent observer proves the task's declared condition.
+- **Reason:** Memo must distinguish a model response from an achieved outcome. A saved draft can be useful evidence without being treated as completion or permission to continue through consequential actions.
+- **Consequences:** The first local Work receipt is stored in existing evidence metadata and cross-checked against the per-node journal during workspace validation. Existing schema-7 records without receipt markers remain compatible. Browser/native adapters and independent postcondition observers remain separate follow-up work.
+- **Status:** Active.
+
