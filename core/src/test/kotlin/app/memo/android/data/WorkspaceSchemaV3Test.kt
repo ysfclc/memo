@@ -42,7 +42,9 @@ class WorkspaceSchemaV3Test {
         )
         val evidence = EvidenceRecord(
             id = "journal-evidence", taskId = job.id, title = "Draft", sourceUrl = "",
-            kind = "WORK_ARTIFACT", content = "Private draft", summary = "Needs review"
+            kind = "WORK_ARTIFACT", content = "Private draft", summary = "Needs review",
+            metadata = org.json.JSONObject().put("jobId", job.id).put("stepId", "journal-step")
+                .put("requiresHumanReview", true).toString()
         )
         val attempt = WorkflowAttemptRecord(
             id = "attempt-1", jobId = job.id, stepId = "journal-step", attemptNumber = 1,
