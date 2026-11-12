@@ -444,6 +444,11 @@ for marker in ('"schemaVersion", 7', '"workflowAttempts"', "WorkflowAttemptJourn
 for marker in ("ATTEMPT(", "snapshot.workflowAttempts.forEach"):
     if marker not in live_projector:
         fail(f"Live timeline does not project durable workflow attempts: {marker}")
+for marker in ("WorkflowRuntimeReceipt::fromEvidence", "Output receipt SHA-256", "postconditionStatus"):
+    if marker not in live_projector:
+        fail(f"Live timeline does not surface receipt identity and honest verification state: {marker}")
+if "liveShowsReceiptFingerprintAndUnverifiedPostconditionWithoutModelPayload" not in live_projector_tests:
+    fail("Live timeline receipt visibility and payload privacy regression coverage is missing")
 for marker in ("manualRetriesKeepOneIdempotencyIdentityAndStopAtFourAttempts", "canGenerateAnotherDraftWithoutDiscardingThePreviousReviewArtifact", "cannotRecordAUserOutcomeWhileLocalModelInferenceIsStillRunning", "startsAndRecordsAUserReportedCheckpointWithoutClaimingRuntimeVerification", "refusesToStartAChildBeforeItsDependenciesAreComplete"):
     if marker not in checkpoint_tests:
         fail(f"workflow attempt safety regression coverage is missing: {marker}")
