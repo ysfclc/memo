@@ -574,6 +574,12 @@ object MemoLocalization {
         "This request includes an external action. Keep its dedicated approval checkpoint; draft-only expansion is unavailable." to ("To żądanie obejmuje działanie zewnętrzne. Zachowaj osobny punkt zatwierdzenia; rozwinięcie wyłącznie do szkicu jest niedostępne." to "Bu istek harici bir eylem içeriyor. Ayrı onay kontrol noktasını koru; yalnızca taslak genişletmesi kullanılamaz."),
         "Expand the plan with a local model" to ("Rozwiń plan za pomocą modelu lokalnego" to "Planı yerel modelle genişlet"),
         "Creates a more detailed draft in Work. It will not run any steps." to ("Tworzy bardziej szczegółowy szkic w Work. Żaden krok nie zostanie uruchomiony." to "Work bölümünde daha ayrıntılı bir taslak oluşturur. Hiçbir adımı çalıştırmaz."),
+        "Four attempts recorded. Review the evidence or create a fresh plan; Memo will not replay this checkpoint." to ("Zapisano cztery próby. Sprawdź dowody lub utwórz nowy plan; Memo nie ponowi tego punktu kontrolnego." to "Dört deneme kaydedildi. Kanıtları incele veya yeni bir plan oluştur; Memo bu kontrol noktasını yeniden yürütmez."),
+        "Four attempts recorded. Review the saved versions or create a fresh plan; Memo will not replay this checkpoint." to ("Zapisano cztery próby. Sprawdź zapisane wersje lub utwórz nowy plan; Memo nie ponowi tego punktu kontrolnego." to "Dört deneme kaydedildi. Kaydedilen sürümleri incele veya yeni bir plan oluştur; Memo bu kontrol noktasını yeniden yürütmez."),
+        "Generate another draft" to ("Utwórz kolejny szkic" to "Bir taslak daha oluştur"),
+        "Local work generation is running" to ("Trwa generowanie lokalne" to "Yerel içerik oluşturma sürüyor"),
+        "Stop generation" to ("Zatrzymaj generowanie" to "Oluşturmayı durdur"),
+        "Stopping keeps the checkpoint in review. Any partial text is not saved as a completed artifact." to ("Zatrzymanie pozostawia punkt kontrolny do sprawdzenia. Niepełny tekst nie jest zapisywany jako ukończony artefakt." to "Durdurma kontrol noktasını incelemede tutar. Kısmi metin tamamlanmış bir çıktı olarak kaydedilmez."),
         "The passphrases do not match." to ("Hasła nie są zgodne." to "Parolalar eşleşmiyor."),
     )
 
