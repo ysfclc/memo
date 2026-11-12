@@ -37,48 +37,49 @@ class LocalModelRunner(private val cacheDir: File) {
         withTimeout(INFERENCE_TIMEOUT_MS) {
             mutex.withLock {
                 withContext(dispatcher) {
-            val path = modelFile.absolutePath
-            if (loadedPath != path || engine == null) loadEngine(path)
+                    val path = modelFile.absolutePath
+                    if (loadedPath != path || engine == null) loadEngine(path)
 
-            suspend fun runConversation(): String {
-                var conversation: Conversation? = null
-                return try {
-                    conversation = checkNotNull(engine).createConversation(
-                        ConversationConfig(systemInstruction = Contents.of(system))
-                    )
-                    val response = StringBuilder()
-                    conversation.sendMessageAsync(prompt).collect { chunk ->
-                        if (response.length < 24_000) {
-                            val bounded = chunk.toString().take(24_000 - response.length)
-                            if (bounded.isNotEmpty()) {
-                                response.append(bounded)
-                                onChunk(bounded)
+                    suspend fun runConversation(): String {
+                        var conversation: Conversation? = null
+                        return try {
+                            conversation = checkNotNull(engine).createConversation(
+                                ConversationConfig(systemInstruction = Contents.of(system))
+                            )
+                            val response = StringBuilder()
+                            conversation.sendMessageAsync(prompt).collect { chunk ->
+                                if (response.length < 24_000) {
+                                    val bounded = chunk.toString().take(24_000 - response.length)
+                                    if (bounded.isNotEmpty()) {
+                                        response.append(bounded)
+                                        onChunk(bounded)
+                                    }
+                                }
                             }
+                            response.toString().trim().ifBlank { error("The local model returned an empty answer.") }
+                        } catch (cancelled: CancellationException) {
+                            conversation?.cancelProcess()
+                            throw cancelled
+                        } finally {
+                            conversation?.close()
                         }
                     }
-                    response.toString().trim().ifBlank { error("The local model returned an empty answer.") }
-                } catch (cancelled: CancellationException) {
-                    conversation?.cancelProcess()
-                    throw cancelled
-                } finally {
-                    conversation?.close()
-                }
-            }
 
-            try {
-                runConversation()
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (gpuError: Exception) {
-                // Some phones let the GPU engine initialize but cannot execute its first graph. Retry once on CPU.
-                if (!usingGpu) throw gpuError
-                releaseEngine()
-                val cpu = Engine(EngineConfig(modelPath = path, backend = Backend.CPU(), cacheDir = cacheDir.absolutePath))
-                cpu.initialize()
-                engine = cpu
-                loadedPath = path
-                usingGpu = false
-                runConversation()
+                    try {
+                        runConversation()
+                    } catch (cancelled: CancellationException) {
+                        throw cancelled
+                    } catch (gpuError: Exception) {
+                        // Some phones let the GPU engine initialize but cannot execute its first graph. Retry once on CPU.
+                        if (!usingGpu) throw gpuError
+                        releaseEngine()
+                        val cpu = Engine(EngineConfig(modelPath = path, backend = Backend.CPU(), cacheDir = cacheDir.absolutePath))
+                        cpu.initialize()
+                        engine = cpu
+                        loadedPath = path
+                        usingGpu = false
+                        runConversation()
+                    }
                 }
             }
         }
