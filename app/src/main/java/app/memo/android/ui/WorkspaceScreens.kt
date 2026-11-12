@@ -2367,14 +2367,6 @@ private fun JobCard(
                         step.status in setOf("PENDING", "NEEDS_REVIEW") &&
                         activeStep == null && job.status !in setOf("SUCCEEDED", "CANCELLED")
                     when {
-                        step.status == "NEEDS_REVIEW" && stepAttempts.size >= WorkflowAttemptJournal.MAX_ATTEMPTS_PER_STEP -> {
-                            Text(
-                                "Four attempts recorded. Review the evidence or create a fresh plan; Memo will not replay this checkpoint.",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.padding(start = 32.dp)
-                            )
-                        }
                         step.status == "NEEDS_REVIEW" && step.evidence.startsWith("evidence:") -> {
                             val evidenceId = step.evidence.substringAfter("evidence:").substringBefore(";")
                             TextButton(onClick = { onOpenEvidence(evidenceId) }, modifier = Modifier.padding(start = 28.dp)) {
@@ -2383,6 +2375,14 @@ private fun JobCard(
                             OutlinedButton(onClick = { recordStepId = step.id; outcomeDraft = "" }, modifier = Modifier.fillMaxWidth().padding(start = 32.dp)) {
                                 Icon(Icons.Rounded.CheckCircle, null); Spacer(Modifier.width(6.dp)); Text("Record review outcome")
                             }
+                        }
+                        step.status == "NEEDS_REVIEW" && stepAttempts.size >= WorkflowAttemptJournal.MAX_ATTEMPTS_PER_STEP -> {
+                            Text(
+                                "Four attempts recorded. Review the evidence or create a fresh plan; Memo will not replay this checkpoint.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(start = 32.dp)
+                            )
                         }
                         step.status == "RUNNING" && !(step.requiresApproval || step.checkpointKind == "EXTERNAL_ACTION") -> {
                             if (localModel != null) {
