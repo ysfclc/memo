@@ -61,7 +61,7 @@
 
 ## Next action
 
-Implement the journal, schema-7 persistence, lifecycle integration and tests in this branch. Then inspect exact-head CI; if the preflight remains blocked, investigate that pipeline independently without claiming Gradle success.
+The journal, schema-7 persistence, lifecycle integration and regression tests are now implemented in source. Inspect the next exact-head CI run; if the preflight still fails before assigning a runner, resolve that Actions execution blocker before treating any Kotlin/Gradle test as verified.
 
 
 ## Implementation update — 12 November 2026
@@ -79,3 +79,12 @@ Implement the journal, schema-7 persistence, lifecycle integration and tests in 
 - Implemented in source: per-node attempt journaling, additive schema-7 backup migration, local output/failure/interruption transitions and Live projection.
 - Not yet verified: Kotlin compilation, Gradle JVM tests, lint, APK build, install/upgrade and real-device behavior.
 - No external runtime execution was enabled; no production deployment or merge was performed.
+
+
+## CI follow-up — exact-head run #439
+
+- Commit tested: `a19d5d2c552560cc1c85656548ec8affb4e1f710`.
+- Run: https://github.com/ysfclc/memo/actions/runs/43136772590
+- Preflight job #130913889225 failed in approximately two seconds with `runner_id: 0`, empty runner name and an empty step list. The log download endpoint returned Azure `BlobNotFound`.
+- Build, Gradle tests, lint and APK assembly were skipped. This is a runner/preflight execution failure; it provides no Kotlin compile or test result.
+- Subsequent commits added a regression test that prevents a user-reported completion from racing an active local-model inference, clarified lifecycle comments and strengthened source-verifier assertions. Those newer commits still need exact-head CI.
