@@ -34,6 +34,8 @@ REQUIRED = [
     "core/src/test/kotlin/app/memo/android/data/WorkArtifactFactoryTest.kt",
     "core/src/test/kotlin/app/memo/android/orchestration/WorkflowProposalApplierTest.kt",
     "app/build.gradle",
+    "app/src/main/java/app/memo/android/ai/LocalModelRunner.kt",
+    "app/src/test/java/app/memo/android/ai/LocalModelRunnerPolicyTest.kt",
     "app/src/main/AndroidManifest.xml",
     "app/src/main/java/app/memo/android/MainActivity.kt",
     "app/src/main/java/app/memo/android/ui/MemoLocalization.kt",
@@ -442,4 +444,15 @@ runner_tests = list((ROOT / "remote-runner/tests").glob("test_*.py"))
 if not runner_tests:
     fail("no remote runner tests found")
 print(f"PASS: remote runner test suite is present ({len(runner_tests)} test module(s)); run it separately with unittest")
+
+local_model_runner = (ROOT / "app/src/main/java/app/memo/android/ai/LocalModelRunner.kt").read_text()
+local_model_runner_test = (ROOT / "app/src/test/java/app/memo/android/ai/LocalModelRunnerPolicyTest.kt").read_text()
+for marker in ("withTimeout(INFERENCE_TIMEOUT_MS)", "INFERENCE_TIMEOUT_MS = 180_000L", "conversation?.cancelProcess()", "LocalInferenceTimeoutException()"):
+    if marker not in local_model_runner:
+        fail(f"local inference timeout/cancellation contract is missing: {marker}")
+for marker in ("localInferenceHasABoundedThreeMinuteDeadline", "timeoutIsReportedAsAnInferenceFailureNotAUserCancellation"):
+    if marker not in local_model_runner_test:
+        fail(f"local inference timeout regression coverage is missing: {marker}")
+print("PASS: local inference is time-bounded and cancellation reaches the LiteRT conversation")
+
 print("NOTE: This script does not compile Kotlin, run Gradle, prove Android runtime behavior, or verify a device.")
