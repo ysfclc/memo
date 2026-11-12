@@ -111,6 +111,8 @@ import app.memo.android.data.OutcomeParser
 import app.memo.android.data.SelfModelFactualityGuard
 import app.memo.android.data.MemoWorkspaceViewModel
 import app.memo.android.data.WorkJobRecord
+import app.memo.android.data.WorkflowAttemptRecord
+import app.memo.android.data.WorkflowAttemptJournal
 import app.memo.android.context.ContextCandidate
 import app.memo.android.context.WorkspaceContextRetriever
 import app.memo.android.runtime.RuntimeKind
@@ -1096,6 +1098,7 @@ fun WorkWorkspaceScreen(
                     items(snapshot.jobs.sortedByDescending { it.updatedAt }, key = { it.id }) { job ->
                         JobCard(
                             job,
+                            workflowAttempts = snapshot.workflowAttempts.filter { it.jobId == job.id },
                             sourceTitle = snapshot.conversations.firstOrNull { it.id == job.sourceConversationId }?.title,
                             sourceMessageExcerpt = snapshot.conversations.firstOrNull { it.id == job.sourceConversationId }
                                 ?.messages?.firstOrNull { it.id == job.sourceMessageId }?.content?.take(280),
@@ -2240,6 +2243,7 @@ private fun IntentPlanEditDialog(
 @Composable
 private fun JobCard(
     job: WorkJobRecord,
+    workflowAttempts: List<WorkflowAttemptRecord>,
     sourceTitle: String?,
     sourceMessageExcerpt: String?,
     onOpenSource: () -> Unit,
@@ -2326,6 +2330,8 @@ private fun JobCard(
         if (job.steps.isNotEmpty()) {
             Spacer(Modifier.height(10.dp))
             job.steps.forEachIndexed { index, step ->
+                val stepAttempts = workflowAttempts.filter { it.stepId == step.id }
+                val latestAttempt = stepAttempts.maxByOrNull { it.attemptNumber }
                 Column(Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                     Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
                         Surface(color = statusColor(step.status), shape = RoundedCornerShape(100.dp), modifier = Modifier.size(24.dp)) {
@@ -2340,12 +2346,35 @@ private fun JobCard(
                             }
                             if (step.detail.isNotBlank()) Text(step.detail, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             if (step.evidence.isNotBlank()) Text("Outcome · ${step.evidence}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
+                            if (latestAttempt != null) {
+                                Text(
+                                    "Attempt ${latestAttempt.attemptNumber}/${WorkflowAttemptJournal.MAX_ATTEMPTS_PER_STEP} · ${latestAttempt.status.lowercase().replace('_', ' ')} · ${latestAttempt.runtimeId}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = when (latestAttempt.status) {
+                                        "FAILED", "INTERRUPTED" -> MaterialTheme.colorScheme.error
+                                        "OUTPUT_SAVED" -> MaterialTheme.colorScheme.tertiary
+                                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                    }
+                                )
+                                if (latestAttempt.userOutcome.isNotBlank()) {
+                                    Text("Reported outcome · ${latestAttempt.userOutcome.take(180)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
                         }
                     }
                     val isNext = step.id in dependencyReadyStepIds &&
+                        stepAttempts.size < WorkflowAttemptJournal.MAX_ATTEMPTS_PER_STEP &&
                         step.status in setOf("PENDING", "NEEDS_REVIEW") &&
                         activeStep == null && job.status !in setOf("SUCCEEDED", "CANCELLED")
                     when {
+                        step.status == "NEEDS_REVIEW" && stepAttempts.size >= WorkflowAttemptJournal.MAX_ATTEMPTS_PER_STEP -> {
+                            Text(
+                                "Four attempts recorded. Review the evidence or create a fresh plan; Memo will not replay this checkpoint.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(start = 32.dp)
+                            )
+                        }
                         step.status == "NEEDS_REVIEW" && step.evidence.startsWith("evidence:") -> {
                             val evidenceId = step.evidence.substringAfter("evidence:").substringBefore(";")
                             TextButton(onClick = { onOpenEvidence(evidenceId) }, modifier = Modifier.padding(start = 28.dp)) {
