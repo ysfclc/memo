@@ -33,7 +33,7 @@ data class WorkflowAttemptRecord(
 object WorkflowAttemptJournal {
     const val MAX_ATTEMPTS = 2_000
     const val MAX_ATTEMPTS_PER_STEP = 4
-    private val statuses = setOf("RUNNING", "OUTPUT_SAVED", "FAILED", "INTERRUPTED")
+    private val statuses = setOf("RUNNING", "OUTPUT_SAVED", "FAILED", "INTERRUPTED", "USER_REPORTED")
 
     fun create(
         snapshot: AppSnapshot,
@@ -133,7 +133,13 @@ object WorkflowAttemptJournal {
         require(latest.status != "RUNNING") { "Finish or review the active attempt before recording an outcome." }
         require(now >= latest.finishedAt && now > 0L) { "User outcome time is invalid." }
         return attempts.map { candidate ->
-            if (candidate.id == latest.id) candidate.copy(userOutcome = clean, userOutcomeAt = now) else candidate
+            if (candidate.id == latest.id) candidate.copy(
+                status = if (latest.status == "RUNNING") "USER_REPORTED" else latest.status,
+                finishedAt = if (latest.status == "RUNNING") now else latest.finishedAt,
+                detail = if (latest.status == "RUNNING") "User-reported outcome; runtime postcondition was not independently verified." else latest.detail,
+                userOutcome = clean,
+                userOutcomeAt = now
+            ) else candidate
         }
     }
 
@@ -158,7 +164,8 @@ object WorkflowAttemptJournal {
         snapshot.workflowAttempts.groupBy { it.jobId to it.stepId }.forEach { (key, rows) ->
             val (jobId, stepId) = key
             val job = jobs[jobId] ?: error("A workflow attempt references a missing work plan.")
-            require(job.steps.any { it.id == stepId }) { "A workflow attempt references a missing checkpoint." }
+            val step = job.steps.firstOrNull { it.id == stepId }
+                ?: error("A workflow attempt references a missing checkpoint.")
             val ordered = rows.sortedBy { it.attemptNumber }
             require(ordered.map { it.attemptNumber } == (1..ordered.size).toList() &&
                 ordered.size <= MAX_ATTEMPTS_PER_STEP) {
@@ -185,11 +192,15 @@ object WorkflowAttemptJournal {
                 previousStart = attempt.startedAt
                 if (attempt.status == "RUNNING") {
                     require(attempt.finishedAt == 0L && attempt.evidenceId.isBlank() &&
-                        attempt.userOutcome.isBlank() && attempt.userOutcomeAt == 0L) {
-                        "A running attempt cannot contain a finished result."
+                        attempt.userOutcome.isBlank() && attempt.userOutcomeAt == 0L &&
+                        step.status == "RUNNING" && job.status == "RUNNING") {
+                        "A running attempt must match an active checkpoint and cannot contain a finished result."
                     }
                 } else {
                     require(attempt.finishedAt >= attempt.startedAt) { "Workflow attempt finish time precedes its start." }
+                    require(step.status in setOf("NEEDS_REVIEW", "COMPLETED", "RUNNING")) {
+                        "A finished attempt does not match the checkpoint lifecycle."
+                    }
                 }
                 if (attempt.status == "OUTPUT_SAVED") {
                     val item = evidence[attempt.evidenceId]
