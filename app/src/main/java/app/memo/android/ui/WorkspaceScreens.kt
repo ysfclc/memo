@@ -2375,6 +2375,18 @@ private fun JobCard(
                             OutlinedButton(onClick = { recordStepId = step.id; outcomeDraft = "" }, modifier = Modifier.fillMaxWidth().padding(start = 32.dp)) {
                                 Icon(Icons.Rounded.CheckCircle, null); Spacer(Modifier.width(6.dp)); Text("Record review outcome")
                             }
+                            if (stepAttempts.size < WorkflowAttemptJournal.MAX_ATTEMPTS_PER_STEP && localModel != null) {
+                                OutlinedButton(onClick = { onStartStep(step.id) }, modifier = Modifier.fillMaxWidth().padding(start = 32.dp)) {
+                                    Icon(Icons.Rounded.Refresh, null); Spacer(Modifier.width(6.dp)); Text("Generate another draft")
+                                }
+                            } else if (stepAttempts.size >= WorkflowAttemptJournal.MAX_ATTEMPTS_PER_STEP) {
+                                Text(
+                                    "Four attempts recorded. Review the saved versions or create a fresh plan; Memo will not replay this checkpoint.",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.padding(start = 32.dp)
+                                )
+                            }
                         }
                         step.status == "NEEDS_REVIEW" && stepAttempts.size >= WorkflowAttemptJournal.MAX_ATTEMPTS_PER_STEP -> {
                             Text(
