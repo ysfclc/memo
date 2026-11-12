@@ -150,7 +150,8 @@ APK="$ROOT/app/build/outputs/apk/debug/app-debug.apk"
 test -s "$APK"
 BUILD_TOOLS="$ANDROID_HOME/build-tools/35.0.0"
 for tool in aapt apksigner zipalign; do test -x "$BUILD_TOOLS/$tool"; done
-PACKAGE_LINE="$("$BUILD_TOOLS/aapt" dump badging "$APK" | grep -m1 '^package:')"
+BADGING="$("$BUILD_TOOLS/aapt" dump badging "$APK")"
+PACKAGE_LINE="$(printf '%s\n' "$BADGING" | awk '/^package:/ && !found { print; found = 1 } END { if (!found) exit 1 }')"
 [[ "$PACKAGE_LINE" == *"name='app.memo.android.debug'"* ]] || {
   echo "::error::Unexpected Memo APK application ID: $PACKAGE_LINE"
   exit 1
@@ -159,7 +160,13 @@ PACKAGE_LINE="$("$BUILD_TOOLS/aapt" dump badging "$APK" | grep -m1 '^package:')"
 SIGNATURE="$("$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK" 2>&1)"
 printf '%s\n' "$SIGNATURE"
 if [[ "$SIGNING_COUNT" -eq 4 ]]; then
-  CERT="$(printf '%s\n' "$SIGNATURE" | sed -nE 's/.*certificate SHA-256 digest: ([0-9a-fA-F]+).*/\1/p' | head -n1 | tr '[:upper:]' '[:lower:]')"
+  CERT=""
+  while IFS= read -r signature_line; do
+    if [[ "$signature_line" =~ certificate\ SHA-256\ digest:\ ([[:xdigit:]]+) ]]; then
+      CERT="${BASH_REMATCH[1],,}"
+      break
+    fi
+  done <<< "$SIGNATURE"
   EXPECTED_MEMO_CERT_SHA256='a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a'
   [[ "$CERT" == "$EXPECTED_MEMO_CERT_SHA256" ]] || {
     echo "::error::Persistent Memo signing certificate mismatch. Refusing to publish this APK."
