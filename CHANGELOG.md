@@ -1,5 +1,13 @@
 # Changelog
 
+## 12 November 2026 — Durable workflow attempt history
+
+- Added a schema-7 per-checkpoint execution journal bound to the saved job, step, runtime, capability manifest and stable idempotency identity. Schema 1–6 backups remain importable.
+- Local-model output, failure and process interruption are distinct persisted attempt states. Evidence is bound to the exact checkpoint and human-review requirement; user-reported outcomes are stored separately from runtime output.
+- Live now includes attempt events without copying model prompts or responses. Work checkpoint cards show the latest attempt number/status/runtime and stop offering retries after four attempts.
+- Manual retry is bounded; interrupted attempts are never automatically replayed. Browser/native/external actions remain outside the local-model dispatch path.
+- Regression tests cover attempt lifecycle, exact evidence binding, retry limits, recovery, schema migration and Live projection. Gradle/JVM tests, lint, APK and device acceptance remain unverified because GitHub Actions fails before runner steps.
+
 ## 8 November 2026 — Typed workflow proposal foundation
 
 - Added canonical TaskSpec records and dynamic DAG compilation while preserving schema-v1 graph serialization compatibility.
