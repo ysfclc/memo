@@ -121,7 +121,9 @@ class LiveTimelineProjectorTest {
             jobs = listOf(job),
             evidence = listOf(EvidenceRecord(
                 id = "evidence-1", taskId = job.id, title = "Private model output", sourceUrl = "",
-                kind = "WORK_ARTIFACT", content = "secret model payload", summary = "Draft"
+                kind = "WORK_ARTIFACT", content = "secret model payload", summary = "Draft",
+                metadata = org.json.JSONObject().put("jobId", job.id).put("stepId", "step-attempt")
+                    .put("requiresHumanReview", true).toString()
             )),
             workflowAttempts = listOf(attempt)
         ))
