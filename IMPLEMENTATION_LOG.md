@@ -183,3 +183,14 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 
 - **Additional syntax check:** The exact `LocalModelRunner.kt` source was compiled with Kotlin 1.9.0 against lightweight LiteRT API stubs and the installed kotlinx-coroutines core JAR: **PASS**. This confirms Kotlin syntax and coroutine API usage only; the stubs do not verify Google LiteRT-LM binary compatibility, Android integration or native cancellation behavior.
 - **Latest branch-head CI:** run #43140775990 on `ade2d04eddc1a34d2ea894ac5c3df1522db9655e` failed in the incoming ZIP preflight; the preflight job exposed zero steps and all build/test/lint/signing jobs were skipped. The job log endpoint returned BlobNotFound. This is not a source compile/test failure or pass.
+
+
+### 2026-11-12 — M3.8.A8 timeout regression test repair
+
+- **Requirement:** MEMO-AI-001 and MEMO-ORCH-001; task M3.8.A8.
+- **Baseline:** active draft PR #8, `stabilization/usable-stage-2026-11-10`; the existing timeout-policy test constructed `LocalInferenceTimeoutException` without the required `timeoutMs` argument, contradicting the implementation constructor.
+- **Change:** fixed the constructor call and asserted the configured 180-second message. Added coroutine tests for deadline mapping, cancellation of timed-out work, successful completion and preservation of parent/user cancellation as a cancellation rather than an inference-timeout failure. Refreshed the matching `SOURCE_SHA256SUMS.txt` entry.
+- **Files:** `app/src/test/java/app/memo/android/ai/LocalModelRunnerPolicyTest.kt`, `SOURCE_SHA256SUMS.txt`, `TASKS.md`, `CHANGELOG.md`, `docs/REQUIREMENT_TRACEABILITY.md`, `docs/STATE.md`, and a dated checkpoint.
+- **Verification:** source/test consistency inspected. The new test code has **not** been executed; current PR Actions preflight failures occur with `runner_id: 0` and no steps, so Gradle tests, lint and Android compilation remain blocked. No APK or device acceptance is claimed.
+- **Risk:** the 180-second runner deadline is cooperative; non-yielding native LiteRT calls cannot be forcibly terminated by coroutine cancellation.
+- **Status:** tests added; acceptance remains open until exact-head CI and device timing evidence exist.
