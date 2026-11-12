@@ -1,5 +1,6 @@
 package app.memo.android.ai
 
+import kotlinx.coroutines.launch
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -54,20 +55,20 @@ class ModelCatalogTest {
 
 
     @Test fun userCancellationIsNotReclassifiedAsAnInferenceTimeout() = kotlinx.coroutines.runBlocking {
-        val cancelled = kotlinx.coroutines.CompletableDeferred<Boolean>(false)
-        val job = kotlinx.coroutines.launch {
+        var cancelled = false
+        val job = launch {
             try {
                 withLocalInferenceTimeout(5_000L) {
                     kotlinx.coroutines.awaitCancellation()
                 }
             } finally {
-                cancelled.complete(true)
+                cancelled = true
             }
         }
         kotlinx.coroutines.delay(10L)
         job.cancel()
         job.join()
-        assertEquals(true, cancelled.await())
+        assertEquals(true, cancelled)
     }
 
     @Test fun localInferenceTimeoutWrapperReturnsSuccessfulResult() = kotlinx.coroutines.runBlocking {
