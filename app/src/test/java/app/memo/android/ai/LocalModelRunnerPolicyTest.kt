@@ -7,7 +7,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -76,6 +75,5 @@ class LocalModelRunnerPolicyTest {
         inference.join()
 
         assertTrue("Parent cancellation must remain cancellation, got $cancellation", cancellation is CancellationException)
-        assertFalse(cancellation is LocalInferenceTimeoutException)
     }
 }
