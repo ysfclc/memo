@@ -62,3 +62,20 @@
 ## Next action
 
 Implement the journal, schema-7 persistence, lifecycle integration and tests in this branch. Then inspect exact-head CI; if the preflight remains blocked, investigate that pipeline independently without claiming Gradle success.
+
+
+## Implementation update — 12 November 2026
+
+- **Source implemented:** added `WorkflowAttemptRecord` / `WorkflowAttemptJournal`; checkpoint start now appends an attempt bound to the saved TaskSpec runtime, capability list and idempotency key.
+- **Persistence:** `AppSnapshot` schema 7 serializes the bounded journal; schema 1–6 imports remain additive and produce an empty journal. Schema 7 parsing is strict; snapshot validation checks unique/sequential attempt identity, exact graph binding, state/timestamp consistency and evidence references.
+- **Lifecycle:** local model output closes the attempt as `OUTPUT_SAVED` with the evidence ID; inference failure closes it as `FAILED`; process death closes it as `INTERRUPTED` and returns the owning checkpoint to `NEEDS_REVIEW`. User-reported completion is stored separately. A node has a maximum of four user-initiated attempts; this is not an automatic retry policy.
+- **Live:** attempt status, timestamp, runtime/capability references and evidence link are projected into the existing timeline; private model payloads are not copied into timeline entries.
+- **Files changed:** `WorkflowAttemptJournal.kt`, `Models.kt`, `WorkflowCheckpointCoordinator.kt`, `LocalWorkArtifactCoordinator.kt`, `LiveTimelineProjector.kt`, corresponding core tests, `tools/verify_source.py`, `TASKS.md`, `PRODUCT_GAP_REGISTRY.md`, `FEATURE_AUDIT.md`, `docs/REQUIREMENT_TRACEABILITY.md`, `IMPLEMENTATION_LOG.md`.
+- **Verification still open:** no Gradle/test/lint/build result is claimed. The last observed PR run #416 failed in the incoming ZIP preflight; its job-log download returned BlobNotFound. The current commits have not yet received an exact-head passing CI run. No APK or device acceptance is claimed.
+- **Next:** inspect the next exact-head workflow run; if preflight still fails, repair the archive intake workflow before treating any source tests as verified. Then continue runtime adapters and cancellation/recovery.
+
+## User-facing state
+
+- Implemented in source: per-node attempt journaling, additive schema-7 backup migration, local output/failure/interruption transitions and Live projection.
+- Not yet verified: Kotlin compilation, Gradle JVM tests, lint, APK build, install/upgrade and real-device behavior.
+- No external runtime execution was enabled; no production deployment or merge was performed.
