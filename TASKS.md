@@ -483,3 +483,5 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - Timeout cancels the active LiteRT conversation through `Conversation.cancelProcess()` and surfaces a dedicated failure state; it is not reported as a user cancellation or successful completion.
 - Added policy regression coverage and source-verifier assertions.
 - **Still open:** native-call cancellation responsiveness, Work-level cancel control wiring/visibility, full Gradle tests, lint, and real-device timing. The deadline is cooperative and is not a hard process kill.
+
+- **Follow-up UI:** Work now displays a Stop generation control during an active local checkpoint, shows a bounded tail of partial output, and explains that stopping leaves the checkpoint for review rather than saving partial text as a finished artifact.
