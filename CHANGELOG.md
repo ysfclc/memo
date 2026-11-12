@@ -1,5 +1,11 @@
 # Changelog
 
+## 12 November 2026 — Local inference timeout regression coverage
+
+- Corrected the timeout policy test to use the required duration-bearing exception constructor.
+- Added coroutine behavior coverage for deadline-to-error mapping, cancellation of in-flight work, successful completion and the distinction between parent/user cancellation and timeout.
+- These tests are committed but have not run yet; the active PR's GitHub Actions preflight has repeatedly failed before runner assignment. No Gradle or Android build result is claimed.
+
 ## 12 November 2026 — Durable workflow attempt history
 
 - Added a schema-7 per-checkpoint execution journal bound to the saved job, step, runtime, capability manifest and stable idempotency identity. Schema 1–6 backups remain importable.
