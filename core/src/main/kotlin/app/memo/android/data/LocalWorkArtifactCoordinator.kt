@@ -21,7 +21,8 @@ object LocalWorkArtifactCoordinator {
             "The draft artifact is not linked to this work plan."
         }
         val artifactMetadata = runCatching { org.json.JSONObject(evidence.metadata) }.getOrNull()
-        require(artifactMetadata?.optString("jobId") == jobId &&
+        require(artifactMetadata != null &&
+            artifactMetadata.optString("jobId") == jobId &&
             artifactMetadata.optString("stepId") == stepId &&
             artifactMetadata.optBoolean("requiresHumanReview", false)) {
             "The draft artifact is not bound to this exact checkpoint and review state."
