@@ -422,10 +422,10 @@ for marker in ('"schemaVersion", 7', '"workflowAttempts"', "WorkflowAttemptJourn
 for marker in ("ATTEMPT(", "snapshot.workflowAttempts.forEach"):
     if marker not in live_projector:
         fail(f"Live timeline does not project durable workflow attempts: {marker}")
-for marker in ("manualRetriesKeepOneIdempotencyIdentityAndStopAtFourAttempts", "refusesToStartAChildBeforeItsDependenciesAreComplete"):
+for marker in ("manualRetriesKeepOneIdempotencyIdentityAndStopAtFourAttempts", "cannotRecordAUserOutcomeWhileLocalModelInferenceIsStillRunning", "refusesToStartAChildBeforeItsDependenciesAreComplete"):
     if marker not in checkpoint_tests:
         fail(f"workflow attempt safety regression coverage is missing: {marker}")
-for marker in ("OUTPUT_SAVED", "FAILED", "refusesToAttachAnArtifactToAStaleCheckpoint"):
+for marker in ("OUTPUT_SAVED", "FAILED", "refusesToAttachAnArtifactToAStaleCheckpoint", "failureTransitionMovesOnlyTheActiveStepToReview"):
     if marker not in local_artifact_tests:
         fail(f"local Work attempt lifecycle regression coverage is missing: {marker}")
 print("PASS: workflow checkpoints are dependency-aware, runtime-revalidated, attempt-journaled, external-effect-gated and legacy-compatible")
