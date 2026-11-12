@@ -127,3 +127,6 @@ The journal, schema-7 persistence, lifecycle integration and regression tests ar
 - The live panel shows only the last 2,000 characters of partial response. It explicitly states that stopping leaves the checkpoint in review and does not save partial text as a completed artifact. The existing Work failure callback journals the attempt as failed/review-required.
 - `tools/verify_source.py` now checks the visible stop control and partial-output warning.
 - **Not yet verified:** Android compilation, Compose rendering, coroutine cancellation latency, and device-level LiteRT behavior. Latest GitHub Actions run failed in the preflight job before a runner was assigned; no tests ran.
+
+- **Kotlin syntax check:** Compiled the exact `LocalModelRunner.kt` source with Kotlin 1.9.0, lightweight LiteRT API stubs and the installed kotlinx-coroutines core JAR — PASS. This is a syntax/API-shape smoke check, not validation against the actual LiteRT-LM SDK or Android app module.
+- **Latest exact-head CI:** run #43140775990 at branch head `ade2d04eddc1a34d2ea894ac5c3df1522db9655e` failed in ZIP preflight. The failed preflight job exposed an empty step list; downstream Gradle, lint and signing jobs were skipped. Job log retrieval returned BlobNotFound. No full build/test result exists.
