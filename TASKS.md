@@ -475,3 +475,11 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 
 - [~] Domain model, evidence-backed ICP scoring, unknown-factor handling, duplicate warnings, vault-gated proposed ORGANIZATION creation and initial Work intake UI integrated.
 - [ ] Add evidence capture / factor review UI, run full Gradle and ViewModel integration tests, and verify the Android experience. This is one optional Work workflow; Memo's product scope remains broader.
+
+
+## 12 November 2026 — M3.8.A8 local inference timeout
+
+- Added a 180-second deadline around serialized LiteRT inference, including engine initialization and streamed generation.
+- Timeout cancels the active LiteRT conversation through `Conversation.cancelProcess()` and surfaces a dedicated failure state; it is not reported as a user cancellation or successful completion.
+- Added policy regression coverage and source-verifier assertions.
+- **Still open:** native-call cancellation responsiveness, Work-level cancel control wiring/visibility, full Gradle tests, lint, and real-device timing. The deadline is cooperative and is not a hard process kill.
