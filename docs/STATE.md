@@ -25,7 +25,7 @@ Memo is an Android-first, local-first personal AI execution environment. Talk ca
 ## 3. Currently in flight
 
 - Draft PR #8, branch `stabilization/usable-stage-2026-11-10`. Latest source commit with the timeout test is `a44c6c35c013163aa649553c64fa34eda26a809e`; checksum manifest refresh is `d52ba948828fd28b003ea52f8518c54b16960126`. The current branch also contains the new checkpoint and state-ledger documentation. Keep the PR draft and do not merge without the exact-head gates.
-- M3.8.A8 regression coverage is present and documented, but **not executed**. Latest observed exact-head workflow run #521 on `d52ba948828fd28b003ea52f8518c54b16960126` failed before downstream validation; the job-log endpoint returned `BlobNotFound`.
+- M3.8.A8 regression coverage is present and documented, but **not executed**. Latest observed exact-head workflow run #524 on `7f9545ccb669967b650b6486863b30cb496ce3c1` failed in the incoming-ZIP preflight; all downstream jobs were skipped, and the job-log endpoint returned `BlobNotFound`.
 
 ## 4. Known gaps & stubs
 
@@ -43,7 +43,7 @@ Memo is an Android-first, local-first personal AI execution environment. Talk ca
 - Full source gate: `./gradlew --no-daemon --stacktrace :core:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug`.
 - Additional instrumentation package: `:app:assembleDebugAndroidTest`; the upgrade acceptance workflow requires an API 35 emulator.
 - Repository checkout is available through the connected GitHub integration. No local `/testbed` checkout or local Android SDK/Gradle execution environment is mounted in this session.
-- Current blocker: GitHub Actions run #521 preflight failed with no usable job log; downstream jobs were skipped. Earlier PR runs also failed before runner assignment. Do not infer a source compilation result from these failures.
+- Current blocker: GitHub Actions run #524 preflight failed with no step list or usable job log; validation, Gradle, lint, APK and signing jobs were skipped. Earlier PR runs show the same failure pattern. Do not infer a source compilation result from these failures.
 
 ## 6. Next three increments
 
