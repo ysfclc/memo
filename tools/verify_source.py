@@ -146,9 +146,13 @@ if "viewModel.startJobStep(job.id, stepId)" not in local_run:
     fail("local-model Work execution bypasses the persisted checkpoint start gate")
 if local_run.index("viewModel.startJobStep(job.id, stepId)") > local_run.index("runtime.runPrompt("):
     fail("local-model inference starts before the checkpoint is reserved")
-for marker in ('"NEEDS_REVIEW"', '"WAITING_FOR_USER"', '"requiresHumanReview"', '"local-model-draft"'):
+for marker in ('"requiresHumanReview"', '"local-model-draft"'):
     if marker not in local_run:
-        fail(f"local-model Work execution is missing its review/failure lifecycle: {marker}")
+        fail(f"local-model Work execution is missing its review-required artifact metadata: {marker}")
+# Review statuses are owned by the pure-core transition coordinator, not duplicated in UI callback code.
+for marker in ('status = "NEEDS_REVIEW"', 'status = "WAITING_FOR_USER"', 'WorkflowAttemptJournal.outputSaved(', 'WorkflowAttemptJournal.failed('):
+    if marker not in local_artifact_coordinator:
+        fail(f"local Work transition coordinator is missing its review/failure lifecycle: {marker}")
 if "executionSnapshot.evidence" not in local_run:
     fail("local-model Work execution does not build context from the post-start workspace snapshot")
 if "viewModel.saveWorkArtifactForReview(currentJob.id, currentStep.id, artifact)" not in local_run:
@@ -447,10 +451,17 @@ print(f"PASS: remote runner test suite is present ({len(runner_tests)} test modu
 
 local_model_runner = (ROOT / "app/src/main/java/app/memo/android/ai/LocalModelRunner.kt").read_text()
 local_model_runner_test = (ROOT / "app/src/test/java/app/memo/android/ai/LocalModelRunnerPolicyTest.kt").read_text()
-for marker in ("withTimeout(INFERENCE_TIMEOUT_MS)", "INFERENCE_TIMEOUT_MS = 180_000L", "conversation?.cancelProcess()", "LocalInferenceTimeoutException()"):
+for marker in ("withTimeout(INFERENCE_TIMEOUT_MS)", "INFERENCE_TIMEOUT_MS = 180_000L", "conversation?.cancelProcess()", "LocalInferenceTimeoutException(timeoutMs)"):
     if marker not in local_model_runner:
         fail(f"local inference timeout/cancellation contract is missing: {marker}")
-for marker in ("localInferenceHasABoundedThreeMinuteDeadline", "timeoutIsReportedAsAnInferenceFailureNotAUserCancellation"):
+for marker in (
+    "localInferenceHasABoundedThreeMinuteDeadline",
+    "timeoutIsReportedAsAnInferenceFailureNotAUserCancellation",
+    "deadlineCancelsInFlightWorkAndReturnsTheDedicatedTimeoutFailure",
+    "successfulInferenceReturnsItsCompleteResult",
+    "parentCancellationIsNotConvertedIntoAnInferenceTimeout",
+    "LocalInferenceTimeoutException(LocalModelRunner.INFERENCE_TIMEOUT_MS)",
+):
     if marker not in local_model_runner_test:
         fail(f"local inference timeout regression coverage is missing: {marker}")
 print("PASS: local inference is time-bounded and cancellation reaches the LiteRT conversation")
