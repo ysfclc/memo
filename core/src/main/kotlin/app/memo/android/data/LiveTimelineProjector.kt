@@ -82,9 +82,11 @@ object LiveTimelineProjector {
         }
 
         val jobsById = snapshot.jobs.associateBy { it.id }
+        val evidenceById = snapshot.evidence.associateBy { it.id }
         snapshot.workflowAttempts.forEach { attempt ->
             val job = jobsById[attempt.jobId]
             val step = job?.steps?.firstOrNull { it.id == attempt.stepId }
+            val receipt = evidenceById[attempt.evidenceId]?.let(WorkflowRuntimeReceipt::fromEvidence)
             entries += LiveTimelineEntry(
                 id = "attempt:${attempt.id}",
                 occurredAt = attempt.finishedAt.takeIf { it > 0L } ?: attempt.startedAt,
@@ -96,6 +98,9 @@ object LiveTimelineProjector {
                     attempt.capabilityIds.joinToString(", "),
                     attempt.detail.take(500),
                     attempt.evidenceId.takeIf { it.isNotBlank() }?.let { "Evidence: $it" },
+                    receipt?.let {
+                        "Output receipt SHA-256: ${it.outputSha256.take(12)} · postcondition ${it.postconditionStatus}"
+                    },
                     attempt.userOutcome.takeIf { it.isNotBlank() }?.let { "User-reported: $it" }
                 ).filter { !it.isNullOrBlank() }.joinToString(" · "),
                 status = attempt.status,
