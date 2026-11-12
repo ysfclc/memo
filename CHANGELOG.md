@@ -1,5 +1,13 @@
 # Changelog
 
+## 12 November 2026 — Android build-gate and localization corrections
+
+- Ran the existing Vercel Android build path far enough to install checksum-verified JDK 17 and Android SDK 35 and execute the repository source verifier.
+- Corrected stale verifier assertions to follow the actual pure-core Work review coordinator, current Talk composer handoff and existing workflow-checkpoint regression test names.
+- Added Polish and Turkish translations for local Work retry-limit, regenerate-draft, active-generation, Stop-generation and partial-output safety states, with a focused localization regression test.
+- The static UI translation scan passed 421/421 strings on the build that included the translation changes. The latest verifier correction is committed at 3e11e4e, but has not yet been executed on the exact branch head.
+- Build remains blocked before Gradle: GitHub Actions jobs still fail before runner assignment, and Vercel deployment creation is rate-limited by the Hobby free daily API quota (HTTP 402, 100 deployments/day). No clean APK or Gradle/lint/signature result is claimed.
+
 ## 12 November 2026 — CI preflight retry investigation
 
 - Inspected the source-only pull-request branch in `.github/workflows/build-apk.yml`; PR #8 targets `main` as required.

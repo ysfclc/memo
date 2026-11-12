@@ -3,7 +3,7 @@ dd3d203254c11eda212933be2fdad09d4219b7869ac1a0fb74166ad103cb9ed2  ./scripts/verc
 555c1effb2d32525f058574bafe7f16b264ecbb3d02523fc71c158ff408a216a  ./.github/workflows/build-apk.yml
 35d51b623486a63a825aeffa712fe00e73c069ff4db4cb783affe14783203641  ./.gitignore
 3a12ecd53ead658782ea65ca54f71d7835324435cdfcd5d51e8ebdb09a1055c0  ./BUILD_STATUS.md
-3598908a4bd22f08f1917e56b16b07c0e1b0ba1e4a0e1c8a95ece6a9d9985d6c  ./CHANGELOG.md
+1957fceb3172a16aeb5b70efd382955c6cdcd3254ac50ef9e5cd275211040ff4  ./CHANGELOG.md
 27a75bf71bfa1da44ba4c0fcf483b010cab683e19f33f308a150a248cdae81aa  ./DEVICE_ACCEPTANCE_CHECKLIST.md
 a8b181972eb3ee0e1587ff09e49979b43acffe2d4c3ab9ea5b8a7e097d46beb0  ./FEATURE_AUDIT.md
 dd455fac6e27fc3a4f55b917d345ce0bf7b523cf25cff35beaa85cb8d8d14886  ./IMPLEMENTATION_CONTRACT.md
@@ -37,7 +37,7 @@ c183dc442f015a51390223e80258a5d6e09baefaa1054e3f1ddb931bfebae5d3  ./app/src/main
 f9167b7d743e284028f605b4b421b4c9b18c8bde299dd9aed0d6e51af7157216  ./app/src/main/java/app/memo/android/ui/AppsWorkspaceScreen.kt
 c23d9d73f947dca41834299207c98cb522fbcf627615454078dc3d0bd22b645f  ./app/src/main/java/app/memo/android/ui/BrowserWorkflowScreen.kt
 0423c02009fd362358c065a1597cf97e300a8acf793602e9401dc156d8aade3a  ./app/src/main/java/app/memo/android/ui/LiveWorkspaceScreen.kt
-1ae0fab9c440dff32d13f04f000be4bc8d0f2f9398fd71aeb7690265aa9edcd8  ./app/src/main/java/app/memo/android/ui/MemoLocalization.kt
+c2c7d5f3e1a50c7061f227c282f9d471c8739375f629df7b78f3d7d1ed46d988  ./app/src/main/java/app/memo/android/ui/MemoLocalization.kt
 25fd0b5bd82b5894f4c76c289627058320d6d0188d39dd1d465d4fcc820d4e75  ./app/src/main/java/app/memo/android/ui/MemoTheme.kt
 a5ac84d6ad1fe9080e52c2d359527848ba7332a38f3fb815441f06d540b62719  ./app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt
 50f7cd1f9d19261ccb1981eac5d9d2b96e80815319e6187e69250c7c86270744  ./app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt
@@ -71,7 +71,7 @@ e4926a3e06cfe3df0f92d657d0b193d12c75856dcc1192d731bb0ee344d36ff7  ./app/src/main
 5ad57e493e75dc52057329d72cfb3c00c0e03e9a2c380c8ba3671d4fdd25cd99  ./app/src/main/res/xml/data_extraction_rules.xml
 73d5460334b3a54ec398c557b3c332c0d9e0fbb5033d510205146b2fe17e64d5  ./app/src/test/java/app/memo/android/ai/ModelCatalogTest.kt
 b8356e5805b218704a74d664343346ac8867637840cc698cfdb20dc4a1d12805  ./app/src/test/java/app/memo/android/browser/BrowserWorkflowPromptsTest.kt
-db2a539ce067de6f13e5ffbe6aa3dd3ac5dc338ae4bad54bc28d8128e4695601  ./app/src/test/java/app/memo/android/ui/MemoLocalizationTest.kt
+4672be33e9acf6040d50562a165b75f104b305834fcee8bfa4bc0e88908579ad  ./app/src/test/java/app/memo/android/ui/MemoLocalizationTest.kt
 b2a1bd5e918a0d0c153153bb0c707e2414bc5c1a2fcd8eeedca801d86bdf8a3b  ./app/src/test/java/com/synthos/runtime/engine/WorkflowPolicyTest.java
 21acd1687a0a9180acdd7ade75f2f3e378a4d229e71865ccf8ddb344c0c20bf7  ./build.gradle
 4cc7e56d77f1e96134675d4e514664002ce1397ed3fa9eb962e21afd55988a40  ./core/build.gradle
@@ -198,7 +198,7 @@ d82dc17d418f2ce0b7f3b68b7304901400290e60aa3de8515fbfa8f2f617492d  ./gradle.prope
 8e9a143da05745224225fa8c815e990a9759efff3d22f34f1d9fc2187358d7a2  ./remote-runner/server.py
 a1453a88e5bc19e7b20a521b56d36acbaec90fc742b79fb49fca11b7ddda73af  ./remote-runner/tests/test_runner.py
 19280c23fb304e503d1037eb423b17d0a14dd2a6fbb3e916574f4c5be17dfebf  ./settings.gradle
-87262408a62b975960fc4c4384a17fb0608472757be1ae211693c61d4dad716a  ./tools/verify_source.py
+76d7fee0286547aeec2dff9343cc1bfadf74fc873e18cb6b6cab0f72c9f91f9b  ./tools/verify_source.py
 3392f9c80ec7282b8f3dde3c2ae9d08a102ceecb898e77ef0913b57518265b7d  ./core/src/main/kotlin/app/memo/android/data/LocalWorkArtifactCoordinator.kt
 41f852ea8e88e28c22a8bbe6277dc4513ee2bcff2e62254099949ff60a29778c  ./core/src/test/kotlin/app/memo/android/data/LocalWorkArtifactCoordinatorTest.kt
 11ef9d881f771b1d43227af2089c418d46e1b2e3c9009e11d42065bb1a07f12e  ./docs/checkpoints/2026-11-11-vercel-android-build.md

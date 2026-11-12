@@ -114,3 +114,16 @@
 - The same no-step failure pattern is visible on recent PR runs and a push to `main` (run #507), which makes a PR base-branch guard or this test patch an unlikely cause. The workflow script itself did not execute, so no ZIP validation or Gradle failure has been demonstrated.
 - Environment check: no `/testbed` or Memo checkout exists in the execution container; no Gradle executable or Android SDK is installed; outbound DNS/network access to GitHub is unavailable, so a local clone/build could not be established.
 - **Conclusion:** verification is blocked before runner execution, not failed by a demonstrated source defect. Do not edit the workflow or application code to guess at an infrastructure error. Resume when a functioning GitHub Actions runner/service or an approved local CI environment is available.
+
+## Follow-up — Vercel build-path investigation (12 November 2026, 14:16 Europe/Warsaw)
+
+- Used the repository's existing scripts/vercel-build-apk.sh path against the stabilization branch. Vercel successfully cloned the source, installed checksum-verified Temurin JDK 17, installed Android platform 35 and Build Tools 35.0.0, and reached tools/verify_source.py. Gradle did not start.
+- Build dpl_D7crCSwGU6ybcPWeM4NYJAZx2DFm at ffd738a found the source verifier still expected NEEDS_REVIEW and WAITING_FOR_USER literals inside the UI callback even though the current implementation correctly owns these transitions in LocalWorkArtifactCoordinator. The verifier now checks the coordinator and checks the duration-bearing timeout exception plus all five regression cases.
+- Build dpl_7XpJxFes4q85xNAkF5t47JBxruxD at 888d541 found an obsolete Continue in Talk literal assertion; the current composer uses Start with Memo and the initial-prompt callback. The verifier now checks onInitialPromptConsumed.
+- Build dpl_EaAFvbgqFqAmVA6dYY9WJUvDJq6C at eb255f5 passed the static UI scan (421/421 strings) after adding six Polish/Turkish translations for Work retry and Stop-generation states. It then found one obsolete test-name assertion in the attempt-journal verifier. That assertion now targets the actual startsAndRecordsAUserReportedCheckpointWithoutClaimingRuntimeVerification test.
+- Added a focused localization regression test for the six new EN/PL/TR UI strings. The latest source head is 3e11e4ee95ba1c057e4f5613d4c0a402a1fef152; the latest verifier/test changes have not yet run on that exact head.
+- A manual Vercel deployment request for the exact head was rejected with HTTP 402, resource api-deployments-free-per-day, 100 deployments/day, retry-after 86,400 seconds. GitHub Actions continues to fail before runner assignment with no steps/logs. No Gradle tests, lint, APK, signing, emulator or physical-device result is claimed.
+
+## Revised next action
+
+- Wait for Vercel's deployment quota reset or a functioning GitHub-hosted runner, then run the exact current branch head through the full Android gate. Avoid more intermediate deployments; the next build must target the latest branch head and produce the APK plus build information and checksums.
