@@ -41,7 +41,6 @@ object LocalWorkArtifactCoordinator {
             evidence = "evidence:${evidence.id}; model:$modelId",
             updatedAt = now
         )
-        val attempts = WorkflowAttemptJournal.failed(snapshot.workflowAttempts, jobId, stepId, detail, now)
         val updatedJob = job.copy(
             status = "WAITING_FOR_USER",
             steps = job.steps.map { if (it.id == stepId) updatedStep else it },
@@ -76,6 +75,7 @@ object LocalWorkArtifactCoordinator {
         require(job.steps.any { it.id == stepId && it.status == "RUNNING" }) {
             "This checkpoint is no longer active."
         }
+        val attempts = WorkflowAttemptJournal.failed(snapshot.workflowAttempts, jobId, stepId, detail, now)
         val updatedJob = job.copy(
             status = "WAITING_FOR_USER",
             steps = job.steps.map { step ->
