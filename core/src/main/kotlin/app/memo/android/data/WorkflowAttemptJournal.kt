@@ -193,7 +193,7 @@ object WorkflowAttemptJournal {
                     attempt.capabilityIds.all { it.matches(Regex("[a-z0-9._-]{1,120}")) }) {
                     "Workflow attempt capabilities are invalid."
                 }
-                require(attempt.status in statuses && attempt.startedAt > 0L && attempt.startedAt >= previousStart &&
+                require(attempt.status in statuses && attempt.startedAt > 0L &&
                     attempt.finishedAt >= 0L && attempt.detail.length <= 2_000 &&
                     attempt.userOutcome.length <= 2_000 && attempt.evidenceId.length <= 128) {
                     "Workflow attempt fields are invalid."
