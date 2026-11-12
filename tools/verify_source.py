@@ -17,8 +17,11 @@ REQUIRED = [
     "build.gradle",
     "core/build.gradle",
     "core/src/main/kotlin/app/memo/android/data/Models.kt",
+    "core/src/main/kotlin/app/memo/android/data/WorkflowAttemptJournal.kt",
     "core/src/main/kotlin/app/memo/android/data/LocalWorkArtifactCoordinator.kt",
     "core/src/test/kotlin/app/memo/android/data/LocalWorkArtifactCoordinatorTest.kt",
+    "core/src/test/kotlin/app/memo/android/data/WorkspaceSchemaV3Test.kt",
+    "core/src/test/kotlin/app/memo/android/orchestration/WorkflowCheckpointCoordinatorTest.kt",
     "core/src/main/kotlin/app/memo/android/data/ActionApprovalLedger.kt",
     "core/src/main/kotlin/app/memo/android/data/LiveTimelineProjector.kt",
     "core/src/main/kotlin/app/memo/android/data/WorkArtifactFactory.kt",
@@ -401,7 +404,31 @@ if "WorkflowCheckpointCoordinator.start(" not in workspace_view_model or "Workfl
     fail("Work does not persist checkpoint transitions through the workflow coordinator")
 if "dependencyReadyStepIds" not in work_screen:
     fail("Work UI does not expose dependency-ready workflow checkpoints")
-print("PASS: workflow checkpoints are dependency-aware, runtime-revalidated, persisted, external-effect-gated and legacy-compatible")
+attempt_journal = (ROOT / "core/src/main/kotlin/app/memo/android/data/WorkflowAttemptJournal.kt").read_text()
+workspace_models = (ROOT / "core/src/main/kotlin/app/memo/android/data/Models.kt").read_text()
+live_projector = (ROOT / "core/src/main/kotlin/app/memo/android/data/LiveTimelineProjector.kt").read_text()
+for marker in ("fun create(", "fun outputSaved(", "fun failed(", "fun recover(", "fun validate(", "MAX_ATTEMPTS_PER_STEP = 4", "legacyIdempotencyKey"):
+    if marker not in attempt_journal:
+        fail(f"workflow attempt journal is missing a lifecycle or integrity guard: {marker}")
+for marker in ("WorkflowAttemptJournal.create(", "workflowAttempts = snapshot.workflowAttempts + attempt"):
+    if marker not in checkpoint_source:
+        fail(f"checkpoint start does not persist its attempt atomically: {marker}")
+for marker in ("WorkflowAttemptJournal.outputSaved(", "WorkflowAttemptJournal.failed("):
+    if marker not in local_artifact_coordinator:
+        fail(f"local Work transition does not close its durable attempt: {marker}")
+for marker in ('"schemaVersion", 7', '"workflowAttempts"', "WorkflowAttemptJournal.validate(this)", "WorkflowAttemptJournal.recover("):
+    if marker not in workspace_models:
+        fail(f"workspace schema does not persist, validate or recover workflow attempts: {marker}")
+for marker in ("ATTEMPT(", "snapshot.workflowAttempts.forEach"):
+    if marker not in live_projector:
+        fail(f"Live timeline does not project durable workflow attempts: {marker}")
+for marker in ("manualRetriesKeepOneIdempotencyIdentityAndStopAtFourAttempts", "refusesToStartAChildBeforeItsDependenciesAreComplete"):
+    if marker not in checkpoint_tests:
+        fail(f"workflow attempt safety regression coverage is missing: {marker}")
+for marker in ("OUTPUT_SAVED", "FAILED", "refusesToAttachAnArtifactToAStaleCheckpoint"):
+    if marker not in local_artifact_tests:
+        fail(f"local Work attempt lifecycle regression coverage is missing: {marker}")
+print("PASS: workflow checkpoints are dependency-aware, runtime-revalidated, attempt-journaled, external-effect-gated and legacy-compatible")
 
 print("PASS: typed TaskSpec proposals compile into bounded DAGs with exact-runtime capability resolution and fail-closed validation")
 
