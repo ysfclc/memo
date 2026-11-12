@@ -119,3 +119,11 @@ The journal, schema-7 persistence, lifecycle integration and regression tests ar
 - **Regression coverage:** `app/src/test/java/app/memo/android/ai/LocalModelRunnerPolicyTest.kt` checks the configured deadline and distinct timeout error. `tools/verify_source.py` guards the timeout and cancellation contract.
 - **Verification:** GitHub source was re-fetched after writes and the runner structure inspected. No full Gradle compile/test, lint, APK or device check is claimed. The timeout is cooperative; native calls that do not yield cannot be forcibly stopped by coroutine cancellation.
 - **Next:** verify on an Android runner/device; measure cancel/timeout latency on CPU and GPU; then connect a visible per-Work cancel control to the exact active inference job and preserve partial output as review-only evidence.
+
+
+## Work cancellation control — 12 November 2026
+
+- `WorkWorkspaceScreen` now displays an in-context Stop generation control while a Work checkpoint is actively running. It invokes `AiRuntimeViewModel.cancelRun()`, which cancels the current coroutine and reaches `LocalModelRunner`'s conversation cancellation handler.
+- The live panel shows only the last 2,000 characters of partial response. It explicitly states that stopping leaves the checkpoint in review and does not save partial text as a completed artifact. The existing Work failure callback journals the attempt as failed/review-required.
+- `tools/verify_source.py` now checks the visible stop control and partial-output warning.
+- **Not yet verified:** Android compilation, Compose rendering, coroutine cancellation latency, and device-level LiteRT behavior. Latest GitHub Actions run failed in the preflight job before a runner was assigned; no tests ran.
