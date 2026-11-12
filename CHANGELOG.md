@@ -129,3 +129,8 @@ Retained from the integrated source branch: visible browser-based frontier consu
 
 - Notification delivery now checks Android 13+ `POST_NOTIFICATIONS` runtime permission immediately before posting and safely ignores a permission-revocation race. The existing user-initiated permission request flow remains unchanged.
 - This repairs the sole blocking lint error reported by CI run #74; the non-blocking warning/hint backlog remains open pending separate review.
+
+
+## 2026-11-12 — Local inference safety
+
+- Added a 180-second local inference deadline and a distinct timeout failure, with cancellation propagated to the LiteRT conversation. Partial output is not promoted to a completed response. Full Android verification and device cancellation timing remain pending.
