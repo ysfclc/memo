@@ -144,3 +144,16 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 
 
 2026-11-11 — Vercel build diagnosis corrected: the failed deployment ran the pre-fix commit and actually failed when Python urllib fetched Google's Android SDK repository manifest (HTTP 403), before SDK installation. Added explicit browser-compatible User-Agent and XML Accept headers to that manifest request. Updated checkpoint; awaiting an exact-head Vercel build to validate the change. No APK produced or claimed.
+
+
+### 2026-11-12 — Durable workflow attempt journal
+
+- **Requirements:** MEMO-ORCH-001, MEMO-LIVE-001, MEMO-SECURITY-001; tasks M3.8.A7 and M4.L4.
+- Added `WorkflowAttemptRecord` and a pure `WorkflowAttemptJournal` state machine. Each attempt records job/step, attempt number, stable idempotency key, exact runtime/capability manifest, start/finish timestamps, result state, evidence reference and a separate user-reported outcome.
+- Workspace backup format is now schema 7. Schema 1–6 backups remain importable; schema 7 requires a bounded, strictly parsed attempt array. Serialization/import validation rejects duplicate IDs, malformed sequences, missing job/step/evidence references, changed TaskSpec bindings and attempts attached to approval-gated/external nodes.
+- Checkpoint start appends the attempt in the same immutable snapshot as the RUNNING job/step transition. Local output save closes it as OUTPUT_SAVED in the same snapshot as evidence and NEEDS_REVIEW; model failure closes it as FAILED. Process recovery closes RUNNING attempts as INTERRUPTED and leaves the checkpoint for human review.
+- User-reported outcomes are retained separately from model output. Manual retries preserve the node idempotency identity and stop after four attempts. This is not automatic retry or external side-effect replay.
+- Live now projects attempt state and runtime/capability references without rendering private model prompt/output payloads.
+- Regression tests were added/updated for start binding, retry ceiling, output/failure closure, process-death recovery, schema-7 round trip, schema-6 migration, tamper rejection and Live projection.
+- **Validation:** source and test changes are committed; exact-head Gradle/JVM/lint/build verification remains pending because GitHub Actions PR preflight failed before downstream jobs and the log artifact endpoint returned BlobNotFound. No local checkout, Gradle distribution or Android SDK is mounted. No APK/device acceptance is claimed.
+- **Boundary:** local-model and user-reported checkpoint lifecycles only. Browser/native/deterministic runtime adapters, typed runtime receipts, shared budgets/timeouts, cancellation propagation, pause/resume/takeover and independently observed postconditions remain open. PR #8 remains draft; main and Memo 2 are untouched.
