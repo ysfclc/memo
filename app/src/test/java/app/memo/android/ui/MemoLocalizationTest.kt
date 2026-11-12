@@ -75,6 +75,24 @@ class MemoLocalizationTest {
     }
 
     @Test
+    fun localWorkRetryAndStopControlsTranslateInPolishAndTurkish() {
+        val keys = listOf(
+            "Four attempts recorded. Review the evidence or create a fresh plan; Memo will not replay this checkpoint.",
+            "Four attempts recorded. Review the saved versions or create a fresh plan; Memo will not replay this checkpoint.",
+            "Generate another draft",
+            "Local work generation is running",
+            "Stop generation",
+            "Stopping keeps the checkpoint in review. Any partial text is not saved as a completed artifact."
+        )
+        keys.forEach { key ->
+            assertTrue("Polish translation missing for: $key", MemoLocalization.translate(key, "PL") != key)
+            assertTrue("Turkish translation missing for: $key", MemoLocalization.translate(key, "TR") != key)
+        }
+        assertEquals("Utwórz kolejny szkic", MemoLocalization.translate("Generate another draft", "PL"))
+        assertEquals("Bir taslak daha oluştur", MemoLocalization.translate("Generate another draft", "TR"))
+    }
+
+    @Test
     fun unsupportedLanguageFallsBackToOriginalText() {
         assertEquals("Settings", MemoLocalization.translate("Settings", "XX"))
     }
