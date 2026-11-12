@@ -181,7 +181,10 @@ object WorkflowAttemptJournal {
                 "Workflow attempts for one checkpoint must keep the same idempotency identity."
             }
             var previousTerminalAt = 0L
-            ordered.forEach { attempt ->
+            ordered.forEachIndexed { index, attempt ->
+                require(attempt.status != "RUNNING" || index == ordered.lastIndex) {
+                    "A running attempt must be the final attempt for its checkpoint."
+                }
                 require(attempt.startedAt >= previousTerminalAt) {
                     "Workflow attempts for one checkpoint overlap or are out of chronological order."
                 }
