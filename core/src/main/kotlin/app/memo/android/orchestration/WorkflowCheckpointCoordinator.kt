@@ -2,6 +2,7 @@ package app.memo.android.orchestration
 
 import app.memo.android.data.ActivityRecord
 import app.memo.android.data.AppSnapshot
+import app.memo.android.data.WorkflowAttemptJournal
 import app.memo.android.runtime.RuntimeDescriptor
 
 /**
@@ -31,6 +32,9 @@ object WorkflowCheckpointCoordinator {
         }
 
         val graph = job.workflowGraphJson.takeIf { it.isNotBlank() }?.let { WorkflowGraph.fromJson(it) }
+        var attemptRuntimeId = job.runtimeId.ifBlank { "app.jobs" }
+        var attemptCapabilities = emptyList<String>()
+        var attemptIdempotencyKey = WorkflowAttemptJournal.legacyIdempotencyKey(jobId, stepId)
         if (graph == null) {
             require(!step.requiresApproval && step.checkpointKind != "EXTERNAL_ACTION") {
                 "This checkpoint requires the dedicated exact-content action approval flow."
@@ -42,6 +46,9 @@ object WorkflowCheckpointCoordinator {
         } else {
             val node = graph.nodes.firstOrNull { it.id == stepId }
                 ?: error("This checkpoint is not part of the saved workflow graph.")
+            attemptRuntimeId = node.runtimeId
+            attemptCapabilities = node.requiredCapabilities
+            attemptIdempotencyKey = node.idempotencyKey
             require(job.steps.map { it.id }.toSet() == graph.nodes.map { it.id }.toSet() &&
                 job.steps.size == graph.nodes.size) {
                 "The saved checkpoints do not match the workflow graph. Review or rebuild this plan."
@@ -80,6 +87,15 @@ object WorkflowCheckpointCoordinator {
             detail = (step.detail.take(1_700) + "\n\nStarted from Work at $now. Record an observed outcome before continuing.").take(2_000),
             updatedAt = now
         )
+        val attempt = WorkflowAttemptJournal.create(
+            snapshot = snapshot,
+            jobId = jobId,
+            stepId = stepId,
+            runtimeId = attemptRuntimeId,
+            capabilityIds = attemptCapabilities,
+            idempotencyKey = attemptIdempotencyKey,
+            now = now
+        )
         val updatedJob = job.copy(
             status = "RUNNING",
             steps = job.steps.map { if (it.id == stepId) updatedStep else it },
@@ -88,7 +104,8 @@ object WorkflowCheckpointCoordinator {
         )
         snapshot.copy(
             jobs = snapshot.jobs.map { if (it.id == jobId) updatedJob else it },
-            activity = (listOf(ActivityRecord(at = now, message = "Started workflow checkpoint: ${step.title}", taskId = jobId)) + snapshot.activity).take(500)
+            activity = (listOf(ActivityRecord(at = now, message = "Started workflow checkpoint: ${step.title} (attempt ${attempt.attemptNumber})", taskId = jobId)) + snapshot.activity).take(500),
+            workflowAttempts = snapshot.workflowAttempts + attempt
         )
     }
 
@@ -152,9 +169,12 @@ object WorkflowCheckpointCoordinator {
             else "Checkpoint outcome recorded by the user. Dependency-ready work can continue.",
             updatedAt = now
         )
-        snapshot.copy(
+        val updated = snapshot.copy(
             jobs = snapshot.jobs.map { if (it.id == jobId) updatedJob else it },
             activity = (listOf(ActivityRecord(at = now, message = "User recorded checkpoint outcome: ${step.title}", taskId = jobId)) + snapshot.activity).take(500)
         )
+        updated.copy(workflowAttempts = WorkflowAttemptJournal.recordUserOutcome(
+            updated.workflowAttempts, jobId, stepId, clean, now
+        ))
     }
 }
