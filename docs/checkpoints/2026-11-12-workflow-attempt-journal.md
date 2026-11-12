@@ -89,3 +89,11 @@ The journal, schema-7 persistence, lifecycle integration and regression tests ar
 - Preflight job #130913889225 failed in approximately two seconds with `runner_id: 0`, empty runner name and an empty step list. The log download endpoint returned Azure `BlobNotFound`.
 - Build, Gradle tests, lint and APK assembly were skipped. This is a runner/preflight execution failure; it provides no Kotlin compile or test result.
 - Subsequent commits added a regression test that prevents a user-reported completion from racing an active local-model inference, clarified lifecycle comments and strengthened source-verifier assertions. Those newer commits still need exact-head CI.
+
+## Latest verification — exact-head run #462
+
+- Commit: `e7948ab0fd1a57c2064860f3eea9731815d1f909`.
+- Run: https://github.com/ysfclc/memo/actions/runs/43138553360
+- The incoming ZIP preflight job ended with failure, `runner_id: 0`, no runner name and zero steps. The remaining validation/build/signing jobs were skipped. The job-log endpoint did not provide a diagnostic.
+- A separate local `kotlinc` harness for the attempt journal passed state-transition smoke checks (start, failure, retry identity, user outcome, recovery and validation). It used lightweight dependency stubs; it does not verify the full Android/core source tree.
+- Full Gradle JVM tests, source verifier, lint, APK assembly/signing and device acceptance remain unverified.
