@@ -1,5 +1,11 @@
 # Changelog
 
+## 12 November 2026 — CI preflight retry investigation
+
+- Inspected the source-only pull-request branch in `.github/workflows/build-apk.yml`; PR #8 targets `main` as required.
+- Re-ran the exact-head preflight job (run #525, attempt 2). Both attempts failed before any job steps or runner assignment; GitHub returned no job log (`BlobNotFound`), and all build/test/sign jobs were skipped.
+- No application or workflow code was changed in response because the workflow script did not execute. Android tests, lint and APK build remain unverified pending a functioning runner.
+
 ## 12 November 2026 — Local inference timeout regression coverage
 
 - Corrected the timeout policy test to use the required duration-bearing exception constructor.
