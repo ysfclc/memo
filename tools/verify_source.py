@@ -150,8 +150,9 @@ for marker in ('"requiresHumanReview"', '"local-model-draft"'):
     if marker not in local_run:
         fail(f"local-model Work execution is missing its review-required artifact metadata: {marker}")
 # Review statuses are owned by the pure-core transition coordinator, not duplicated in UI callback code.
+review_coordinator_source = (ROOT / "core/src/main/kotlin/app/memo/android/data/LocalWorkArtifactCoordinator.kt").read_text()
 for marker in ('status = "NEEDS_REVIEW"', 'status = "WAITING_FOR_USER"', 'WorkflowAttemptJournal.outputSaved(', 'WorkflowAttemptJournal.failed('):
-    if marker not in local_artifact_coordinator:
+    if marker not in review_coordinator_source:
         fail(f"local Work transition coordinator is missing its review/failure lifecycle: {marker}")
 if "executionSnapshot.evidence" not in local_run:
     fail("local-model Work execution does not build context from the post-start workspace snapshot")
