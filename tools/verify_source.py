@@ -181,8 +181,9 @@ for marker in ("data class WorkflowRuntimeReceipt", "outputSha256", "postconditi
 for marker in ("WorkflowRuntimeReceipt.create(", "WorkflowRuntimeReceipt.attach(", "receipt.validateAgainst("):
     if marker not in local_artifact_coordinator:
         fail(f"local Work output is not bound to a typed runtime receipt: {marker}")
+journal_receipt_source = (ROOT / "core/src/main/kotlin/app/memo/android/data/WorkflowAttemptJournal.kt").read_text()
 for marker in ("WorkflowRuntimeReceipt.DETAIL_MARKER", "receiptMarker == receiptMetadata", "receipt.validateAgainst(attempt, item)"):
-    if marker not in attempt_journal:
+    if marker not in journal_receipt_source:
         fail(f"workflow journal does not enforce durable runtime receipt integrity: {marker}")
 
 approval_inbox = (ROOT / "app/src/main/java/app/memo/android/ui/ActionApprovalInboxScreen.kt").read_text()
