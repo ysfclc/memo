@@ -58,6 +58,8 @@ object WorkflowAttemptJournal {
         require(job.steps.any { it.id == stepId }) { "This checkpoint no longer exists." }
         val previous = snapshot.workflowAttempts.filter { it.jobId == jobId && it.stepId == stepId }
         require(previous.none { it.status == "RUNNING" }) { "This checkpoint already has a running attempt." }
+        val previousTerminalAt = previous.maxOfOrNull { maxOf(it.startedAt, it.finishedAt, it.userOutcomeAt) } ?: 0L
+        require(now >= previousTerminalAt) { "Attempt start time precedes the previous attempt's recorded outcome." }
         require(previous.size < MAX_ATTEMPTS_PER_STEP) {
             "This checkpoint has reached its four-attempt safety limit. Create a reviewed new plan instead of replaying it."
         }
@@ -178,8 +180,11 @@ object WorkflowAttemptJournal {
             require(ordered.map { it.idempotencyKey }.distinct().size == 1) {
                 "Workflow attempts for one checkpoint must keep the same idempotency identity."
             }
-            var previousStart = 0L
+            var previousTerminalAt = 0L
             ordered.forEach { attempt ->
+                require(attempt.startedAt >= previousTerminalAt) {
+                    "Workflow attempts for one checkpoint overlap or are out of chronological order."
+                }
                 require(attempt.id.isNotBlank() && attempt.id.length <= 128 &&
                     attempt.jobId == jobId && attempt.stepId == stepId) { "Workflow attempt identity is invalid." }
                 require(attempt.idempotencyKey.matches(Regex("[0-9a-f]{64}"))) { "Workflow attempt idempotency key is invalid." }
@@ -193,7 +198,6 @@ object WorkflowAttemptJournal {
                     attempt.userOutcome.length <= 2_000 && attempt.evidenceId.length <= 128) {
                     "Workflow attempt fields are invalid."
                 }
-                previousStart = attempt.startedAt
                 if (attempt.status == "RUNNING") {
                     require(attempt.finishedAt == 0L && attempt.evidenceId.isBlank() &&
                         attempt.userOutcome.isBlank() && attempt.userOutcomeAt == 0L &&
@@ -228,6 +232,7 @@ object WorkflowAttemptJournal {
                         "A user-reported outcome timestamp is invalid."
                     }
                 }
+                previousTerminalAt = maxOf(attempt.startedAt, attempt.finishedAt, attempt.userOutcomeAt)
                 if (attempt.status == "USER_REPORTED") {
                     require(step.status == "COMPLETED") { "A user-reported attempt must belong to a completed checkpoint." }
                 }
