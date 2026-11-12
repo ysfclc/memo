@@ -7,16 +7,25 @@ import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import java.io.File
 import java.util.concurrent.Executors
 
+/** Raised only after the bounded inference scope has cancelled its LiteRT conversation. */
+class LocalInferenceTimeoutException : Exception("Local model inference timed out after 180 seconds. The partial response was not saved as a completed result.")
+
 /** One single-thread owner serializes all LiteRT engine operations and prevents overlapping use of model memory. */
 class LocalModelRunner(private val cacheDir: File) {
+    companion object {
+        /** A single local inference, including model initialization, must not occupy the engine indefinitely. */
+        const val INFERENCE_TIMEOUT_MS = 180_000L
+    }
     private val executor = Executors.newSingleThreadExecutor { runnable -> Thread(runnable, "synthos-litert") }
     private val dispatcher = executor.asCoroutineDispatcher()
     private val mutex = Mutex()
@@ -24,8 +33,10 @@ class LocalModelRunner(private val cacheDir: File) {
     private var loadedPath: String? = null
     private var usingGpu: Boolean = false
 
-    suspend fun generate(modelFile: File, system: String, prompt: String, onChunk: (String) -> Unit = {}): String = mutex.withLock {
-        withContext(dispatcher) {
+    suspend fun generate(modelFile: File, system: String, prompt: String, onChunk: (String) -> Unit = {}): String = try {
+        withTimeout(INFERENCE_TIMEOUT_MS) {
+            mutex.withLock {
+                withContext(dispatcher) {
             val path = modelFile.absolutePath
             if (loadedPath != path || engine == null) loadEngine(path)
 
@@ -68,8 +79,11 @@ class LocalModelRunner(private val cacheDir: File) {
                 loadedPath = path
                 usingGpu = false
                 runConversation()
+                }
             }
         }
+    } catch (timeout: TimeoutCancellationException) {
+        throw LocalInferenceTimeoutException()
     }
 
     private fun loadEngine(path: String) {
