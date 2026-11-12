@@ -52,6 +52,24 @@ class ModelCatalogTest {
         assertEquals(true, cancelled)
     }
 
+
+    @Test fun userCancellationIsNotReclassifiedAsAnInferenceTimeout() = kotlinx.coroutines.runBlocking {
+        val cancelled = kotlinx.coroutines.CompletableDeferred<Boolean>(false)
+        val job = kotlinx.coroutines.launch {
+            try {
+                withLocalInferenceTimeout(5_000L) {
+                    kotlinx.coroutines.awaitCancellation()
+                }
+            } finally {
+                cancelled.complete(true)
+            }
+        }
+        kotlinx.coroutines.delay(10L)
+        job.cancel()
+        job.join()
+        assertEquals(true, cancelled.await())
+    }
+
     @Test fun localInferenceTimeoutWrapperReturnsSuccessfulResult() = kotlinx.coroutines.runBlocking {
         assertEquals("complete", withLocalInferenceTimeout(1_000L) {
             kotlinx.coroutines.delay(1L)
