@@ -18,7 +18,14 @@ import java.io.File
 import java.util.concurrent.Executors
 
 /** Raised only after the bounded inference scope has cancelled its LiteRT conversation. */
-class LocalInferenceTimeoutException : Exception("Local model inference timed out after 180 seconds. The partial response was not saved as a completed result.")
+class LocalInferenceTimeoutException(timeoutMs: Long) : Exception("Local model inference timed out after ${timeoutMs / 1_000} seconds. The partial response was not saved as a completed result.")
+
+/** Shared timeout boundary so the cancellation-to-timeout mapping is independently testable. */
+internal suspend fun <T> withLocalInferenceTimeout(timeoutMs: Long, block: suspend () -> T): T = try {
+    withTimeout(timeoutMs, block)
+} catch (timeout: TimeoutCancellationException) {
+    throw LocalInferenceTimeoutException(timeoutMs)
+}
 
 /** One single-thread owner serializes all LiteRT engine operations and prevents overlapping use of model memory. */
 class LocalModelRunner(private val cacheDir: File) {
@@ -33,8 +40,8 @@ class LocalModelRunner(private val cacheDir: File) {
     private var loadedPath: String? = null
     private var usingGpu: Boolean = false
 
-    suspend fun generate(modelFile: File, system: String, prompt: String, onChunk: (String) -> Unit = {}): String = try {
-        withTimeout(INFERENCE_TIMEOUT_MS) {
+    suspend fun generate(modelFile: File, system: String, prompt: String, onChunk: (String) -> Unit = {}): String =
+        withLocalInferenceTimeout(INFERENCE_TIMEOUT_MS) {
             mutex.withLock {
                 withContext(dispatcher) {
                     val path = modelFile.absolutePath
@@ -83,9 +90,6 @@ class LocalModelRunner(private val cacheDir: File) {
                 }
             }
         }
-    } catch (timeout: TimeoutCancellationException) {
-        throw LocalInferenceTimeoutException()
-    }
 
     private fun loadEngine(path: String) {
         releaseEngine()
