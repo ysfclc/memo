@@ -78,6 +78,28 @@ class BrowserWorkflowPromptsTest {
     }
 
     @Test
+    fun responseDetectionRetryIsAvailableOnlyForASentStepWaitingForRecovery() {
+        assertTrue(
+            BrowserWorkflowRecoveryPolicy.canRetryResponseDetection(
+                BrowserWorkflowStatus.WAITING_FOR_USER,
+                sentForCurrentStep = true
+            )
+        )
+        assertFalse(
+            BrowserWorkflowRecoveryPolicy.canRetryResponseDetection(
+                BrowserWorkflowStatus.WAITING_FOR_USER,
+                sentForCurrentStep = false
+            )
+        )
+        assertFalse(
+            BrowserWorkflowRecoveryPolicy.canRetryResponseDetection(
+                BrowserWorkflowStatus.WAITING_FOR_RESPONSE,
+                sentForCurrentStep = true
+            )
+        )
+    }
+
+    @Test
     fun manualCaptureRequiresSentPromptWaitingStateMatchingProviderAndUsefulText() {
         assertTrue(
             BrowserWorkflowRecoveryPolicy.canCaptureManually(

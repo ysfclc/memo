@@ -339,13 +339,29 @@ class BrowserSession(
         return null
     }
 
+    /** Re-run response detection against the current page. This action never submits a prompt. */
+    fun retryCurrentResponseDetection(): Boolean {
+        if (!BrowserWorkflowRecoveryPolicy.canRetryResponseDetection(
+                status = workflowState.status,
+                sentForCurrentStep = workflowState.sentForCurrentStep && workflowPromptSent
+            )
+        ) return false
+        val generation = workflowGeneration
+        publishWorkflowState(
+            workflowState.copy(
+                status = BrowserWorkflowStatus.WAITING_FOR_RESPONSE,
+                message = "Rechecking the current provider page for its answer. Memo will not send the prompt again."
+            )
+        )
+        pollWorkflowResponse(generation, System.currentTimeMillis() + 120_000L)
+        return true
+    }
+
     /** Resume after a login, challenge, unsupported composer, or delayed response has been handled manually. */
     fun continueBrowserWorkflow() {
         if (workflowState.status != BrowserWorkflowStatus.WAITING_FOR_USER || workflowState.awaitingPromptApproval) return
-        val generation = workflowGeneration
         if (workflowPromptSent) {
-            publishWorkflowState(workflowState.copy(status = BrowserWorkflowStatus.WAITING_FOR_RESPONSE, message = "Checking the current conversation for the answer. Memo will not resubmit the prompt."))
-            pollWorkflowResponse(generation, System.currentTimeMillis() + 120_000L)
+            retryCurrentResponseDetection()
         } else if (!workflowPromptPrepared) {
             beginWorkflowStep(generation, retryCurrentPage = true)
         } else {

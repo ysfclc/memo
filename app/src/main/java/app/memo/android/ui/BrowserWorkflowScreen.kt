@@ -802,8 +802,28 @@ fun BrowserWorkflowScreen(
                         }
                     }
                     if (workflowState.status == BrowserWorkflowStatus.WAITING_FOR_USER && !workflowState.awaitingPromptApproval) {
-                        Button(onClick = { browser.continueBrowserWorkflow() }, modifier = Modifier.fillMaxWidth().height(48.dp)) {
-                            androidx.compose.material3.Icon(Icons.Rounded.PlayArrow, null); Spacer(Modifier.width(6.dp)); Text(if (workflowState.sentForCurrentStep) "Continue checking current answer" else "Continue after manual sign-in / page setup")
+                        if (workflowState.sentForCurrentStep) {
+                            Text(
+                                "Retry checks only the current provider page. It never resends the approved prompt.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Button(
+                            onClick = {
+                                if (workflowState.sentForCurrentStep) {
+                                    if (!browser.retryCurrentResponseDetection()) {
+                                        onShowMessage("Memo cannot safely retry detection in the current state. The prompt was not resent.")
+                                    }
+                                } else {
+                                    browser.continueBrowserWorkflow()
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth().height(48.dp)
+                        ) {
+                            androidx.compose.material3.Icon(Icons.Rounded.PlayArrow, null)
+                            Spacer(Modifier.width(6.dp))
+                            Text(if (workflowState.sentForCurrentStep) "Retry answer detection · no resend" else "Continue after manual sign-in / page setup")
                         }
                     }
                     if (workflowState.isActive) {

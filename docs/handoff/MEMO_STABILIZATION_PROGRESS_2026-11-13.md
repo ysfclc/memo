@@ -63,3 +63,20 @@
 2. Continue WF-02: make retry detection an explicit capture-only action and prove it cannot invoke the send script.
 3. Implement WF-03 step-level Skip/Stop semantics without changing whole-run cancellation or deleting prior evidence.
 4. Keep reporting source status separately from test/device verification.
+
+
+## Update 2 — WF-02 explicit detection retry
+
+**Source increment:** committed in this update; WF-02 remains open pending execution evidence.
+
+- Added a separate `retryCurrentResponseDetection()` action. It is allowed only when the workflow is waiting for user recovery and the current provider step is known to have been sent.
+- The method changes the state to response checking and invokes only `pollWorkflowResponse`. It does not call prompt preparation, approval, or the provider send script.
+- The previous general Continue path now delegates its already-sent branch to the same capture-only retry method.
+- The UI now labels the control **“Retry answer detection · no resend”** and explains that it checks only the current provider page.
+- Added pure policy tests for valid and invalid retry states.
+- Extended `tools/verify_source.py` to assert that retry polls only and contains no send-script call; it also checks that the UI exposes the distinct action.
+- Updated `TASKS.md` and the source checksum manifest for the changed tracked files.
+
+**Verification status:** source/read-back checks only. The policy tests, source verifier, Gradle tests, lint and APK build have not run. WF-02 is not marked complete.
+
+**Next:** WF-03 — implement distinct Skip provider / Stop current step / Cancel entire run semantics while preserving captured outputs.

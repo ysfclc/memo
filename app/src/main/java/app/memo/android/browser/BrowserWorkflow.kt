@@ -47,6 +47,11 @@ object BrowserWorkflowRecoveryPolicy {
         sentForCurrentStep &&
         providerPageMatches &&
         responseText.trim().length >= MIN_MANUAL_RESPONSE_LENGTH
+
+    fun canRetryResponseDetection(
+        status: BrowserWorkflowStatus,
+        sentForCurrentStep: Boolean
+    ): Boolean = status == BrowserWorkflowStatus.WAITING_FOR_USER && sentForCurrentStep
 }
 
 data class BrowserModelResponse(
