@@ -7,10 +7,18 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class LocalModelRunnerPolicyTest {
+    @Test
+    fun gpuFallbackDoesNotReplayAfterPartialOutput() {
+        assertTrue(shouldRetryOnCpuAfterGpuFailure(usingGpu = true, emittedAnyText = false))
+        assertFalse(shouldRetryOnCpuAfterGpuFailure(usingGpu = true, emittedAnyText = true))
+        assertFalse(shouldRetryOnCpuAfterGpuFailure(usingGpu = false, emittedAnyText = false))
+    }
+
     @Test
     fun localInferenceHasABoundedThreeMinuteDeadline() {
         assertEquals(180_000L, LocalModelRunner.INFERENCE_TIMEOUT_MS)

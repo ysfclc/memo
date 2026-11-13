@@ -27,6 +27,10 @@ internal suspend fun <T> withLocalInferenceTimeout(timeoutMs: Long, block: suspe
     throw LocalInferenceTimeoutException(timeoutMs)
 }
 
+/** A failed GPU request may be replayed only before any text has reached the caller. */
+internal fun shouldRetryOnCpuAfterGpuFailure(usingGpu: Boolean, emittedAnyText: Boolean): Boolean =
+    usingGpu && !emittedAnyText
+
 /** One single-thread owner serializes all LiteRT engine operations and prevents overlapping use of model memory. */
 class LocalModelRunner(private val cacheDir: File) {
     companion object {
@@ -44,6 +48,7 @@ class LocalModelRunner(private val cacheDir: File) {
         withLocalInferenceTimeout(INFERENCE_TIMEOUT_MS) {
             mutex.withLock {
                 withContext(dispatcher) {
+                    var emittedAnyText = false
                     val path = modelFile.absolutePath
                     if (loadedPath != path || engine == null) loadEngine(path)
 
@@ -59,6 +64,7 @@ class LocalModelRunner(private val cacheDir: File) {
                                     val bounded = chunk.toString().take(24_000 - response.length)
                                     if (bounded.isNotEmpty()) {
                                         response.append(bounded)
+                                        if (bounded.isNotBlank()) emittedAnyText = true
                                         onChunk(bounded)
                                     }
                                 }
@@ -77,8 +83,13 @@ class LocalModelRunner(private val cacheDir: File) {
                     } catch (cancelled: CancellationException) {
                         throw cancelled
                     } catch (gpuError: Exception) {
-                        // Some phones let the GPU engine initialize but cannot execute its first graph. Retry once on CPU.
-                        if (!usingGpu) throw gpuError
+                        if (!shouldRetryOnCpuAfterGpuFailure(usingGpu, emittedAnyText)) {
+                            // Do not replay a request after its partial output has already reached the UI.
+                            if (usingGpu && emittedAnyText) releaseEngine()
+                            throw gpuError
+                        }
+                        // Some phones let the GPU engine initialize but cannot execute its first graph.
+                        // Retry once on CPU only while the request has not emitted any visible text.
                         releaseEngine()
                         val cpu = Engine(EngineConfig(modelPath = path, backend = Backend.CPU(), cacheDir = cacheDir.absolutePath))
                         cpu.initialize()

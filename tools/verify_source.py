@@ -470,7 +470,7 @@ print(f"PASS: remote runner test suite is present ({len(runner_tests)} test modu
 
 local_model_runner = (ROOT / "app/src/main/java/app/memo/android/ai/LocalModelRunner.kt").read_text()
 local_model_runner_test = (ROOT / "app/src/test/java/app/memo/android/ai/LocalModelRunnerPolicyTest.kt").read_text()
-for marker in ("withLocalInferenceTimeout(INFERENCE_TIMEOUT_MS)", "INFERENCE_TIMEOUT_MS = 180_000L", "conversation?.cancelProcess()", "LocalInferenceTimeoutException(timeoutMs)"):
+for marker in ("withLocalInferenceTimeout(INFERENCE_TIMEOUT_MS)", "INFERENCE_TIMEOUT_MS = 180_000L", "conversation?.cancelProcess()", "LocalInferenceTimeoutException(timeoutMs)", "shouldRetryOnCpuAfterGpuFailure(usingGpu, emittedAnyText)"):
     if marker not in local_model_runner:
         fail(f"local inference timeout/cancellation contract is missing: {marker}")
 for marker in (
@@ -479,6 +479,7 @@ for marker in (
     "deadlineCancelsInFlightWorkAndReturnsTheDedicatedTimeoutFailure",
     "successfulInferenceReturnsItsCompleteResult",
     "parentCancellationIsNotConvertedIntoAnInferenceTimeout",
+    "gpuFallbackDoesNotReplayAfterPartialOutput",
     "LocalInferenceTimeoutException(LocalModelRunner.INFERENCE_TIMEOUT_MS)",
 ):
     if marker not in local_model_runner_test:
