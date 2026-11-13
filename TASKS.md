@@ -19,6 +19,8 @@ Every substantial task must reference requirement IDs and close only with eviden
 
 **Execution plan:** [Memo STOP-WORK stabilization plan](docs/handoff/MEMO_STABILIZATION_PLAN_2026-11-13.md).
 
+**Product journey acceptance:** [User-facing workflow and control audit](docs/handoff/MEMO_USER_WORKFLOW_CONTROL_AUDIT_2026-11-13.md). This records the reported prompt → enhancement → approval → browser → captured-result failure as P0/P1 acceptance requirements. No implementation is claimed.
+
 - [ ] **STAB-01 — Restore a trustworthy build executor:** diagnose GitHub Actions runner startup; recheck the existing Vercel project after its daily quota reset. Do not weaken gates or repeatedly trigger unchanged failures.
 - [ ] **STAB-02 — Verify exact candidate `99f79d9`:** run source verifier, remote-runner tests, `:core:test`, `:app:testDebugUnitTest`, `:app:lintDebug`, `:app:assembleDebug`, and `:app:assembleDebugAndroidTest`; inspect reports. The GPU fallback regression test is committed but unexecuted.
 - [ ] **STAB-03 — API 35 instrumentation:** actually execute encrypted-store upgrade/migration and recovery tests on an emulator; assembly alone does not count.

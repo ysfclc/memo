@@ -78,3 +78,13 @@ Memo is an Android-first, local-first personal AI execution environment. Talk ca
 ## 9. Open questions for the human
 
 - None blocking the next reversible core-engine increment. PR #8 remains draft; keep production deployment, signing changes, data migration and merge out of scope.
+
+
+## User-facing workflow and control audit — 13 November 2026
+
+- The prompt → enhancement → approval → browser → captured-result journey is **OPEN / NOT ACCEPTED**. See `docs/handoff/MEMO_USER_WORKFLOW_CONTROL_AUDIT_2026-11-13.md` for source findings, user-control inventory, required recovery behavior and acceptance scenarios.
+- Council currently uses installed local models plus a configured OpenAI-compatible endpoint; it does not automatically reuse browser-authenticated frontier-provider sessions. Browser workflows are a separate route/runtime.
+- Saved `BROWSER_WORKFLOW` definitions are not the same as execution history. The inspected workflow surface does not join prior runs, approvals, outputs and failures into a usable history.
+- Browser response capture depends on provider-specific DOM detection/stability polling. Persistence callbacks exist, but a visible provider answer can fail to become a Memo result if detection does not succeed; a clear manual capture/review fallback was not found in the inspected path.
+- The user reports that after send the workflow can leave only whole-run cancellation or saving as meaningful actions. Treat as a device-reproduction item; do not claim runtime reproduction from source inspection alone.
+- This is a product acceptance gap in the existing central journey, not authorization for unrelated features or redesign. Keep the STOP-WORK freeze; prioritize recovery of answers and preservation of task context when implementation is authorized.
