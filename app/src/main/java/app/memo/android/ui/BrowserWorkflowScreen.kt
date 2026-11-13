@@ -356,6 +356,13 @@ fun BrowserWorkflowScreen(
                 if (stepId != null) viewModel.updateJobStep(jobId, stepId, "RUNNING", "Submitting the user-approved exact prompt through ${provider.label}'s visible browser interface. Prior outputs are included only where the reviewed prompt shows them.", prompt.take(1_800))
             },
             onStepSkipped = { index, provider, reason ->
+                val skippedStepId = activeStepIds.getOrNull(providerStepOffset + index).orEmpty()
+                val pendingApproval = viewModel.snapshot.value.actionApprovals.firstOrNull {
+                    it.jobId == jobId && it.stepId == skippedStepId && it.status == "PENDING"
+                }
+                if (pendingApproval != null) {
+                    viewModel.rejectExternalAction(pendingApproval.id, "User skipped this provider before approving or sending its prompt.")
+                }
                 if (currentExternalActionId.isNotBlank()) {
                     viewModel.markExternalActionNeedsReview(currentExternalActionId, "Provider step was skipped while the external submission state was not fully confirmed. Inspect the provider page before any retry.")
                     currentExternalActionId = ""
@@ -859,7 +866,7 @@ fun BrowserWorkflowScreen(
                             Text(if (workflowState.sentForCurrentStep) "Retry answer detection · no resend" else "Continue after manual sign-in / page setup")
                         }
                     }
-                    if (workflowState.isActive && !workflowState.awaitingPromptApproval) {
+                    if (workflowState.isActive) {
                         if (workflowState.sentForCurrentStep || workflowState.submissionUncertain) {
                             Text("Stopping this step leaves the provider page without cancelling its remote generation. If submission is uncertain, the step remains marked for review. Captured answers stay saved.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             OutlinedButton(

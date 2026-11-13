@@ -79,10 +79,9 @@ class BrowserWorkflowPromptsTest {
 
     @Test
     fun skipAndStopPoliciesKeepDifferentScopes() {
-        assertTrue(BrowserWorkflowRecoveryPolicy.canSkipProvider(BrowserWorkflowStatus.WAITING_FOR_USER, false, false, false))
-        assertFalse(BrowserWorkflowRecoveryPolicy.canSkipProvider(BrowserWorkflowStatus.WAITING_FOR_USER, true, false, false))
-        assertFalse(BrowserWorkflowRecoveryPolicy.canSkipProvider(BrowserWorkflowStatus.WAITING_FOR_USER, false, true, false))
-        assertFalse(BrowserWorkflowRecoveryPolicy.canSkipProvider(BrowserWorkflowStatus.WAITING_FOR_USER, false, false, true))
+        assertTrue(BrowserWorkflowRecoveryPolicy.canSkipProvider(BrowserWorkflowStatus.WAITING_FOR_USER, false, false))
+        assertFalse(BrowserWorkflowRecoveryPolicy.canSkipProvider(BrowserWorkflowStatus.WAITING_FOR_USER, true, false))
+        assertFalse(BrowserWorkflowRecoveryPolicy.canSkipProvider(BrowserWorkflowStatus.WAITING_FOR_USER, false, true))
         assertTrue(BrowserWorkflowRecoveryPolicy.canStopCurrentProviderStep(BrowserWorkflowStatus.WAITING_FOR_USER, false, true, false))
         assertTrue(BrowserWorkflowRecoveryPolicy.canStopCurrentProviderStep(BrowserWorkflowStatus.WAITING_FOR_RESPONSE, false, true, false))
         assertTrue(BrowserWorkflowRecoveryPolicy.canStopCurrentProviderStep(BrowserWorkflowStatus.WAITING_FOR_USER, false, false, true))

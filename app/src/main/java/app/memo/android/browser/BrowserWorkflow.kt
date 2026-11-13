@@ -55,11 +55,10 @@ object BrowserWorkflowRecoveryPolicy {
 
     fun canSkipProvider(
         status: BrowserWorkflowStatus,
-        awaitingPromptApproval: Boolean,
         sentForCurrentStep: Boolean,
         submissionUncertain: Boolean
     ): Boolean = status == BrowserWorkflowStatus.WAITING_FOR_USER &&
-        !awaitingPromptApproval && !sentForCurrentStep && !submissionUncertain
+        !sentForCurrentStep && !submissionUncertain
 
     fun canStopCurrentProviderStep(
         status: BrowserWorkflowStatus,

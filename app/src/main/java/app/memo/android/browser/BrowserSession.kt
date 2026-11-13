@@ -361,7 +361,6 @@ class BrowserSession(
     fun skipCurrentProvider(): Boolean {
         if (disposed || !BrowserWorkflowRecoveryPolicy.canSkipProvider(
                 status = workflowState.status,
-                awaitingPromptApproval = workflowState.awaitingPromptApproval,
                 sentForCurrentStep = workflowState.sentForCurrentStep || workflowPromptSent,
                 submissionUncertain = workflowState.submissionUncertain
             )

@@ -109,3 +109,8 @@
 A source review found an important edge case: a provider send script can return without confirming a click. Memo must not label that state “not sent” and offer a normal skip. The state now records `submissionUncertain`; Skip is disabled, and the only step-level continuation is Stop this provider step, which marks the job step `NEEDS_REVIEW`. Manual send verification failures also retain uncertainty instead of automatically preparing another send. This prevents a duplicate submission from being hidden behind a “skip” label.
 
 This correction is source-only and still awaits compilation, unit tests and device verification.
+
+
+### WF-03 approval-stage skip correction
+
+The first step-level version hid Skip while the exact-prompt approval dialog was open. That would still force the user to reject-and-cancel the whole run. Skip is now available at that checkpoint: the screen rejects the matching still-PENDING approval record before marking the provider step SKIPPED and advancing. Skip remains blocked for any submitted or uncertain send; those states require Stop this provider step and leave the step in Needs Review.
