@@ -128,3 +128,11 @@ Exact-head Actions run #616 (`43366806207`) for the preceding step-recovery comm
 - `7856b1e48afaf07b570de79f9c90279e1d9d0cb2` — corrected source-verifier coverage for approval-stage skip and updated the runbook/progress.
 - `2d349f79810f13cbf2e6ada0c88870c0df6ffe79` — refreshed tracked source SHA-256 entries after the workflow changes.
 - Exact-head Actions run #621 (`43367294009`) failed in the same incoming ZIP preflight before runner assignment; no source tests, Gradle build, lint or APK steps ran.
+
+
+### Latest source review and CI result
+
+- `7d22b8a360a4ab602b75da07a77fb1ee8dabce69` adds the explicit `SkipNext` icon import and records the approval-stage skip correction.
+- Exact-head Actions run #623 (`43367418437`) failed in the incoming ZIP preflight before runner assignment. No Gradle compile, JVM test, lint or APK job ran.
+- The committed SHA-256 manifest was read back and its entries for the six changed tracked source/test/runbook files were compared against a SHA-256 implementation that passed the standard `abc` test vector. All six entries matched.
+- Source read-back confirms the manual capture action is capture-only, detection retry only polls, uncertain submission blocks Skip, pending approval is rejected before a safe Skip, and Stop-step / Cancel-run controls are distinct. These are source checks, not runtime verification.
