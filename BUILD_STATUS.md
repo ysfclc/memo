@@ -1,3 +1,18 @@
+# Current stabilization status — 13 November 2026
+
+**Status: BLOCKED / NOT VERIFIED.** Feature development is frozen. See [the STOP-WORK stabilization plan](docs/handoff/MEMO_STABILIZATION_PLAN_2026-11-13.md) for scope, bug register, exact reproduction/acceptance steps and ordered gates.
+
+- Current candidate: `99f79d975cf7276c21eb32adee6831824c3ff35b` on `stabilization/usable-stage-2026-11-10`; PR #8 remains draft and unmerged.
+- GPU fallback duplicate-stream guard and regression test are committed, but the test has not executed on this commit.
+- GitHub Actions runner startup remains blocked before steps. Vercel returns HTTP 402 for the daily deployment quota; no deployment exists for this candidate.
+- No exact-head Gradle test/lint/build evidence, API 35 instrumentation execution, pinned-signature APK or physical-device acceptance is recorded.
+- Do not install the prior ephemeral `app.memo.android.preview` APK over the existing Memo package.
+- No merge, release, production deployment, signing-key change or destructive data migration is authorized.
+
+The dated historical evidence below is retained as historical evidence only; it is not proof of the current candidate.
+
+---
+
 # Verified APK evidence — 8 November 2026
 
 - **Workflow:** [Memo Android build #223](https://github.com/ysfclc/memo/actions/runs/42530596381), run ID `42530596381`, completed successfully.

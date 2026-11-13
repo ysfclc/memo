@@ -13,6 +13,22 @@
 
 Every substantial task must reference requirement IDs and close only with evidence under the governance rules.
 
+## P0 — STOP-WORK stabilization (13 November 2026)
+
+**Feature freeze:** no new features, scope expansion, redesign, unrelated refactoring, merge, production deployment, signing change or destructive migration until the current app passes the stabilization gates. This incident supersedes feature-oriented sequencing below.
+
+**Execution plan:** [Memo STOP-WORK stabilization plan](docs/handoff/MEMO_STABILIZATION_PLAN_2026-11-13.md).
+
+- [ ] **STAB-01 — Restore a trustworthy build executor:** diagnose GitHub Actions runner startup; recheck the existing Vercel project after its daily quota reset. Do not weaken gates or repeatedly trigger unchanged failures.
+- [ ] **STAB-02 — Verify exact candidate `99f79d9`:** run source verifier, remote-runner tests, `:core:test`, `:app:testDebugUnitTest`, `:app:lintDebug`, `:app:assembleDebug`, and `:app:assembleDebugAndroidTest`; inspect reports. The GPU fallback regression test is committed but unexecuted.
+- [ ] **STAB-03 — API 35 instrumentation:** actually execute encrypted-store upgrade/migration and recovery tests on an emulator; assembly alone does not count.
+- [ ] **STAB-04 — Signing integrity:** produce a candidate with the pinned Memo signing certificate; reject ephemeral or mismatched keys.
+- [ ] **STAB-05 — Physical-device acceptance:** upgrade the existing installation without clearing data; verify launch, auth, chats, stores, inference/Stop, voice, browser approval, native automation, notifications and backup/restore. Record device and evidence.
+- [ ] **STAB-06 — Closeout:** update build/device/state records against the exact tested SHA; keep PR #8 draft and `main` untouched until all P0 gates pass and release is explicitly authorized.
+
+**Rule:** tasks remain unchecked until execution evidence is attached. If the runner, quota or device remains unavailable, record a blocker and no ETA rather than claiming completion.
+
+
 ## 0. Mission and non-negotiable product intent
 
 Memo is a **voice-first, local-first, checkpoint-driven personal execution environment**. A conversation is its interface, not its database. Memo captures intent; assembles the capability a task needs; routes safe work through local models, browser sessions, native apps, and human review; produces real artifacts; records evidence; and resumes work without losing context.
