@@ -381,7 +381,10 @@ class BrowserSession(
     fun captureCurrentResponseManually(responseText: String): Boolean {
         val provider = workflowProviders.getOrNull(workflowIndex) ?: return false
         val cleanResponse = responseText.trim().take(14_000)
-        val providerPageMatches = !isLoading && providerMatches(provider, currentUrl)
+        val providerPageMatches = !isLoading &&
+            workflowState.currentProviderId == provider.id &&
+            workflowState.currentPrompt.isNotBlank() &&
+            providerMatches(provider, currentUrl)
         if (!BrowserWorkflowRecoveryPolicy.canCaptureManually(
                 status = workflowState.status,
                 sentForCurrentStep = workflowState.sentForCurrentStep && workflowPromptSent,

@@ -90,6 +90,18 @@ class BrowserWorkflowPromptsTest {
     }
 
     @Test
+    fun manualCaptureRejectsProviderMismatchEvenWhenAResponseWasSent() {
+        assertFalse(
+            BrowserWorkflowRecoveryPolicy.canCaptureManually(
+                BrowserWorkflowStatus.WAITING_FOR_USER,
+                sentForCurrentStep = true,
+                providerPageMatches = false,
+                responseText = "A sufficiently detailed provider answer."
+            )
+        )
+    }
+
+    @Test
     fun manualCaptureRejectsUncertainSendWrongPageAndInvalidText() {
         assertFalse(
             BrowserWorkflowRecoveryPolicy.canCaptureManually(

@@ -99,6 +99,22 @@ for marker in ("Approve exact external prompt?", "workflowState.currentPrompt", 
         fail(f"browser workflow UI is missing exact-content approval behavior: {marker}")
 print("PASS: exact-content action ledger, regression tests, visible prompt gate and evidence completion are wired in source")
 
+browser_workflow = (ROOT / "app/src/main/java/app/memo/android/browser/BrowserWorkflow.kt").read_text()
+browser_workflow_test = (ROOT / "app/src/test/java/app/memo/android/browser/BrowserWorkflowPromptsTest.kt").read_text()
+for marker in ("object BrowserWorkflowRecoveryPolicy", "status == BrowserWorkflowStatus.WAITING_FOR_USER", "sentForCurrentStep", "providerPageMatches", "MIN_MANUAL_RESPONSE_LENGTH"):
+    if marker not in browser_workflow:
+        fail(f"manual browser-response recovery policy is missing: {marker}")
+capture_action = browser_session.split("fun captureCurrentResponseManually", 1)[1].split("/** Continue only when", 1)[0]
+if "completeWorkflowStep" not in capture_action or "sendPreparedPrompt" in capture_action or "BrowserScripts.sendPreparedPrompt" in capture_action:
+    fail("manual response capture must use the existing result path and must never resend the provider prompt")
+for marker in ("Capture answer without resending", "browser.captureCurrentResponseManually", 'put("captureMethod", response.captureMethod)', "captureMethod"):
+    if marker not in workflow_screen:
+        fail(f"manual response capture UI/provenance is missing: {marker}")
+for marker in ("manualCaptureRequiresSentPromptWaitingStateMatchingProviderAndUsefulText", "manualCaptureRejectsUncertainSendWrongPageAndInvalidText", "manualCaptureRejectsProviderMismatchEvenWhenAResponseWasSent"):
+    if marker not in browser_workflow_test:
+        fail(f"manual response capture regression test is missing: {marker}")
+print("PASS: manual browser-response recovery is capture-only, provider-bound and records capture provenance")
+
 live_timeline = (ROOT / "core/src/main/kotlin/app/memo/android/data/LiveTimelineProjector.kt").read_text()
 live_timeline_test = (ROOT / "core/src/test/kotlin/app/memo/android/data/LiveTimelineProjectorTest.kt").read_text()
 live_screen = (ROOT / "app/src/main/java/app/memo/android/ui/LiveWorkspaceScreen.kt").read_text()

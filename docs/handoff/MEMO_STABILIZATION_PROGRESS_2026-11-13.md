@@ -35,10 +35,13 @@
 - Added pure policy tests for accepted capture and rejection of unsent/uncertain prompts, wrong provider pages, wrong workflow state and short text.
 - Updated `TASKS.md` to link the execution plan and list WF-01 through WF-13 as open tasks.
 
-**Status:** source change prepared for commit; not verified. WF-01 remains unchecked until the source verifier, relevant JVM test and device behavior pass.
+**Status:** source patch committed as `b98053bb015c90b6622dbb9cf225d545b79bfe5c`; not verified. WF-01 remains unchecked until the source verifier, relevant JVM test and device behavior pass.
 
 ### Verification
-- Source inspection and exact-anchor patch validation: completed in the editing session.
+- Source inspection and exact-anchor patch validation: completed.
+- Commit: `b98053bb015c90b6622dbb9cf225d545b79bfe5c` (`fix(browser): add manual response capture recovery`).
+- GitHub read-back checks confirmed the recovery policy, capture-only call path, UI action, capture provenance and regression-test declarations are present.
+- The source-verifier guard and manifest refresh are being added in the follow-up integrity commit.
 - Automated tests: **not run**.
 - Gradle compile/test, lint and APK assembly: **not run**.
 - Android emulator/physical-device reproduction: **not run**.

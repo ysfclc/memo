@@ -27,7 +27,7 @@ Every substantial task must reference requirement IDs and close only with eviden
 
 ### Workflow recovery tasks (active; no task is accepted until verified)
 
-- [ ] **WF-01 — Manual response capture:** add a capture-only paste/review fallback after a confirmed send; require matching provider page; persist capture method and use the existing result/evidence callback. Source patch started; verification pending.
+- [ ] **WF-01 — Manual response capture:** add a capture-only paste/review fallback after a confirmed send; require matching provider page; persist capture method and use the existing result/evidence callback. Source patch committed in `b98053b`; verification pending.
 - [ ] **WF-02 — Retry detection without resend:** retry only reads/polls the current page; never replays provider submission.
 - [ ] **WF-03 — Step-level recovery:** Skip provider / Stop step / Cancel run have distinct scope; preserve completed outputs.
 - [ ] **WF-04 — Truthful completion:** a send click is not a captured answer; verify persistence before declaring success.
