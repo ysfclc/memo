@@ -136,3 +136,15 @@ Exact-head Actions run #616 (`43366806207`) for the preceding step-recovery comm
 - Exact-head Actions run #623 (`43367418437`) failed in the incoming ZIP preflight before runner assignment. No Gradle compile, JVM test, lint or APK job ran.
 - The committed SHA-256 manifest was read back and its entries for the six changed tracked source/test/runbook files were compared against a SHA-256 implementation that passed the standard `abc` test vector. All six entries matched.
 - Source read-back confirms the manual capture action is capture-only, detection retry only polls, uncertain submission blocks Skip, pending approval is rejected before a safe Skip, and Stop-step / Cancel-run controls are distinct. These are source checks, not runtime verification.
+
+
+### Follow-up source review and CI
+
+- `7d22b8a360a4ab602b75da07a77fb1ee8dabce69` adds the explicit `SkipNext` icon import and records the approval-stage skip correction.
+- Exact-head Actions run #623 (`43367418437`) failed in the incoming ZIP preflight before runner assignment. No Gradle compile, JVM test, lint or APK job ran.
+- Source read-back confirmed the manual capture action is capture-only, detection retry only polls, uncertain submission blocks Skip, pending approval is rejected before safe Skip, and Stop-step / Cancel-run controls are distinct.
+- These are source checks only, not runtime verification. WF-01 through WF-03 remain open pending executable tests and Android device acceptance.
+
+### Next engineering task — WF-04
+
+Inspect and correct the response persistence boundary. Current source marks the provider job step `COMPLETED` before transcript, evidence, response-entity and action-ledger writes are all checked. `addEvidence` returns no result, so the caller cannot tell whether the evidence-limit or vault-readiness guard prevented insertion. The next patch must make each write outcome observable, mark incomplete captures `NEEDS_REVIEW`, and avoid claiming durable disk persistence from queue acceptance alone.
