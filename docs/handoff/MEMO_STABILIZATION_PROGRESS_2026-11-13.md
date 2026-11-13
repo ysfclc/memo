@@ -87,3 +87,18 @@
 - Follow-up source review caught and corrected a missing generation local in the general Continue path after extracting the capture-only retry method.
 - Both manual capture and retry now explicitly refuse calls after the browser session is disposed.
 - This is a source-level correction only; it has not been compiled or run. The branch's current Actions runner blocker still prevents execution.
+
+
+## Update 3 — WF-03 step-level recovery controls
+
+- Added separate state-gated operations for **Skip this provider** (only before submission) and **Stop this provider step & continue** (only after a confirmed submission while waiting for a response/recovery).
+- Both actions advance only the current provider step and preserve earlier captured answers. A stopped submitted step is marked `NEEDS_REVIEW`; a pre-send skip is marked `SKIPPED`.
+- Added separate callbacks so the job-step ledger records the correct terminal/review state.
+- Added skipped/stopped provider IDs to workflow state and consultation entity properties. Partial runs are explicitly described and are not reported as fully successful; a run with no captured answers remains `WAITING_FOR_USER`.
+- The whole-run control is now labelled **Cancel entire run** and remains separate.
+- UI explicitly warns that stopping Memo's step cannot cancel generation already running on the provider's remote website.
+- Added policy tests and source-verifier guards for the scope distinctions.
+
+**Verification:** source/read-back review only; no JVM tests, Gradle compile, lint, APK build or device run executed. WF-03 remains open pending verification.
+
+**Next:** review the state transition and persistence path for partial runs, then WF-04 truthful completion/persistence verification.

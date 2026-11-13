@@ -52,6 +52,20 @@ object BrowserWorkflowRecoveryPolicy {
         status: BrowserWorkflowStatus,
         sentForCurrentStep: Boolean
     ): Boolean = status == BrowserWorkflowStatus.WAITING_FOR_USER && sentForCurrentStep
+
+    fun canSkipProvider(
+        status: BrowserWorkflowStatus,
+        awaitingPromptApproval: Boolean,
+        sentForCurrentStep: Boolean
+    ): Boolean = status == BrowserWorkflowStatus.WAITING_FOR_USER &&
+        !awaitingPromptApproval && !sentForCurrentStep
+
+    fun canStopCurrentProviderStep(
+        status: BrowserWorkflowStatus,
+        awaitingPromptApproval: Boolean,
+        sentForCurrentStep: Boolean
+    ): Boolean = status in setOf(BrowserWorkflowStatus.WAITING_FOR_USER, BrowserWorkflowStatus.WAITING_FOR_RESPONSE) &&
+        !awaitingPromptApproval && sentForCurrentStep
 }
 
 data class BrowserModelResponse(
@@ -79,6 +93,8 @@ data class BrowserWorkflowUiState(
     val approvalDestination: String = "",
     val awaitingPromptApproval: Boolean = false,
     val responses: List<BrowserModelResponse> = emptyList(),
+    val skippedProviderIds: List<String> = emptyList(),
+    val stoppedProviderIds: List<String> = emptyList(),
     val startedAt: Long = 0L,
     val sentForCurrentStep: Boolean = false
 ) {
@@ -95,6 +111,8 @@ class BrowserWorkflowCallbacks(
     val onApprovalRequired: (index: Int, provider: BrowserModelProvider, prompt: String, destination: String, contentHash: String) -> Unit = { _, _, _, _, _ -> },
     val onStepStarted: (index: Int, provider: BrowserModelProvider, prompt: String) -> Unit = { _, _, _ -> },
     val onStepCompleted: (index: Int, response: BrowserModelResponse) -> Unit = { _, _ -> },
+    val onStepSkipped: (index: Int, provider: BrowserModelProvider, reason: String) -> Unit = { _, _, _ -> },
+    val onStepStopped: (index: Int, provider: BrowserModelProvider, reason: String) -> Unit = { _, _, _ -> },
     val onStateChanged: (BrowserWorkflowUiState) -> Unit = {},
     val onFinished: (BrowserWorkflowUiState) -> Unit = {}
 )

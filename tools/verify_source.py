@@ -112,10 +112,17 @@ if "pollWorkflowResponse" not in retry_action or "sendPreparedPrompt" in retry_a
     fail("response detection retry must poll the current page only and must never resend the provider prompt")
 if "canRetryResponseDetection" not in browser_workflow or "retryCurrentResponseDetection" not in workflow_screen:
     fail("response detection retry is not guarded and exposed as a distinct user action")
+for marker in ("canSkipProvider", "canStopCurrentProviderStep", "fun skipCurrentProvider()", "fun stopCurrentProviderStep()", "onStepSkipped", "onStepStopped"):
+    if marker not in browser_workflow + browser_session:
+        fail(f"step-level recovery contract is missing: {marker}")
+if "Cancel entire run" not in workflow_screen or "Skip this provider" not in workflow_screen or "Stop this provider step & continue" not in workflow_screen:
+    fail("browser workflow must expose separate skip, step-stop and whole-run cancel controls")
+if "skippedProviderIds" not in workflow_screen or "stoppedProviderIds" not in workflow_screen:
+    fail("partial provider execution must be recorded and must not be reported as full success")
 for marker in ("Retry answer detection", "never resends the approved prompt", "Capture answer without resending", "browser.captureCurrentResponseManually", 'put("captureMethod", response.captureMethod)', "captureMethod"):
     if marker not in workflow_screen:
         fail(f"manual response capture UI/provenance is missing: {marker}")
-for marker in ("responseDetectionRetryIsAvailableOnlyForASentStepWaitingForRecovery", "manualCaptureRequiresSentPromptWaitingStateMatchingProviderAndUsefulText", "manualCaptureRejectsUncertainSendWrongPageAndInvalidText", "manualCaptureRejectsProviderMismatchEvenWhenAResponseWasSent"):
+for marker in ("skipAndStopPoliciesKeepDifferentScopes", "responseDetectionRetryIsAvailableOnlyForASentStepWaitingForRecovery", "manualCaptureRequiresSentPromptWaitingStateMatchingProviderAndUsefulText", "manualCaptureRejectsUncertainSendWrongPageAndInvalidText", "manualCaptureRejectsProviderMismatchEvenWhenAResponseWasSent"):
     if marker not in browser_workflow_test:
         fail(f"manual response capture regression test is missing: {marker}")
 print("PASS: manual browser-response recovery is capture-only, provider-bound and records capture provenance")

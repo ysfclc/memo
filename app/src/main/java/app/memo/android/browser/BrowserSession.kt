@@ -357,6 +357,91 @@ class BrowserSession(
         return true
     }
 
+    /** Skip a provider only before its prompt has been submitted. */
+    fun skipCurrentProvider(): Boolean {
+        if (disposed || !BrowserWorkflowRecoveryPolicy.canSkipProvider(
+                status = workflowState.status,
+                awaitingPromptApproval = workflowState.awaitingPromptApproval,
+                sentForCurrentStep = workflowState.sentForCurrentStep || workflowPromptSent
+            )
+        ) return false
+        val provider = workflowProviders.getOrNull(workflowIndex) ?: return false
+        workflowCallbacks?.onStepSkipped(workflowIndex, provider, "Provider skipped by the user before submission. No prompt was sent.")
+        advancePastCurrentProvider(provider, skipped = true, stopped = false)
+        return true
+    }
+
+    /**
+     * Stop Memo's current provider step after submission and continue with the next provider.
+     * This cannot cancel generation on the provider's remote website.
+     */
+    fun stopCurrentProviderStep(): Boolean {
+        if (disposed || !BrowserWorkflowRecoveryPolicy.canStopCurrentProviderStep(
+                status = workflowState.status,
+                awaitingPromptApproval = workflowState.awaitingPromptApproval,
+                sentForCurrentStep = workflowState.sentForCurrentStep && workflowPromptSent
+            )
+        ) return false
+        val provider = workflowProviders.getOrNull(workflowIndex) ?: return false
+        workflowCallbacks?.onStepStopped(
+            workflowIndex,
+            provider,
+            "Provider step stopped by the user after submission. Memo will not resend; generation may continue on the provider's website."
+        )
+        advancePastCurrentProvider(provider, skipped = false, stopped = true)
+        return true
+    }
+
+    private fun advancePastCurrentProvider(
+        provider: BrowserModelProvider,
+        skipped: Boolean,
+        stopped: Boolean
+    ) {
+        workflowGeneration++
+        val generation = workflowGeneration
+        workflowNavigationCallback = null
+        workflowApprovedHash = ""
+        workflowApprovedDestination = ""
+        workflowPromptSent = false
+        workflowPromptPrepared = false
+        workflowIndex++
+        val skippedIds = if (skipped) workflowState.skippedProviderIds + provider.id else workflowState.skippedProviderIds
+        val stoppedIds = if (stopped) workflowState.stoppedProviderIds + provider.id else workflowState.stoppedProviderIds
+        val action = if (skipped) "Skipped" else "Stopped"
+        if (workflowIndex >= workflowProviders.size) {
+            val finished = workflowState.copy(
+                status = BrowserWorkflowStatus.COMPLETED,
+                skippedProviderIds = skippedIds,
+                stoppedProviderIds = stoppedIds,
+                currentStep = workflowProviders.size,
+                sentForCurrentStep = false,
+                awaitingPromptApproval = false,
+                currentPrompt = "",
+                message = "Provider sequence ended: ${workflowState.responses.size} answer(s) captured, ${skippedIds.size} provider(s) skipped, ${stoppedIds.size} step(s) stopped. Captured answers remain available for review."
+            )
+            publishWorkflowState(finished)
+            workflowCallbacks?.onFinished(finished)
+            workflowCallbacks = null
+        } else {
+            val next = workflowProviders[workflowIndex]
+            publishWorkflowState(
+                workflowState.copy(
+                    status = BrowserWorkflowStatus.NAVIGATING,
+                    skippedProviderIds = skippedIds,
+                    stoppedProviderIds = stoppedIds,
+                    currentStep = workflowIndex + 1,
+                    currentProviderId = next.id,
+                    currentProviderName = next.label,
+                    sentForCurrentStep = false,
+                    awaitingPromptApproval = false,
+                    currentPrompt = "",
+                    message = "${provider.label} step $action by the user. Moving to ${next.label}; earlier captured answers are preserved."
+                )
+            )
+            beginWorkflowStep(generation)
+        }
+    }
+
     /** Resume after a login, challenge, unsupported composer, or delayed response has been handled manually. */
     fun continueBrowserWorkflow() {
         if (workflowState.status != BrowserWorkflowStatus.WAITING_FOR_USER || workflowState.awaitingPromptApproval) return
@@ -630,7 +715,11 @@ class BrowserSession(
                 currentStep = workflowProviders.size,
                 sentForCurrentStep = false,
                 awaitingPromptApproval = false,
-                message = "All ${results.size} frontier responses were captured and retained. Review agreement and disagreement in the linked consultation chat.",
+                message = if (workflowState.skippedProviderIds.isEmpty() && workflowState.stoppedProviderIds.isEmpty()) {
+                    "All ${results.size} frontier responses were captured and retained. Review agreement and disagreement in the linked consultation chat."
+                } else {
+                    "Provider sequence ended: ${results.size} answer(s) captured, ${workflowState.skippedProviderIds.size} provider(s) skipped, ${workflowState.stoppedProviderIds.size} step(s) stopped. Review the partial results in the linked consultation chat."
+                },
                 currentPrompt = ""
             )
             publishWorkflowState(finished)

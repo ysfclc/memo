@@ -78,6 +78,17 @@ class BrowserWorkflowPromptsTest {
     }
 
     @Test
+    fun skipAndStopPoliciesKeepDifferentScopes() {
+        assertTrue(BrowserWorkflowRecoveryPolicy.canSkipProvider(BrowserWorkflowStatus.WAITING_FOR_USER, false, false))
+        assertFalse(BrowserWorkflowRecoveryPolicy.canSkipProvider(BrowserWorkflowStatus.WAITING_FOR_USER, true, false))
+        assertFalse(BrowserWorkflowRecoveryPolicy.canSkipProvider(BrowserWorkflowStatus.WAITING_FOR_USER, false, true))
+        assertTrue(BrowserWorkflowRecoveryPolicy.canStopCurrentProviderStep(BrowserWorkflowStatus.WAITING_FOR_USER, false, true))
+        assertTrue(BrowserWorkflowRecoveryPolicy.canStopCurrentProviderStep(BrowserWorkflowStatus.WAITING_FOR_RESPONSE, false, true))
+        assertFalse(BrowserWorkflowRecoveryPolicy.canStopCurrentProviderStep(BrowserWorkflowStatus.WAITING_FOR_USER, true, true))
+        assertFalse(BrowserWorkflowRecoveryPolicy.canStopCurrentProviderStep(BrowserWorkflowStatus.WAITING_FOR_RESPONSE, false, false))
+    }
+
+    @Test
     fun responseDetectionRetryIsAvailableOnlyForASentStepWaitingForRecovery() {
         assertTrue(
             BrowserWorkflowRecoveryPolicy.canRetryResponseDetection(
