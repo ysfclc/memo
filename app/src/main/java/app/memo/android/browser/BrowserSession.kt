@@ -374,6 +374,26 @@ class BrowserSession(
     }
 
 
+    /**
+     * Save an answer the user can see but automatic page detection could not read.
+     * This is a capture-only action: it never prepares or submits a provider prompt.
+     */
+    fun captureCurrentResponseManually(responseText: String): Boolean {
+        val provider = workflowProviders.getOrNull(workflowIndex) ?: return false
+        val cleanResponse = responseText.trim().take(14_000)
+        val providerPageMatches = !isLoading && providerMatches(provider, currentUrl)
+        if (!BrowserWorkflowRecoveryPolicy.canCaptureManually(
+                status = workflowState.status,
+                sentForCurrentStep = workflowState.sentForCurrentStep && workflowPromptSent,
+                providerPageMatches = providerPageMatches,
+                responseText = cleanResponse
+            )
+        ) return false
+
+        completeWorkflowStep(workflowGeneration, cleanResponse, captureMethod = "USER_PASTED")
+        return true
+    }
+
     /** Continue only when the currently shown provider and exact prompt still match the approval. */
     fun approveCurrentPrompt(expectedHash: String, expectedDestination: String): Boolean {
         if (disposed || workflowState.status != BrowserWorkflowStatus.WAITING_FOR_USER || !workflowState.awaitingPromptApproval) return false
@@ -559,7 +579,11 @@ class BrowserSession(
         }
     }
 
-    private fun completeWorkflowStep(generation: Long, responseText: String) {
+    private fun completeWorkflowStep(
+        generation: Long,
+        responseText: String,
+        captureMethod: String = "AUTOMATIC_DOM"
+    ) {
         if (disposed || generation != workflowGeneration || workflowIndex !in workflowProviders.indices) return
         val provider = workflowProviders[workflowIndex]
         val prompt = workflowState.currentPrompt
@@ -570,7 +594,8 @@ class BrowserSession(
             response = responseText.trim().take(14_000),
             sourceUrl = currentUrl.take(2_048),
             startedAt = workflowStepStartedAt,
-            completedAt = System.currentTimeMillis()
+            completedAt = System.currentTimeMillis(),
+            captureMethod = captureMethod
         )
         val results = workflowState.responses + result
         workflowCallbacks?.onStepCompleted(workflowIndex, result)
@@ -584,7 +609,7 @@ class BrowserSession(
                 currentStep = workflowProviders.size,
                 sentForCurrentStep = false,
                 awaitingPromptApproval = false,
-                message = "All ${results.size} frontier responses were captured from their browser pages. Review agreement and disagreement in the linked consultation chat.",
+                message = "All ${results.size} frontier responses were captured and retained. Review agreement and disagreement in the linked consultation chat.",
                 currentPrompt = ""
             )
             publishWorkflowState(finished)

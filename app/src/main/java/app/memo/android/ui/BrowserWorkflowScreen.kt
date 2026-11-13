@@ -105,6 +105,9 @@ fun BrowserWorkflowScreen(
     var originalIntent by remember { mutableStateOf("") }
     var localBrief by remember { mutableStateOf("") }
     var currentExternalActionId by remember { mutableStateOf("") }
+    var manualResponseDraft by remember(workflowState.currentProviderId, workflowState.currentStep) {
+        mutableStateOf("")
+    }
 
     fun loadTemplate(entityId: String) {
         val entity = savedWorkflows.firstOrNull { it.id == entityId } ?: return
@@ -158,6 +161,7 @@ fun BrowserWorkflowScreen(
                 "prompt" to response.prompt.take(1_800),
                 "workflowMode" to mode.name,
                 "capturedAt" to response.completedAt.toString(),
+                "captureMethod" to response.captureMethod,
                 "jobId" to jobId
             ),
             sourceConversationId = conversationId,
@@ -352,16 +356,31 @@ fun BrowserWorkflowScreen(
             onStepCompleted = { index, response ->
                 val stepIndex = providerStepOffset + index
                 val stepId = activeStepIds.getOrNull(stepIndex)
-                if (stepId != null) viewModel.updateJobStep(jobId, stepId, "COMPLETED", "Captured a new, stable response from ${response.providerName}.", response.response.take(1_800))
+                if (stepId != null) viewModel.updateJobStep(
+                    jobId,
+                    stepId,
+                    "COMPLETED",
+                    if (response.captureMethod == "USER_PASTED") {
+                        "User manually captured the visible response from ${response.providerName}."
+                    } else {
+                        "Captured a new, stable response from ${response.providerName}."
+                    },
+                    response.response.take(1_800)
+                )
                 val responseEvidence = EvidenceRecord(
                     taskId = jobId,
                     title = "${response.providerName} · ${title.trim().ifBlank { "Frontier consultation" }}",
                     sourceUrl = response.sourceUrl,
                     kind = "FRONTIER_BROWSER_RESPONSE",
                     content = response.response,
-                    summary = "Captured from a visible frontier chat webpage. Submission and a new stable response were observed; the model's claims have not been independently verified.",
+                    summary = if (response.captureMethod == "USER_PASTED") {
+                        "User manually captured the visible provider response after automatic detection did not complete. The model's claims have not been independently verified."
+                    } else {
+                        "Captured from a visible frontier chat webpage after submission and a new stable response were observed. The model's claims have not been independently verified."
+                    },
                     metadata = JSONObject().apply {
                         put("providerId", response.providerId)
+                        put("captureMethod", response.captureMethod)
                         put("stepId", activeStepIds.getOrNull(providerStepOffset + index).orEmpty())
                         put("startedAt", response.startedAt)
                         put("completedAt", response.completedAt)
@@ -737,6 +756,38 @@ fun BrowserWorkflowScreen(
                     if (workflowState.currentPrompt.isNotBlank() && workflowState.isActive) {
                         Text("Current provider prompt", style = MaterialTheme.typography.labelLarge)
                         Text(workflowState.currentPrompt.take(1_200), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 8, overflow = TextOverflow.Ellipsis)
+                    }
+                    if (workflowState.status == BrowserWorkflowStatus.WAITING_FOR_USER && workflowState.sentForCurrentStep) {
+                        Text(
+                            "Answer not captured yet? If the provider has finished, copy its visible answer and paste it here. This saves the answer into this run; it does not send the prompt again.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        OutlinedTextField(
+                            value = manualResponseDraft,
+                            onValueChange = { manualResponseDraft = it.take(14_000) },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("Paste provider answer") },
+                            placeholder = { Text("Copy the answer from the provider page and paste it here…") },
+                            minLines = 4,
+                            maxLines = 12
+                        )
+                        Button(
+                            onClick = {
+                                if (browser.captureCurrentResponseManually(manualResponseDraft)) {
+                                    manualResponseDraft = ""
+                                    onShowMessage("Provider answer captured into this consultation. The prompt was not resent.")
+                                } else {
+                                    onShowMessage("Manual capture is unavailable: confirm the submitted prompt is still on the matching provider page and paste at least 8 characters.")
+                                }
+                            },
+                            enabled = manualResponseDraft.trim().length >= 8 && !browser.isLoading,
+                            modifier = Modifier.fillMaxWidth().height(48.dp)
+                        ) {
+                            androidx.compose.material3.Icon(Icons.Rounded.Save, null)
+                            Spacer(Modifier.width(6.dp))
+                            Text("Capture answer without resending")
+                        }
                     }
                     workflowState.responses.forEachIndexed { index, response ->
                         Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {

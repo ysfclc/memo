@@ -19,7 +19,27 @@ Every substantial task must reference requirement IDs and close only with eviden
 
 **Execution plan:** [Memo STOP-WORK stabilization plan](docs/handoff/MEMO_STABILIZATION_PLAN_2026-11-13.md).
 
-**Product journey acceptance:** [User-facing workflow and control audit](docs/handoff/MEMO_USER_WORKFLOW_CONTROL_AUDIT_2026-11-13.md). This records the reported prompt → enhancement → approval → browser → captured-result failure as P0/P1 acceptance requirements. No implementation is claimed.
+**Product journey acceptance:** [User-facing workflow and control audit](docs/handoff/MEMO_USER_WORKFLOW_CONTROL_AUDIT_2026-11-13.md). This records the reported prompt → enhancement → approval → browser → captured-result failure as P0/P1 acceptance requirements.
+
+**Ordered implementation plan:** [Workflow recovery execution plan](docs/handoff/MEMO_WORKFLOW_RECOVERY_EXECUTION_PLAN_2026-11-13.md). It sequences WF-01 through WF-13, defines safety invariants and requires evidence before closure.
+
+**Live progress:** [Workflow stabilization progress log](docs/handoff/MEMO_STABILIZATION_PROGRESS_2026-11-13.md). Update after every meaningful code or verification increment.
+
+### Workflow recovery tasks (active; no task is accepted until verified)
+
+- [ ] **WF-01 — Manual response capture:** add a capture-only paste/review fallback after a confirmed send; require matching provider page; persist capture method and use the existing result/evidence callback. Source patch started; verification pending.
+- [ ] **WF-02 — Retry detection without resend:** retry only reads/polls the current page; never replays provider submission.
+- [ ] **WF-03 — Step-level recovery:** Skip provider / Stop step / Cancel run have distinct scope; preserve completed outputs.
+- [ ] **WF-04 — Truthful completion:** a send click is not a captured answer; verify persistence before declaring success.
+- [ ] **WF-05 — Real-device reproduction:** document happy path, detector failure, delayed response, navigation drift and process recreation.
+- [ ] **WF-06 — Editable enhancement checkpoint:** preserve original intent; edit/regenerate enhanced prompt; invalidate approval on edits.
+- [ ] **WF-07 — Persistent task/browser context:** keep active task controls available while inspecting the provider page; full-screen browser remains optional.
+- [ ] **WF-08 — Run history:** separate execution history from reusable templates and join prompts, approvals, provider steps, captures and failures.
+- [ ] **WF-09 — Council runtime clarity:** distinguish local, configured API and browser-session participants; never equate cookies with API credentials.
+- [ ] **WF-10 — Result workspace:** editable working copies, compare/follow-up and provenance while preserving raw captures.
+- [ ] **WF-11 — Regression suite:** test capture/retry/skip/approval/persistence invariants.
+- [ ] **WF-12 — Device and localization acceptance:** EN/PL/TR, small screens, IME, navigation, process recreation and partial success.
+- [ ] **WF-13 — Release gates:** complete the separate STOP-WORK build, encrypted-store, signing and physical-device gates.
 
 - [ ] **STAB-01 — Restore a trustworthy build executor:** diagnose GitHub Actions runner startup; recheck the existing Vercel project after its daily quota reset. Do not weaken gates or repeatedly trigger unchanged failures.
 - [ ] **STAB-02 — Verify exact candidate `99f79d9`:** run source verifier, remote-runner tests, `:core:test`, `:app:testDebugUnitTest`, `:app:lintDebug`, `:app:assembleDebug`, and `:app:assembleDebugAndroidTest`; inspect reports. The GPU fallback regression test is committed but unexecuted.

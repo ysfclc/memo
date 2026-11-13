@@ -78,6 +78,54 @@ class BrowserWorkflowPromptsTest {
     }
 
     @Test
+    fun manualCaptureRequiresSentPromptWaitingStateMatchingProviderAndUsefulText() {
+        assertTrue(
+            BrowserWorkflowRecoveryPolicy.canCaptureManually(
+                BrowserWorkflowStatus.WAITING_FOR_USER,
+                sentForCurrentStep = true,
+                providerPageMatches = true,
+                responseText = "A sufficiently detailed provider answer."
+            )
+        )
+    }
+
+    @Test
+    fun manualCaptureRejectsUncertainSendWrongPageAndInvalidText() {
+        assertFalse(
+            BrowserWorkflowRecoveryPolicy.canCaptureManually(
+                BrowserWorkflowStatus.WAITING_FOR_USER,
+                sentForCurrentStep = false,
+                providerPageMatches = true,
+                responseText = "A sufficiently detailed provider answer."
+            )
+        )
+        assertFalse(
+            BrowserWorkflowRecoveryPolicy.canCaptureManually(
+                BrowserWorkflowStatus.WAITING_FOR_USER,
+                sentForCurrentStep = true,
+                providerPageMatches = false,
+                responseText = "A sufficiently detailed provider answer."
+            )
+        )
+        assertFalse(
+            BrowserWorkflowRecoveryPolicy.canCaptureManually(
+                BrowserWorkflowStatus.WAITING_FOR_RESPONSE,
+                sentForCurrentStep = true,
+                providerPageMatches = true,
+                responseText = "A sufficiently detailed provider answer."
+            )
+        )
+        assertFalse(
+            BrowserWorkflowRecoveryPolicy.canCaptureManually(
+                BrowserWorkflowStatus.WAITING_FOR_USER,
+                sentForCurrentStep = true,
+                providerPageMatches = true,
+                responseText = "short"
+            )
+        )
+    }
+
+    @Test
     fun critiqueChainAssignsReviewerRoleToSecondStep() {
         val prompt = BrowserWorkflowPrompts.build(
             goal = "Review this product architecture.",

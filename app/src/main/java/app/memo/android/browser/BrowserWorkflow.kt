@@ -35,6 +35,20 @@ enum class BrowserWorkflowStatus {
     WAITING_FOR_USER, COMPLETED, FAILED, CANCELLED
 }
 
+object BrowserWorkflowRecoveryPolicy {
+    const val MIN_MANUAL_RESPONSE_LENGTH = 8
+
+    fun canCaptureManually(
+        status: BrowserWorkflowStatus,
+        sentForCurrentStep: Boolean,
+        providerPageMatches: Boolean,
+        responseText: String
+    ): Boolean = status == BrowserWorkflowStatus.WAITING_FOR_USER &&
+        sentForCurrentStep &&
+        providerPageMatches &&
+        responseText.trim().length >= MIN_MANUAL_RESPONSE_LENGTH
+}
+
 data class BrowserModelResponse(
     val providerId: String,
     val providerName: String,
@@ -42,7 +56,8 @@ data class BrowserModelResponse(
     val response: String,
     val sourceUrl: String,
     val startedAt: Long,
-    val completedAt: Long = nowMillis()
+    val completedAt: Long = nowMillis(),
+    val captureMethod: String = "AUTOMATIC_DOM"
 )
 
 data class BrowserWorkflowUiState(
