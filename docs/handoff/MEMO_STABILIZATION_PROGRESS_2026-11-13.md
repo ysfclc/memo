@@ -41,8 +41,10 @@
 - Source inspection and exact-anchor patch validation: completed.
 - Commit: `b98053bb015c90b6622dbb9cf225d545b79bfe5c` (`fix(browser): add manual response capture recovery`).
 - GitHub read-back checks confirmed the recovery policy, capture-only call path, UI action, capture provenance and regression-test declarations are present.
-- The source-verifier guard and manifest refresh are being added in the follow-up integrity commit.
+- Follow-up integrity commit: `e77551825ff024a190a085abfb49299f38b9400e` added source-verifier guards for the manual-capture policy, capture-only path, provider binding, provenance and regression tests.
+- `SOURCE_SHA256SUMS.txt` is being refreshed for all changed tracked sources, tests, verifier and TASKS entries; the final checksum values are validated against the fetched file contents.
 - Automated tests: **not run**.
+- Exact-head GitHub Actions run #606 (`43365637627`) failed in the incoming ZIP preflight before runner assignment; the preflight job has no steps/logs and all downstream validation/build/signing jobs were skipped. This is an executor/import failure, not a source test result.
 - Gradle compile/test, lint and APK assembly: **not run**.
 - Android emulator/physical-device reproduction: **not run**.
 - Provider-specific behavior: **not verified**.
@@ -56,7 +58,8 @@
 - A user-pasted answer is attributed to the current provider page and timestamp; the app cannot cryptographically prove that pasted text came from the page. UI wording must remain honest about that.
 
 ### Next
-1. Verify this patch at source level after commit and run the relevant test when an executor is available.
+1. Complete source-manifest checksum refresh and verify every updated digest against the committed file contents.
+2. Run the source verifier and relevant JVM test when a working executor is available.
 2. Continue WF-02: make retry detection an explicit capture-only action and prove it cannot invoke the send script.
 3. Implement WF-03 step-level Skip/Stop semantics without changing whole-run cancellation or deleting prior evidence.
 4. Keep reporting source status separately from test/device verification.
