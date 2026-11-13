@@ -102,3 +102,10 @@
 **Verification:** source/read-back review only; no JVM tests, Gradle compile, lint, APK build or device run executed. WF-03 remains open pending verification.
 
 **Next:** review the state transition and persistence path for partial runs, then WF-04 truthful completion/persistence verification.
+
+
+### WF-03 safety correction — ambiguous send state
+
+A source review found an important edge case: a provider send script can return without confirming a click. Memo must not label that state “not sent” and offer a normal skip. The state now records `submissionUncertain`; Skip is disabled, and the only step-level continuation is Stop this provider step, which marks the job step `NEEDS_REVIEW`. Manual send verification failures also retain uncertainty instead of automatically preparing another send. This prevents a duplicate submission from being hidden behind a “skip” label.
+
+This correction is source-only and still awaits compilation, unit tests and device verification.

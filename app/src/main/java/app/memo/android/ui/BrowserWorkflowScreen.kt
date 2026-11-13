@@ -356,6 +356,10 @@ fun BrowserWorkflowScreen(
                 if (stepId != null) viewModel.updateJobStep(jobId, stepId, "RUNNING", "Submitting the user-approved exact prompt through ${provider.label}'s visible browser interface. Prior outputs are included only where the reviewed prompt shows them.", prompt.take(1_800))
             },
             onStepSkipped = { index, provider, reason ->
+                if (currentExternalActionId.isNotBlank()) {
+                    viewModel.markExternalActionNeedsReview(currentExternalActionId, "Provider step was skipped while the external submission state was not fully confirmed. Inspect the provider page before any retry.")
+                    currentExternalActionId = ""
+                }
                 val stepId = activeStepIds.getOrNull(providerStepOffset + index)
                 if (stepId != null) viewModel.updateJobStep(jobId, stepId, "SKIPPED", reason)
             },
@@ -856,8 +860,8 @@ fun BrowserWorkflowScreen(
                         }
                     }
                     if (workflowState.isActive && !workflowState.awaitingPromptApproval) {
-                        if (workflowState.sentForCurrentStep) {
-                            Text("Stopping this step leaves the provider page without cancelling its remote generation. Captured answers stay saved.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (workflowState.sentForCurrentStep || workflowState.submissionUncertain) {
+                            Text("Stopping this step leaves the provider page without cancelling its remote generation. If submission is uncertain, the step remains marked for review. Captured answers stay saved.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             OutlinedButton(
                                 onClick = {
                                     if (!browser.stopCurrentProviderStep()) onShowMessage("Memo could not stop this provider step in the current state.")
@@ -868,7 +872,7 @@ fun BrowserWorkflowScreen(
                                 Spacer(Modifier.width(6.dp))
                                 Text("Stop this provider step & continue")
                             }
-                        } else if (workflowState.status == BrowserWorkflowStatus.WAITING_FOR_USER) {
+                        } else if (workflowState.status == BrowserWorkflowStatus.WAITING_FOR_USER && !workflowState.submissionUncertain) {
                             OutlinedButton(
                                 onClick = {
                                     if (!browser.skipCurrentProvider()) onShowMessage("Memo could not skip this provider in the current state.")

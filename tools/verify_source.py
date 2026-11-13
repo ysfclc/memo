@@ -112,7 +112,7 @@ if "pollWorkflowResponse" not in retry_action or "sendPreparedPrompt" in retry_a
     fail("response detection retry must poll the current page only and must never resend the provider prompt")
 if "canRetryResponseDetection" not in browser_workflow or "retryCurrentResponseDetection" not in workflow_screen:
     fail("response detection retry is not guarded and exposed as a distinct user action")
-for marker in ("canSkipProvider", "canStopCurrentProviderStep", "fun skipCurrentProvider()", "fun stopCurrentProviderStep()", "onStepSkipped", "onStepStopped"):
+for marker in ("canSkipProvider", "canStopCurrentProviderStep", "submissionUncertain", "fun skipCurrentProvider()", "fun stopCurrentProviderStep()", "onStepSkipped", "onStepStopped"):
     if marker not in browser_workflow + browser_session:
         fail(f"step-level recovery contract is missing: {marker}")
 if "Cancel entire run" not in workflow_screen or "Skip this provider" not in workflow_screen or "Stop this provider step & continue" not in workflow_screen:

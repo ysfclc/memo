@@ -362,7 +362,8 @@ class BrowserSession(
         if (disposed || !BrowserWorkflowRecoveryPolicy.canSkipProvider(
                 status = workflowState.status,
                 awaitingPromptApproval = workflowState.awaitingPromptApproval,
-                sentForCurrentStep = workflowState.sentForCurrentStep || workflowPromptSent
+                sentForCurrentStep = workflowState.sentForCurrentStep || workflowPromptSent,
+                submissionUncertain = workflowState.submissionUncertain
             )
         ) return false
         val provider = workflowProviders.getOrNull(workflowIndex) ?: return false
@@ -379,7 +380,8 @@ class BrowserSession(
         if (disposed || !BrowserWorkflowRecoveryPolicy.canStopCurrentProviderStep(
                 status = workflowState.status,
                 awaitingPromptApproval = workflowState.awaitingPromptApproval,
-                sentForCurrentStep = workflowState.sentForCurrentStep && workflowPromptSent
+                sentForCurrentStep = workflowState.sentForCurrentStep && workflowPromptSent,
+                submissionUncertain = workflowState.submissionUncertain
             )
         ) return false
         val provider = workflowProviders.getOrNull(workflowIndex) ?: return false
@@ -416,6 +418,7 @@ class BrowserSession(
                 currentStep = workflowProviders.size,
                 sentForCurrentStep = false,
                 awaitingPromptApproval = false,
+                submissionUncertain = false,
                 currentPrompt = "",
                 message = "Provider sequence ended: ${workflowState.responses.size} answer(s) captured, ${skippedIds.size} provider(s) skipped, ${stoppedIds.size} step(s) stopped. Captured answers remain available for review."
             )
@@ -434,6 +437,7 @@ class BrowserSession(
                     currentProviderName = next.label,
                     sentForCurrentStep = false,
                     awaitingPromptApproval = false,
+                    submissionUncertain = false,
                     currentPrompt = "",
                     message = "${provider.label} step $action by the user. Moving to ${next.label}; earlier captured answers are preserved."
                 )
@@ -463,13 +467,14 @@ class BrowserSession(
                         publishWorkflowState(workflowState.copy(
                             status = BrowserWorkflowStatus.WAITING_FOR_RESPONSE,
                             sentForCurrentStep = true,
+                            submissionUncertain = false,
                             message = "The manually submitted prompt is visible in the conversation. Waiting for a new stable answer without resending it."
                         ))
                         pollWorkflowResponse(generation, System.currentTimeMillis() + 120_000L)
                     }
-                    checked?.optBoolean("contextPresent") != true -> pauseWorkflowForUser("Memo cannot prove whether this prompt was submitted because the page context changed. It will not resend automatically. Inspect the conversation; stop this run and start a new one only if you confirm the prompt was not sent.")
-                    checked?.optBoolean("composerCleared") == true -> pauseWorkflowForUser("The composer is empty, but Memo cannot yet verify the submitted message. It will not send a duplicate. Inspect the conversation, then continue checking when the message is visible.")
-                    else -> beginWorkflowStep(generation, retryCurrentPage = true)
+                    checked?.optBoolean("contextPresent") != true -> pauseWorkflowForUser("Memo cannot prove whether this prompt was submitted because the page context changed. It will not resend automatically. Inspect the conversation; stop this provider step and continue only if you accept that its send state remains unverified.", submissionUncertain = true)
+                    checked?.optBoolean("composerCleared") == true -> pauseWorkflowForUser("The composer is empty, but Memo cannot verify the submitted message. It will not send a duplicate. Inspect the conversation; stop this provider step if you want to continue elsewhere.", submissionUncertain = true)
+                    else -> pauseWorkflowForUser("Memo cannot confirm whether the prepared prompt was submitted. It will not prepare or send it again automatically. Inspect the provider conversation; stop this step to continue with the next provider.", submissionUncertain = true)
                 }
             }
         }
@@ -651,11 +656,11 @@ class BrowserSession(
                 if (disposed || generation != workflowGeneration) return@evaluateJavascript
                 val sent = runCatching { JSONObject(decodeJsString(sendRaw)) }.getOrNull()
                 if (sent?.optBoolean("ok") != true || sent?.optBoolean("clicked") != true) {
-                    pauseWorkflowForUser("Memo could not verify whether ${provider.label} received the prompt. Do not retry blindly; inspect the provider conversation first.")
+                    pauseWorkflowForUser("Memo could not verify whether ${provider.label} received the prompt. Do not retry blindly; inspect the provider conversation first.", submissionUncertain = true)
                     return@evaluateJavascript
                 }
                 workflowPromptSent = true
-                publishWorkflowState(workflowState.copy(status = BrowserWorkflowStatus.WAITING_FOR_RESPONSE, sentForCurrentStep = true, awaitingPromptApproval = false, message = "Prompt submitted. Waiting for a new, stable answer from ${provider.label}…"))
+                publishWorkflowState(workflowState.copy(status = BrowserWorkflowStatus.WAITING_FOR_RESPONSE, sentForCurrentStep = true, awaitingPromptApproval = false, submissionUncertain = false, message = "Prompt submitted. Waiting for a new, stable answer from ${provider.label}…"))
                 pollWorkflowResponse(generation, System.currentTimeMillis() + 120_000L)
             }
         }
@@ -740,9 +745,13 @@ class BrowserSession(
         }
     }
 
-    private fun pauseWorkflowForUser(message: String) {
+    private fun pauseWorkflowForUser(message: String, submissionUncertain: Boolean = false) {
         if (!workflowState.isActive) return
-        val paused = workflowState.copy(status = BrowserWorkflowStatus.WAITING_FOR_USER, message = message)
+        val paused = workflowState.copy(
+            status = BrowserWorkflowStatus.WAITING_FOR_USER,
+            submissionUncertain = workflowState.submissionUncertain || submissionUncertain,
+            message = message
+        )
         publishWorkflowState(paused)
     }
 

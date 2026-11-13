@@ -79,13 +79,15 @@ class BrowserWorkflowPromptsTest {
 
     @Test
     fun skipAndStopPoliciesKeepDifferentScopes() {
-        assertTrue(BrowserWorkflowRecoveryPolicy.canSkipProvider(BrowserWorkflowStatus.WAITING_FOR_USER, false, false))
-        assertFalse(BrowserWorkflowRecoveryPolicy.canSkipProvider(BrowserWorkflowStatus.WAITING_FOR_USER, true, false))
-        assertFalse(BrowserWorkflowRecoveryPolicy.canSkipProvider(BrowserWorkflowStatus.WAITING_FOR_USER, false, true))
-        assertTrue(BrowserWorkflowRecoveryPolicy.canStopCurrentProviderStep(BrowserWorkflowStatus.WAITING_FOR_USER, false, true))
-        assertTrue(BrowserWorkflowRecoveryPolicy.canStopCurrentProviderStep(BrowserWorkflowStatus.WAITING_FOR_RESPONSE, false, true))
-        assertFalse(BrowserWorkflowRecoveryPolicy.canStopCurrentProviderStep(BrowserWorkflowStatus.WAITING_FOR_USER, true, true))
-        assertFalse(BrowserWorkflowRecoveryPolicy.canStopCurrentProviderStep(BrowserWorkflowStatus.WAITING_FOR_RESPONSE, false, false))
+        assertTrue(BrowserWorkflowRecoveryPolicy.canSkipProvider(BrowserWorkflowStatus.WAITING_FOR_USER, false, false, false))
+        assertFalse(BrowserWorkflowRecoveryPolicy.canSkipProvider(BrowserWorkflowStatus.WAITING_FOR_USER, true, false, false))
+        assertFalse(BrowserWorkflowRecoveryPolicy.canSkipProvider(BrowserWorkflowStatus.WAITING_FOR_USER, false, true, false))
+        assertFalse(BrowserWorkflowRecoveryPolicy.canSkipProvider(BrowserWorkflowStatus.WAITING_FOR_USER, false, false, true))
+        assertTrue(BrowserWorkflowRecoveryPolicy.canStopCurrentProviderStep(BrowserWorkflowStatus.WAITING_FOR_USER, false, true, false))
+        assertTrue(BrowserWorkflowRecoveryPolicy.canStopCurrentProviderStep(BrowserWorkflowStatus.WAITING_FOR_RESPONSE, false, true, false))
+        assertTrue(BrowserWorkflowRecoveryPolicy.canStopCurrentProviderStep(BrowserWorkflowStatus.WAITING_FOR_USER, false, false, true))
+        assertFalse(BrowserWorkflowRecoveryPolicy.canStopCurrentProviderStep(BrowserWorkflowStatus.WAITING_FOR_USER, true, true, false))
+        assertFalse(BrowserWorkflowRecoveryPolicy.canStopCurrentProviderStep(BrowserWorkflowStatus.WAITING_FOR_RESPONSE, false, false, false))
     }
 
     @Test

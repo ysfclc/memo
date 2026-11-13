@@ -56,16 +56,18 @@ object BrowserWorkflowRecoveryPolicy {
     fun canSkipProvider(
         status: BrowserWorkflowStatus,
         awaitingPromptApproval: Boolean,
-        sentForCurrentStep: Boolean
+        sentForCurrentStep: Boolean,
+        submissionUncertain: Boolean
     ): Boolean = status == BrowserWorkflowStatus.WAITING_FOR_USER &&
-        !awaitingPromptApproval && !sentForCurrentStep
+        !awaitingPromptApproval && !sentForCurrentStep && !submissionUncertain
 
     fun canStopCurrentProviderStep(
         status: BrowserWorkflowStatus,
         awaitingPromptApproval: Boolean,
-        sentForCurrentStep: Boolean
+        sentForCurrentStep: Boolean,
+        submissionUncertain: Boolean
     ): Boolean = status in setOf(BrowserWorkflowStatus.WAITING_FOR_USER, BrowserWorkflowStatus.WAITING_FOR_RESPONSE) &&
-        !awaitingPromptApproval && sentForCurrentStep
+        !awaitingPromptApproval && (sentForCurrentStep || submissionUncertain)
 }
 
 data class BrowserModelResponse(
@@ -95,6 +97,7 @@ data class BrowserWorkflowUiState(
     val responses: List<BrowserModelResponse> = emptyList(),
     val skippedProviderIds: List<String> = emptyList(),
     val stoppedProviderIds: List<String> = emptyList(),
+    val submissionUncertain: Boolean = false,
     val startedAt: Long = 0L,
     val sentForCurrentStep: Boolean = false
 ) {
