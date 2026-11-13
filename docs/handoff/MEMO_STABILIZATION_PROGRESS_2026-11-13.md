@@ -80,3 +80,10 @@
 **Verification status:** source/read-back checks only. The policy tests, source verifier, Gradle tests, lint and APK build have not run. WF-02 is not marked complete.
 
 **Next:** WF-03 — implement distinct Skip provider / Stop current step / Cancel entire run semantics while preserving captured outputs.
+
+
+### WF-02 follow-up hardening
+
+- Follow-up source review caught and corrected a missing generation local in the general Continue path after extracting the capture-only retry method.
+- Both manual capture and retry now explicitly refuse calls after the browser session is disposed.
+- This is a source-level correction only; it has not been compiled or run. The branch's current Actions runner blocker still prevents execution.

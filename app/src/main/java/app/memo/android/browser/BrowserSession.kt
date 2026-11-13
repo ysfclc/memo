@@ -341,7 +341,7 @@ class BrowserSession(
 
     /** Re-run response detection against the current page. This action never submits a prompt. */
     fun retryCurrentResponseDetection(): Boolean {
-        if (!BrowserWorkflowRecoveryPolicy.canRetryResponseDetection(
+        if (disposed || !BrowserWorkflowRecoveryPolicy.canRetryResponseDetection(
                 status = workflowState.status,
                 sentForCurrentStep = workflowState.sentForCurrentStep && workflowPromptSent
             )
@@ -360,6 +360,7 @@ class BrowserSession(
     /** Resume after a login, challenge, unsupported composer, or delayed response has been handled manually. */
     fun continueBrowserWorkflow() {
         if (workflowState.status != BrowserWorkflowStatus.WAITING_FOR_USER || workflowState.awaitingPromptApproval) return
+        val generation = workflowGeneration
         if (workflowPromptSent) {
             retryCurrentResponseDetection()
         } else if (!workflowPromptPrepared) {
@@ -395,6 +396,7 @@ class BrowserSession(
      * This is a capture-only action: it never prepares or submits a provider prompt.
      */
     fun captureCurrentResponseManually(responseText: String): Boolean {
+        if (disposed) return false
         val provider = workflowProviders.getOrNull(workflowIndex) ?: return false
         val cleanResponse = responseText.trim().take(14_000)
         val providerPageMatches = !isLoading &&

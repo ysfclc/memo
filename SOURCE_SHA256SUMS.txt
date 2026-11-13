@@ -26,7 +26,7 @@ a5e79842ebe67ebc05c611b64e1a48a8a7e18f96dbd86bdaf40227dc68ba7413  ./app/src/main
 8c97925163148116d0965ee8dc65ae7d8478bdcb8659088b5c7846299d3875d4  ./app/src/main/java/app/memo/android/ai/OpenAiCompatibleClient.kt
 703fa8fc92ba4e5b924cc9ccfa87ad24e57cf92f957242e0d48fd0cf96c18447  ./app/src/main/java/app/memo/android/ai/ProviderSettingsStore.kt
 3a7133fc520113f6bc545d8a791caa047e6d7fbf8ff11b1ea15d6e14ec2fdd5c  ./app/src/main/java/app/memo/android/browser/BrowserScripts.kt
-8f0295df007fdd3406bec0a6e67b42e1ed1261febb01ffb5b937231005fb2696  ./app/src/main/java/app/memo/android/browser/BrowserSession.kt
+92e421fcc0d4e917dd20ec42739cc9868c91d56ee915c91b2b7f9e786f00732e  ./app/src/main/java/app/memo/android/browser/BrowserSession.kt
 fc4a330a976ef220a766d67d2cd4280a93497601875513cf2f20b729c4c4a98f  ./app/src/main/java/app/memo/android/browser/BrowserWorkflow.kt
 3e6b51759f9929c47d39a109898bc7554bb0f721206683a93b5373a0d61c7795  ./app/src/main/java/app/memo/android/data/EncryptedVault.kt
 ae49c818e2658a71f500633c10880c41ea332fcb7b9cdf7f2a745a7dbdf7e045  ./app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt
