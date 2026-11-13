@@ -86,6 +86,7 @@ approval_ledger = (ROOT / "core/src/main/kotlin/app/memo/android/data/ActionAppr
 approval_test = (ROOT / "core/src/test/kotlin/app/memo/android/data/ActionApprovalLedgerTest.kt").read_text()
 browser_session = (ROOT / "app/src/main/java/app/memo/android/browser/BrowserSession.kt").read_text()
 workflow_screen = (ROOT / "app/src/main/java/app/memo/android/ui/BrowserWorkflowScreen.kt").read_text()
+view_model = (ROOT / "app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt").read_text()
 for marker in ("contentHash", "fun approve(", "fun beginExecution(", "fun completeVerified(", "verifyAuditChain", "recoverAfterRestart"):
     if marker not in approval_ledger:
         fail(f"exact-content action ledger missing required contract: {marker}")

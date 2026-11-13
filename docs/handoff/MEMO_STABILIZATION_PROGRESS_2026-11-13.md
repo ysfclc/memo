@@ -148,3 +148,8 @@ Exact-head Actions run #616 (`43366806207`) for the preceding step-recovery comm
 ### Next engineering task — WF-04
 
 Inspect and correct the response persistence boundary. Current source marks the provider job step `COMPLETED` before transcript, evidence, response-entity and action-ledger writes are all checked. `addEvidence` returns no result, so the caller cannot tell whether the evidence-limit or vault-readiness guard prevented insertion. The next patch must make each write outcome observable, mark incomplete captures `NEEDS_REVIEW`, and avoid claiming durable disk persistence from queue acceptance alone.
+
+
+### Source-verifier self-review
+
+A follow-up review found the new persistence-verifier guard referenced `view_model` without loading that source file. The verifier now explicitly reads `MemoWorkspaceViewModel.kt` before checking the evidence-persistence contract. This is a verifier-only correction; the WF-04 application patch has not yet been committed.
