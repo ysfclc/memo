@@ -58,11 +58,11 @@
 - A user-pasted answer is attributed to the current provider page and timestamp; the app cannot cryptographically prove that pasted text came from the page. UI wording must remain honest about that.
 
 ### Next
-1. Complete source-manifest checksum refresh and verify every updated digest against the committed file contents.
-2. Run the source verifier and relevant JVM test when a working executor is available.
-2. Continue WF-02: make retry detection an explicit capture-only action and prove it cannot invoke the send script.
-3. Implement WF-03 step-level Skip/Stop semantics without changing whole-run cancellation or deleting prior evidence.
-4. Keep reporting source status separately from test/device verification.
+1. Validate the full source-manifest checksum set against the latest committed file contents.
+2. Run `tools/verify_source.py` and the focused `BrowserWorkflowPromptsTest` JVM suite when an executor is available.
+3. Reproduce the capture, retry, skip, uncertain-send and stop flows on an Android device.
+4. Continue WF-04: verify response persistence before declaring a step or job successful.
+5. Keep source status separate from compile, test and device verification.
 
 
 ## Update 2 — WF-02 explicit detection retry
@@ -91,6 +91,8 @@
 
 ## Update 3 — WF-03 step-level recovery controls
 
+**Source commits:** `b336ff1f7d0f3b6da282fd1eea9112023df4e100` and `54e373a44ed5b7bd49b40f5fac6c5e432aebea9e`; approval-stage skip correction: `c720df39510e7c1305061c80a96e470ebd58d966`.
+
 - Added separate state-gated operations for **Skip this provider** (only before submission) and **Stop this provider step & continue** (only after a confirmed submission while waiting for a response/recovery).
 - Both actions advance only the current provider step and preserve earlier captured answers. A stopped submitted step is marked `NEEDS_REVIEW`; a pre-send skip is marked `SKIPPED`.
 - Added separate callbacks so the job-step ledger records the correct terminal/review state.
@@ -113,4 +115,9 @@ This correction is source-only and still awaits compilation, unit tests and devi
 
 ### WF-03 approval-stage skip correction
 
-The first step-level version hid Skip while the exact-prompt approval dialog was open. That would still force the user to reject-and-cancel the whole run. Skip is now available at that checkpoint: the screen rejects the matching still-PENDING approval record before marking the provider step SKIPPED and advancing. Skip remains blocked for any submitted or uncertain send; those states require Stop this provider step and leave the step in Needs Review.
+The first step-level version hid Skip while the exact-prompt approval dialog was open. Commit `c720df39510e7c1305061c80a96e470ebd58d966` now rejects the matching pending approval record before skipping that provider. That would still force the user to reject-and-cancel the whole run. Skip is now available at that checkpoint: the screen rejects the matching still-PENDING approval record before marking the provider step SKIPPED and advancing. Skip remains blocked for any submitted or uncertain send; those states require Stop this provider step and leave the step in Needs Review.
+
+
+### Verification update — exact-head CI
+
+Exact-head Actions run #616 (`43366806207`) for the preceding step-recovery commit again failed in the incoming ZIP preflight before a runner was assigned; the validation/build/signing jobs were skipped. This is not a source compile result. The current follow-up commits have not been built or tested.

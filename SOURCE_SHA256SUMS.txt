@@ -14,7 +14,7 @@ dd455fac6e27fc3a4f55b917d345ce0bf7b523cf25cff35beaa85cb8d8d14886  ./IMPLEMENTATI
 f4163833232be58e399ecf84484edab74a94997301937c510caba4617942cdea  ./README.md
 ce2bcd53a712bd22e83da53d4a3961e3af299d3ee715e51f91898db29fa779c6  ./REMOTE_RUNNER_SETUP.md
 245f1e5ef2c16b4c80683a4acc48e4b2e2964a971700ae36f4c9579bb381bb22  ./ROADMAP.md
-37e968685bd6bcf5eb253c61ae5602af61446b792c57cfc287f38c8ae1a78186  ./TASKS.md
+9eefb57ecadea0f46ba70347369c17287f6b46864324039e98431da641c86ad9  ./TASKS.md
 40e9701ed3a053a3d9f1ce669c559ef0b64dea15cfe596ef7929d10be9312f1e  ./app/build.gradle
 cf9961550854acab5317b4efa543fb1657e49e39b5de3f4a363565f85e2f704a  ./app/proguard-rules.pro
 97b317ecef3a48b16a90786ca24cfaba247ade229fe3ef99c5a66fffdbceca16  ./app/src/androidTest/java/app/memo/android/data/EncryptedStoreUpgradeTest.kt
@@ -198,7 +198,7 @@ d82dc17d418f2ce0b7f3b68b7304901400290e60aa3de8515fbfa8f2f617492d  ./gradle.prope
 8e9a143da05745224225fa8c815e990a9759efff3d22f34f1d9fc2187358d7a2  ./remote-runner/server.py
 a1453a88e5bc19e7b20a521b56d36acbaec90fc742b79fb49fca11b7ddda73af  ./remote-runner/tests/test_runner.py
 19280c23fb304e503d1037eb423b17d0a14dd2a6fbb3e916574f4c5be17dfebf  ./settings.gradle
-5d9f705c652f626f6f944dc2dcb1a2ce272141d853136777845c47e6856db613  ./tools/verify_source.py
+0e2c78ebc407e8e3805f8be94d4839c37b194df875c9e862c05e964362073db2  ./tools/verify_source.py
 1f0309608bad3bc98b0e5ccec7c2ec06458aec9e0420301610331d933d55acc5  ./core/src/main/kotlin/app/memo/android/data/LocalWorkArtifactCoordinator.kt
 596c40bfb5b65bc8b9a91324bd75ff844208ab480c3ac8bb0d659c0eadf86682  ./core/src/test/kotlin/app/memo/android/data/LocalWorkArtifactCoordinatorTest.kt
 11ef9d881f771b1d43227af2089c418d46e1b2e3c9009e11d42065bb1a07f12e  ./docs/checkpoints/2026-11-11-vercel-android-build.md
