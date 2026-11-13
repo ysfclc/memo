@@ -1,5 +1,5 @@
 7d4c0c5cce39e5353ea260f973ef19d0c48bf422f2e596a0062810336149bbeb  ./vercel.json
-b2fc1112334ae976b960feb668b6dbcefc717fc300a282dd1fe60b807d4be041  ./scripts/vercel-build-apk.sh
+386f629d7b2f820b0ed8017499a7aee3a956db24b636cb653586d9cac806dea0  ./scripts/vercel-build-apk.sh
 8bf319ac1471b560df35d872c65f67e9732ad32acfa8b2fada55c03b3ebc7b3e  ./.github/workflows/build-apk.yml
 35d51b623486a63a825aeffa712fe00e73c069ff4db4cb783affe14783203641  ./.gitignore
 3a12ecd53ead658782ea65ca54f71d7835324435cdfcd5d51e8ebdb09a1055c0  ./BUILD_STATUS.md

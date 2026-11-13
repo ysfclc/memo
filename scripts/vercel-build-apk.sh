@@ -178,7 +178,7 @@ grep -q "^lib/${MEMO_ABI}/" <<< "$APK_ENTRIES" || {
 if grep -Eq "^lib/(armeabi-v7a|x86|x86_64)/" <<< "$APK_ENTRIES"; then
   echo "::error::The preview APK unexpectedly contains native libraries for another ABI."
   exit 1
-}
+fi
 "$BUILD_TOOLS/zipalign" -c -p 4 "$APK"
 SIGNATURE="$("$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK" 2>&1)"
 printf '%s\n' "$SIGNATURE"
@@ -203,10 +203,11 @@ if (( APK_BYTES > 95000000 )) && [[ -z "${BLOB_READ_WRITE_TOKEN:-}" ]]; then
 fi
 
 DIST="$ROOT/dist"
+DOWNLOAD_NAME="Memo-Android-preview-arm64-v8a.apk"
 rm -rf "$DIST"
 mkdir -p "$DIST"
-cp "$APK" "$DIST/Memo-Android-debug.apk"
-APK_SHA="$(sha256sum "$DIST/Memo-Android-debug.apk" | awk '{print $1}')"
+cp "$APK" "$DIST/$DOWNLOAD_NAME"
+APK_SHA="$(sha256sum "$DIST/$DOWNLOAD_NAME" | awk '{print $1}')"
 COMMIT="${VERCEL_GIT_COMMIT_SHA:-$(git rev-parse HEAD)}"
 BRANCH="${VERCEL_GIT_COMMIT_REF:-$(git branch --show-current)}"
 {
@@ -223,12 +224,12 @@ BRANCH="${VERCEL_GIT_COMMIT_REF:-$(git branch --show-current)}"
 } > "$DIST/BUILD-INFO.txt"
 (
   cd "$DIST"
-  sha256sum Memo-Android-debug.apk BUILD-INFO.txt > SHA256SUMS.txt
+  sha256sum "$DOWNLOAD_NAME" BUILD-INFO.txt > SHA256SUMS.txt
 )
 
 # A public Blob URL avoids Vercel Deployment Protection on the static preview.
 # Never print or persist the read/write token; only print the returned public URL.
-DOWNLOAD_URL="./Memo-Android-debug.apk"
+DOWNLOAD_URL="./$DOWNLOAD_NAME"
 if [[ -n "${BLOB_READ_WRITE_TOKEN:-}" ]]; then
   echo "Uploading verified APK to the configured Vercel Blob store..."
   BLOB_RESPONSE="$(
@@ -239,14 +240,14 @@ if [[ -n "${BLOB_READ_WRITE_TOKEN:-}" ]]; then
       --header "x-add-random-suffix: false" \
       --header "x-allow-overwrite: true" \
       --header "Content-Type: application/vnd.android.package-archive" \
-      --data-binary "@$DIST/Memo-Android-debug.apk" \
-      "https://blob.vercel-storage.com/memo/Memo-Android-debug-$COMMIT.apk"
+      --data-binary "@$DIST/$DOWNLOAD_NAME" \
+      "https://blob.vercel-storage.com/memo/$DOWNLOAD_NAME"
   )"
   BLOB_URL="$(python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("downloadUrl") or d.get("url") or "")' <<< "$BLOB_RESPONSE")"
   [[ "$BLOB_URL" == https://* ]] || { echo "::error::Blob upload did not return a public HTTPS URL."; exit 1; }
   printf '%s\n' "$BLOB_URL" > "$DIST/APK-DOWNLOAD-URL.txt"
   DOWNLOAD_URL="$BLOB_URL"
-  rm -f "$DIST/Memo-Android-debug.apk"
+  rm -f "$DIST/$DOWNLOAD_NAME"
   echo "Public APK URL: $BLOB_URL"
 else
   echo "::warning::BLOB_READ_WRITE_TOKEN is unavailable; the APK will only be in the Vercel deployment output and may require SSO."
