@@ -115,9 +115,16 @@ This correction is source-only and still awaits compilation, unit tests and devi
 
 ### WF-03 approval-stage skip correction
 
-The first step-level version hid Skip while the exact-prompt approval dialog was open. Commit `c720df39510e7c1305061c80a96e470ebd58d966` now rejects the matching pending approval record before skipping that provider. That would still force the user to reject-and-cancel the whole run. Skip is now available at that checkpoint: the screen rejects the matching still-PENDING approval record before marking the provider step SKIPPED and advancing. Skip remains blocked for any submitted or uncertain send; those states require Stop this provider step and leave the step in Needs Review.
+The first step-level version hid Skip while the exact-prompt approval dialog was open. Commit `c720df39510e7c1305061c80a96e470ebd58d966` makes Skip available at that checkpoint by rejecting the matching still-PENDING approval record before marking the provider step SKIPPED and advancing. This allows the remaining providers to continue instead of forcing the user to cancel the entire run. Skip remains blocked for any submitted or uncertain send; those states require Stop this provider step and leave the step in Needs Review.
 
 
 ### Verification update — exact-head CI
 
 Exact-head Actions run #616 (`43366806207`) for the preceding step-recovery commit again failed in the incoming ZIP preflight before a runner was assigned; the validation/build/signing jobs were skipped. This is not a source compile result. The current follow-up commits have not been built or tested.
+
+
+### Follow-up commits and latest executor result
+
+- `7856b1e48afaf07b570de79f9c90279e1d9d0cb2` — corrected source-verifier coverage for approval-stage skip and updated the runbook/progress.
+- `2d349f79810f13cbf2e6ada0c88870c0df6ffe79` — refreshed tracked source SHA-256 entries after the workflow changes.
+- Exact-head Actions run #621 (`43367294009`) failed in the same incoming ZIP preflight before runner assignment; no source tests, Gradle build, lint or APK steps ran.

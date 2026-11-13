@@ -29,7 +29,7 @@ Every substantial task must reference requirement IDs and close only with eviden
 
 - [ ] **WF-01 — Manual response capture:** add a capture-only paste/review fallback after a confirmed send; require matching provider page; persist capture method and use the existing result/evidence callback. Source patch committed in `b98053b`; verification pending.
 - [ ] **WF-02 — Retry detection without resend:** retry only reads/polls the current page; never replays provider submission. Explicit capture-only retry action committed in `WF-02` source increment; verification pending.
-- [ ] **WF-03 — Step-level recovery:** Skip provider while no send is pending or uncertain (including rejecting its pending approval); stop a submitted/uncertain provider step with Needs Review; cancel the whole run separately. Source controls/state changes committed through `c720df3`; verification pending. Preserve completed outputs.
+- [ ] **WF-03 — Step-level recovery:** Skip provider while no send is pending or uncertain (including rejecting its pending approval); stop a submitted/uncertain provider step with Needs Review; cancel the whole run separately. Source controls/state changes committed through `c720df3`, with verifier/manifest follow-ups through `2d349f7`; verification pending. Preserve completed outputs.
 - [ ] **WF-04 — Truthful completion:** a send click is not a captured answer; verify persistence before declaring success.
 - [ ] **WF-05 — Real-device reproduction:** document happy path, detector failure, delayed response, navigation drift and process recreation.
 - [ ] **WF-06 — Editable enhancement checkpoint:** preserve original intent; edit/regenerate enhanced prompt; invalidate approval on edits.
