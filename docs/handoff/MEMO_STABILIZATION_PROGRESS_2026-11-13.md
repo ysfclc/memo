@@ -153,3 +153,14 @@ Inspect and correct the response persistence boundary. Current source marks the 
 ### Source-verifier self-review
 
 A follow-up review found the new persistence-verifier guard referenced `view_model` without loading that source file. The verifier now explicitly reads `MemoWorkspaceViewModel.kt` before checking the evidence-persistence contract. This is a verifier-only correction; the WF-04 application patch has not yet been committed.
+
+
+## 13 November 2026 — APK freshness and data-loss audit
+
+- Added `docs/handoff/MEMO_APK_FRESHNESS_AND_DATA_LOSS_AUDIT_2026-11-13.md` with the three distinct package identities, signing behavior, Keystore/data lifecycle, current executor blockers, last confirmed artifact metadata, and ordered acceptance gates.
+- Confirmed the latest stabilization source head `d6826ea6e30dd0eea23de04f0e3e0e9718e85742` has no successful build. Actions run #629 (`43368087849`) failed in preflight before a runner step; build/signing jobs did not execute. Vercel also reported the free daily deployment quota (HTTP 402); no current-head deployment exists.
+- Retrieved and inspected the last confirmed signed artifact from 8 November, run `42530596381`: package `app.memo.android.debug`, version code 223, pinned certificate SHA-256 `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a`, APK SHA-256 `670acd9192f4b02e7aea1c23e456036b2ad3a98f5d48d57ef7c895a72e8d22b2`. It is not the current candidate.
+- Source audit found the Vercel preview build uses package `app.memo.android.preview` and can continue with an ephemeral debug key when pinned credentials are absent; it only checks the pinned fingerprint when all credentials are supplied. This must be made fail-closed before publishing any candidate.
+- The exact APK installed during the user's reported data-loss incident is not yet identified; uninstall/clear-data versus in-place update and package/signature continuity remain to be established. No single device-level cause is claimed.
+- No Kotlin/Gradle/source change or new APK is claimed in this audit. The build executor is still blocked. PR #8 remains draft/unmerged.
+- **Backlog continuity:** discovery of new bugs does not defer, remove, downgrade, or close previously reported work. WF-01 through WF-12 and the wider TASKS.md milestones remain active; implementation and verification status must stay separate. Continue in priority order as execution becomes available.
