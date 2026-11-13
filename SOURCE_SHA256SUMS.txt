@@ -1,5 +1,5 @@
 7d4c0c5cce39e5353ea260f973ef19d0c48bf422f2e596a0062810336149bbeb  ./vercel.json
-ec6d5a499b5233d79661a9e1251ed966d88bc07fa123ee1e67371fdf445194ad  ./scripts/vercel-build-apk.sh
+b2fc1112334ae976b960feb668b6dbcefc717fc300a282dd1fe60b807d4be041  ./scripts/vercel-build-apk.sh
 8bf319ac1471b560df35d872c65f67e9732ad32acfa8b2fada55c03b3ebc7b3e  ./.github/workflows/build-apk.yml
 35d51b623486a63a825aeffa712fe00e73c069ff4db4cb783affe14783203641  ./.gitignore
 3a12ecd53ead658782ea65ca54f71d7835324435cdfcd5d51e8ebdb09a1055c0  ./BUILD_STATUS.md
@@ -15,7 +15,7 @@ f4163833232be58e399ecf84484edab74a94997301937c510caba4617942cdea  ./README.md
 ce2bcd53a712bd22e83da53d4a3961e3af299d3ee715e51f91898db29fa779c6  ./REMOTE_RUNNER_SETUP.md
 245f1e5ef2c16b4c80683a4acc48e4b2e2964a971700ae36f4c9579bb381bb22  ./ROADMAP.md
 1018de7c6399efe042ef2be5b1a900f61418da2692d128186c4fd18c90789bee  ./TASKS.md
-24b925f839d27219398fdf89ca22833ac8fabdf6d87857430b0ff82bf40bcbc8  ./app/build.gradle
+40e9701ed3a053a3d9f1ce669c559ef0b64dea15cfe596ef7929d10be9312f1e  ./app/build.gradle
 cf9961550854acab5317b4efa543fb1657e49e39b5de3f4a363565f85e2f704a  ./app/proguard-rules.pro
 97b317ecef3a48b16a90786ca24cfaba247ade229fe3ef99c5a66fffdbceca16  ./app/src/androidTest/java/app/memo/android/data/EncryptedStoreUpgradeTest.kt
 a5e79842ebe67ebc05c611b64e1a48a8a7e18f96dbd86bdaf40227dc68ba7413  ./app/src/main/AndroidManifest.xml

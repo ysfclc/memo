@@ -11,6 +11,11 @@ def memoUploadStorePassword = System.getenv('MEMO_UPLOAD_STORE_PASSWORD')
 def memoUploadKeyAlias = System.getenv('MEMO_UPLOAD_KEY_ALIAS')
 def memoUploadKeyPassword = System.getenv('MEMO_UPLOAD_KEY_PASSWORD')
 def memoHasUploadSigning = [memoUploadStoreFile, memoUploadStorePassword, memoUploadKeyAlias, memoUploadKeyPassword].every { it != null && !it.trim().isEmpty() }
+def memoPreviewPackage = (System.getenv('MEMO_PREVIEW_PACKAGE') ?: 'false').toBoolean()
+def memoAbi = System.getenv('MEMO_ABI') ?: ''
+if (memoAbi && memoAbi != 'arm64-v8a') {
+    throw new GradleException('Unsupported Memo preview ABI: ' + memoAbi)
+}
 
 android {
     signingConfigs {
@@ -26,6 +31,17 @@ android {
     namespace 'app.memo.android'
     compileSdk 35
 
+    if (memoAbi) {
+        splits {
+            abi {
+                enable true
+                reset()
+                include 'arm64-v8a'
+                universalApk false
+            }
+        }
+    }
+
     defaultConfig {
         applicationId 'app.memo.android'
         minSdk 29
@@ -37,7 +53,7 @@ android {
 
     buildTypes {
         debug {
-            applicationIdSuffix '.debug'
+            applicationIdSuffix = memoPreviewPackage ? '.preview' : '.debug'
             versionNameSuffix '-debug'
             if (memoHasUploadSigning) {
                 signingConfig signingConfigs.memoUpload

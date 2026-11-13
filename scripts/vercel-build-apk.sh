@@ -10,6 +10,11 @@ export ANDROID_HOME ANDROID_SDK_ROOT="$ANDROID_HOME"
 export GRADLE_USER_HOME="${GRADLE_USER_HOME:-$HOME/.gradle}"
 export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
 export MEMO_VERSION_CODE="${MEMO_VERSION_CODE:-$(date +%s)}"
+# Device-targeted side-by-side preview; normal GitHub CI remains unchanged.
+export MEMO_ABI="${MEMO_ABI:-arm64-v8a}"
+export MEMO_PREVIEW_PACKAGE="${MEMO_PREVIEW_PACKAGE:-true}"
+[[ "$MEMO_ABI" == "arm64-v8a" ]] || { echo "::error::Vercel preview only supports arm64-v8a."; exit 1; }
+[[ "$MEMO_PREVIEW_PACKAGE" == "true" ]] || { echo "::error::Preview package isolation must remain enabled."; exit 1; }
 
 mkdir -p "$BUILD_ROOT" "$ANDROID_HOME/cmdline-tools" "$GRADLE_USER_HOME"
 
@@ -28,6 +33,8 @@ echo "== Memo Vercel Android build =="
 echo "Commit: ${VERCEL_GIT_COMMIT_SHA:-unknown}"
 echo "Branch: ${VERCEL_GIT_COMMIT_REF:-unknown}"
 echo "Version code: $MEMO_VERSION_CODE"
+echo "Target ABI: $MEMO_ABI"
+echo "Application ID: app.memo.android.preview (side-by-side preview)"
 
 # Pin Eclipse Temurin 17 directly to its official GitHub release asset. The
 # Adoptium metadata API returned HTTP 403 from Vercel's build network, so do not
@@ -146,14 +153,30 @@ bash ./gradlew --no-daemon --stacktrace \
   :app:assembleDebugAndroidTest \
   :app:assembleDebug
 
-APK="$ROOT/app/build/outputs/apk/debug/app-debug.apk"
+APK_DIR="$ROOT/app/build/outputs/apk/debug"
+mapfile -t APK_CANDIDATES < <(find "$APK_DIR" -maxdepth 1 -type f -name "*${MEMO_ABI}*debug.apk" -print | sort)
+if [[ "${#APK_CANDIDATES[@]}" -ne 1 ]]; then
+  echo "::error::Expected exactly one ${MEMO_ABI} debug APK; found ${#APK_CANDIDATES[@]}."
+  printf " - %s\n" "${APK_CANDIDATES[@]:-none}"
+  exit 1
+fi
+APK="${APK_CANDIDATES[0]}"
 test -s "$APK"
 BUILD_TOOLS="$ANDROID_HOME/build-tools/35.0.0"
 for tool in aapt apksigner zipalign; do test -x "$BUILD_TOOLS/$tool"; done
 BADGING="$("$BUILD_TOOLS/aapt" dump badging "$APK")"
 PACKAGE_LINE="$(printf '%s\n' "$BADGING" | awk '/^package:/ && !found { print; found = 1 } END { if (!found) exit 1 }')"
-[[ "$PACKAGE_LINE" == *"name='app.memo.android.debug'"* ]] || {
-  echo "::error::Unexpected Memo APK application ID: $PACKAGE_LINE"
+[[ "$PACKAGE_LINE" == *"name='app.memo.android.preview'"* ]] || {
+  echo "::error::Unexpected Memo preview APK application ID: $PACKAGE_LINE"
+  exit 1
+}
+APK_ENTRIES="$(unzip -Z1 "$APK")"
+grep -q "^lib/${MEMO_ABI}/" <<< "$APK_ENTRIES" || {
+  echo "::error::The APK does not contain the expected ${MEMO_ABI} native libraries."
+  exit 1
+}
+if grep -Eq "^lib/(armeabi-v7a|x86|x86_64)/" <<< "$APK_ENTRIES"; then
+  echo "::error::The preview APK unexpectedly contains native libraries for another ABI."
   exit 1
 }
 "$BUILD_TOOLS/zipalign" -c -p 4 "$APK"
@@ -174,7 +197,7 @@ if [[ "$SIGNING_COUNT" -eq 4 ]]; then
   }
 fi
 APK_BYTES="$(wc -c < "$APK" | tr -d ' ')"
-if (( APK_BYTES > 95000000 )); then
+if (( APK_BYTES > 95000000 )) && [[ -z "${BLOB_READ_WRITE_TOKEN:-}" ]]; then
   echo "::error::APK is ${APK_BYTES} bytes; exceeds the 95 MB Vercel static artifact safety limit."
   exit 1
 fi
@@ -189,8 +212,8 @@ BRANCH="${VERCEL_GIT_COMMIT_REF:-$(git branch --show-current)}"
 {
   echo "Commit: $COMMIT"
   echo "Branch: $BRANCH"
-  echo "Variant: debug"
-  echo "Package: app.memo.android.debug"
+  echo "Variant: debug preview / arm64-v8a"
+  echo "Package: app.memo.android.preview"
   echo "Signing: $SIGNING_DESCRIPTION"
   echo "Gradle: 8.14.6"
   echo "Compile SDK: 35"
@@ -223,6 +246,7 @@ if [[ -n "${BLOB_READ_WRITE_TOKEN:-}" ]]; then
   [[ "$BLOB_URL" == https://* ]] || { echo "::error::Blob upload did not return a public HTTPS URL."; exit 1; }
   printf '%s\n' "$BLOB_URL" > "$DIST/APK-DOWNLOAD-URL.txt"
   DOWNLOAD_URL="$BLOB_URL"
+  rm -f "$DIST/Memo-Android-debug.apk"
   echo "Public APK URL: $BLOB_URL"
 else
   echo "::warning::BLOB_READ_WRITE_TOKEN is unavailable; the APK will only be in the Vercel deployment output and may require SSO."
@@ -234,7 +258,7 @@ cat > "$DIST/index.html" <<HTML
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Memo Android build</title>
+<title>Memo Android preview build</title>
 <style>
 :root{color-scheme:dark;font:16px/1.5 system-ui,sans-serif;background:#0b1018;color:#e8eef7}
 body{max-width:720px;margin:8vh auto;padding:24px}
@@ -244,10 +268,11 @@ small{color:#aab8ca}.download{display:inline-block;margin:18px 0;padding:12px 18
 </style>
 </head>
 <body><main>
-<h1>Memo Android build</h1>
-<p>This is a test build from the stabilization branch. It is not a production release.</p>
-<p><a class="download" href="$DOWNLOAD_URL" download>Download Memo APK</a></p>
-<p>Package: <code>app.memo.android.debug</code></p>
+<h1>Memo Android preview</h1>
+<p>This is a side-by-side test build from the stabilization branch. It does not replace the installed Memo package.</p>
+<p><a class="download" href="$DOWNLOAD_URL" download>Download Memo Preview APK</a></p>
+<p>Package: <code>app.memo.android.preview</code></p>
+<p>Architecture: <code>arm64-v8a</code></p>
 <p>Commit: <code>$COMMIT</code></p>
 <p>SHA-256: <code>$APK_SHA</code></p>
 <p><a href="./BUILD-INFO.txt">Build information</a> · <a href="./SHA256SUMS.txt">Checksums</a></p>
