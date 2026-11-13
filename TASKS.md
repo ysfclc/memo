@@ -535,3 +535,12 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - **Still open:** native-call cancellation responsiveness, Work-level cancel control wiring/visibility, full Gradle tests, lint, and real-device timing. The deadline is cooperative and is not a hard process kill.
 
 - **Follow-up UI:** Work now displays a Stop generation control during an active local checkpoint, shows a bounded tail of partial output, and explains that stopping leaves the checkpoint for review rather than saving partial text as a finished artifact.
+
+
+## 13 November 2026 — Backlog continuity rule
+
+- **Owner requirement:** previously reported bugs, requested capabilities and roadmap tasks remain active when new defects are discovered. New findings add to the work; they do not defer, remove, downgrade or close earlier tasks.
+- A stabilization freeze controls sequencing and release safety only. It is not a declaration that existing product work is out of scope or abandoned.
+- Keep each task's implementation state separate from its verification state. Source changes, static checks, compiled builds, automated tests, emulator tests and physical-device acceptance are distinct evidence levels.
+- WF-01 through WF-12 in the Memo workflow recovery plan remain active. The wider M0–M7 milestones and documented product gaps remain active in this backlog.
+- Do not mark a task deferred or complete merely because a new bug has been found. Update the task with the new dependency/blocker and preserve its original acceptance criteria.
