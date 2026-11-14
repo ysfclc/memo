@@ -407,7 +407,7 @@ if 'if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" && "$MEMO_BUILD_CURRENT_SO
     fail("Manual source APK dispatch must be handled explicitly in preflight")
 if "Manual source signing is restricted to stabilization/usable-stage-2026-11-10" not in workflow:
     fail("Manual source APK signing must be restricted to the reviewed stabilization branch")
-sign_job = workflow.split("\\n  sign:", 1)[1] if "\\n  sign:" in workflow else ""
+sign_job = workflow.split("\n  sign:", 1)[1] if "\n  sign:" in workflow else ""
 if not sign_job or "if: github.event_name != 'pull_request'" not in sign_job:
     fail("Isolated signing must remain disabled for unreviewed pull-request builds")
 
