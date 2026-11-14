@@ -30,6 +30,12 @@ name: Memo — Import source ZIP and build Android APK
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      build_current_source:
+        description: "Build this branch's committed source directly (no ZIP); run isolated pinned signing after all tests pass."
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -58,6 +64,8 @@ jobs:
       - name: Resolve the upload commit and enforce the single-ZIP contract
         id: resolve
         shell: bash
+        env:
+          MEMO_BUILD_CURRENT_SOURCE: ${{ inputs.build_current_source }}
         run: |
           set -euo pipefail
           if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
@@ -74,6 +82,22 @@ jobs:
               echo 'source_only=true'
             } >> "$GITHUB_OUTPUT"
             echo 'Pull-request source validation: no import, signing or repository write will run.'
+            exit 0
+          fi
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" && "$MEMO_BUILD_CURRENT_SOURCE" == "true" ]]; then
+            if [[ "$GITHUB_REF_TYPE" != "branch" || "$GITHUB_REF_NAME" != "stabilization/usable-stage-2026-11-10" ]]; then
+              echo "::error::Manual source signing is restricted to stabilization/usable-stage-2026-11-10. Current ref: $GITHUB_REF"
+              exit 1
+            fi
+            ARCHIVE_SHA="$(git archive "$GITHUB_SHA" | sha256sum | awk '{print $1}')"
+            {
+              echo 'skip_no_upload=false'
+              echo 'already_imported=false'
+              echo "upload_commit=$GITHUB_SHA"
+              echo "archive_sha=$ARCHIVE_SHA"
+              echo 'source_only=true'
+            } >> "$GITHUB_OUTPUT"
+            echo 'Explicit manual source build requested; the exact branch commit will be tested and signed in the isolated signing job.'
             exit 0
           fi
           if [[ "$GITHUB_REF_TYPE" != "branch" || ( "$GITHUB_REF_NAME" != "main" && "$GITHUB_REF_NAME" != "stabilization/usable-stage-2026-11-10" ) ]]; then
