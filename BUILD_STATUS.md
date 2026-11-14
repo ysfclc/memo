@@ -1,15 +1,15 @@
-# Current stabilization status — 13 November 2026
+# Current stabilization status — 14 November 2026
 
-**Status: BLOCKED / NOT VERIFIED.** Feature development is frozen. See [the STOP-WORK stabilization plan](docs/handoff/MEMO_STABILIZATION_PLAN_2026-11-13.md) for scope, bug register, exact reproduction/acceptance steps and ordered gates.
+**Status: BUILD, API 35 UPGRADE TEST AND PINNED APK SIGNING VERIFIED; PHYSICAL-DEVICE ACCEPTANCE PENDING.**
 
-- Current candidate: `99f79d975cf7276c21eb32adee6831824c3ff35b` on `stabilization/usable-stage-2026-11-10`; PR #8 remains draft and unmerged.
-- GPU fallback duplicate-stream guard and regression test are committed, but the test has not executed on this commit.
-- GitHub Actions runner startup remains blocked before steps. Vercel returns HTTP 402 for the daily deployment quota; no deployment exists for this candidate.
-- No exact-head Gradle test/lint/build evidence, API 35 instrumentation execution, pinned-signature APK or physical-device acceptance is recorded.
-- Do not install the prior ephemeral `app.memo.android.preview` APK over the existing Memo package.
-- No merge, release, production deployment, signing-key change or destructive data migration is authorized.
-
-The dated historical evidence below is retained as historical evidence only; it is not proof of the current candidate.
+- Exact tested source commit: `672144a391e04ae33e487064b717932ee9ebf146` on `stabilization/usable-stage-2026-11-10`; PR #8 remains draft and unmerged.
+- GitHub Actions run **#674**: [successful exact-head build](https://github.com/ysfclc/memo/actions/runs/43652062415).
+- Passed: source invariants, remote-runner tests, `:core:test`, `:app:testDebugUnitTest`, `:app:lintDebug`, `:app:assembleDebug`, APK identity/signature verification, and API 35 encrypted-store in-place upgrade instrumentation.
+- Build identity: package `app.memo.android.debug`, versionCode `674`, versionName `4.0.0-memo-debug`.
+- Final artifact: `Memo-Android-debug-APK`, artifact ID `14136712960`; pinned certificate SHA-256 `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a` verified in the isolated signing job.
+- API 35 upgrade test passed: both encrypted stores reopened after `adb install -r`; legacy recovery and corruption checks passed. No uninstall or data-clearing step was used.
+- **Still pending:** physical-device upgrade and product-flow acceptance on the owner's existing phone. Install over the existing package; do not uninstall or clear app data.
+- No merge, release, production deployment, signing-key change or destructive data migration is authorized. PR #8 and `main` remain untouched.
 
 ---
 

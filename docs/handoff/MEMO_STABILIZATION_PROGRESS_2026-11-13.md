@@ -225,3 +225,16 @@ A follow-up review found the new persistence-verifier guard referenced `view_mod
 - A verifier-only follow-up commit was accidentally created from the previous base tree rather than the immediately preceding application commit. CI caught that the branch no longer contained the SAVING_RESPONSE application integration.
 - Restored the six affected application/test/task files exactly from known commit 77f2a6c86553318e626ae6bc8167decb2cfbe0f7 while preserving the corrected verifier and progress history already present at the branch head.
 - This restoration commit is a source-integrity correction. The next exact-head CI run must prove the complete tree, including the coordinator and its caller, before further work proceeds.
+
+
+## 14 November 2026 — WF-04 exact-head CI and pinned APK acceptance
+
+- **Exact tested source commit:** `672144a391e04ae33e487064b717932ee9ebf146`.
+- **GitHub Actions:** run #674, ID `43652062415`, completed successfully: https://github.com/ysfclc/memo/actions/runs/43652062415.
+- **Source gates:** 52 required integration files, platform-independent core isolation, exact-content approval, manual capture/retry/skip/stop controls, atomic response-capture transaction and acknowledgement gate all passed the source verifier. Remote-runner tests passed.
+- **Android gates:** `:core:test`, `:app:testDebugUnitTest`, `:app:lintDebug`, `:app:assembleDebug`, `:app:assembleDebugAndroidTest` and APK identity/signature verification passed. Gradle reported `BUILD SUCCESSFUL in 4m 57s`.
+- **APK identity:** package `app.memo.android.debug`; versionCode `674`; versionName `4.0.0-memo-debug`.
+- **API 35 instrumentation:** baseline installed, encrypted workspace/native stores seeded, updated APK installed in place, both stores reopened; legacy recovery and corruption checks passed. Final log: `PASS: signed in-place upgrade preserved app-private data and both real encrypted Memo stores; legacy recovery and corruption tests passed.`
+- **Pinned signing:** isolated signing job passed and verified certificate SHA-256 `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a`.
+- **Artifacts:** final signed APK `Memo-Android-debug-APK`, ID `14136712960`, artifact ZIP SHA-256 `59dd1a6a7a7240f08cf5feb056fb8c6d9a82f9d03a839eda2950d74fa1a9083d`; integrated repository ID `14136667838`; build reports ID `14136219292`.
+- **Status:** source/build/signing gates for WF-04 passed. WF-04 remains open only for live provider/device acceptance; WF-05 and STAB-05 remain open for physical-device reproduction and upgrade checks. PR #8 remains draft; `main` was not modified.
