@@ -172,6 +172,17 @@ class BrowserWorkflowPromptsTest {
     }
 
     @Test
+    fun responseCaptureWaitStateRemainsAnActiveWorkflowState() {
+        val saving = BrowserWorkflowUiState(status = BrowserWorkflowStatus.SAVING_RESPONSE)
+        val waiting = BrowserWorkflowUiState(status = BrowserWorkflowStatus.WAITING_FOR_USER)
+        val idle = BrowserWorkflowUiState(status = BrowserWorkflowStatus.IDLE)
+
+        assertTrue(saving.isActive)
+        assertTrue(waiting.isActive)
+        assertFalse(idle.isActive)
+    }
+
+    @Test
     fun critiqueChainAssignsReviewerRoleToSecondStep() {
         val prompt = BrowserWorkflowPrompts.build(
             goal = "Review this product architecture.",

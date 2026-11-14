@@ -32,7 +32,7 @@ enum class BrowserWorkflowMode(val label: String, val description: String) {
 
 enum class BrowserWorkflowStatus {
     IDLE, NAVIGATING, PREPARING_PROMPT, SENDING_PROMPT, WAITING_FOR_RESPONSE,
-    WAITING_FOR_USER, COMPLETED, FAILED, CANCELLED
+    SAVING_RESPONSE, WAITING_FOR_USER, COMPLETED, FAILED, CANCELLED
 }
 
 object BrowserWorkflowRecoveryPolicy {
@@ -105,6 +105,7 @@ data class BrowserWorkflowUiState(
         BrowserWorkflowStatus.PREPARING_PROMPT,
         BrowserWorkflowStatus.SENDING_PROMPT,
         BrowserWorkflowStatus.WAITING_FOR_RESPONSE,
+        BrowserWorkflowStatus.SAVING_RESPONSE,
         BrowserWorkflowStatus.WAITING_FOR_USER
     )
 }
@@ -112,7 +113,8 @@ data class BrowserWorkflowUiState(
 class BrowserWorkflowCallbacks(
     val onApprovalRequired: (index: Int, provider: BrowserModelProvider, prompt: String, destination: String, contentHash: String) -> Unit = { _, _, _, _, _ -> },
     val onStepStarted: (index: Int, provider: BrowserModelProvider, prompt: String) -> Unit = { _, _, _ -> },
-    val onStepCompleted: (index: Int, response: BrowserModelResponse) -> Unit = { _, _ -> },
+    val onStepCompleted: (index: Int, response: BrowserModelResponse, complete: (persisted: Boolean, message: String) -> Unit) -> Unit =
+        { _, _, complete -> complete(false, "No durable response-capture handler is connected.") },
     val onStepSkipped: (index: Int, provider: BrowserModelProvider, reason: String) -> Unit = { _, _, _ -> },
     val onStepStopped: (index: Int, provider: BrowserModelProvider, reason: String) -> Unit = { _, _, _ -> },
     val onStateChanged: (BrowserWorkflowUiState) -> Unit = {},

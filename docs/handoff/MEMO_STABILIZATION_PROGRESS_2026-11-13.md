@@ -218,3 +218,10 @@ A follow-up review found the new persistence-verifier guard referenced `view_mod
 - The capture method is correctly checked in the dedicated WF-04 integration guard later in the verifier. Removed the duplicate/misplaced assertion from the older approval-only marker list; no application code change was needed.
 - This run stopped during source verification, before Gradle tests, lint, APK assembly or emulator validation. Those remain pending.
 - Next: rerun exact-head CI and proceed only from the first complete green run.
+
+
+### Branch-tree restoration — 14 November 2026
+
+- A verifier-only follow-up commit was accidentally created from the previous base tree rather than the immediately preceding application commit. CI caught that the branch no longer contained the SAVING_RESPONSE application integration.
+- Restored the six affected application/test/task files exactly from known commit 77f2a6c86553318e626ae6bc8167decb2cfbe0f7 while preserving the corrected verifier and progress history already present at the branch head.
+- This restoration commit is a source-integrity correction. The next exact-head CI run must prove the complete tree, including the coordinator and its caller, before further work proceeds.
