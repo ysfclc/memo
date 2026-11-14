@@ -189,3 +189,16 @@ A follow-up review found the new persistence-verifier guard referenced `view_mod
 - **Important:** this run was a pull-request validation. The isolated pinned-signing job and APK delivery artifacts were intentionally skipped. Do not install the intermediate CI-debug APK.
 - **Follow-up implemented:** `.github/workflows/build-apk.yml` now has an explicit `workflow_dispatch` boolean `build_current_source`, restricted to the stabilization branch, which runs the exact committed source through tests and the isolated pinned-signing job. `docs/ci/GITHUB_ACTIONS_BUILD.md` documents the one-click path. The source verifier protects the dispatch branch restriction and ensures the signer remains artifact-only/no-checkout.
 - **Still pending:** a manual workflow dispatch with `build_current_source=true`, final pinned-certificate APK artifact verification, and physical-device in-place upgrade against the user's actual installed package/certificate. Do not uninstall Memo or clear app data.
+
+
+## 14 November 2026 — WF-04 durable browser-response acknowledgement
+
+- **Starting head:** `f80873299fc246c49be7f281999fd4acc0f08fa3`.
+- **Task:** WF-04, with regression protection for WF-01/WF-02.
+- **Source finding:** the previous response callback advanced the browser to the next provider immediately, while evidence, transcript, action completion and response-entity creation were separate writes. The new coordinator/ViewModel transaction from the prior increment was not yet connected to this live callback.
+- **Change:** browser workflow now enters `SAVING_RESPONSE` after detecting or manually receiving a provider answer. It waits for a ViewModel-scoped encrypted-persistence acknowledgement before adding that response to workflow results or navigating to another provider. A failed save returns to user recovery with the original submitted state intact; the prompt is never resent. The legacy multi-write response callback was removed in favor of the atomic coordinator.
+- **Safety:** a provider step advances only when the result contains a non-empty evidence ID and the transaction did not return `FAILED`. A saved response that still needs action/entity review is retained and may be followed by the next provider, while the individual step remains `NEEDS_REVIEW`.
+- **Tests/guards:** added a JVM state test for the saving state; extended `tools/verify_source.py` to require the acknowledgement gate, the coordinator transaction tests, and absence of the old multi-write path.
+- **Exact files:** `BrowserWorkflow.kt`, `BrowserSession.kt`, `BrowserWorkflowScreen.kt`, `MemoWorkspaceViewModel.kt`, `BrowserWorkflowPromptsTest.kt`, `FrontierResponseCaptureCoordinator.kt`, `FrontierResponseCaptureCoordinatorTest.kt`, `tools/verify_source.py`, `TASKS.md`, this progress log and `SOURCE_SHA256SUMS.txt`.
+- **Verification at commit time:** source-anchor validation only. No Gradle tests, lint, APK build, emulator or physical-device test is claimed until the exact resulting commit's GitHub run completes.
+- **Next:** run exact-head CI; fix any source/test failures before beginning WF-05 or UI expansion. Keep PR #8 draft and `main` untouched.

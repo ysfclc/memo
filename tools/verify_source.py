@@ -19,6 +19,8 @@ REQUIRED = [
     "core/build.gradle",
     "core/src/main/kotlin/app/memo/android/data/Models.kt",
     "core/src/main/kotlin/app/memo/android/data/WorkflowAttemptJournal.kt",
+    "core/src/main/kotlin/app/memo/android/data/FrontierResponseCaptureCoordinator.kt",
+    "core/src/test/kotlin/app/memo/android/data/FrontierResponseCaptureCoordinatorTest.kt",
     "core/src/main/kotlin/app/memo/android/data/WorkflowRuntimeReceipt.kt",
     "core/src/main/kotlin/app/memo/android/data/LocalWorkArtifactCoordinator.kt",
     "core/src/test/kotlin/app/memo/android/data/LocalWorkArtifactCoordinatorTest.kt",
@@ -96,7 +98,7 @@ for marker in ("changedPayloadOrDestinationCannotReuseApproval", "tamperedStored
         fail(f"action ledger regression test missing: {marker}")
 if "approveCurrentPrompt" not in browser_session or "awaitingPromptApproval" not in browser_session:
     fail("visible browser session lacks the exact-content approval state gate")
-for marker in ("Approve exact external prompt?", "workflowState.currentPrompt", "Approve and send", "Reject and stop", "completeExternalAction"):
+for marker in ("Approve exact external prompt?", "workflowState.currentPrompt", "Approve and send", "Reject and stop", "commitFrontierResponseCaptureAsync"):
     if marker not in workflow_screen:
         fail(f"browser workflow UI is missing exact-content approval behavior: {marker}")
 print("PASS: exact-content action ledger, regression tests, visible prompt gate and evidence completion are wired in source")
@@ -130,6 +132,25 @@ for marker in ("skipAndStopPoliciesKeepDifferentScopes", "responseDetectionRetry
     if marker not in browser_workflow_test:
         fail(f"manual response capture regression test is missing: {marker}")
 print("PASS: manual browser-response recovery is capture-only, provider-bound and records capture provenance")
+
+capture_coordinator = (ROOT / "core/src/main/kotlin/app/memo/android/data/FrontierResponseCaptureCoordinator.kt").read_text()
+capture_coordinator_test = (ROOT / "core/src/test/kotlin/app/memo/android/data/FrontierResponseCaptureCoordinatorTest.kt").read_text()
+for marker in ("SAVING_RESPONSE", "workflowCapturePending", "finishCaptureAcknowledgement", "advanceWorkflowAfterCapture"):
+    if marker not in browser_session + browser_workflow:
+        fail(f"browser response must wait for durable capture acknowledgement: {marker}")
+if "commitFrontierResponseCaptureAsync" not in workflow_screen or "FrontierResponseCaptureRequest" not in workflow_screen:
+    fail("frontier browser workflow is not connected to the encrypted response-capture transaction")
+if "completeCapture(true" not in workflow_screen or "result.evidenceId.isNotBlank()" not in workflow_screen:
+    fail("browser workflow must advance only after a durable response/evidence identifier is returned")
+if "viewModel.addEvidence(responseEvidence)" in workflow_screen or "saveFrontierResponseEntity(response" in workflow_screen:
+    fail("frontier response must use one atomic capture path, not the legacy multi-write callback")
+for marker in ("successfulCaptureAtomicallySavesEvidenceTranscriptEntityAndStep", "approvedInProgressActionCompletesOnlyAgainstTheExactSavedStepEvidence", "repeatedIdenticalCaptureIsIdempotent", "conflictingResponseForSameProviderStepIsRejectedWithoutMutation"):
+    if marker not in capture_coordinator_test:
+        fail(f"frontier response transaction regression test is missing: {marker}")
+if "commitFrontierResponseCaptureAsync" not in view_model or "persistAndAwait()" not in view_model:
+    fail("frontier response capture must run in ViewModel scope and await encrypted persistence")
+print("PASS: frontier response is durably committed before provider workflow advances")
+
 
 live_timeline = (ROOT / "core/src/main/kotlin/app/memo/android/data/LiveTimelineProjector.kt").read_text()
 live_timeline_test = (ROOT / "core/src/test/kotlin/app/memo/android/data/LiveTimelineProjectorTest.kt").read_text()

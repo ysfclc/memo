@@ -79,6 +79,7 @@ class BrowserSession(
     private var workflowMode: BrowserWorkflowMode = BrowserWorkflowMode.CONSULT_AND_COMPARE
     private var workflowIndex: Int = 0
     private var workflowPromptSent: Boolean = false
+    private var workflowCapturePending: Boolean = false
     private var workflowPromptPrepared: Boolean = false
     private var workflowApprovedHash: String = ""
     private var workflowApprovedDestination: String = ""
@@ -537,6 +538,7 @@ class BrowserSession(
     fun stopBrowserWorkflow() {
         if (!workflowState.isActive) return
         workflowGeneration++
+        workflowCapturePending = false
         workflowNavigationCallback = null
         workflowApprovedHash = ""
         workflowApprovedDestination = ""
@@ -694,21 +696,59 @@ class BrowserSession(
         responseText: String,
         captureMethod: String = "AUTOMATIC_DOM"
     ) {
-        if (disposed || generation != workflowGeneration || workflowIndex !in workflowProviders.indices) return
+        if (disposed || generation != workflowGeneration || workflowIndex !in workflowProviders.indices || workflowCapturePending) return
         val provider = workflowProviders[workflowIndex]
-        val prompt = workflowState.currentPrompt
         val result = BrowserModelResponse(
             providerId = provider.id,
             providerName = provider.label,
-            prompt = prompt,
+            prompt = workflowState.currentPrompt,
             response = responseText.trim().take(14_000),
             sourceUrl = currentUrl.take(2_048),
             startedAt = workflowStepStartedAt,
             completedAt = System.currentTimeMillis(),
             captureMethod = captureMethod
         )
+        workflowCapturePending = true
+        publishWorkflowState(workflowState.copy(
+            status = BrowserWorkflowStatus.SAVING_RESPONSE,
+            sentForCurrentStep = true,
+            message = "Saving ${provider.label}'s response, transcript and evidence to the encrypted workspace. The next provider will not start until this save is confirmed."
+        ))
+        val captureHandler = workflowCallbacks?.onStepCompleted
+        if (captureHandler == null) {
+            finishCaptureAcknowledgement(generation, result, false, "The response was detected, but no durable capture handler is connected. It has not been marked complete.")
+            return
+        }
+        val acknowledge: (Boolean, String) -> Unit = { persisted, message ->
+            mainHandler.post { finishCaptureAcknowledgement(generation, result, persisted, message) }
+        }
+        runCatching { captureHandler(workflowIndex, result, acknowledge) }.onFailure { error ->
+            acknowledge(false, "The response was detected, but saving it failed: ${error.message?.take(180) ?: "unknown error"}. It was not marked complete.")
+        }
+    }
+
+    private fun finishCaptureAcknowledgement(
+        generation: Long,
+        result: BrowserModelResponse,
+        persisted: Boolean,
+        message: String
+    ) {
+        if (disposed || generation != workflowGeneration || !workflowCapturePending) return
+        workflowCapturePending = false
+        if (!persisted) {
+            // Preserve the confirmed-send state: recovery may read/capture again, never resend.
+            pauseWorkflowForUser(message.ifBlank {
+                "The response could not be confirmed in encrypted storage. Keep the provider page open and retry capture; Memo will not resend the prompt."
+            })
+            return
+        }
+        advanceWorkflowAfterCapture(generation, result)
+    }
+
+    private fun advanceWorkflowAfterCapture(generation: Long, result: BrowserModelResponse) {
+        if (disposed || generation != workflowGeneration || workflowIndex !in workflowProviders.indices) return
+        val provider = workflowProviders[workflowIndex]
         val results = workflowState.responses + result
-        workflowCallbacks?.onStepCompleted(workflowIndex, result)
         workflowPromptSent = false
         workflowPromptPrepared = false
         workflowIndex++
@@ -720,9 +760,9 @@ class BrowserSession(
                 sentForCurrentStep = false,
                 awaitingPromptApproval = false,
                 message = if (workflowState.skippedProviderIds.isEmpty() && workflowState.stoppedProviderIds.isEmpty()) {
-                    "All ${results.size} frontier responses were captured and retained. Review agreement and disagreement in the linked consultation chat."
+                    "All ${results.size} frontier responses were captured and durably saved. Review agreement and disagreement in the linked consultation chat."
                 } else {
-                    "Provider sequence ended: ${results.size} answer(s) captured, ${workflowState.skippedProviderIds.size} provider(s) skipped, ${workflowState.stoppedProviderIds.size} step(s) stopped. Review the partial results in the linked consultation chat."
+                    "Provider sequence ended: ${results.size} answer(s) captured and saved, ${workflowState.skippedProviderIds.size} provider(s) skipped, ${workflowState.stoppedProviderIds.size} step(s) stopped. Review the partial results in the linked consultation chat."
                 },
                 currentPrompt = ""
             )
@@ -737,7 +777,7 @@ class BrowserSession(
                 currentProviderName = workflowProviders[workflowIndex].label,
                 sentForCurrentStep = false,
                 awaitingPromptApproval = false,
-                message = "${provider.label} response captured. Moving to ${workflowProviders[workflowIndex].label} with the earlier response included in its prompt.",
+                message = "${provider.label} response saved. Moving to ${workflowProviders[workflowIndex].label} with the earlier response included in its prompt.",
                 currentPrompt = ""
             ))
             beginWorkflowStep(generation)
