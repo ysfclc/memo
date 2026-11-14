@@ -116,3 +116,12 @@ Reject any candidate when:
 - a user is told to uninstall or clear data to work around an install conflict.
 
 **Current decision:** no fresh installable upgrade APK is verified. Keep PR #8 draft/unmerged. Preserve the existing installation and data. The next engineering action is to restore the build executor and make the Vercel signing path fail closed, then execute the data-preservation gates before any further delivery.
+
+
+## 14 November 2026 — Vercel signing fallback closed in source
+
+The stabilization branch now changes the Vercel APK script so all four protected Memo signing values are mandatory before toolchain downloads or Gradle execution. It validates the configured keystore, unconditionally checks the output certificate against the pinned SHA-256, removes the ephemeral debug-key publication path, and deletes the temporary keystore on exit. `tools/verify_source.py` guards these requirements.
+
+This intentionally means the existing Vercel project (previously audited as lacking the four signing secrets) cannot produce an APK until those secrets are configured. That is safer than publishing a misleading, non-update-compatible preview artifact. The preview application ID remains `app.memo.android.preview`; it is not a replacement for an installed Memo package.
+
+**Status:** source patch committed; exact-head Actions, Gradle, signature, emulator and physical-device verification are pending. The incident is not closed and no APK is being distributed.
