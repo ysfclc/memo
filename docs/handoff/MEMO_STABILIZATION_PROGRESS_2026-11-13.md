@@ -164,3 +164,14 @@ A follow-up review found the new persistence-verifier guard referenced `view_mod
 - The exact APK installed during the user's reported data-loss incident is not yet identified; uninstall/clear-data versus in-place update and package/signature continuity remain to be established. No single device-level cause is claimed.
 - No Kotlin/Gradle/source change or new APK is claimed in this audit. The build executor is still blocked. PR #8 remains draft/unmerged.
 - **Backlog continuity:** discovery of new bugs does not defer, remove, downgrade, or close previously reported work. WF-01 through WF-12 and the wider TASKS.md milestones remain active; implementation and verification status must stay separate. Continue in priority order as execution becomes available.
+
+
+## 14 November 2026 — APK delivery signing guard
+
+- **Task:** P0 APK freshness/data-loss audit, release rejection rule; WF-13 release gate remains open.
+- **Branch:** `stabilization/usable-stage-2026-11-10`.
+- **Change:** `scripts/vercel-build-apk.sh` now requires all four protected Memo upload-signing values before downloading JDK/Android SDK or invoking Gradle. It validates the keystore alias/password before building, uses the pinned certificate only, removes the ephemeral debug-key fallback, and unconditionally verifies the resulting APK against pinned certificate SHA-256 `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a`. The temporary keystore is removed on exit.
+- **Guard:** `tools/verify_source.py` now checks that Vercel signing is mandatory, keystore validation precedes Gradle, the pinned certificate check exists, and no ephemeral publication fallback is present.
+- **Why:** the prior Vercel path could publish a side-by-side `app.memo.android.preview` APK signed with an ephemeral key when protected credentials were absent. It was not an update-compatible Memo APK and could encourage a destructive uninstall/replacement. Vercel project credentials were previously absent; deployment is intentionally blocked until the pinned signing secrets are provisioned.
+- **Not verified:** source verifier, GitHub Actions exact-head run, Gradle tests/lint/APK, pinned-signature output, emulator upgrade, and physical-device update. No APK is published by this change.
+- **Next:** inspect exact-head Actions result. Keep PR #8 draft. Resume WF-04 only after this P0 delivery guard and build executor are verified; WF-01–WF-03 source work remains unaccepted until executable/device evidence.
