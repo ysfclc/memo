@@ -193,7 +193,7 @@ view_model = (ROOT / "app/src/main/java/app/memo/android/data/MemoWorkspaceViewM
 for marker in ('sourceConversationId: String = ""', 'sourceConversationId = sourceId'):
     if marker not in view_model:
         fail(f"Work-plan source conversation linkage is missing: {marker}")
-for marker in ("Start with Memo", "Continue in Talk", "onOpenCouncil", "onStartConversation"):
+for marker in ("Start with Memo", "What do you want Memo to help you accomplish?", "onOpenCouncil", "onStartConversation"):
     if marker not in chat:
         fail(f"Talk entry/composer is missing: {marker}")
 print("PASS: one Memo Activity, universal Talk intent router, linked source conversations, four product surfaces, and safe draft handoff")
@@ -250,6 +250,23 @@ if "Expected exactly one Android Gradle project root" not in workflow or "Memo-A
     fail("GitHub workflow is missing canonical-root or artifact-delivery checks")
 if "sha256sum -c SOURCE_SHA256SUMS.txt" not in workflow or "Memo-Source-Archive-SHA256.txt" not in workflow:
     fail("GitHub workflow is missing source-integrity verification/receipt")
+
+# APK version codes must be derived from the source commit, not a runner-local counter
+# or a fixed fallback that can create a downgrade after an update.
+gradle_build = (ROOT / "app/build.gradle").read_text()
+circleci_build = (ROOT / "tools/ci/circleci-android.sh").read_text()
+if "git', 'show', '-s', '--format=%ct', 'HEAD'" not in gradle_build:
+    fail("Gradle APK versionCode must derive from the checked-out source commit")
+if "throw new GradleException" not in gradle_build or "fixed fallback version" not in gradle_build:
+    fail("Gradle must fail closed when no safe source-derived APK version is available")
+if "GITHUB_RUN_NUMBER" in gradle_build or "?: '40'" in gradle_build:
+    fail("Gradle must not use runner counters or a fixed low APK version fallback")
+if 'git show -s --format=%ct HEAD' not in circleci_build:
+    fail("CircleCI and GitHub must use the same source-derived APK version")
+if "GITHUB_RUN_NUMBER" in workflow or 'CURRENT_CODE="$(git show -s --format=%ct HEAD)"' not in workflow:
+    fail("GitHub APK identity/upgrade checks must use the source-derived APK version")
+if "commit_code = subprocess.check_output(['git', 'show', '-s', '--format=%ct', 'HEAD']" not in workflow:
+    fail("GitHub APK version validation must match the source commit timestamp")
 
 workspace_vault = (ROOT / "app/src/main/java/app/memo/android/data/EncryptedVault.kt").read_text()
 native_store = (ROOT / "app/src/main/java/com/synthos/runtime/data/SynthStore.java").read_text()

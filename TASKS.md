@@ -469,3 +469,16 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 
 - [~] Domain model, evidence-backed ICP scoring, unknown-factor handling, duplicate warnings, vault-gated proposed ORGANIZATION creation and initial Work intake UI integrated.
 - [ ] Add evidence capture / factor review UI, run full Gradle and ViewModel integration tests, and verify the Android experience. This is one optional Work workflow; Memo's product scope remains broader.
+
+
+## 2026-11-14 — WF-13: prevent stale/downgrade APK versions
+
+- **Task status:** `[~]` source fix implemented; CI and real-device acceptance pending.
+- **User report preserved:** the 13 November APK was reported as unchanged/stale and the update was followed by loss of previous-version data. Existing bug reports and roadmap items remain active; this task does not replace WF-01–WF-12.
+- **Source defect confirmed:** `app/build.gradle` previously fell back to versionCode `40`; GitHub Actions used `GITHUB_RUN_NUMBER`; CircleCI used `CIRCLE_BUILD_NUM + 1000`. These independent counters can produce a lower version than a previously installed build. A downgrade is rejected by Android; uninstall/reinstall to work around it destroys app-private files and Android Keystore keys.
+- **Change:** all build paths now derive versionCode from the checked-out source commit timestamp (`git show -s --format=%ct HEAD`). Gradle fails closed if neither `MEMO_VERSION_CODE` nor a valid Git checkout is available, and rejects values outside Android's supported range. GitHub APK identity/emulator checks and CircleCI now use the same source-derived value.
+- **Identity caution:** historical artifacts have used different package IDs (`app.memo.android`, `app.memo.android.debug`, and an audited `app.memo.android.preview` candidate) and more than one signing identity. The preview candidate was not proven to be installed. A same-name APK is not necessarily an in-place update. Do not distribute/install any candidate until its package ID and signing-certificate SHA-256 are confirmed compatible with the user's installed Memo.
+- **Not yet proven:** this source defect is a real downgrade risk, but it is not yet proven to be the sole cause of the reported data loss. The installed package/certificate on the user's phone and the exact APK they installed remain unknown.
+- **Files:** `app/build.gradle`, `.github/workflows/build-apk.yml`, `tools/ci/circleci-android.sh`, `tools/verify_source.py`.
+- **Required verification:** source verifier, Gradle configuration/build, all unit tests, lint, APK package/version/signature inspection, emulator in-place upgrade and physical-phone in-place update with existing Memo data. No uninstall is permitted as an acceptance workaround.
+- **Next:** run exact-branch CI; then reconcile the canonical deliverable package/signing identity with the actual installed app before any APK is offered.
