@@ -175,3 +175,17 @@ A follow-up review found the new persistence-verifier guard referenced `view_mod
 - **Why:** the prior Vercel path could publish a side-by-side `app.memo.android.preview` APK signed with an ephemeral key when protected credentials were absent. It was not an update-compatible Memo APK and could encourage a destructive uninstall/replacement. Vercel project credentials were previously absent; deployment is intentionally blocked until the pinned signing secrets are provisioned.
 - **Not verified:** source verifier, GitHub Actions exact-head run, Gradle tests/lint/APK, pinned-signature output, emulator upgrade, and physical-device update. No APK is published by this change.
 - **Next:** inspect exact-head Actions result. Keep PR #8 draft. Resume WF-04 only after this P0 delivery guard and build executor are verified; WF-01–WF-03 source work remains unaccepted until executable/device evidence.
+
+
+## 14 November 2026 — GitHub Actions run #649: source and encrypted-store acceptance
+
+- **Exact source commit:** `e7bc8b8f4452ac5b34fe5cb3a040678e7e8cd8c2` on `stabilization/usable-stage-2026-11-10`.
+- **Workflow:** https://github.com/ysfclc/memo/actions/runs/43643456778
+- **Runner:** assigned successfully; no pre-runner ZIP/preflight failure.
+- **Passed:** source invariants (including the Vercel signing fail-closed and Bash syntax guards); remote-runner tests; 144 core JVM tests; 37 app JVM tests; Android lint; debug APK assembly; APK package/version/signature validation.
+- **Build identity:** package `app.memo.android.debug`; versionCode `649`; versionName `4.0.0-memo-debug`. The build-stage APK uses an ephemeral CI debug key and is an intermediate only.
+- **API 35 emulator:** passed both encrypted-store instrumentation phases (`OK (1 test)` each). The baseline APK seeded workspace and native workflow stores; the new APK installed in place; both stores reopened; legacy recovery and corruption checks passed. Exact log: `PASS: signed in-place upgrade preserved app-private data and both real encrypted Memo stores; legacy recovery and corruption tests passed.`
+- **Reports:** `Memo-Android-Build-Reports` artifact ID `14132399597`, SHA-256 `c58dcbf9dc25e2ac6284c8dd6c7e5c6f1176465133fc5235e29065d203e751e3`.
+- **Important:** this run was a pull-request validation. The isolated pinned-signing job and APK delivery artifacts were intentionally skipped. Do not install the intermediate CI-debug APK.
+- **Follow-up implemented:** `.github/workflows/build-apk.yml` now has an explicit `workflow_dispatch` boolean `build_current_source`, restricted to the stabilization branch, which runs the exact committed source through tests and the isolated pinned-signing job. `docs/ci/GITHUB_ACTIONS_BUILD.md` documents the one-click path. The source verifier protects the dispatch branch restriction and ensures the signer remains artifact-only/no-checkout.
+- **Still pending:** a manual workflow dispatch with `build_current_source=true`, final pinned-certificate APK artifact verification, and physical-device in-place upgrade against the user's actual installed package/certificate. Do not uninstall Memo or clear app data.
