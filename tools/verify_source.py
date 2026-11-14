@@ -401,6 +401,15 @@ if "Expected exactly one Android Gradle project root" not in workflow or "Memo-A
     fail("GitHub workflow is missing canonical-root or artifact-delivery checks")
 if "sha256sum -c SOURCE_SHA256SUMS.txt" not in workflow or "Memo-Source-Archive-SHA256.txt" not in workflow:
     fail("GitHub workflow is missing source-integrity verification/receipt")
+if "build_current_source" not in workflow or "MEMO_BUILD_CURRENT_SOURCE: ${{ inputs.build_current_source }}" not in workflow:
+    fail("GitHub workflow must expose an explicit source-only manual APK build input")
+if 'if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" && "$MEMO_BUILD_CURRENT_SOURCE" == "true" ]]' not in workflow:
+    fail("Manual source APK dispatch must be handled explicitly in preflight")
+if "Manual source signing is restricted to stabilization/usable-stage-2026-11-10" not in workflow:
+    fail("Manual source APK signing must be restricted to the reviewed stabilization branch")
+sign_job = workflow.split("\\n  sign:", 1)[1] if "\\n  sign:" in workflow else ""
+if not sign_job or "if: github.event_name != 'pull_request'" not in sign_job:
+    fail("Isolated signing must remain disabled for unreviewed pull-request builds")
 
 workspace_vault = (ROOT / "app/src/main/java/app/memo/android/data/EncryptedVault.kt").read_text()
 native_store = (ROOT / "app/src/main/java/com/synthos/runtime/data/SynthStore.java").read_text()
