@@ -407,9 +407,11 @@ if 'if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" && "$MEMO_BUILD_CURRENT_SO
     fail("Manual source APK dispatch must be handled explicitly in preflight")
 if "Manual source signing is restricted to stabilization/usable-stage-2026-11-10" not in workflow:
     fail("Manual source APK signing must be restricted to the reviewed stabilization branch")
-sign_job = workflow.split("\n  sign:", 1)[1] if "\n  sign:" in workflow else ""
+sign_job = workflow.split("\n  sign:", 1)[1].split("\n  commit:", 1)[0] if "\n  sign:" in workflow and "\n  commit:" in workflow else ""
 if not sign_job or "if: github.event_name != 'pull_request'" not in sign_job:
     fail("Isolated signing must remain disabled for unreviewed pull-request builds")
+if "actions/checkout@" in sign_job or "actions/download-artifact@" not in sign_job:
+    fail("Isolated signing must consume only the verified APK artifact and must not check out repository source")
 
 workspace_vault = (ROOT / "app/src/main/java/app/memo/android/data/EncryptedVault.kt").read_text()
 native_store = (ROOT / "app/src/main/java/com/synthos/runtime/data/SynthStore.java").read_text()
