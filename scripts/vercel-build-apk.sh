@@ -71,6 +71,15 @@ export JAVA_HOME
 export PATH="$JAVA_HOME/bin:$PATH"
 java -version
 
+# Validate the persistent keystore only after the pinned JDK is available.
+export MEMO_UPLOAD_KEYSTORE_FILE="$BUILD_ROOT/memo-upload.jks"
+printf '%s' "$MEMO_UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$MEMO_UPLOAD_KEYSTORE_FILE"
+chmod 600 "$MEMO_UPLOAD_KEYSTORE_FILE"
+test -s "$MEMO_UPLOAD_KEYSTORE_FILE"
+keytool -list -keystore "$MEMO_UPLOAD_KEYSTORE_FILE" -storepass "$MEMO_UPLOAD_STORE_PASSWORD" -alias "$MEMO_UPLOAD_KEY_ALIAS" >/dev/null
+trap 'rm -f "$MEMO_UPLOAD_KEYSTORE_FILE"' EXIT
+SIGNING_DESCRIPTION="pinned Memo upload certificate"
+
 # Resolve Google's current Linux command-line tools archive from its official
 # SDK manifest and verify the published SHA-1/SHA-256 before extracting it.
 if [[ ! -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]]; then
