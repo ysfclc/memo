@@ -194,3 +194,13 @@ The action inbox and first top-level stop control are present in source. Static/
 - Required source, runner, JVM, lint and APK identity gates: PASS
 - Signing mode: pinned persistent upload keystore
 - Workflow run: https://github.com/ysfclc/memo/actions/runs/42530596381
+
+
+## 2026-11-14 — WF-13 APK version monotonicity fix (source only; verification pending)
+
+- **Branch:** `fix/apk-version-monotonicity-2026-11-14`
+- **Change:** Gradle, GitHub Actions and CircleCI now derive Android versionCode from the checked-out source commit timestamp instead of the fixed local fallback (40) or unrelated runner counters. Gradle fails closed without a valid source-derived version or explicit `MEMO_VERSION_CODE`; the supported Android maximum is enforced.
+- **Why:** the previous build configuration could generate a lower versionCode than an already installed APK. Android refuses downgrade installs; uninstall/reinstall destroys private app data and Keystore keys. This is a confirmed source-level risk, not yet proof of the exact cause of the user's reported data loss.
+- **Validation added:** `tools/verify_source.py` now checks that Gradle, GitHub Actions and CircleCI share the source-commit version rule and reject fixed/runner-counter fallbacks.
+- **Not yet verified:** Python source verifier, Gradle tests/compilation, lint, APK build/signature, emulator install-over-existing, and physical-device acceptance. No APK is being distributed.
+- **Artifact identity remains a separate blocker:** historical Memo builds used `app.memo.android` and `app.memo.android.debug`; an `app.memo.android.preview` candidate was also audited. Package and signing-certificate continuity must be proven against the actual installed app before a new APK can safely update it.
