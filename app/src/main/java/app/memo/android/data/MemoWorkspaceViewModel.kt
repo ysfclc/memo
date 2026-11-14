@@ -14,6 +14,9 @@ import app.memo.android.orchestration.WorkflowGraph
 import app.memo.android.orchestration.WorkflowProposalApplier
 import org.json.JSONObject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,10 +24,16 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.withContext
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicLong
+
+private data class SnapshotPersistenceRequest(val revision: Long, val snapshot: AppSnapshot)
 
 class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(application) {
     private val vault = EncryptedVault(application)
-    private val persistenceQueue = Channel<AppSnapshot>(Channel.CONFLATED)
+    private val persistenceQueue = Channel<SnapshotPersistenceRequest>(Channel.CONFLATED)
+    private val persistenceMutex = Mutex()
+    private val persistenceRevision = AtomicLong(0L)
+    private val persistedRevision = AtomicLong(0L)
     private val preferences = application.getSharedPreferences("synthos_preferences", Application.MODE_PRIVATE)
     private val runtimeRegistry = RuntimeRegistry()
 
@@ -49,11 +58,21 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
     init {
         viewModelScope.launch {
             for (candidate in persistenceQueue) {
-                try {
-                    withContext(Dispatchers.IO) { vault.write(candidate) }
-                    _vaultError.value = null
-                } catch (error: Throwable) {
-                    _vaultError.value = safeError(error, "Could not save the encrypted workspace. Export your data before continuing.")
+                persistenceMutex.withLock {
+                    // A conflated queue may still yield an older snapshot. Never let it overwrite
+                    // a newer in-memory transaction or a snapshot already confirmed on disk.
+                    if (candidate.revision != persistenceRevision.get() ||
+                        candidate.revision <= persistedRevision.get()
+                    ) return@withLock
+                    try {
+                        withContext(Dispatchers.IO) { vault.write(candidate.snapshot) }
+                        persistedRevision.updateAndGet { maxOf(it, candidate.revision) }
+                        if (candidate.revision == persistenceRevision.get()) _vaultError.value = null
+                    } catch (error: Throwable) {
+                        if (candidate.revision == persistenceRevision.get()) {
+                            _vaultError.value = safeError(error, "Could not save the encrypted workspace. Export your data before continuing.")
+                        }
+                    }
                 }
             }
         }
@@ -930,6 +949,72 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
+    /**
+     * Commit a frontier response as one workspace transaction and wait for an encrypted disk write.
+     * The browser workflow must not advance to another provider until this method confirms the save.
+     */
+    suspend fun commitFrontierResponseCapture(
+        request: FrontierResponseCaptureRequest
+    ): FrontierResponseCaptureResult {
+        if (!_vaultReady.value) {
+            return FrontierResponseCaptureResult(
+                FrontierResponseCaptureStatus.FAILED,
+                "Unlock the encrypted workspace before saving this provider response."
+            )
+        }
+        if (_vaultError.value != null) {
+            val reason = "Encrypted workspace persistence is unavailable: " + _vaultError.value + ". The provider step remains for review."
+            val fallback = FrontierResponseCaptureCoordinator.markNeedsReview(_snapshot.value, request, reason)
+            _snapshot.value = fallback
+            val fallbackSave = persistAndAwait()
+            return FrontierResponseCaptureResult(
+                FrontierResponseCaptureStatus.FAILED,
+                if (fallbackSave.isSuccess) reason else reason + " The review state could not be confirmed on disk."
+            )
+        }
+
+        val transition = FrontierResponseCaptureCoordinator.commit(_snapshot.value, request)
+        if (transition.status == FrontierResponseCaptureStatus.FAILED) {
+            val fallback = FrontierResponseCaptureCoordinator.markNeedsReview(_snapshot.value, request, transition.message)
+            _snapshot.value = fallback
+            val fallbackSave = persistAndAwait()
+            return FrontierResponseCaptureResult(
+                FrontierResponseCaptureStatus.FAILED,
+                if (fallbackSave.isSuccess) transition.message else transition.message + " The review state could not be confirmed on disk."
+            )
+        }
+
+        _snapshot.value = transition.snapshot
+        val saved = persistAndAwait()
+        if (saved.isFailure) {
+            val saveError = saved.exceptionOrNull()?.message.orEmpty().take(180)
+            val reason = "Memo could not confirm the provider response on encrypted storage: " + saveError + ". The workflow will not continue or resend the prompt."
+            val fallback = FrontierResponseCaptureCoordinator.markNeedsReview(_snapshot.value, request, reason)
+            _snapshot.value = fallback
+            val fallbackSave = persistAndAwait()
+            return if (fallbackSave.isSuccess) {
+                FrontierResponseCaptureResult(
+                    FrontierResponseCaptureStatus.NEEDS_REVIEW,
+                    "The response records were retained, but the step was left for review because the first durable save failed. Retry or inspect the saved evidence before continuing.",
+                    transition.evidenceId,
+                    transition.entityId
+                )
+            } else {
+                FrontierResponseCaptureResult(
+                    FrontierResponseCaptureStatus.FAILED,
+                    reason + " The review state also could not be confirmed on disk. Keep the visible provider answer open and do not close the workspace."
+                )
+            }
+        }
+
+        return FrontierResponseCaptureResult(
+            transition.status,
+            transition.message,
+            transition.evidenceId,
+            transition.entityId
+        )
+    }
+
     fun addEvidence(evidence: EvidenceRecord) {
         updateSnapshot { current ->
             if (current.evidence.size >= 150) {
@@ -1169,7 +1254,30 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
     }
 
     private fun persist(snapshot: AppSnapshot) {
-        persistenceQueue.trySend(snapshot)
+        val revision = persistenceRevision.incrementAndGet()
+        val queued = persistenceQueue.trySend(SnapshotPersistenceRequest(revision, snapshot))
+        if (queued.isFailure) {
+            _vaultError.value = "The encrypted workspace persistence queue is unavailable. Export your data before continuing."
+        }
+    }
+
+    /** Wait for the latest in-memory snapshot to reach the encrypted vault. */
+    private suspend fun persistAndAwait(): Result<Unit> {
+        val revision = persistenceRevision.incrementAndGet()
+        return try {
+            persistenceMutex.withLock {
+                if (persistedRevision.get() < revision) {
+                    val latestSnapshot = _snapshot.value
+                    withContext(Dispatchers.IO + NonCancellable) { vault.write(latestSnapshot) }
+                    persistedRevision.updateAndGet { maxOf(it, revision) }
+                }
+            }
+            if (revision >= persistenceRevision.get()) _vaultError.value = null
+            Result.success(Unit)
+        } catch (error: Throwable) {
+            _vaultError.value = safeError(error, "Could not save the encrypted workspace. Export your data before continuing.")
+            Result.failure(error)
+        }
     }
 
     private fun AppSnapshot.withActivity(message: String, taskId: String = "", level: String = "INFO"): AppSnapshot =

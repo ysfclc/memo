@@ -42,7 +42,7 @@ permissions:
 
 concurrency:
   group: memo-source-import-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   preflight:
