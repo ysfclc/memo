@@ -29,6 +29,27 @@ need sha256sum
 need sha1sum
 need readlink
 
+# Vercel is not allowed to publish an APK signed with an ephemeral runner key.
+# The preview package is side-by-side, but a misleadingly named/debug-signed artifact
+# can still cause users to uninstall the real app and lose its private data.
+# Fail before downloading the SDK or running Gradle when the pinned key is absent.
+SIGNING_VALUES="${MEMO_UPLOAD_KEYSTORE_BASE64:-}|${MEMO_UPLOAD_STORE_PASSWORD:-}|${MEMO_UPLOAD_KEY_ALIAS:-}|${MEMO_UPLOAD_KEY_PASSWORD:-}"
+SIGNING_COUNT=0
+IFS='|' read -r -a SIGNING_PARTS <<< "$SIGNING_VALUES"
+for value in "${SIGNING_PARTS[@]}"; do [[ -n "$value" ]] && SIGNING_COUNT=$((SIGNING_COUNT + 1)); done
+if [[ "$SIGNING_COUNT" -ne 4 ]]; then
+  echo "::error::Vercel APK publication is disabled until all four protected Memo signing variables are configured. No ephemeral-key APK will be built or published."
+  exit 1
+fi
+export MEMO_UPLOAD_KEYSTORE_FILE="$BUILD_ROOT/memo-upload.jks"
+printf '%s' "$MEMO_UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$MEMO_UPLOAD_KEYSTORE_FILE"
+chmod 600 "$MEMO_UPLOAD_KEYSTORE_FILE"
+test -s "$MEMO_UPLOAD_KEYSTORE_FILE"
+keytool -list -keystore "$MEMO_UPLOAD_KEYSTORE_FILE" -storepass "$MEMO_UPLOAD_STORE_PASSWORD" -alias "$MEMO_UPLOAD_KEY_ALIAS" >/dev/null
+trap 'rm -f "$MEMO_UPLOAD_KEYSTORE_FILE"' EXIT
+SIGNING_DESCRIPTION="pinned Memo upload certificate"
+
+
 echo "== Memo Vercel Android build =="
 echo "Commit: ${VERCEL_GIT_COMMIT_SHA:-unknown}"
 echo "Branch: ${VERCEL_GIT_COMMIT_REF:-unknown}"
@@ -124,26 +145,6 @@ python3 tools/verify_source.py
   cd remote-runner
   PYTHONPATH=. python3 -m unittest discover -s tests -v
 )
-
-# Vercel is not allowed to publish an APK signed with an ephemeral runner key.
-# The preview package is side-by-side, but a misleadingly named/debug-signed artifact
-# can still cause users to uninstall the real app and lose its private data.
-# Fail before downloading the SDK or running Gradle when the pinned key is absent.
-SIGNING_VALUES="${MEMO_UPLOAD_KEYSTORE_BASE64:-}|${MEMO_UPLOAD_STORE_PASSWORD:-}|${MEMO_UPLOAD_KEY_ALIAS:-}|${MEMO_UPLOAD_KEY_PASSWORD:-}"
-SIGNING_COUNT=0
-IFS='|' read -r -a SIGNING_PARTS <<< "$SIGNING_VALUES"
-for value in "${SIGNING_PARTS[@]}"; do [[ -n "$value" ]] && SIGNING_COUNT=$((SIGNING_COUNT + 1)); done
-if [[ "$SIGNING_COUNT" -ne 4 ]]; then
-  echo "::error::Vercel APK publication is disabled until all four protected Memo signing variables are configured. No ephemeral-key APK will be built or published."
-  exit 1
-fi
-export MEMO_UPLOAD_KEYSTORE_FILE="$BUILD_ROOT/memo-upload.jks"
-printf '%s' "$MEMO_UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$MEMO_UPLOAD_KEYSTORE_FILE"
-chmod 600 "$MEMO_UPLOAD_KEYSTORE_FILE"
-test -s "$MEMO_UPLOAD_KEYSTORE_FILE"
-keytool -list -keystore "$MEMO_UPLOAD_KEYSTORE_FILE" -storepass "$MEMO_UPLOAD_STORE_PASSWORD" -alias "$MEMO_UPLOAD_KEY_ALIAS" >/dev/null
-trap 'rm -f "$MEMO_UPLOAD_KEYSTORE_FILE"' EXIT
-SIGNING_DESCRIPTION="pinned Memo upload certificate"
 
 echo "== Gradle tests, lint and APK assembly =="
 bash ./gradlew --no-daemon --stacktrace \
