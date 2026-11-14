@@ -210,3 +210,11 @@ A follow-up review found the new persistence-verifier guard referenced `view_mod
 - The implementation intentionally moved that metadata into FrontierResponseCaptureCoordinator so the evidence, transcript, entity and step are committed through one transaction.
 - Corrected the verifier to assert the metadata at its new authoritative location. This was a test-guard mismatch; the run stopped before Gradle compilation, JVM tests, lint or APK assembly, so those gates remain unverified.
 - Next: rerun the full exact-head pipeline after this verifier-only correction.
+
+
+### WF-04 verifier follow-up — 14 November 2026
+
+- Exact-head push run #669 (43651708677) passed the corrected provenance assertion and then found a second stale assertion: the approval UI marker list also expected the new ViewModel capture method to be present in the approval-dialog section.
+- The capture method is correctly checked in the dedicated WF-04 integration guard later in the verifier. Removed the duplicate/misplaced assertion from the older approval-only marker list; no application code change was needed.
+- This run stopped during source verification, before Gradle tests, lint, APK assembly or emulator validation. Those remain pending.
+- Next: rerun exact-head CI and proceed only from the first complete green run.

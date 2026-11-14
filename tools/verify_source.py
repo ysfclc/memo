@@ -98,7 +98,7 @@ for marker in ("changedPayloadOrDestinationCannotReuseApproval", "tamperedStored
         fail(f"action ledger regression test missing: {marker}")
 if "approveCurrentPrompt" not in browser_session or "awaitingPromptApproval" not in browser_session:
     fail("visible browser session lacks the exact-content approval state gate")
-for marker in ("Approve exact external prompt?", "workflowState.currentPrompt", "Approve and send", "Reject and stop", "commitFrontierResponseCaptureAsync"):
+for marker in ("Approve exact external prompt?", "workflowState.currentPrompt", "Approve and send", "Reject and stop"):
     if marker not in workflow_screen:
         fail(f"browser workflow UI is missing exact-content approval behavior: {marker}")
 print("PASS: exact-content action ledger, regression tests, visible prompt gate and evidence completion are wired in source")
