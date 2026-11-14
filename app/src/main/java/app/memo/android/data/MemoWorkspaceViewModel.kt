@@ -1015,25 +1015,6 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         )
     }
 
-    /**
-     * Keep the durable response transaction alive in the ViewModel scope even if the browser
-     * composable is temporarily removed from the navigation back stack.
-     */
-    fun commitFrontierResponseCaptureAsync(
-        request: FrontierResponseCaptureRequest,
-        onComplete: (FrontierResponseCaptureResult) -> Unit
-    ) {
-        viewModelScope.launch {
-            val result = runCatching { commitFrontierResponseCapture(request) }.getOrElse { error ->
-                FrontierResponseCaptureResult(
-                    FrontierResponseCaptureStatus.FAILED,
-                    "The response could not be committed: ${safeError(error, "encrypted workspace save failed")}"
-                )
-            }
-            onComplete(result)
-        }
-    }
-
     fun addEvidence(evidence: EvidenceRecord) {
         updateSnapshot { current ->
             if (current.evidence.size >= 150) {

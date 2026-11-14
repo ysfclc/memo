@@ -58,10 +58,9 @@ import app.memo.android.browser.BrowserWorkflowCallbacks
 import app.memo.android.browser.BrowserWorkflowMode
 import app.memo.android.browser.BrowserWorkflowStatus
 import app.memo.android.data.AppSnapshot
+import app.memo.android.data.EvidenceRecord
 import app.memo.android.data.OutcomeParser
 import app.memo.android.data.MemoWorkspaceViewModel
-import app.memo.android.data.FrontierResponseCaptureRequest
-import app.memo.android.data.FrontierResponseCaptureStatus
 import app.memo.android.data.nowMillis
 import app.memo.android.ui.components.SectionHeading
 import app.memo.android.ui.components.SurfaceCard
@@ -142,6 +141,42 @@ fun BrowserWorkflowScreen(
             }
             else -> Unit
         }
+    }
+
+    fun saveFrontierResponseEntity(response: app.memo.android.browser.BrowserModelResponse, conversationId: String, jobId: String): String? {
+        val existing = viewModel.snapshot.value.entities.firstOrNull {
+            it.type == "FRONTIER_RESPONSE" && it.sourceJobId == jobId && it.properties["providerId"] == response.providerId
+        }
+        if (existing != null) return existing.id
+        val entityTitle = "${title.trim().ifBlank { "Frontier consultation" }} · ${response.providerName} · ${jobId.take(8)}".take(240)
+        val sourceMessage = viewModel.snapshot.value.conversations.firstOrNull { it.id == conversationId }?.messages?.lastOrNull {
+            it.modelId == response.providerId && it.role == "ASSISTANT" && it.content == response.response
+        }
+        val error = viewModel.createEntity(
+            type = "FRONTIER_RESPONSE",
+            title = entityTitle,
+            description = response.response.take(12_000),
+            properties = mapOf(
+                "providerId" to response.providerId,
+                "sourceUrl" to response.sourceUrl,
+                "prompt" to response.prompt.take(1_800),
+                "workflowMode" to mode.name,
+                "capturedAt" to response.completedAt.toString(),
+                "captureMethod" to response.captureMethod,
+                "jobId" to jobId
+            ),
+            sourceConversationId = conversationId,
+            sourceMessageId = sourceMessage?.id.orEmpty(),
+            sourceJobId = jobId,
+            sourceExcerpt = response.response.take(2_000)
+        )
+        if (error != null) {
+            viewModel.appendChatMessage(conversationId, "TOOL", "Captured ${response.providerName}'s output, but could not create its entity record: $error Evidence and the transcript remain available.", sourceType = "ENTITY_PERSISTENCE_WARNING")
+            return null
+        }
+        return viewModel.snapshot.value.entities.firstOrNull {
+            it.type == "FRONTIER_RESPONSE" && it.sourceJobId == jobId && it.properties["providerId"] == response.providerId
+        }?.id
     }
 
     fun linkResponseEntitiesTo(targetEntityId: String, conversationId: String) {
@@ -344,46 +379,55 @@ fun BrowserWorkflowScreen(
                 val stepId = activeStepIds.getOrNull(providerStepOffset + index)
                 if (stepId != null) viewModel.updateJobStep(jobId, stepId, "NEEDS_REVIEW", reason)
             },
-            onStepCompleted = { index, response, completeCapture ->
-                val stepId = activeStepIds.getOrNull(providerStepOffset + index)
-                if (stepId.isNullOrBlank()) {
-                    completeCapture(false, "The provider response has no matching saved Work step. It remains visible for manual recovery.")
-                } else {
-                    val request = FrontierResponseCaptureRequest(
-                        jobId = jobId,
-                        stepId = stepId,
-                        conversationId = conversationId,
-                        actionId = currentExternalActionId,
-                        consultationTitle = title.trim().ifBlank { "Frontier consultation" },
-                        providerId = response.providerId,
-                        providerName = response.providerName,
-                        prompt = response.prompt,
-                        response = response.response,
-                        sourceUrl = response.sourceUrl,
-                        startedAt = response.startedAt,
-                        completedAt = response.completedAt,
-                        captureMethod = response.captureMethod,
-                        workflowMode = mode.name
-                    )
-                    viewModel.commitFrontierResponseCaptureAsync(request) { result ->
-                        val durablyCaptured = result.status != FrontierResponseCaptureStatus.FAILED &&
-                            result.evidenceId.isNotBlank()
-                        if (durablyCaptured) {
-                            currentExternalActionId = ""
-                            if (result.entityId.isBlank()) {
-                                providerEntitySaveFailures++
-                            } else if (result.entityId !in providerEntityIds) {
-                                providerEntityIds.add(result.entityId)
-                            }
-                            completeCapture(true, result.message)
-                            if (result.status == FrontierResponseCaptureStatus.NEEDS_REVIEW) {
-                                onShowMessage("Response saved, but this provider step needs review: ${result.message}")
-                            }
-                        } else {
-                            completeCapture(false, result.message)
-                            onShowMessage("Memo could not confirm this provider response in encrypted storage. Keep the provider page open; do not resend the prompt. ${result.message}")
-                        }
+            onStepCompleted = { index, response ->
+                val stepIndex = providerStepOffset + index
+                val stepId = activeStepIds.getOrNull(stepIndex)
+                if (stepId != null) viewModel.updateJobStep(
+                    jobId,
+                    stepId,
+                    "COMPLETED",
+                    if (response.captureMethod == "USER_PASTED") {
+                        "User manually captured the visible response from ${response.providerName}."
+                    } else {
+                        "Captured a new, stable response from ${response.providerName}."
+                    },
+                    response.response.take(1_800)
+                )
+                val responseEvidence = EvidenceRecord(
+                    taskId = jobId,
+                    title = "${response.providerName} · ${title.trim().ifBlank { "Frontier consultation" }}",
+                    sourceUrl = response.sourceUrl,
+                    kind = "FRONTIER_BROWSER_RESPONSE",
+                    content = response.response,
+                    summary = if (response.captureMethod == "USER_PASTED") {
+                        "User manually captured the visible provider response after automatic detection did not complete. The model's claims have not been independently verified."
+                    } else {
+                        "Captured from a visible frontier chat webpage after submission and a new stable response were observed. The model's claims have not been independently verified."
+                    },
+                    metadata = JSONObject().apply {
+                        put("providerId", response.providerId)
+                        put("captureMethod", response.captureMethod)
+                        put("stepId", activeStepIds.getOrNull(providerStepOffset + index).orEmpty())
+                        put("startedAt", response.startedAt)
+                        put("completedAt", response.completedAt)
+                        put("workflowMode", mode.name)
+                    }.toString()
+                )
+                viewModel.addEvidence(responseEvidence)
+                val completedAction = currentExternalActionId
+                if (completedAction.isNotBlank()) {
+                    if (!viewModel.completeExternalAction(completedAction, "evidence:${responseEvidence.id}")) {
+                        viewModel.markExternalActionNeedsReview(completedAction, "A provider answer was captured, but Memo could not verify the action-ledger completion transition.")
+                        viewModel.log("The ${response.providerName} response is preserved, but its outbound action needs review in the action history.", "WARN", jobId)
                     }
+                    currentExternalActionId = ""
+                }
+                viewModel.appendChatMessage(conversationId, "ASSISTANT", response.response, response.providerId, "BROWSER")
+                val responseEntityId = saveFrontierResponseEntity(response, conversationId, jobId)
+                if (responseEntityId == null) {
+                    providerEntitySaveFailures++
+                } else if (responseEntityId !in providerEntityIds) {
+                    providerEntityIds.add(responseEntityId)
                 }
             },
             onStateChanged = { state ->
@@ -397,8 +441,7 @@ fun BrowserWorkflowScreen(
                         BrowserWorkflowStatus.NAVIGATING,
                         BrowserWorkflowStatus.PREPARING_PROMPT,
                         BrowserWorkflowStatus.SENDING_PROMPT,
-                        BrowserWorkflowStatus.WAITING_FOR_RESPONSE,
-                        BrowserWorkflowStatus.SAVING_RESPONSE
+                        BrowserWorkflowStatus.WAITING_FOR_RESPONSE
                     )) {
                     val currentJob = viewModel.snapshot.value.jobs.firstOrNull { it.id == jobId }
                     if (currentJob?.status == "WAITING_FOR_USER") viewModel.updateJobStatus(jobId, "RUNNING", "Browser workflow resumed by the user.")

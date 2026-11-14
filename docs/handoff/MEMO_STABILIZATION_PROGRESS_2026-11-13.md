@@ -202,3 +202,11 @@ A follow-up review found the new persistence-verifier guard referenced `view_mod
 - **Exact files:** `BrowserWorkflow.kt`, `BrowserSession.kt`, `BrowserWorkflowScreen.kt`, `MemoWorkspaceViewModel.kt`, `BrowserWorkflowPromptsTest.kt`, `FrontierResponseCaptureCoordinator.kt`, `FrontierResponseCaptureCoordinatorTest.kt`, `tools/verify_source.py`, `TASKS.md`, this progress log and `SOURCE_SHA256SUMS.txt`.
 - **Verification at commit time:** source-anchor validation only. No Gradle tests, lint, APK build, emulator or physical-device test is claimed until the exact resulting commit's GitHub run completes.
 - **Next:** run exact-head CI; fix any source/test failures before beginning WF-05 or UI expansion. Keep PR #8 draft and `main` untouched.
+
+
+### WF-04 verifier correction — 14 November 2026
+
+- Exact-head push run #668 (43651535178) reached source verification and failed one stale assertion: the verifier expected capture-method metadata to be written in the Compose screen.
+- The implementation intentionally moved that metadata into FrontierResponseCaptureCoordinator so the evidence, transcript, entity and step are committed through one transaction.
+- Corrected the verifier to assert the metadata at its new authoritative location. This was a test-guard mismatch; the run stopped before Gradle compilation, JVM tests, lint or APK assembly, so those gates remain unverified.
+- Next: rerun the full exact-head pipeline after this verifier-only correction.

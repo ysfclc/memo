@@ -125,7 +125,7 @@ if "Cancel entire run" not in workflow_screen or "Skip this provider" not in wor
     fail("browser workflow must expose separate skip, step-stop and whole-run cancel controls")
 if "skippedProviderIds" not in workflow_screen or "stoppedProviderIds" not in workflow_screen:
     fail("partial provider execution must be recorded and must not be reported as full success")
-for marker in ("Retry answer detection", "never resends the approved prompt", "Capture answer without resending", "browser.captureCurrentResponseManually", 'put("captureMethod", response.captureMethod)', "captureMethod"):
+for marker in ("Retry answer detection", "never resends the approved prompt", "Capture answer without resending", "browser.captureCurrentResponseManually", "captureMethod"):
     if marker not in workflow_screen:
         fail(f"manual response capture UI/provenance is missing: {marker}")
 for marker in ("skipAndStopPoliciesKeepDifferentScopes", "responseDetectionRetryIsAvailableOnlyForASentStepWaitingForRecovery", "manualCaptureRequiresSentPromptWaitingStateMatchingProviderAndUsefulText", "manualCaptureRejectsUncertainSendWrongPageAndInvalidText", "manualCaptureRejectsProviderMismatchEvenWhenAResponseWasSent"):
@@ -135,6 +135,9 @@ print("PASS: manual browser-response recovery is capture-only, provider-bound an
 
 capture_coordinator = (ROOT / "core/src/main/kotlin/app/memo/android/data/FrontierResponseCaptureCoordinator.kt").read_text()
 capture_coordinator_test = (ROOT / "core/src/test/kotlin/app/memo/android/data/FrontierResponseCaptureCoordinatorTest.kt").read_text()
+if 'put("captureMethod", request.captureMethod.take(40))' not in capture_coordinator:
+    fail("frontier response capture method provenance is missing from the atomic evidence record")
+
 for marker in ("SAVING_RESPONSE", "workflowCapturePending", "finishCaptureAcknowledgement", "advanceWorkflowAfterCapture"):
     if marker not in browser_session + browser_workflow:
         fail(f"browser response must wait for durable capture acknowledgement: {marker}")
