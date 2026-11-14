@@ -125,3 +125,10 @@ The stabilization branch now changes the Vercel APK script so all four protected
 This intentionally means the existing Vercel project (previously audited as lacking the four signing secrets) cannot produce an APK until those secrets are configured. That is safer than publishing a misleading, non-update-compatible preview artifact. The preview application ID remains `app.memo.android.preview`; it is not a replacement for an installed Memo package.
 
 **Status:** source patch committed; exact-head Actions, Gradle, signature, emulator and physical-device verification are pending. The incident is not closed and no APK is being distributed.
+
+
+## 14 November 2026 — GitHub source build and emulator evidence
+
+Run #649 validated exact source commit `e7bc8b8f4452ac5b34fe5cb3a040678e7e8cd8c2` on the stabilization branch. Source verification, remote-runner tests, 144 core tests, 37 app tests, lint, debug APK assembly and package/version identity checks passed. API 35 instrumentation passed both seed and verify phases; installing the newer APK over the baseline preserved both encrypted Memo stores and passed legacy recovery/corruption checks.
+
+The run was a pull-request validation, so the isolated pinned-signing job was correctly skipped. Its debug APK is an intermediate and must not be installed. A manual source-build dispatch option is now available in the GitHub workflow, restricted to the stabilization branch, and runs the exact branch source through the isolated signing job. The final pinned-signed artifact and physical-device update remain pending. The incident is not closed.
