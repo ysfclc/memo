@@ -45,7 +45,7 @@ Make Memo's existing product capabilities understandable, coherent and dependabl
 - Remove the unnecessary home/dashboard detour and competing shortcut hierarchy.
 - One intent surface accepts text, voice and incoming share/capture material.
 - Conversation history/resume belongs in the same continuous Talk experience.
-- Draft clears only after durable acceptance; failure preserves the text.
+- The Talk composer keeps the submitted text until a successful assistant response is saved to the conversation. A retry after a recorded model error reuses the existing user turn instead of duplicating it.
 
 ### UXR-2 — Navigation and state continuity
 - Independent destination back stacks and scroll state.
@@ -111,3 +111,11 @@ These are regression foundations and a narrow state-recovery fix only; they do n
 - The Compose BOM fix resolved Android-test dependency metadata and the main debug APK assembled successfully. Core tests and app JVM tests also completed. Instrumentation-test compilation then exposed an unavailable `assertExists` import in the pinned Compose test API; the smoke test now uses the supported `assertIsDisplayed` assertion for the semantics node, and its method name no longer claims an untested selection behavior.
 
 - Follow-up shared-component audit found that `MemoPageHeader`, `MemoSectionHeading`, `MemoStatusTag` and message metadata bypassed `MemoText`. They now route interface labels through the localization layer. Added missing Talk/Work/Studio eyebrow and supporting-copy translations, translated status/message metadata, and a locale-aware count formatter for saved conversations. The content of user messages remains raw and is not translated.
+
+
+## UXR-1 follow-up — retryable Talk submission
+
+- Found a mismatch between the intended recovery rule and the active send path: the composer draft was cleared immediately after appending the user message, before the model operation completed. A provider/local-runtime failure therefore left an error in the transcript but removed the user's text from the composer.
+- The composer now clears only after an assistant response is appended successfully. Cancellation and request failure leave the draft available for retry.
+- A retry after one or more consecutive recorded SYSTEM / ERROR messages reuses the existing matching user turn. A changed draft, a completed turn or a partial/cancelled turn starts a distinct user turn.
+- Added JVM coverage for first send, repeated failures, changed text, successful completion and partial output. This protects the retry policy; it does not claim end-to-end model runtime or physical-device acceptance.
