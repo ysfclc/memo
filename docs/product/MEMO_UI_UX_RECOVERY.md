@@ -116,6 +116,7 @@ These are regression foundations and a narrow state-recovery fix only; they do n
 ## UXR-1 follow-up — retryable Talk submission
 
 - Found a mismatch between the intended recovery rule and the active send path: the composer draft was cleared immediately after appending the user message, before the model operation completed. A provider/local-runtime failure therefore left an error in the transcript but removed the user's text from the composer.
-- The composer now clears only after an assistant response is appended successfully. Cancellation and request failure leave the draft available for retry.
+- The user turn is confirmed by the encrypted-vault writer before the model runtime starts. The composer clears only after the assistant response is also confirmed in the encrypted vault. Cancellation, runtime failure, save failure or timeout leaves the draft available for recovery.
+- Persistence acknowledgements run in the workspace ViewModel scope rather than the Talk composition scope, so navigating to another surface does not cancel a pending transcript write.
 - A retry after one or more consecutive recorded SYSTEM / ERROR messages reuses the existing matching user turn. A changed draft, a completed turn or a partial/cancelled turn starts a distinct user turn.
 - Added JVM coverage for first send, repeated failures, changed text, successful completion and partial output. This protects the retry policy; it does not claim end-to-end model runtime or physical-device acceptance.
