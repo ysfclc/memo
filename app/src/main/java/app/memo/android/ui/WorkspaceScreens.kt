@@ -240,15 +240,18 @@ fun ChatsWorkspaceScreen(
     if (selectedConversation == null) {
         Column(Modifier.fillMaxSize()) {
             Column(Modifier.padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.md), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
-                MemoPageHeader(title = "Talk", eyebrow = "MEMO / TALK", description = "A searchable home for ongoing conversations, imported transcripts and the work they produce.")
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    OutlinedButton(onClick = onOpenCouncil, modifier = Modifier.weight(1f).height(44.dp)) {
-                        Icon(Icons.Rounded.Hub, contentDescription = null); Spacer(Modifier.width(7.dp)); Text("Council")
+                MemoPageHeader(
+                    title = "Talk",
+                    eyebrow = "MEMO / TALK",
+                    description = "A searchable home for ongoing conversations, imported transcripts and the work they produce.",
+                    trailing = {
+                        TextButton(onClick = { showImport = true }) {
+                            Icon(Icons.Rounded.ImportExport, contentDescription = null)
+                            Spacer(Modifier.width(5.dp))
+                            Text("Import")
+                        }
                     }
-                    OutlinedButton(onClick = { showImport = true }, modifier = Modifier.weight(1f).height(44.dp)) {
-                        Icon(Icons.Rounded.ImportExport, contentDescription = null); Spacer(Modifier.width(7.dp)); Text("Import")
-                    }
-                }
+                )
                 MemoPanel {
                     MemoSectionHeading(
                         title = "Start with Memo",
