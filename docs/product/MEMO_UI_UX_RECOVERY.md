@@ -35,8 +35,8 @@ Make Memo's existing product capabilities understandable, coherent and dependabl
 ### UXR-0 — Establish regression gates
 - [x] Add Compose UI test support.
 - [x] Add smoke coverage for shared page header, status semantics and message rendering.
-- [x] Wire the Compose smoke suite into the Android API 35 emulator workflow (execution result still pending).
-- [ ] Observe a green CI run and correct any compile/runtime failures. CI exposed stale source assertions, 22 missing PL/TR UI strings, a test fixture missing `EvidenceRecord.kind`, a missing `Spacer` import, and a missing Compose BOM constraint for Android instrumentation dependencies. The source assertions, translations, fixture, import and test BOM are now corrected; the latest run must verify them. The next run must verify these corrections.
+- [x] Wire the Compose smoke suite into the Android API 35 emulator workflow (3/3 tests passed in CI run 698).
+- [x] Observe a green CI run and correct compile/runtime failures. CI exposed stale source assertions, 22 missing PL/TR UI strings, a test fixture missing `EvidenceRecord.kind`, a missing `Spacer` import, a missing Compose BOM constraint for Android instrumentation dependencies, and an unsupported test assertion import. These were corrected. CI run 698 passed source checks, remote-runner tests, core/app JVM tests, lint, debug APK assembly, APK identity/signature, encrypted-store seed/verify, in-place upgrade, and all three Compose smoke tests. The next run must verify these corrections.
 - [ ] Extend coverage to real primary journeys before broad screen changes.
 - Keep build, emulator and physical-device evidence separate.
 
@@ -65,6 +65,7 @@ Make Memo's existing product capabilities understandable, coherent and dependabl
 
 ### UXR-5 — Cross-app polish and accessibility
 - Shared actions, inputs, rows, overlays and error/empty/offline/recovery states.
+- Shared page, section, status and message metadata labels must use Memo localization; user-authored message content remains untranslated.
 - Touch targets, semantics, contrast, large text, reduced motion and translations.
 - Screenshot and journey regression coverage.
 
@@ -108,3 +109,5 @@ These are regression foundations and a narrow state-recovery fix only; they do n
 - Android instrumentation dependencies now import the same pinned Compose BOM (`2024.12.01`) as the main app configuration. The preceding Gradle run had compiled core tests and main app Kotlin successfully; it failed only when resolving the unversioned `ui-test-junit4` artifact in the separate Android-test configuration.
 
 - The Compose BOM fix resolved Android-test dependency metadata and the main debug APK assembled successfully. Core tests and app JVM tests also completed. Instrumentation-test compilation then exposed an unavailable `assertExists` import in the pinned Compose test API; the smoke test now uses the supported `assertIsDisplayed` assertion for the semantics node, and its method name no longer claims an untested selection behavior.
+
+- Follow-up shared-component audit found that `MemoPageHeader`, `MemoSectionHeading`, `MemoStatusTag` and message metadata bypassed `MemoText`. They now route interface labels through the localization layer. Added missing Talk/Work/Studio eyebrow and supporting-copy translations, translated status/message metadata, and a locale-aware count formatter for saved conversations. The content of user messages remains raw and is not translated.
