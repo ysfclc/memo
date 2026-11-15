@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,7 +36,7 @@ fun MemoPageHeader(
         verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.xs)
     ) {
         if (!eyebrow.isNullOrBlank()) {
-            Text(
+            MemoText(
                 text = eyebrow,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary
@@ -46,7 +47,7 @@ fun MemoPageHeader(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.md)
         ) {
-            Text(
+            MemoText(
                 text = title,
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.headlineLarge,
@@ -55,7 +56,7 @@ fun MemoPageHeader(
             trailing?.invoke()
         }
         if (!description.isNullOrBlank()) {
-            Text(
+            MemoText(
                 text = description,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -78,9 +79,9 @@ fun MemoSectionHeading(
         horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)
     ) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+            MemoText(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
             if (!supporting.isNullOrBlank()) {
-                Text(supporting, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                MemoText(supporting, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         trailing?.invoke()
@@ -139,13 +140,16 @@ fun MemoStatusTag(
             else -> container to foreground
         }
     }
+    val language = LocalMemoLanguage.current
+    val accessibleLabel = MemoLocalization.translate(label, language)
+    val accessibleStatus = MemoLocalization.translate("status", language)
     Surface(
-        modifier = modifier.semantics { contentDescription = "$label status" },
+        modifier = modifier.semantics { contentDescription = "$accessibleLabel $accessibleStatus" },
         color = colors.first,
         contentColor = colors.second,
         shape = RoundedCornerShape(MemoTokens.Radius.pill)
     ) {
-        Text(
+        MemoText(
             text = label,
             modifier = Modifier.padding(horizontal = MemoTokens.Spacing.sm, vertical = MemoTokens.Spacing.xxs),
             style = MaterialTheme.typography.labelSmall
@@ -200,9 +204,9 @@ fun MemoMessageBubble(
                 verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.xs)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(label, style = MaterialTheme.typography.labelSmall, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
+                    MemoText(label, style = MaterialTheme.typography.labelSmall, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
                     Spacer(Modifier.weight(1f))
-                    Text(timestamp, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    MemoText(timestamp, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     actions()
                 }
                 SelectionContainer {

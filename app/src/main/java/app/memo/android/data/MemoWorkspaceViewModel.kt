@@ -15,14 +15,22 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicLong
+
+private data class PendingSnapshotWrite(val generation: Long, val snapshot: AppSnapshot)
 
 class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(application) {
     private val vault = EncryptedVault(application)
-    private val persistenceQueue = Channel<AppSnapshot>(Channel.CONFLATED)
+    private val persistenceQueue = Channel<PendingSnapshotWrite>(Channel.CONFLATED)
+    private val persistenceGeneration = AtomicLong(0L)
+    private val _persistedGeneration = MutableStateFlow(0L)
     private val preferences = application.getSharedPreferences("synthos_preferences", Application.MODE_PRIVATE)
     private val runtimeRegistry = RuntimeRegistry()
 
@@ -48,8 +56,9 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         viewModelScope.launch {
             for (candidate in persistenceQueue) {
                 try {
-                    withContext(Dispatchers.IO) { vault.write(candidate) }
+                    withContext(Dispatchers.IO) { vault.write(candidate.snapshot) }
                     _vaultError.value = null
+                    _persistedGeneration.value = maxOf(_persistedGeneration.value, candidate.generation)
                 } catch (error: Throwable) {
                     _vaultError.value = safeError(error, "Could not save the encrypted workspace. Export your data before continuing.")
                 }
@@ -200,6 +209,88 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             }
         }
         return null
+    }
+
+    /**
+     * Wait until the latest queued workspace snapshot has been written to the encrypted vault.
+     * The queue is conflated, so a newer generation also covers every older snapshot it replaces.
+     */
+    suspend fun awaitLatestPersistence(timeoutMillis: Long = 15_000L): String? {
+        val targetGeneration = persistenceGeneration.get()
+        if (_persistedGeneration.value >= targetGeneration) return null
+        _vaultError.value?.let { return it }
+
+        val persisted = withTimeoutOrNull(timeoutMillis) {
+            combine(_persistedGeneration, _vaultError) { generation, error ->
+                when {
+                    generation >= targetGeneration -> true
+                    error != null -> false
+                    else -> null
+                }
+            }.first { it != null }
+        }
+        return when (persisted) {
+            true -> null
+            false -> _vaultError.value ?: "The encrypted workspace write failed."
+            null -> "Memo could not confirm the encrypted workspace save. Your text remains available; retry when storage is ready."
+        }
+    }
+
+    /**
+     * Append a chat message and confirm its encrypted workspace snapshot before continuing.
+     * Completion runs in viewModelScope so navigation away from Talk cannot cancel the save.
+     */
+    fun appendChatMessageAndAwait(
+        conversationId: String,
+        role: String,
+        content: String,
+        modelId: String = "",
+        sourceType: String = "NATIVE",
+        onComplete: (String?) -> Unit
+    ) {
+        val beforeLastMessageId = _snapshot.value.conversations
+            .firstOrNull { it.id == conversationId }?.messages?.lastOrNull()?.id
+        val appendError = appendChatMessage(conversationId, role, content, modelId, sourceType)
+        if (appendError != null) {
+            onComplete(appendError)
+            return
+        }
+        val expectedRole = role.trim().uppercase(Locale.ROOT)
+        val expectedContent = content.trim().take(24_000)
+        val appendedMessage = _snapshot.value.conversations
+            .firstOrNull { it.id == conversationId }?.messages?.lastOrNull()
+        if (appendedMessage == null ||
+            appendedMessage.id == beforeLastMessageId ||
+            appendedMessage.role != expectedRole ||
+            appendedMessage.content != expectedContent
+        ) {
+            onComplete(_vaultError.value ?: "Memo did not accept the message into this conversation.")
+            return
+        }
+        val targetGeneration = persistenceGeneration.get()
+        viewModelScope.launch {
+            onComplete(awaitPersistence(targetGeneration))
+        }
+    }
+
+    private suspend fun awaitPersistence(targetGeneration: Long, timeoutMillis: Long = 15_000L): String? {
+        _vaultError.value?.let { return it }
+        if (_persistedGeneration.value >= targetGeneration) return null
+
+        val persisted = withTimeoutOrNull(timeoutMillis) {
+            combine(_persistedGeneration, _vaultError) { generation, error ->
+                when {
+                    generation >= targetGeneration -> true
+                    error != null -> false
+                    else -> null
+                }
+            }.first { it != null }
+        }
+        return when (persisted) {
+            true -> null
+            false -> _vaultError.value ?: "The encrypted workspace write failed."
+            null -> "Memo could not confirm the encrypted workspace save. Your text remains available; retry when storage is ready."
+        }
     }
 
     fun updateChatMessage(conversationId: String, messageId: String, content: String): String? {
@@ -1152,7 +1243,8 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
     }
 
     private fun persist(snapshot: AppSnapshot) {
-        persistenceQueue.trySend(snapshot)
+        val generation = persistenceGeneration.incrementAndGet()
+        persistenceQueue.trySend(PendingSnapshotWrite(generation, snapshot))
     }
 
     private fun AppSnapshot.withActivity(message: String, taskId: String = "", level: String = "INFO"): AppSnapshot =

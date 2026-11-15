@@ -719,7 +719,7 @@ jobs:
             local phase="$1"
             local output="$RUNNER_TEMP/Memo-store-$phase.txt"
             echo "Running encrypted-store acceptance phase: $phase"
-            adb shell am instrument -w -e phase "$phase" "$TEST_RUNNER" 2>&1 | tee "$output" | tee -a "$MEMO_BUILD_LOG"
+            adb shell am instrument -w -e class app.memo.android.data.EncryptedStoreUpgradeTest -e phase "$phase" "$TEST_RUNNER" 2>&1 | tee "$output" | tee -a "$MEMO_BUILD_LOG"
             if ! grep -Fq 'OK (1 test)' "$output"; then
               echo "::error::Encrypted-store instrumentation phase '$phase' did not report one passing test."
               cat "$output"
@@ -737,6 +737,15 @@ jobs:
 
           adb install -r "$CURRENT_APK" 2>&1 | tee -a "$MEMO_BUILD_LOG"
           run_store_acceptance_phase verify
+
+          UI_OUTPUT="$RUNNER_TEMP/Memo-ui-smoke.txt"
+          echo 'Running Compose design-system UI regression tests.'
+          adb shell am instrument -w -e class app.memo.android.ui.MemoDesignSystemSmokeTest "$TEST_RUNNER" 2>&1 | tee "$UI_OUTPUT" | tee -a "$MEMO_BUILD_LOG"
+          if ! grep -Fq 'OK (3 tests)' "$UI_OUTPUT"; then
+            echo '::error::Compose UI smoke suite did not report three passing tests.'
+            cat "$UI_OUTPUT"
+            exit 1
+          fi
 
           PRESERVED="$(adb shell run-as app.memo.android.debug cat files/.memo-upgrade-test/sentinel | tr -d '\r')"
           [[ "$PRESERVED" == 'memo-private-data-survives-update' ]] || {

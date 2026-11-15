@@ -524,6 +524,44 @@ object MemoLocalization {
         "Restore plain JSON" to ("Przywróć zwykły JSON" to "Düz JSON'u geri yükle"),
         "Restoring replaces current conversations, tasks, evidence, jobs and workspace graph. Memo verifies the encrypted authentication tag before parsing the backup. Export the current workspace first if you need to keep it." to ("Przywrócenie zastępuje bieżące rozmowy, zadania, dowody, procesy i graf obszaru roboczego. Memo weryfikuje tag uwierzytelnienia przed odczytem kopii. Najpierw wyeksportuj obecne dane, jeśli chcesz je zachować." to "Geri yükleme mevcut sohbetleri, görevleri, kanıtları, işleri ve çalışma alanı grafiğini değiştirir. Memo yedeği ayrıştırmadan önce şifreli doğrulama etiketini kontrol eder. Mevcut verileri korumak istiyorsan önce dışa aktar."),
         "The passphrases do not match." to ("Hasła nie są zgodne." to "Parolalar eşleşmiyor."),
+
+        "Account" to ("Konto" to "Hesap"),
+        "Add industrial account" to ("Dodaj konto przemysłowe" to "Endüstriyel hesap ekle"),
+        "All six ICP factors start as Unknown. Add source evidence and score them later; Memo will not invent fit or mark this account ready." to ("Wszystkie sześć czynników ICP zaczyna ze statusem „Nieznane”. Dodaj dowody źródłowe i oceń je później; Memo nie będzie zgadywać dopasowania ani oznaczać tego konta jako gotowego." to "Altı ICP faktörünün tümü “Bilinmiyor” olarak başlar. Kaynak kanıtı ekleyip daha sonra puanla; Memo uygunluğu uydurmaz veya bu hesabı hazır olarak işaretlemez."),
+        "Approximate size (optional)" to ("Przybliżona wielkość (opcjonalnie)" to "Yaklaşık büyüklük (isteğe bağlı)"),
+        "Company name" to ("Nazwa firmy" to "Şirket adı"),
+        "Company website" to ("Witryna firmy" to "Şirket web sitesi"),
+        "Create a company record in Work. No contacts or messages are collected." to ("Utwórz rekord firmy w sekcji Praca. Kontakty ani wiadomości nie są zbierane." to "Work'te şirket kaydı oluştur. Kişi veya mesaj toplanmaz."),
+        "Create draft plan" to ("Utwórz szkic planu" to "Taslak plan oluştur"),
+        "Creates a local draft plan only. Nothing is sent, published or executed." to ("Tworzy wyłącznie lokalny szkic planu. Nic nie jest wysyłane, publikowane ani wykonywane." to "Yalnızca yerel bir plan taslağı oluşturur. Hiçbir şey gönderilmez, yayımlanmaz veya yürütülmez."),
+        "Evidence" to ("Dowody" to "Kanıt"),
+        "Linked work" to ("Powiązana praca" to "Bağlantılı işler"),
+        "Location (or Unknown)" to ("Lokalizacja (lub Nieznana)" to "Konum (veya Bilinmiyor)"),
+        "Nothing active yet. Browser tasks and saved plans will appear here when you create them." to ("Brak aktywnych elementów. Zadania przeglądarki i zapisane plany pojawią się tutaj po ich utworzeniu." to "Henüz etkin bir şey yok. Tarayıcı görevleri ve kaydedilen planlar oluşturduğunda burada görünür."),
+        "Outcome and next action" to ("Rezultat i następne działanie" to "Sonuç ve sonraki eylem"),
+        "Promote response to Work" to ("Przenieś odpowiedź do Pracy" to "Yanıtı Work'e aktar"),
+        "Promoted from this message" to ("Utworzono na podstawie tej wiadomości" to "Bu mesajdan oluşturuldu"),
+        "Research notes (optional)" to ("Notatki badawcze (opcjonalnie)" to "Araştırma notları (isteğe bağlı)"),
+        "Review the outcome or next action Memo should turn into a plan. The source conversation and exact message will stay linked." to ("Sprawdź rezultat lub następne działanie, które Memo ma zamienić w plan. Rozmowa źródłowa i dokładna wiadomość pozostaną powiązane." to "Memo'nun plana dönüştürmesini istediğin sonucu veya sonraki eylemi incele. Kaynak sohbet ve tam mesaj bağlantılı kalır."),
+        "Save for research" to ("Zapisz do badań" to "Araştırma için kaydet"),
+        "Steps run in order. Launch, wait and delay are available. Tap and Back are temporarily disabled until exact-action approval is ready; existing drafts containing them must be edited before saving." to ("Kroki są wykonywane po kolei. Dostępne są uruchomienie, oczekiwanie i opóźnienie. Dotknięcie i Wstecz są tymczasowo wyłączone do czasu wdrożenia zatwierdzania dokładnych działań; istniejące szkice zawierające te kroki trzeba edytować przed zapisaniem." to "Adımlar sırayla yürütülür. Başlatma, bekleme ve gecikme kullanılabilir. Tam eylem onayı hazır olana kadar Dokunma ve Geri devre dışıdır; bunları içeren mevcut taslaklar kaydedilmeden önce düzenlenmelidir."),
+        "Today" to ("Dzisiaj" to "Bugün"),
+        "Your active work, from the encrypted workspace." to ("Twoja aktywna praca z zaszyfrowanego obszaru roboczego." to "Şifrelenmiş çalışma alanındaki etkin işlerin."),
+        "MEMO / TALK" to ("MEMO / ROZMOWA" to "MEMO / SOHBET"),
+        "MEMO / WORK" to ("MEMO / PRACA" to "MEMO / İŞ"),
+        "MEMO / STUDIO" to ("MEMO / STUDIO" to "MEMO / STÜDYO"),
+        "Create private, evidence-backed artifacts from facts you approve. Nothing is submitted or published." to ("Twórz prywatne artefakty oparte na dowodach, korzystając z zatwierdzonych faktów. Nic nie jest wysyłane ani publikowane." to "Onayladığın gerçeklerden özel, kanıta dayalı çıktılar oluştur. Hiçbir şey gönderilmez veya yayımlanmaz."),
+        "A thought, question or task. The conversation and its related work stay together." to ("Pomysł, pytanie lub zadanie. Rozmowa i powiązana z nią praca pozostają razem." to "Bir fikir, soru veya görev. Sohbet ve ilgili işler birlikte kalır."),
+        "Request controls" to ("Ustawienia żądania" to "İstek kontrolleri"),
+        "Choose the model and decide what information may be shared." to ("Wybierz model i zdecyduj, jakie informacje mogą zostać udostępnione." to "Modeli seç ve hangi bilgilerin paylaşılabileceğine karar ver."),
+        "Original text used to validate candidate facts" to ("Tekst źródłowy używany do weryfikacji proponowanych faktów" to "Aday bilgileri doğrulamak için kullanılan özgün metin"),
+        "Each proposed fact is linked to an exact source excerpt" to ("Każdy proponowany fakt jest powiązany z dokładnym fragmentem źródła" to "Önerilen her bilgi, kaynaktaki tam bir alıntıyla bağlantılıdır"),
+        "You control what Artifact Studio may use" to ("Ty decydujesz, z czego może korzystać Artifact Studio" to "Artifact Studio'nun neleri kullanabileceğine sen karar verirsin"),
+        "Saved drafts remain editable and exportable" to ("Zapisane szkice można nadal edytować i eksportować" to "Kaydedilen taslaklar düzenlenebilir ve dışa aktarılabilir"),
+        "status" to ("status" to "durum"),
+        "YOU" to ("TY" to "SEN"),
+        "IMPORTED SOURCE" to ("ZAIMPORTOWANE ŹRÓDŁO" to "İÇE AKTARILAN KAYNAK"),
+        "Now" to ("Teraz" to "Şimdi"),
     )
 
     fun translate(text: String, language: String): String {
@@ -562,6 +600,16 @@ object MemoLocalization {
         metadataPrefixes.firstOrNull { text.startsWith(it.first) }?.let { (prefix, labels) ->
             val suffix = text.removePrefix(prefix)
             return when (normalized) { "PL" -> labels.first + suffix; "TR" -> labels.second + suffix; else -> text }
+        }
+        if (text.endsWith(" saved")) {
+            val count = text.removeSuffix(" saved")
+            if (count.toIntOrNull() != null) {
+                return when (normalized) {
+                    "PL" -> "Zapisane: $count"
+                    "TR" -> "Kaydedilen: $count"
+                    else -> text
+                }
+            }
         }
         val pair = translations[text] ?: return text
         return when (normalized) {
