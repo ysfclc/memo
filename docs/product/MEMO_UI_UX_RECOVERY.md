@@ -13,10 +13,10 @@ Make Memo's existing product capabilities understandable, coherent and dependabl
 
 - The repository already contains the Signal & Graphite token system and shared primitives (`MemoPageHeader`, `MemoSectionHeading`, `MemoPanel`, `MemoStatusTag`, `MemoMessageBubble`). Their existence is not proof that all screens use them correctly or consistently.
 - `MemoWorkspaceApp.kt` and `WorkspaceScreens.kt` remain very large files that mix shell/navigation/state orchestration with screen composition. Refactoring must follow state ownership and testability, not line count alone.
-- The Talk entry still includes multiple competing destinations and dashboard-like content; this conflicts with the universal intent/capture entry.
+- The current primary Talk destination is `ChatsWorkspaceScreen`; the old dashboard-style `HomeScreen` remains as an unused private composable in `MemoWorkspaceApp.kt`. The earlier UX audit describes that legacy screen as if it were the active Talk entry, so its route-level description is stale and must not drive a blind rewrite.
 - Search is a bounded in-memory scan and does not yet behave like one reliable, deeply linked search surface.
 - Live is not yet a unified cross-runtime execution control room.
-- The current test setup has JVM/unit coverage but no Compose UI journey test dependency or meaningful Compose UI regression suite.
+- The current test setup had JVM/unit coverage but no Compose UI journey suite. This branch adds the Compose UI test dependency and initial primitive smoke tests; they still require CI execution.
 - Existing docs explicitly distinguish source implementation from visual/device acceptance. Preserve that honesty.
 
 ## Principles
@@ -33,9 +33,10 @@ Make Memo's existing product capabilities understandable, coherent and dependabl
 ## Work sequence
 
 ### UXR-0 — Establish regression gates
-- Add Compose UI test support.
-- Add smoke coverage for shared visual/semantic primitives.
-- Extend to real primary journeys before broad screen changes.
+- [x] Add Compose UI test support.
+- [x] Add smoke coverage for shared page header, status semantics and message rendering.
+- [ ] Execute tests in Android CI and correct any compile/runtime failures.
+- [ ] Extend coverage to real primary journeys before broad screen changes.
 - Keep build, emulator and physical-device evidence separate.
 
 ### UXR-1 — Talk as the universal entry
@@ -78,4 +79,8 @@ A screen is not complete because it compiles or uses shared components. Each jou
 
 ## First increment
 
-This branch adds Compose UI test support and smoke tests for the shared page header, status semantics and message bubble. These are regression foundations only; they do not claim the Talk/Live/Work/Studio journeys are fixed.
+- Added Compose UI test support and smoke tests for the shared page header, status semantics and message bubble. Test execution is pending CI.
+- Changed the app-shell tab, selected conversation, pending Talk prompt, browser sub-section and Work section request from ephemeral `remember` state to `rememberSaveable`. This protects the current navigation/handoff context across Activity recreation; it does not replace durable persistence for unsent message drafts or workspace records.
+- Source inspection found that the old `HomeScreen` dashboard composable has no call site. The actual Talk destination is `ChatsWorkspaceScreen`. Future cleanup should remove or isolate the dead implementation only after confirming no reflection/preview/test dependency; do not design against stale audit wording.
+
+These are regression foundations and a narrow state-recovery fix only; they do not claim the Talk/Live/Work/Studio journeys are fixed.
