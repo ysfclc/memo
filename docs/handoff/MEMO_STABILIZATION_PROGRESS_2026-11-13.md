@@ -238,3 +238,18 @@ A follow-up review found the new persistence-verifier guard referenced `view_mod
 - **Pinned signing:** isolated signing job passed and verified certificate SHA-256 `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a`.
 - **Artifacts:** final signed APK `Memo-Android-debug-APK`, ID `14136712960`, artifact ZIP SHA-256 `59dd1a6a7a7240f08cf5feb056fb8c6d9a82f9d03a839eda2950d74fa1a9083d`; integrated repository ID `14136667838`; build reports ID `14136219292`.
 - **Status:** source/build/signing gates for WF-04 passed. WF-04 remains open only for live provider/device acceptance; WF-05 and STAB-05 remain open for physical-device reproduction and upgrade checks. PR #8 remains draft; `main` was not modified.
+
+
+## 15 November 2026 — ORCH-007 shared runtime and postcondition contracts
+
+- **User direction:** resume Memo development one coherent increment at a time while preserving the complete product contract, social platform scope, prior bugs and existing backlog. No merge/release/deployment/data-migration authorization.
+- **Branch/source:** `stabilization/usable-stage-2026-11-10`; exact source commit `cef15adb9b6f7b4fd991ef7404e12f8b4bc9da34`.
+- **Change:** added shared runtime invocation/resolution contracts and deterministic postcondition observer/evidence contracts. Runtime requests validate exact TaskSpec, active attempt, compiled capability-manifest fingerprint, current runtime/capability registry, approval/side-effect boundary, bounded payloads, deadline and cancellation.
+- **Verification rule:** adapters return candidate output only. A separately registered read-only observer must prove the exact declared postcondition with evidence tied to the attempt and task fingerprint. Only `VERIFIED` permits checkpoint completion. Model output is never proof.
+- **Tests:** new `WorkflowRuntimeAdapterTest` and `WorkflowPostconditionTest`; source verifier guards the contract and tests.
+- **GitHub Actions run #678:** ID `43666486553`, exact-head success: https://github.com/ysfclc/memo/actions/runs/43666486553. Source invariants, remote runner, core/app unit tests, lint, APK assembly, APK identity/signature, API 35 in-place encrypted-store upgrade and isolated pinned signing all passed.
+- **Build:** `BUILD SUCCESSFUL in 4m 49s`; package `app.memo.android.debug`, versionCode `678`, versionName `4.0.0-memo-debug`.
+- **APK:** artifact `Memo-Android-debug-APK`, ID `14143185526`; APK SHA-256 `026a9be7743e1e91cbc3b7807bed19504db6ea93b3d9249c91046ea15100f469`; pinned certificate SHA-256 `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a`.
+- **Upgrade proof:** API 35 emulator installed the new signed APK over the existing package, reopened both real encrypted stores, and passed legacy recovery/corruption checks. No uninstall or clear-data step.
+- **Not claimed:** no generic runtime dispatcher or concrete adapter is wired; no browser/native observer implementation; no physical-device acceptance. The user installed #674 but has not checked it.
+- **Next:** deterministic app-runtime adapter through the checkpoint journal with shared timeout/cancellation and process-death recovery. Browser/native adapters remain later increments.

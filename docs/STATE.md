@@ -1,90 +1,117 @@
 # State Ledger
-_Last updated: 2026-11-13 — STOP-WORK stabilization plan committed; see `docs/handoff/MEMO_STABILIZATION_PLAN_2026-11-13.md`._
+_Last updated: 2026-11-15 — user explicitly resumed incremental Memo development; ORCH-007 shared runtime and postcondition contracts are CI-verified on exact head #678. Physical-device acceptance remains pending._
 
 ## 1. Product snapshot
 
-Memo is an Android-first, local-first personal AI execution environment. Talk captures an intent; Memo assembles and routes bounded work across the user's workspace, local models, visible browser sessions and permitted Android runtimes; Work stores durable records; Live exposes execution and review state; Studio produces editable, evidence-grounded deliverables. Complete means a connected intent-to-outcome loop with explicit checkpoints, durable recovery, observable postconditions, privacy controls and real-device acceptance—not a chatbot shell, disconnected screens or an APK alone.
+Memo is the personal AI operating agent on the phone: it understands what the user wants, assembles and runs the right workflow across the user's information, models, websites and Android apps, produces useful work, and keeps the user in control.
+
+The normative product source is `docs/MEMO_PRODUCT_CONTRACT.md`; the complete social operating-layer requirements are in `docs/SOCIAL_PLATFORM_PRODUCT_SPEC.md`. These are user-approved scope, not optional future ideas to be silently reduced. `TASKS.md` is the execution ledger; `docs/DECISION_LOG.md` records material changes.
+
+The intended continuous path is: capture intent → clarify and retrieve permitted context → assemble a typed, versioned workflow → route steps to deterministic code/local AI/frontier AI/visible browser/Android runtime/user → show progress and checkpoints in Live → verify actual postconditions → save evidence and deliverables in Work/Studio. Conversation is the interface, not the database.
+
+Primary surfaces remain Talk, Live, Work and Studio. Work is the local-first persistent graph; Today prioritizes MUST / SHOULD / COULD / NOT TODAY. Memo is not a chatbot skin, generic browser, CRM clone, static task manager or dashboard of disconnected modules.
 
 ## 2. Status board
 
 | Area | State | Notes |
 |---|---|---|
-| Product contract | ✅ established | `docs/MEMO_PRODUCT_CONTRACT.md` is normative; `TASKS.md` is the engineering runbook. |
-| Talk | 🟡 partial | Persistent conversations and text/voice entry exist; local TaskSpec expansion is connected, but arbitrary dynamic planning/execution remains incomplete. |
-| Work graph | 🟡 partial | Typed TaskSpec DAG proposals, dependency-aware checkpoint reservation, durable attempts and first content-bound runtime receipts exist. Generic cross-runtime execution is not yet implemented. |
-| Local-model Work dispatch | 🟡 partial | A local-model checkpoint can be reserved, dispatched and saved as a review-required artifact. New output receipts bind the saved bytes to the exact attempt. |
-| Attempt journal | 🟡 implemented / unverified | Schema-7 per-node attempts, four-attempt cap, output/failure/interruption states and migration coverage exist in source. New output attempts require a matching typed receipt in both journal and artifact metadata; legacy schema-7 output attempts remain compatible. Gradle tests have not run. |
-| Runtime postconditions | 🔴 incomplete | Receipts explicitly remain `NOT_VERIFIED`; independent deterministic/browser/native observers are not yet connected to the DAG. |
-| Local inference timeout | 🟡 implemented / unverified | 180-second coroutine deadline and Work stop control exist; five regression tests cover deadline, timeout mapping, cooperative cancellation, success and parent cancellation. Tests have not executed. |
-| Live | 🟡 partial | Timeline projects jobs, steps, action audit, evidence and attempts. Receipt-backed attempts now show a short output-hash fingerprint and explicit `NOT_VERIFIED` postcondition state without exposing model payloads. Cross-runtime pause/resume/takeover remains incomplete. |
-| Studio | 🟡 partial | Private typed draft creation/edit/export foundation exists; richer revision comparison and artifact lifecycle remain. |
-| Browser | 🟡 bounded slice | Visible provider sessions and exact-content approval exist; no generic browser runtime adapter in the DAG executor. |
-| Native Android | 🟡 bounded / unverified | Accessibility workflows are opt-in and foreground/unlocked; not integrated as a generic DAG adapter. |
-| Security and storage | 🟡 partial | Encrypted workspace/native stores and migration safeguards exist; eventual single-store boundary and device acceptance remain open. |
-| CI / Android build | 🔴 blocked | Current branch head `99f79d9` has no successful exact-head verification. GitHub Actions runner startup remains unavailable; Vercel rejects new deployments with HTTP 402 daily quota. Regression test, full Gradle suite, API 35 instrumentation and pinned-signature artifact are unverified. |
+| Product contract | established | Normative scope preserved; social platform remains first-class and unimplemented until provider-backed evidence exists. |
+| Talk | partial | Persistent conversations and text/voice intent entry exist; local TaskSpec expansion is available. Full arbitrary intent-to-outcome orchestration and richer capture remain incomplete. |
+| Work graph | partial | Typed DAG proposals, dependency-aware checkpoint reservation, schema-7 attempt journal and content-bound runtime output receipts exist. |
+| Shared runtime adapter contract | verified | ORCH-007 request/resolver contract is covered by pure-core tests and exact-head CI. No generic dispatcher or concrete adapter is wired yet. |
+| Postcondition evidence contract | verified | Registered deterministic observer methods and exact attempt/task/evidence binding exist. No browser/native observer implementation is connected; runtime receipts remain NOT_VERIFIED until independent observation. |
+| Deterministic app runtime | not implemented | Next increment: connect safe Memo app capabilities to the durable checkpoint journal, shared timeout/cancellation and process-death recovery. |
+| Local-model Work dispatch | partial | Local-model checkpoint can be reserved, dispatched and saved as a review-required artifact. Runtime output receipt proves saved bytes only, not goal completion. |
+| Live | partial | Newest-first projection includes persisted activity, jobs/checkpoints, tasks, action audit, evidence and attempt state. Cross-runtime panes, pause/resume/takeover and verified postconditions remain incomplete. |
+| Studio | partial | Private typed draft creation/edit/export foundation exists; richer revision comparison, restore and templates remain open. |
+| Browser | bounded slice | Visible provider sessions, exact-content approval, capture/retry controls and durable response acknowledgement exist in source. Live provider/device acceptance remains open. |
+| Native Android | bounded | Accessibility automation is opt-in, permission-aware and foreground/unlocked; no generic DAG adapter is wired. |
+| Local/frontier AI | partial | LiteRT local model path and optional API-compatible provider exist. Council is not yet one unified Talk/Live workflow across visible signed-in provider sessions. |
+| Social platform | specified, not implemented | Account management, feed, inbox, engagement, relationships, listening, publishing, analytics, personal brand and monetization remain in scope. Provider support must be verified individually. |
+| Security and storage | partial | Exact-content approval, audit, encrypted workspace/native stores and upgrade safeguards exist. Stores remain separate; single-store migration is deferred. |
+| CI / Android build | verified on exact head | Run #678 passed source checks, remote runner, core/app unit tests, lint, APK build/identity, API 35 in-place upgrade and isolated pinned signing. |
+| Physical device | pending | User installed the earlier #674 APK but has not checked it. No physical-device behavior or upgrade acceptance is claimed for #678. |
 
 ## 3. Current branch and delivery state
 
-- Private repo: `ysfclc/memo`.
+- Repository: `ysfclc/memo`.
 - Development branch: `stabilization/usable-stage-2026-11-10`.
 - Draft PR #8 remains open and unmerged, targeting `main`: https://github.com/ysfclc/memo/pull/8
-- Current source head: `99f79d975cf7276c21eb32adee6831824c3ff35b`. STOP-WORK plan committed separately; keep `main` untouched.
-- Vercel build investigation: JDK 17 and Android SDK 35 installed; compilation and `:app:assembleDebug` were reached. The script then exited 141 (SIGPIPE) during package/certificate parsing. The parsing pipelines were replaced with full-stream-safe parsing and the source checksum refreshed. A subsequent deployment was rejected with HTTP 402 `api-deployments-free-per-day` (100 deployments/day; retry after 24 hours). No complete build result is claimed.
-- GitHub Actions latest inspected run #587 fails before any runner or step starts. This does not demonstrate a Kotlin/Gradle failure. Do not repeatedly trigger identical runs while the runner/account issue is unresolved.
-- Vercel Preview still needs the existing four signing secrets configured by the user before a pinned-certificate upgrade APK can be produced. Never substitute an ephemeral signing key for the persistent Memo signer.
-- No production deployment, signing identity change, data migration or merge is authorized.
+- Exact tested source commit: `cef15adb9b6f7b4fd991ef7404e12f8b4bc9da34`. `main` was not modified.
+- GitHub Actions run #678, ID `43666486553`: https://github.com/ysfclc/memo/actions/runs/43666486553 — completed successfully.
+- Passed: source invariants and checksum verification; remote-runner tests; `:core:test`; `:app:testDebugUnitTest`; `:app:lintDebug`; `:app:assembleDebug`; APK package/version/signature checks; API 35 in-place upgrade instrumentation; isolated pinned signing.
+- APK: package `app.memo.android.debug`, versionCode `678`, versionName `4.0.0-memo-debug`.
+- Final signed artifact: [Memo-Android-debug-APK, artifact 14143185526](https://github.com/ysfclc/memo/actions/runs/43666486553/artifacts/14143185526).
+- APK SHA-256: `026a9be7743e1e91cbc3b7807bed19504db6ea93b3d9249c91046ea15100f469`.
+- Artifact ZIP SHA-256: `cbc98602361f95d7383c2f7ccf6bdf92c62347c1fa1ce32435b96e9693ea8e6e`.
+- Pinned signing certificate SHA-256: `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a`.
+- API 35 upgrade test passed: baseline stores seeded, new APK installed over the existing package, both encrypted stores reopened, legacy recovery and corruption checks passed. No uninstall or clear-data step was used.
+- The user installed the previous #674 APK but has not tested it. This is explicitly not physical-device acceptance. The #678 build is a core-contract increment with no new visible workflow; do not ask the user to reinstall merely to see no UI change.
 
-## 4. STOP-WORK stabilization
+No merge, production release/deployment, signing identity change or destructive data migration is authorized.
 
-- New development is frozen. No feature additions, redesign, merge, production deployment, signing change or destructive data migration is authorized during stabilization.
-- Current stabilization plan and ordered acceptance gates: `docs/handoff/MEMO_STABILIZATION_PLAN_2026-11-13.md`.
-- The local-model GPU fallback guard in `99f79d9` is a source change awaiting execution of its regression test; it is not recorded as fixed.
-- Exact-head CI, Android tests/lint, APK signing, emulator upgrade and physical-device acceptance remain open. A passing build alone is not product acceptance.
+## 4. Development authorization and guardrails
 
-## 5. Latest product increment — typed local runtime receipts
+On 15 November the user explicitly asked to resume building Memo one coherent increment at a time while preserving the original brainstorming and all prior requirements. This supersedes the earlier feature freeze only for reversible development on the stabilization branch.
 
-- Added `core/src/main/kotlin/app/memo/android/data/WorkflowRuntimeReceipt.kt`.
-- Local Work output receipts bind attempt ID/number, job/checkpoint, runtime ID, exact capability IDs, stable idempotency key, start/completion timestamps, Evidence ID and SHA-256 of the saved output bytes.
-- The receipt is attached atomically with the review-required artifact and attempt transition, inside existing Evidence metadata. No schema migration was introduced.
-- The journal marker and Evidence metadata must agree; workspace validation rechecks receipt identity and output hash. Schema-7 historical output attempts without a receipt marker remain compatible.
-- The receipt explicitly says `postconditionStatus=NOT_VERIFIED`. It proves only that Memo saved the exact runtime output; it does not prove the user's requested outcome or authorize an external action.
-- Live now surfaces a short output-hash fingerprint and the unverified postcondition state for receipt-backed attempts, without rendering the saved model output.
-- Regression tests cover receipt binding, workspace validation, output mutation, legacy schema-7 compatibility and Live payload privacy. `tools/verify_source.py` and `SOURCE_SHA256SUMS.txt` were updated.
-- Full details: `docs/checkpoints/2026-11-12-runtime-receipts.md`.
+It does not authorize merging PR #8, modifying `main`, production deployment, changing signing identity, destructive migration or silently narrowing scope. Work directly in GitHub. Keep each increment bounded, preserve all earlier bugs/tasks, verify the exact commit, and do not start the next increment until the current one passes its required gates.
 
-## 6. Known gaps & stubs
+## 5. Product scope that must remain intact
 
-- `core/src/main/kotlin/app/memo/android/orchestration/WorkflowCheckpointCoordinator.kt` reserves and journals safe checkpoints but is not a generic runtime dispatcher; only the local-model Work path is dispatched.
-- Remaining orchestration work: shared runtime adapter contract; deterministic/browser/native adapters; shared duration/model-call/external-write budgets; cross-runtime cancellation and pause/resume/takeover; independent postcondition observers and evidence.
-- Workspace vault and native workflow store remain separate; single-store migration is deferred until both stores have safe upgrade acceptance.
-- Dynamic TaskSpec proposal/compilation is not a complete autonomous DAG engine; no blind external side-effect replay is allowed.
-- Android compile, full JVM/Android unit tests, lint, APK assembly/signature validation, emulator upgrade test and physical-device acceptance are not verified on the current PR head.
-- Local LiteRT cancellation is cooperative; a native call that does not yield cannot be forcibly stopped by coroutine cancellation. Measure actual timeout and Stop generation latency on-device.
+- Talk: multi-chat, text/voice/URL/file/image/share intake, context selection, local/frontier routing and Council with distinct participants, evidence and disagreement.
+- Live: one chronological execution view across runtimes, visible status, pause/resume/cancel/takeover, approval checkpoints and NEEDS_REVIEW for uncertain side effects.
+- Work: encrypted, searchable, typed graph for projects, goals, tasks, people, companies, relationships, jobs, applications, notes, sources, evidence, decisions, workflows, capabilities, providers and artifacts.
+- Studio: private, editable, versioned, evidence-grounded deliverables, including career documents, research, plans, proposals and content. External submission/publishing is a separate approved action.
+- General workflows: brainstorm-to-project, CRM capture, job search/application, content creation/publishing/learning, arbitrary user goals, social operations and Sales Operations. These are not separate silo products.
+- Social platform: connect/revoke accounts; provider-aware feed and inbox; supported messages/comments/reactions; relationship management; listening/discovery; publishing; analytics; personal brand; customer acquisition and monetization. Never invent provider support or metrics.
+- Intelligence: local-first encrypted source of truth; local models coordinate where supported; frontier providers are visible and consent-bound, never silent fallbacks.
+- Safety: deterministic code owns validation, budgets, approvals, state transitions, idempotency and verification. Model output is not proof. Consequential actions require exact content/destination/scope approval; uncertain effects are not blindly replayed.
+- Device/design: Android-first, English/Polish/Turkish, coherent premium mobile UX, useful motion/haptics and accessibility. Preserve package/signing identity and encrypted data across updates.
 
-## 7. Environment & verification
+## 6. Latest engineering increment — ORCH-007 shared runtime and postcondition contracts
 
-- Requirements: JDK 17, Android SDK platform 35, Build Tools 35.0.0, Gradle wrapper 8.14.6.
-- Full source gate: `./gradlew --no-daemon --stacktrace :core:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug`.
-- Additional instrumentation package: `:app:assembleDebugAndroidTest`; upgrade acceptance requires an API 35 emulator.
-- No local `/testbed` checkout, Android SDK or Gradle executable is mounted in this session. Do not claim source tests ran.
-- The source manifest tracks the new receipt source, modified journal/coordinator/tests, Live projection/tests and source verifier. It was refreshed in commit `f02dc633f450bf1be041c0f30a03be95b0736752`.
+- Source commit: `cef15adb9b6f7b4fd991ef7404e12f8b4bc9da34`.
+- Added `WorkflowRuntimeRequest` and `WorkflowRuntimeAdapterResolver`: validate saved graph, exact TaskSpec runtime/capabilities, capability-manifest fingerprint and current registry, active attempt identity, bounded input/output, deadline and cancellation.
+- Approval-gated, external-write and external-side-effect tasks are rejected at this adapter boundary. Adapters return candidate output; they cannot persist workspace state, grant approvals or mark checkpoints complete.
+- Added deterministic postcondition method/observer contracts. Observer must be registered, read-only, available and independent of the capability that produced the output. Evidence binds the exact attempt, TaskSpec fingerprint, declared postcondition, observer identity, separate evidence ID/hash and observation time.
+- Only `VERIFIED` postcondition evidence permits checkpoint completion. Model assertions and runtime success messages are not accepted as proof.
+- Added pure-core tests for exact manifest/runtime/attempt binding, registry drift, approval bypass, adapter resolution, bounds/cancellation, saved-output receipt binding, independent observer requirements and non-verified outcomes.
+- Exact-head CI #678 passed all source, unit-test, lint, build, emulator-upgrade and signing gates.
+- This is a contract foundation, not a connected runtime executor. No concrete deterministic/browser/native adapter or postcondition observer has been wired yet.
 
-## 8. Next three increments
+## 7. Known gaps and active defects
 
-1. Add a shared runtime-adapter contract and deterministic postcondition evidence interface. It must accept only the exact runtime/capability manifest compiled into the TaskSpec and return a typed receipt; it must not grant approvals.
-2. Implement the deterministic app-runtime adapter slice and wire it through the durable checkpoint journal with shared timeout/cancellation and process-death recovery. Prove it with pure-core tests before connecting browser/native actions.
-3. Add browser/native adapters as visible, permission-aware runtimes with their existing exact-content approval boundaries, then unify Live pause/resume/takeover and independently observed postconditions.
+- Generic DAG execution is not implemented. `WorkflowCheckpointCoordinator` still has only the existing local-model Work dispatch path.
+- Deterministic app-runtime adapter, browser adapter and native Android adapter remain to be implemented and integrated.
+- Shared workflow-wide step/time/model-call/external-write budgets, cross-runtime cancellation, pause/resume/takeover, process-death recovery through the generic adapter boundary and independently persisted postcondition evidence remain open.
+- Workflow runtime receipts remain `NOT_VERIFIED` until an independent observer proves the declared condition.
+- Workspace vault and native workflow store remain separate. Single-store consolidation must wait for a tested migration preserving both stores.
+- Physical-device acceptance, including the user's existing installation and the reported stale/data-loss history, remains open.
+- WF-01 through WF-13, STAB-05 and the wider M0–M7 roadmap remain active unless individually closed with exact evidence. Discovery of a new bug does not defer or delete an older one.
+- Full social platform, Council, broader CRM/job workflows, device-wide model discovery, local GGUF/llama.cpp and rich Studio lifecycle remain product scope, not silently deferred.
 
-## 9. Open questions for the human
+## 8. Verification evidence
 
-- None blocking the next reversible core-engine increment. PR #8 remains draft; keep production deployment, signing changes, data migration and merge out of scope.
+- Exact source commit: `cef15adb9b6f7b4fd991ef7404e12f8b4bc9da34`.
+- Actions run #678: https://github.com/ysfclc/memo/actions/runs/43666486553.
+- Source verifier explicitly reports the shared runtime request and postcondition evidence guards passed.
+- Gradle: `BUILD SUCCESSFUL in 4m 49s`; core tests, app unit tests, lint, debug APK and Android test APK assembly passed.
+- Emulator: `PASS: signed in-place upgrade preserved app-private data and both real encrypted Memo stores; legacy recovery and corruption tests passed.`
+- Isolated signer verified the persistent pinned certificate and uploaded the final signed APK.
+- Physical device: not tested by the user yet.
 
+## 9. Next three increments
 
-## User-facing workflow and control audit — 13 November 2026
+1. **Completed — ORCH-007:** shared runtime adapter contract and deterministic postcondition evidence interface, exact-head CI verified.
+2. **Next — deterministic app-runtime adapter:** connect safe Memo app capabilities to the durable checkpoint journal; enforce shared timeout/cancellation and process-death recovery; prove with pure-core tests before enabling browser/native actions.
+3. **Then — visible browser/native adapters:** preserve existing exact-content approvals and permissions; add independently observed postconditions and integrate real pause/resume/takeover into Live.
 
-- The prompt → enhancement → approval → browser → captured-result journey is **OPEN / NOT ACCEPTED**. See `docs/handoff/MEMO_USER_WORKFLOW_CONTROL_AUDIT_2026-11-13.md` for source findings, user-control inventory, required recovery behavior and acceptance scenarios.
-- Council currently uses installed local models plus a configured OpenAI-compatible endpoint; it does not automatically reuse browser-authenticated frontier-provider sessions. Browser workflows are a separate route/runtime.
-- Saved `BROWSER_WORKFLOW` definitions are not the same as execution history. The inspected workflow surface does not join prior runs, approvals, outputs and failures into a usable history.
-- Browser response capture depends on provider-specific DOM detection/stability polling. Persistence callbacks exist, but a visible provider answer can fail to become a Memo result if detection does not succeed; a clear manual capture/review fallback was not found in the inspected path.
-- The user reports that after send the workflow can leave only whole-run cancellation or saving as meaningful actions. Treat as a device-reproduction item; do not claim runtime reproduction from source inspection alone.
-- This is a product acceptance gap in the existing central journey, not authorization for unrelated features or redesign. Keep the STOP-WORK freeze; prioritize recovery of answers and preservation of task context when implementation is authorized.
+## 10. User-facing workflow and control audit
+
+- WF-04 source integration now enters `SAVING_RESPONSE` after detecting or manually receiving a provider answer. The workflow waits for the durable encrypted response-capture acknowledgement before advancing. A failed save returns to user recovery without resending the prompt.
+- WF-04 source verifier, coordinator tests, core/app tests and exact-head CI passed in the #674 source run; this does not close WF-04 because live provider behavior and physical-device acceptance remain open.
+- WF-01 through WF-03 remain open for manual capture/retry/skip/recovery acceptance and device reproduction. The user's report of weak after-send controls is not claimed as reproduced on-device.
+- Council still does not automatically reuse browser-authenticated frontier-provider sessions; browser workflows remain a separate visible route/runtime.
+- Saved workflow definitions are not equivalent to a complete cross-runtime execution history. Live still needs runtime-backed pause/resume/takeover and independent postcondition evidence.
+- Do not claim the end-to-end prompt → enhancement → approval → browser → captured-result journey accepted until the user-facing device walkthrough passes.
+

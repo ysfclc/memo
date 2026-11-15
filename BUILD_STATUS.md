@@ -1,15 +1,21 @@
-# Current stabilization status — 14 November 2026
+# Current stabilization status — 15 November 2026
 
-**Status: BUILD, API 35 UPGRADE TEST AND PINNED APK SIGNING VERIFIED; PHYSICAL-DEVICE ACCEPTANCE PENDING.**
+**Status: EXACT-HEAD BUILD, TESTS, API 35 IN-PLACE UPGRADE AND PINNED APK SIGNING VERIFIED; PHYSICAL-DEVICE ACCEPTANCE PENDING.**
 
-- Exact tested source commit: `672144a391e04ae33e487064b717932ee9ebf146` on `stabilization/usable-stage-2026-11-10`; PR #8 remains draft and unmerged.
-- GitHub Actions run **#674**: [successful exact-head build](https://github.com/ysfclc/memo/actions/runs/43652062415).
-- Passed: source invariants, remote-runner tests, `:core:test`, `:app:testDebugUnitTest`, `:app:lintDebug`, `:app:assembleDebug`, APK identity/signature verification, and API 35 encrypted-store in-place upgrade instrumentation.
-- Build identity: package `app.memo.android.debug`, versionCode `674`, versionName `4.0.0-memo-debug`.
-- Final artifact: `Memo-Android-debug-APK`, artifact ID `14136712960`; pinned certificate SHA-256 `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a` verified in the isolated signing job.
-- API 35 upgrade test passed: both encrypted stores reopened after `adb install -r`; legacy recovery and corruption checks passed. No uninstall or data-clearing step was used.
-- **Still pending:** physical-device upgrade and product-flow acceptance on the owner's existing phone. Install over the existing package; do not uninstall or clear app data.
+- Exact tested source commit: `cef15adb9b6f7b4fd991ef7404e12f8b4bc9da34` on `stabilization/usable-stage-2026-11-10`; PR #8 remains draft and unmerged.
+- GitHub Actions run **#678**, ID `43666486553`: [successful exact-head build](https://github.com/ysfclc/memo/actions/runs/43666486553).
+- Passed: source invariants/checksum verification, remote-runner tests, `:core:test`, `:app:testDebugUnitTest`, `:app:lintDebug`, `:app:assembleDebug`, `:app:assembleDebugAndroidTest`, APK identity/signature checks, API 35 encrypted-store in-place upgrade instrumentation and isolated pinned signing.
+- Build identity: package `app.memo.android.debug`, versionCode `678`, versionName `4.0.0-memo-debug`.
+- Final artifact: [`Memo-Android-debug-APK`, artifact ID `14143185526`](https://github.com/ysfclc/memo/actions/runs/43666486553/artifacts/14143185526).
+- APK SHA-256: `026a9be7743e1e91cbc3b7807bed19504db6ea93b3d9249c91046ea15100f469`.
+- Artifact ZIP SHA-256: `cbc98602361f95d7383c2f7ccf6bdf92c62347c1fa1ce32435b96e9693ea8e6e`.
+- Pinned signing certificate SHA-256: `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a`.
+- API 35 upgrade test passed: baseline encrypted workspace/native stores were seeded, the new APK installed with `adb install -r`, both stores reopened, and legacy recovery/corruption checks passed. No uninstall or clear-data step was used.
+- **Still pending:** physical-device update and product-flow acceptance on the user's existing phone. The user installed the earlier #674 APK but has not checked it. Do not claim phone acceptance; do not uninstall Memo or clear app data.
+- This is a core runtime-contract increment, not a user-visible workflow feature. Concrete runtime adapters and postcondition observers remain next work.
 - No merge, release, production deployment, signing-key change or destructive data migration is authorized. PR #8 and `main` remain untouched.
+
+---
 
 ---
 

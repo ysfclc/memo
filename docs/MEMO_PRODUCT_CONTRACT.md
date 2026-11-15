@@ -152,7 +152,7 @@ Connect the user's permitted social accounts → inspect actual provider capabil
 - Not an unrestricted background agent that hides actions or bypasses Android controls.
 - Not a SaaS requiring account signup or cloud storage to hold the user's own knowledge.
 
-## 9. Current source reality — 5 November 2026
+## 9. Current source reality — 15 November 2026
 
 This is a source audit, not a device-acceptance claim.
 
@@ -160,18 +160,18 @@ This is a source audit, not a device-acceptance claim.
 |---|---|
 | Four primary surfaces | The active bottom navigation is Talk / Live / Work / Studio. Talk combines a text/voice intent composer, conversation history and active chat. Live has a persisted chronological timeline plus the active browser-session panel; Browser and Apps remain contextual runtime routes. Studio supports private user-authored drafts alongside Self Model and local generation. The old Home composable remains legacy source, not a primary destination. |
 | One intent entry point | Talk now has one text/voice “Start with Memo” composer that opens a conversation draft and creates the initial deterministic work plan for action-oriented intent. Work can optionally expand an untouched plan with a local model into a validated TaskSpec proposal; Talk-native expansion, file/image attachments and the full intent-to-outcome executor remain open. The old split planner/chat Home implementation is no longer the primary entry. |
-| Dynamic workflow engine | Work jobs persist schema-v1 typed DAG proposals. Core exposes TaskSpec-based dynamic fan-out/join compilation and a strict untrusted-JSON proposal parser. Work now offers optional local-model expansion of untouched draft plans; the applier preserves the original goal, revalidates exact runtime/capability availability, rejects external/approval-gated tasks and saves a draft without executing nodes. Talk exposes optional local-model expansion directly from Start with Memo while preserving the deterministic initial plan; no durable DAG executor or per-node run journal exists yet. |
-| Live control | Live now renders a newest-first projection of persisted activity, jobs/checkpoints, tasks, action-audit transitions and captured evidence, alongside the current visible browser session. It is not yet a true cross-runtime event journal with inline browser/native panes, runtime-backed pause/resume/takeover or complete postcondition evidence. |
+| Dynamic workflow engine | Work jobs persist schema-v1 typed DAG proposals. Core compiles bounded fan-out/join graphs and strictly parses untrusted proposals. Schema-7 per-node attempts and content-bound runtime output receipts exist. The shared runtime adapter and deterministic postcondition evidence contracts are CI-verified, but no generic DAG dispatcher or concrete deterministic/browser/native adapters are wired. |
+| Live control | Live renders a newest-first projection of persisted activity, jobs/checkpoints, tasks, action-audit transitions, evidence and attempt/receipt state. Receipts explicitly remain NOT_VERIFIED. Cross-runtime panes, runtime-backed pause/resume/takeover and independent postcondition observers remain incomplete. |
 | Frontier Council | Talk now exposes Council from the conversation list and conversation header, but Council still opens a separate route and does not yet share the Talk conversation's context and unified Live timeline end to end. |
-| Browser/app runtime | A provider-specific WebView browser workflow exists. Native Accessibility automation is bounded and permission-gated, with separate legacy persistence. Neither is a universal DOM/native capability system. |
-| Work graph | Conversations, entities, jobs, tasks and evidence exist. Full project/contact/opportunity/application CRUD and cross-runtime provenance are incomplete. |
+| Browser/app runtime | A provider-specific visible WebView workflow exists with exact-content approval, capture/retry controls and a durable response-save acknowledgement before advancing. Native Accessibility automation is bounded and permission-gated. Neither is yet a generic DAG runtime adapter; live provider/device acceptance remains open. |
+| Work graph | Conversations, entities, jobs, tasks, evidence, schema-7 attempts and typed runtime receipts exist. Full project/contact/opportunity/application CRUD and cross-runtime provenance remain incomplete. |
 | Studio | Studio supports user-authored private drafts stored in the encrypted workspace, plus Self Model fact extraction and local-model CV-style generation. Existing artifact editing/export and revision snapshots are reused; revision comparison/restore UI, autosave, broad templates, rich export formats and publishing/metrics remain incomplete. |
 | Social platform | The current contract/backlog only describe a narrow content-to-publishing/metrics journey and generic ChannelAccount/ProviderAdapter data concepts. No complete feed, inbox, engagement, listening, account management or social analytics implementation is evidenced. Treat the entire social platform spec as unimplemented until source paths and provider-backed acceptance tests prove otherwise. |
 | Voice | Chat tap-to-talk delegates to Android speech recognition. Full local ASR/TTS, always-on voice and dependable lock-screen command execution are not implemented. |
 | Model platform | Curated LiteRT-LM catalogue and optional API-compatible provider exist. GGUF/llama.cpp and device-wide model discovery are not integrated. |
-| Data layer | Primary Compose vault and native workflow `SynthStore` remain separate. This violates the target single-store boundary and requires a safe migration. |
+| Data layer | Encrypted workspace and native workflow stores remain separate. API 35 emulator in-place upgrade tests pass for both stores; single-store migration and physical-device acceptance remain open. |
 
-The current build passing CI does not mean the product is complete. The source baseline is buildable; the product gaps above remain open and must be addressed in implementation.
+Exact-head GitHub Actions run #678 passed source verification, remote-runner tests, core/app unit tests, lint, APK assembly/identity, API 35 in-place upgrade instrumentation and isolated pinned signing. This does not mean the product is complete or that a physical phone has been accepted.
 
 ## 10. Build order and acceptance
 

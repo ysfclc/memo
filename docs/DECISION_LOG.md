@@ -37,3 +37,13 @@ This log records material product and engineering decisions. Add dated entries; 
 - **Consequences:** The first local Work receipt is stored in existing evidence metadata and cross-checked against the per-node journal during workspace validation. Existing schema-7 records without receipt markers remain compatible. Browser/native adapters and independent postcondition observers remain separate follow-up work.
 - **Status:** Active.
 
+
+
+## 2026-11-15 — ORCH-007: shared runtime and postcondition contracts
+
+- **Decision:** Every runtime adapter receives an invocation bound to the saved TaskSpec, exact runtime/capabilities, compiled capability-manifest fingerprint, active attempt and idempotency identity. It returns typed candidate output only; it cannot persist workspace state, grant approvals or complete a checkpoint.
+- **Decision:** Workflow completion requires a separate registered, deterministic, read-only postcondition observer. Evidence must bind the exact attempt, TaskSpec fingerprint, declared postcondition, observer and separate persisted evidence record. Only `VERIFIED` can permit checkpoint completion; model/runtime success claims are not proof.
+- **Reason:** Memo's product contract requires observable outcomes, safe recovery and exact approval boundaries across local models, browser and Android runtimes.
+- **Consequences:** The shared contract and regression tests are implemented and passed exact-head CI #678. Concrete deterministic/browser/native adapters, cross-runtime budgets/cancellation and observer wiring remain open. The next increment is the deterministic app-runtime adapter.
+- **Scope authorization:** The user explicitly requested one coherent Memo increment at a time on 15 November. This supersedes the earlier feature freeze only for reversible development on the stabilization branch; it does not authorize merge, release, production deployment, signing identity changes or destructive migration.
+- **Status:** Active.

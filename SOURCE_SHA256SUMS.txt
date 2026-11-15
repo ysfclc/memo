@@ -59,7 +59,7 @@ e4926a3e06cfe3df0f92d657d0b193d12c75856dcc1192d731bb0ee344d36ff7  ./app/src/main
 27e5ee034acedb8ba4fb4e61e47b916b584cefd019dd3a15e3b0b751244165d6  ./app/src/test/java/app/memo/android/browser/BrowserWorkflowPromptsTest.kt
 4672be33e9acf6040d50562a165b75f104b305834fcee8bfa4bc0e88908579ad  ./app/src/test/java/app/memo/android/ui/MemoLocalizationTest.kt
 b2a1bd5e918a0d0c153153bb0c707e2414bc5c1a2fcd8eeedca801d86bdf8a3b  ./app/src/test/java/com/synthos/runtime/engine/WorkflowPolicyTest.java
-ea1e266b7dacf508c0bfa80feefa2b44baee288c2f643ba6ce444ac1f41cd7c0  ./BUILD_STATUS.md
+40622d23a03de9ce070a47d1273bc2a7e22e652fb0fd35e0f0ffbbdc0be9f8c9  ./BUILD_STATUS.md
 21acd1687a0a9180acdd7ade75f2f3e378a4d229e71865ccf8ddb344c0c20bf7  ./build.gradle
 caa6a5de66bdfb16d33e08d63b4d45c01d435e27ecca4621a771f7b658be3d0e  ./CHANGELOG.md
 4cc7e56d77f1e96134675d4e514664002ce1397ed3fa9eb962e21afd55988a40  ./core/build.gradle
@@ -112,6 +112,8 @@ e141ec93d5467fbf8460f0bd3e03f81433f60881359e15db7cd5087be7ff0aae  ./core/src/tes
 27a75bf71bfa1da44ba4c0fcf483b010cab683e19f33f308a150a248cdae81aa  ./DEVICE_ACCEPTANCE_CHECKLIST.md
 11ef9d881f771b1d43227af2089c418d46e1b2e3c9009e11d42065bb1a07f12e  ./docs/checkpoints/2026-11-11-vercel-android-build.md
 ca91a1fe9b0e4c4cbd759cea8e89eb2c1b3dde9dfef8da7dfea9c39614ce2f1a  ./docs/checkpoints/2026-11-12-workflow-attempt-journal.md
+aeef30f71fe7a50f9245320bd731e2cca3d3630561cd63aac8a228c88d44ddcb  ./docs/checkpoints/2026-11-15-runtime-adapter-contracts.md
+91968069bf45e46a9cf6861a9bc6c35cbd3ebfd41bdda74882040b0ef4356a0c  ./docs/DECISION_LOG.md
 9691653af0b9d8af14768502b8e8f064a8626f8e5678293f84ad1c2c9f11484a  ./docs/handoff/ci-history/run54-last-successful-2026-10-29/app/ci-build-evidence/reports/lint-results-debug.html
 4724bb576218a703bd53a76989e5855b1b0ff36627523eb63ff6e972d9e07584  ./docs/handoff/ci-history/run54-last-successful-2026-10-29/app/ci-build-evidence/reports/lint-results-debug.txt
 580da44a72dfd3699f95ff6652d9264ac72b39f1b4464c538994cb5e2b7bdd5c  ./docs/handoff/ci-history/run54-last-successful-2026-10-29/app/ci-build-evidence/reports/lint-results-debug.xml
@@ -190,14 +192,15 @@ d3ffa49689053f31cf4cd80d1382eb6d8d9d518b428b56138b5643dac774152e  ./docs/handoff
 fb30851d631c4605c415554ac7e1a28bce4ca1c1565819bde2895d24510c3508  ./docs/handoff/legacy/memo1-task-runbook-README.txt
 0c54e35476fbf5a44b9529b52a422b46a3aaf6a30991cbd6c0dbac29d1bd3406  ./docs/handoff/Memo_Architecture_Design_Blueprint.md
 0b0f68cf1e0d8d894a4b4e5c74eaa9553528fd2f5c7d5147f27c02a521807601  ./docs/handoff/Memo_Architecture_Diagram.svg
-2e9abb980a52cea77ee7a74ec94f824de95acf09f885f00de8d7a887f6d0fb26  ./docs/handoff/MEMO_STABILIZATION_PROGRESS_2026-11-13.md
+a1f78a38759aaba173e268c9bc1a77af4807d57b81fc58aa8573bf716153bb55  ./docs/handoff/MEMO_STABILIZATION_PROGRESS_2026-11-13.md
 9074340701a3573c2aecf74a6fe83574dbf5aa9085472bd4e55f892f5e6b3eca  ./docs/handoff/MEMO-FRESH-START-MASTER-LEDGER.md
 46c91211bdbb83187f2c2c15bf764547bebd9af9f578ba21bf5643bfdfb057ec  ./docs/handoff/Memo-Phase-1-CI-Diagnostics.md
 94daec0157ccec62aab788b26ab89031504c217a5e8cab5a54cec95a331657ba  ./docs/handoff/Memo-Signing-Setup.md
 c3ee6ee538f3355a2395d62e8fcd7f491b618b5d2f18f8506233f4460b80d125  ./docs/handoff/SOURCE-SNAPSHOT-PROVENANCE.md
 009903c689d37e1ca843b599f5f2b1c4513993642d13fb663a25993030527582  ./docs/handoff/ZIP-IMPORT-OPERATIONS.md
-8bb9ba07dce37fd656704aff7ae33c28a41f9b7a5fa45c4724ce6b7bd09f1342  ./docs/MEMO_PRODUCT_CONTRACT.md
-18c91b8ed0bbac1a43d979353e952a33380f0af67725db09e0365c142a484762  ./docs/REQUIREMENT_TRACEABILITY.md
+670f4b9abed218552c6f5762d07a275eeb574e01e224b2e42b4d77ed04e665d0  ./docs/MEMO_PRODUCT_CONTRACT.md
+19bda7c7afc66edda7fea361aceadcb02ac6c81b279e1da31ef4fec4a644a77f  ./docs/REQUIREMENT_TRACEABILITY.md
+1d871d31d4b76265d007d98e1c6a703eab1c713cb17c9bedcc2e7a0429eebed2  ./docs/STATE.md
 a8b181972eb3ee0e1587ff09e49979b43acffe2d4c3ab9ea5b8a7e097d46beb0  ./FEATURE_AUDIT.md
 d82dc17d418f2ce0b7f3b68b7304901400290e60aa3de8515fbfa8f2f617492d  ./gradle.properties
 465625e3d13290b5133f573f50b1b751a87181dc04ffbde15991258a8daffc50  ./gradle/wrapper/gradle-wrapper.properties
@@ -215,6 +218,6 @@ a1453a88e5bc19e7b20a521b56d36acbaec90fc742b79fb49fca11b7ddda73af  ./remote-runne
 245f1e5ef2c16b4c80683a4acc48e4b2e2964a971700ae36f4c9579bb381bb22  ./ROADMAP.md
 386f629d7b2f820b0ed8017499a7aee3a956db24b636cb653586d9cac806dea0  ./scripts/vercel-build-apk.sh
 19280c23fb304e503d1037eb423b17d0a14dd2a6fbb3e916574f4c5be17dfebf  ./settings.gradle
-e12c1547b4dff816d7218cd2ef3aa48571ade092077244befdd84c3cfa4ebb63  ./TASKS.md
+932e2c8b59531018478527f144e344a3ea3f29b88c57597f39ca46a6e460d780  ./TASKS.md
 07ae6333925e57ea22f71b42d09d74e9566ba8e5566d46d60ebdeb73869137c3  ./tools/verify_source.py
 7d4c0c5cce39e5353ea260f973ef19d0c48bf422f2e596a0062810336149bbeb  ./vercel.json

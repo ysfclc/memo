@@ -299,8 +299,8 @@ The following keeps Claude's task families and ordering while requiring Memo 1-s
 - [ ] **M3.8.A1** Versioned capability/library schemas and real migrations; trust transitions are explicit.
 - [~] **M3.8.A2** TaskSpec/graph/assembler/readiness analysis: core proposal parsing and exact-runtime capability validation exist; compiler UI, conflict visualization and full readiness acceptance remain open.
 - [ ] **M3.8.A3** Compile an execution package from validated capabilities; golden tests by size class; inspectable prompt/context assembly.
-- [~] **M3.8.A7** Durable runtime executor: the local-model Work slice is now checkpoint-gated and writes a bounded per-node attempt journal in workspace schema 7. Each attempt binds job/step, exact runtime/capabilities and stable TaskSpec idempotency key; output-save and failure close the attempt atomically with the step/job/evidence transition; process recovery marks RUNNING attempts INTERRUPTED and requires review. User-reported outcomes remain distinct from runtime output. Manual retries are capped at four per node; Work checkpoint cards show the latest attempt number/status/runtime, allow a reviewed new local draft while preserving earlier evidence, and suppress the retry action at the cap. Still open: typed runtime receipts, registered browser/native/deterministic adapters, shared budgets/timeouts, cancellation propagation, pause/resume/takeover and independently observed postconditions. No external runtime dispatch was enabled.
-- [~] **M3.8.A6** Optional local-model TaskSpec expansion for untouched Work drafts: strict parser, exact goal preservation, current runtime/capability revalidation, no external/approval-gated tasks, no execution. Talk-native expansion is integrated. Dependency-aware checkpoint coordination now validates the saved DAG, dependency readiness, current runtime/capability availability and external-effect boundaries; it persists one active checkpoint and explicitly labels outcomes as user-reported. Legacy sequential jobs remain supported. Core tests are added but unexecuted.
+- [~] **M3.8.A7** Durable runtime executor: the local-model Work slice is checkpoint-gated and writes a bounded per-node attempt journal in workspace schema 7. Each attempt binds job/step, exact runtime/capabilities and stable TaskSpec idempotency key; output-save/failure close the attempt with the step/job/evidence transition; process recovery marks RUNNING attempts INTERRUPTED and requires review. Typed runtime output receipts bind saved bytes and remain NOT_VERIFIED. ORCH-007 now adds the CI-verified shared runtime request/resolver and deterministic postcondition observer/evidence contracts, but no generic dispatcher or concrete deterministic/browser/native adapter is wired. Manual retries remain capped at four per node; earlier evidence is preserved. Still open: concrete adapters, shared workflow budgets/timeouts, cancellation propagation, pause/resume/takeover and independent observer integration. No external runtime dispatch was enabled.
+- [~] **M3.8.A6** Optional local-model TaskSpec expansion for untouched Work drafts: strict parser, exact goal preservation, current runtime/capability revalidation, no external/approval-gated tasks, no execution. Talk-native expansion is integrated. Dependency-aware checkpoint coordination validates the saved DAG, dependency readiness, current runtime/capability availability and external-effect boundaries; it persists one active checkpoint and labels outcomes as user-reported. Legacy sequential jobs remain supported. Core/app regression suites passed on exact-head CI #678; broader dynamic execution remains open.
 - [ ] **M3.8.A4** Evaluate/diagnose/repair/learn with finite budget, bounded retry and promotion only with evidence.
 - [ ] **M3.8.A5** Architect/critic loop with disagreement handling, evidence comparison and hard round limit.
 - [ ] **M3.8.B1** Seed capability library; every seed loads, validates and has an evaluator.
@@ -314,7 +314,7 @@ The following keeps Claude's task families and ordering while requiring Memo 1-s
 - [ ] **M3.9.B2** Job-tailored artifacts and fabrication guard: reject unsupported employer, metric, experience or skill claims; test with false-input fixtures.
 - [ ] **M3.9.B3** Other artifact types with per-type factuality validation and EN/PL/TR templates.
 - [ ] **M3.9.C1** Outbound profile sync only by explicit user action, preview, approval and auditable confirmation.
-- [~] **M3.9 — General private-draft foundation:** Studio can create typed user-authored drafts via `WorkArtifactFactory`, persist them in the encrypted workspace, list them with generated artifacts, and reopen/edit/export them. `updateWorkArtifact` stores up to five prior revision snapshots. Factory regression tests are added but unexecuted; revision compare/restore UI, autosave and richer document formats remain open.
+- [~] **M3.9 — General private-draft foundation:** Studio can create typed user-authored drafts via `WorkArtifactFactory`, persist them in the encrypted workspace, list them with generated artifacts, and reopen/edit/export them. `updateWorkArtifact` stores up to five prior revision snapshots. Factory regression tests passed in exact-head CI #678; revision compare/restore UI, autosave and richer document formats remain open.
 
 ### M4 — Channels, automation, Council and Live view
 
@@ -509,7 +509,7 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - [ ] **M7.A5 — Proposal/engagement (MEMO-SALES-005):** prepare a scoped pilot from confirmed discovery; pricing, tax and contract terms remain human/adviser review.
 - [ ] **M7.A6 — Delivery/reporting (MEMO-SALES-006):** client-authorised data boundaries, deliverables, milestones, acceptance and measured outcomes.
 
-**P0 release gate:** CI signing isolation is documented in `docs/security/CI_CREDENTIAL_BOUNDARIES.md`. The workflow's job boundaries are statically inspected; a fresh runner execution, normal signing run and physical-device upgrade acceptance remain open.
+**P0 release gate:** CI signing isolation is documented in `docs/security/CI_CREDENTIAL_BOUNDARIES.md`. Exact-head run #678 passed isolated pinned signing and API 35 in-place upgrade; physical-device upgrade acceptance remains open.
 
 
 ## 2026-11-10 — Consolidated security and experience work
@@ -531,7 +531,7 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 
 - Added a 180-second deadline around serialized LiteRT inference, including engine initialization and streamed generation.
 - Timeout cancels the active LiteRT conversation through `Conversation.cancelProcess()` and surfaces a dedicated failure state; it is not reported as a user cancellation or successful completion.
-- Added policy regression coverage and source-verifier assertions. The timeout test now passes the required duration to the exception and exercises deadline mapping, cancellation of in-flight work, successful completion and preservation of parent cancellation; tests are added but not yet executed.
+- Added policy regression coverage and source-verifier assertions. Deadline mapping, in-flight cancellation, success and parent-cancellation tests passed in exact-head CI #678. Native cancellation responsiveness remains a physical-device measurement.
 - **Still open:** native-call cancellation responsiveness, Work-level cancel control wiring/visibility, full Gradle tests, lint, and real-device timing. The deadline is cooperative and is not a hard process kill.
 
 - **Follow-up UI:** Work now displays a Stop generation control during an active local checkpoint, shows a bounded tail of partial output, and explains that stopping leaves the checkpoint for review rather than saving partial text as a finished artifact.
@@ -542,5 +542,20 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - **Owner requirement:** previously reported bugs, requested capabilities and roadmap tasks remain active when new defects are discovered. New findings add to the work; they do not defer, remove, downgrade or close earlier tasks.
 - A stabilization freeze controls sequencing and release safety only. It is not a declaration that existing product work is out of scope or abandoned.
 - Keep each task's implementation state separate from its verification state. Source changes, static checks, compiled builds, automated tests, emulator tests and physical-device acceptance are distinct evidence levels.
-- WF-01 through WF-12 in the Memo workflow recovery plan remain active. The wider M0–M7 milestones and documented product gaps remain active in this backlog.
+- WF-01 through WF-13 in the Memo workflow recovery plan remain active. The wider M0–M7 milestones and documented product gaps remain active in this backlog.
 - Do not mark a task deferred or complete merely because a new bug has been found. Update the task with the new dependency/blocker and preserve its original acceptance criteria.
+
+
+## 15 November 2026 — ORCH-007 shared runtime and postcondition contracts
+
+- **Task ID/status:** M3.8.A9 / `[x]` contract package implemented and CI-verified; MEMO-ORCH-001 remains partial because concrete adapters/execution are not wired.
+- **User direction:** preserve the original Memo product contract and build one coherent increment at a time. This resumes reversible branch development only; it does not authorize merge/release/deployment/data migration.
+- **Commit:** `cef15adb9b6f7b4fd991ef7404e12f8b4bc9da34`.
+- **Files:** `WorkflowRuntimeAdapter.kt`, `WorkflowPostcondition.kt`, their two core test files, `tools/verify_source.py`, `SOURCE_SHA256SUMS.txt`.
+- **Behavior:** runtime request binds saved graph, exact TaskSpec, active attempt, capability-manifest fingerprint and current runtime/capability registry; rejects approval-gated/external-effect tasks; enforces input/output bounds, deadline and cancellation. Adapters return candidate output only.
+- **Verification contract:** registered read-only deterministic observer, distinct from the producing capability; evidence binds exact attempt, TaskSpec/postcondition fingerprints, observer identity, time and separate evidence ID/hash. Only VERIFIED permits checkpoint completion.
+- **Tests:** runtime manifest/attempt binding, runtime drift, adapter uniqueness, approval bypass, bounds/cancellation, saved-output receipt binding, observer registration/independence and non-verified outcomes.
+- **CI:** run #678, ID `43666486553`, passed source verification, remote-runner, `:core:test`, `:app:testDebugUnitTest`, lint, APK assembly/identity, API 35 in-place upgrade and isolated pinned signing. [Run #678](https://github.com/ysfclc/memo/actions/runs/43666486553).
+- **APK:** `app.memo.android.debug`, versionCode 678, versionName `4.0.0-memo-debug`; [artifact 14143185526](https://github.com/ysfclc/memo/actions/runs/43666486553/artifacts/14143185526). APK SHA-256 `026a9be7743e1e91cbc3b7807bed19504db6ea93b3d9249c91046ea15100f469`; pinned certificate SHA-256 `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a`.
+- **Not claimed:** generic dispatcher/adapter implementation, browser/native observer wiring, or physical-device acceptance. The user installed #674 but has not tested it.
+- **Next:** deterministic app-runtime adapter through the checkpoint journal with shared timeout/cancellation and process-death recovery. WF-01–WF-13 and all wider milestones remain active.
