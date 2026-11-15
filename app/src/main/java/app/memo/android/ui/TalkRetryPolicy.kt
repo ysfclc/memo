@@ -24,7 +24,9 @@ internal fun shouldAppendTalkUserMessage(
     if (lastUser.content != normalizedText) return true
 
     val trailingMessages = messages.drop(lastUserIndex + 1)
-    val retryableFailure = trailingMessages.isNotEmpty() && trailingMessages.all {
+    // An empty tail means the user turn was committed but the runtime may not have started
+    // (for example, the app was interrupted between persistence and execution).
+    val retryableFailure = trailingMessages.isEmpty() || trailingMessages.all {
         it.role == "SYSTEM" && it.sourceType == "ERROR"
     }
     return !retryableFailure
