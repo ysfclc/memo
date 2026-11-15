@@ -83,6 +83,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -150,7 +151,7 @@ fun ChatsWorkspaceScreen(
     var messageDeleteTarget by remember { mutableStateOf<ChatMessageRecord?>(null) }
     var promoteMessageTarget by remember { mutableStateOf<ChatMessageRecord?>(null) }
     var promoteIntent by remember { mutableStateOf("") }
-    var draft by remember(selectedConversationId) { mutableStateOf("") }
+    var draft by rememberSaveable(selectedConversationId) { mutableStateOf("") }
     LaunchedEffect(selectedConversationId, initialPrompt) {
         if (selectedConversationId != null && initialPrompt.isNotBlank()) {
             draft = initialPrompt.take(6_000)
