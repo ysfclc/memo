@@ -547,6 +547,21 @@ object MemoLocalization {
         "Steps run in order. Launch, wait and delay are available. Tap and Back are temporarily disabled until exact-action approval is ready; existing drafts containing them must be edited before saving." to ("Kroki są wykonywane po kolei. Dostępne są uruchomienie, oczekiwanie i opóźnienie. Dotknięcie i Wstecz są tymczasowo wyłączone do czasu wdrożenia zatwierdzania dokładnych działań; istniejące szkice zawierające te kroki trzeba edytować przed zapisaniem." to "Adımlar sırayla yürütülür. Başlatma, bekleme ve gecikme kullanılabilir. Tam eylem onayı hazır olana kadar Dokunma ve Geri devre dışıdır; bunları içeren mevcut taslaklar kaydedilmeden önce düzenlenmelidir."),
         "Today" to ("Dzisiaj" to "Bugün"),
         "Your active work, from the encrypted workspace." to ("Twoja aktywna praca z zaszyfrowanego obszaru roboczego." to "Şifrelenmiş çalışma alanındaki etkin işlerin."),
+        "MEMO / TALK" to ("MEMO / ROZMOWA" to "MEMO / SOHBET"),
+        "MEMO / WORK" to ("MEMO / PRACA" to "MEMO / İŞ"),
+        "MEMO / STUDIO" to ("MEMO / STUDIO" to "MEMO / STÜDYO"),
+        "Create private, evidence-backed artifacts from facts you approve. Nothing is submitted or published." to ("Twórz prywatne artefakty oparte na dowodach, korzystając z zatwierdzonych faktów. Nic nie jest wysyłane ani publikowane." to "Onayladığın gerçeklerden özel, kanıta dayalı çıktılar oluştur. Hiçbir şey gönderilmez veya yayımlanmaz."),
+        "A thought, question or task. The conversation and its related work stay together." to ("Pomysł, pytanie lub zadanie. Rozmowa i powiązana z nią praca pozostają razem." to "Bir fikir, soru veya görev. Sohbet ve ilgili işler birlikte kalır."),
+        "Request controls" to ("Ustawienia żądania" to "İstek kontrolleri"),
+        "Choose the model and decide what information may be shared." to ("Wybierz model i zdecyduj, jakie informacje mogą zostać udostępnione." to "Modeli seç ve hangi bilgilerin paylaşılabileceğine karar ver."),
+        "Original text used to validate candidate facts" to ("Tekst źródłowy używany do weryfikacji proponowanych faktów" to "Aday bilgileri doğrulamak için kullanılan özgün metin"),
+        "Each proposed fact is linked to an exact source excerpt" to ("Każdy proponowany fakt jest powiązany z dokładnym fragmentem źródła" to "Önerilen her bilgi, kaynaktaki tam bir alıntıyla bağlantılıdır"),
+        "You control what Artifact Studio may use" to ("Ty decydujesz, z czego może korzystać Artifact Studio" to "Artifact Studio'nun neleri kullanabileceğine sen karar verirsin"),
+        "Saved drafts remain editable and exportable" to ("Zapisane szkice można nadal edytować i eksportować" to "Kaydedilen taslaklar düzenlenebilir ve dışa aktarılabilir"),
+        "status" to ("status" to "durum"),
+        "YOU" to ("TY" to "SEN"),
+        "IMPORTED SOURCE" to ("ZAIMPORTOWANE ŹRÓDŁO" to "İÇE AKTARILAN KAYNAK"),
+        "Now" to ("Teraz" to "Şimdi"),
     )
 
     fun translate(text: String, language: String): String {
@@ -585,6 +600,16 @@ object MemoLocalization {
         metadataPrefixes.firstOrNull { text.startsWith(it.first) }?.let { (prefix, labels) ->
             val suffix = text.removePrefix(prefix)
             return when (normalized) { "PL" -> labels.first + suffix; "TR" -> labels.second + suffix; else -> text }
+        }
+        if (text.endsWith(" saved")) {
+            val count = text.removeSuffix(" saved")
+            if (count.toIntOrNull() != null) {
+                return when (normalized) {
+                    "PL" -> "Zapisane: $count"
+                    "TR" -> "Kaydedilen: $count"
+                    else -> text
+                }
+            }
         }
         val pair = translations[text] ?: return text
         return when (normalized) {
