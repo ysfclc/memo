@@ -38,6 +38,7 @@ Make Memo's existing product capabilities understandable, coherent and dependabl
 - [x] Wire the Compose smoke suite into the Android API 35 emulator workflow (execution result still pending).
 - [ ] Observe a green CI run and correct any compile/runtime failures. The first PR runs exposed stale static invariants: one still required ephemeral `remember` after the app-shell state was correctly upgraded to `rememberSaveable`, and another required the obsolete label `Continue in Talk` even though the active screen uses the `Message Memo…` composer. Both checks now assert the active implementation rather than dead-screen wording. The next run must verify these corrections.
 - [ ] Extend coverage to real primary journeys before broad screen changes.
+- [x] Reduce Talk's competing entry actions: keep the intent composer as the primary action, move transcript import into the page header's contextual action, and leave Council available in its conversation context and the More/system area.
 - Keep build, emulator and physical-device evidence separate.
 
 ### UXR-1 — Talk as the universal entry
@@ -92,3 +93,6 @@ These are regression foundations and a narrow state-recovery fix only; they do n
 - The first PR CI run failed before Gradle because `tools/verify_source.py` still asserted the old `remember` implementation for the default Talk tab. A subsequent run exposed a second stale assertion requiring `Continue in Talk`, a label absent from the active `ChatsWorkspaceScreen` composer. These were verifier drift, not product regressions. The checks now require `rememberSaveable` and the real `Message Memo…` composer.
 - Active Talk composer drafts previously used plain `remember(selectedConversationId)`. They now use `rememberSaveable(selectedConversationId)`; switching conversations still starts a separate draft, while Activity recreation restores the current one.
 - Both verifier corrections are committed; CI has been retriggered again. Android compilation, lint, emulator execution and physical-device behavior remain unverified until the new run completes.
+
+
+- Talk's list/entry state no longer gives Council and Import equal-width prominence above the composer. Import remains one tap away in the page header; Council remains available inside a conversation and from More. This is a hierarchy correction, not a capability removal.
