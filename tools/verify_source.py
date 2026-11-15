@@ -570,4 +570,63 @@ for marker in (
         fail(f"local inference timeout regression coverage is missing: {marker}")
 print("PASS: local inference is time-bounded and cancellation reaches the LiteRT conversation")
 
+runtime_adapter_source = (ROOT / "core/src/main/kotlin/app/memo/android/runtime/WorkflowRuntimeAdapter.kt").read_text()
+runtime_adapter_tests = (ROOT / "core/src/test/kotlin/app/memo/android/runtime/WorkflowRuntimeAdapterTest.kt").read_text()
+postcondition_source = (ROOT / "core/src/main/kotlin/app/memo/android/runtime/WorkflowPostcondition.kt").read_text()
+postcondition_tests = (ROOT / "core/src/test/kotlin/app/memo/android/runtime/WorkflowPostconditionTest.kt").read_text()
+for marker in (
+    "data class WorkflowRuntimeRequest(",
+    "capabilityManifestFingerprint(capabilityManifest)",
+    "WorkflowRuntimeAdapterResolver",
+    "WorkflowCancellationSignal",
+    "WorkflowRuntimeDeadlineExceededException",
+    "MAX_INPUT_CHARS = 64_000",
+    "MAX_OUTPUT_CHARS = 256_000",
+    "taskSpecSha256",
+    "externalSideEffect",
+):
+    if marker not in runtime_adapter_source:
+        fail(f"shared runtime adapter contract is missing: {marker}")
+for marker in (
+    "interface WorkflowRuntimeAdapter",
+    "suspend fun execute(request: WorkflowRuntimeRequest)",
+    "The selected runtime adapter does not implement every required TaskSpec capability",
+    "Adapters return output; they do not persist workspace state",
+):
+    if marker not in runtime_adapter_source:
+        fail(f"runtime adapter boundary is missing: {marker}")
+for marker in (
+    "interface WorkflowPostconditionObserver",
+    "WorkflowPostconditionEvidence",
+    "WorkflowPostconditionMethod",
+    "WorkflowPostconditionOutcome",
+    "WorkflowRuntimeReceipt.OUTPUT_SAVED",
+    "outputEvidenceId",
+    "postconditionSha256",
+    "permitsCheckpointCompletion",
+    "registeredObservers",
+):
+    if marker not in postcondition_source:
+        fail(f"deterministic postcondition evidence contract is missing: {marker}")
+for marker in (
+    "requestBindsThePersistedAttemptToExactRuntimeAndCompiledCapabilities",
+    "resolverSelectsOnlyTheAdapterForTheExactRuntime",
+    "requestRejectsRuntimeAvailabilityOrCapabilityPolicyDrift",
+    "approvalGatedTasksCannotBypassTheDedicatedApprovalFlow",
+    "runtimeDeadlineAndCancellationAreEnforcedByTheSharedRequest",
+    "runtimeOutputIsBoundedAndDoesNotClaimPostconditionVerification",
+):
+    if marker not in runtime_adapter_tests:
+        fail(f"runtime adapter contract regression coverage is missing: {marker}")
+for marker in (
+    "postconditionRequestRequiresAValidatedSavedOutputAndRegisteredObserver",
+    "postconditionEvidenceIsBoundToTheExactTaskAttemptAndObserver",
+    "postconditionObserverMustBeIndependentAndReadOnly",
+    "nonVerifiedOutcomesNeverPermitCheckpointCompletion",
+):
+    if marker not in postcondition_tests:
+        fail(f"postcondition evidence regression coverage is missing: {marker}")
+print("PASS: shared runtime requests are manifest-bound, approval-gated, time-bounded and covered by pure-core tests")
+print("PASS: postcondition evidence requires a registered independent deterministic observer and exact saved-attempt binding")
+
 print("NOTE: This script does not compile Kotlin, run Gradle, prove Android runtime behavior, or verify a device.")

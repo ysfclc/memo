@@ -84,6 +84,8 @@ f11aebd399cd33a5988aa2db8b086545cbf24066162c7ddb84a4dda9c04a603b  ./core/src/mai
 d2eefb711dc8e053b4cf2527e558ac5b2cb0f5f4e080a6dc6d87b298cdb7458b  ./core/src/main/kotlin/app/memo/android/orchestration/WorkflowGraph.kt
 169ac90e991c970de5dc6ebb3430852cc582b5adc653c95c0924b5c320a25c47  ./core/src/main/kotlin/app/memo/android/orchestration/WorkflowTaskProposalParser.kt
 7da8652bffb63c4847dc7bad5531b6eca8e8a5845f6bb699ff464cf9d0677dbc  ./core/src/main/kotlin/app/memo/android/runtime/RuntimeContracts.kt
+84b447a31bdacbfe294f919ada2e3eafc4f386ae8b702481422f166d3a03ca82  ./core/src/main/kotlin/app/memo/android/runtime/WorkflowPostcondition.kt
+164ba89e2d00658f121f2f50124a53aa1ff962437c688b09be52f23df59490c2  ./core/src/main/kotlin/app/memo/android/runtime/WorkflowRuntimeAdapter.kt
 3f4508c62a971ff19642f8d402b6085b242f5f2717a56f5c4082049011645489  ./core/src/test/kotlin/app/memo/android/automation/TaskRulesTest.kt
 bba2c2a4e5760e31fcf4fc1f675be0d1ac8f20c42fb8f0bb2f03b9fafa938eca  ./core/src/test/kotlin/app/memo/android/context/WorkspaceContextRetrieverTest.kt
 74f2974e40b1a342dd19e984e31b962bdc4e0243c2314539bd09cb3e740daf44  ./core/src/test/kotlin/app/memo/android/data/ActionApprovalLedgerTest.kt
@@ -105,6 +107,8 @@ a3c4c69ce5047ff8ae67b82c4606f33f17965613b6b5e2a0cd4a862c570c1eb7  ./core/src/tes
 f9040f47a7b0ab3ea12bc60f3bb9d4fdd4332abdddee180d28ff29e3b59f220b  ./core/src/test/kotlin/app/memo/android/orchestration/WorkflowGraphTest.kt
 2fbf52b43340ee048a52ed984af7ac6908f9d1bffe0fbfcfec2c8965fe2e0654  ./core/src/test/kotlin/app/memo/android/orchestration/WorkflowTaskProposalParserTest.kt
 1d89d8383151c48835bd651ca891f692a293b92aaf9d96be96ada13d8e9f7fbe  ./core/src/test/kotlin/app/memo/android/runtime/RuntimeRegistryTest.kt
+e141ec93d5467fbf8460f0bd3e03f81433f60881359e15db7cd5087be7ff0aae  ./core/src/test/kotlin/app/memo/android/runtime/WorkflowPostconditionTest.kt
+04fb492258a527e54f176ca39b2c939926785f82ed128fca99e3bcde032bff7c  ./core/src/test/kotlin/app/memo/android/runtime/WorkflowRuntimeAdapterTest.kt
 27a75bf71bfa1da44ba4c0fcf483b010cab683e19f33f308a150a248cdae81aa  ./DEVICE_ACCEPTANCE_CHECKLIST.md
 11ef9d881f771b1d43227af2089c418d46e1b2e3c9009e11d42065bb1a07f12e  ./docs/checkpoints/2026-11-11-vercel-android-build.md
 ca91a1fe9b0e4c4cbd759cea8e89eb2c1b3dde9dfef8da7dfea9c39614ce2f1a  ./docs/checkpoints/2026-11-12-workflow-attempt-journal.md
@@ -212,5 +216,5 @@ a1453a88e5bc19e7b20a521b56d36acbaec90fc742b79fb49fca11b7ddda73af  ./remote-runne
 386f629d7b2f820b0ed8017499a7aee3a956db24b636cb653586d9cac806dea0  ./scripts/vercel-build-apk.sh
 19280c23fb304e503d1037eb423b17d0a14dd2a6fbb3e916574f4c5be17dfebf  ./settings.gradle
 e12c1547b4dff816d7218cd2ef3aa48571ade092077244befdd84c3cfa4ebb63  ./TASKS.md
-7dfed90ffeab8ba4daae48efedf4695ed7708a9b5551e4521ae962159f64676b  ./tools/verify_source.py
+07ae6333925e57ea22f71b42d09d74e9566ba8e5566d46d60ebdeb73869137c3  ./tools/verify_source.py
 7d4c0c5cce39e5353ea260f973ef19d0c48bf422f2e596a0062810336149bbeb  ./vercel.json
