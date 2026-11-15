@@ -57,6 +57,17 @@ class MemoLocalizationTest {
     }
 
     @Test
+    fun sharedPageAndSectionLabelsTranslateInPolishAndTurkish() {
+        assertEquals("MEMO / ROZMOWA", MemoLocalization.translate("MEMO / TALK", "PL"))
+        assertEquals("MEMO / SOHBET", MemoLocalization.translate("MEMO / TALK", "TR"))
+        assertEquals("MEMO / PRACA", MemoLocalization.translate("MEMO / WORK", "PL"))
+        assertEquals("MEMO / İŞ", MemoLocalization.translate("MEMO / WORK", "TR"))
+        assertEquals("Ustawienia żądania", MemoLocalization.translate("Request controls", "PL"))
+        assertEquals("İstek kontrolleri", MemoLocalization.translate("Request controls", "TR"))
+        assertEquals("Zapisane: 3", MemoLocalization.translate("3 saved", "PL"))
+        assertEquals("Kaydedilen: 3", MemoLocalization.translate("3 saved", "TR"))
+    }
+    @Test
     fun userContentAndUnknownStringsRemainUntouched() {
         val userText = "I met a person called Deniz at the event."
         assertEquals(userText, MemoLocalization.translate(userText, "TR"))
