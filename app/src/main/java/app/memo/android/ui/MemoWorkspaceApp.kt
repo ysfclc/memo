@@ -122,6 +122,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -210,11 +211,13 @@ fun MemoWorkspaceApp(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbarHost = remember { SnackbarHostState() }
-    var tab by remember { mutableStateOf(AppTab.HOME) }
-    var activeConversationId by remember { mutableStateOf<String?>(null) }
-    var pendingChatPrompt by remember { mutableStateOf("") }
-    var toolSection by remember { mutableStateOf(ToolSection.BROWSER) }
-    var workSectionRequest by remember { mutableStateOf("TODAY") }
+    // Navigation and pending handoff state must survive Activity recreation. The
+    // underlying workspace data remains in the ViewModel/encrypted store.
+    var tab by rememberSaveable { mutableStateOf(AppTab.HOME) }
+    var activeConversationId by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingChatPrompt by rememberSaveable { mutableStateOf("") }
+    var toolSection by rememberSaveable { mutableStateOf(ToolSection.BROWSER) }
+    var workSectionRequest by rememberSaveable { mutableStateOf("TODAY") }
     LaunchedEffect(initialWorkspace) {
         val destination = initialWorkspace?.trim()?.uppercase().orEmpty()
         if (destination.isNotBlank()) {
