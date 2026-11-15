@@ -35,7 +35,8 @@ Make Memo's existing product capabilities understandable, coherent and dependabl
 ### UXR-0 — Establish regression gates
 - [x] Add Compose UI test support.
 - [x] Add smoke coverage for shared page header, status semantics and message rendering.
-- [ ] Execute tests in Android CI and correct any compile/runtime failures.
+- [x] Wire the Compose smoke suite into the Android API 35 emulator workflow (execution result still pending).
+- [ ] Observe a green CI run and correct any compile/runtime failures.
 - [ ] Extend coverage to real primary journeys before broad screen changes.
 - Keep build, emulator and physical-device evidence separate.
 
@@ -79,7 +80,7 @@ A screen is not complete because it compiles or uses shared components. Each jou
 
 ## First increment
 
-- Added Compose UI test support and smoke tests for the shared page header, status semantics and message bubble. Test execution is pending CI.
+- Added Compose UI test support and smoke tests for the shared page header, status semantics and message bubble. The Android API 35 workflow now runs this suite explicitly after the install-over-existing encrypted-store verification; execution is pending a workflow run.
 - Changed the app-shell tab, selected conversation, pending Talk prompt, browser sub-section and Work section request from ephemeral `remember` state to `rememberSaveable`. This protects the current navigation/handoff context across Activity recreation; it does not replace durable persistence for unsent message drafts or workspace records.
 - Source inspection found that the old `HomeScreen` dashboard composable has no call site. The actual Talk destination is `ChatsWorkspaceScreen`. Future cleanup should remove or isolate the dead implementation only after confirming no reflection/preview/test dependency; do not design against stale audit wording.
 
