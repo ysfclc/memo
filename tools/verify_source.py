@@ -175,7 +175,7 @@ for marker in ("initialPrompt", "onInitialPromptConsumed", "draft = initialPromp
         fail(f"home-to-chat draft handoff is missing marker: {marker}")
 if "MainActivity.notifyRuntimeChanged" in (ROOT / "app/src/main/java/com/synthos/runtime/engine/AutomationAccessibilityService.java").read_text():
     fail("accessibility runtime still targets legacy Activity helpers")
-if "var tab by remember { mutableStateOf(AppTab.HOME) }" not in home:
+if "var tab by rememberSaveable { mutableStateOf(AppTab.HOME) }" not in home:
     fail("Memo must open on the universal Talk intent entry point")
 for marker in (
     'Triple(AppTab.HOME, Icons.Rounded.ChatBubbleOutline, "Talk")',
