@@ -1,6 +1,5 @@
 package app.memo.android.ui
 
-import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -41,11 +40,11 @@ class MemoDesignSystemSmokeTest {
         }
 
         compose.onNodeWithText("Needs review").assertIsDisplayed()
-        compose.onNodeWithContentDescription("Needs review status").assertExists()
+        compose.onNodeWithContentDescription("Needs review status").assertIsDisplayed()
     }
 
     @Test
-    fun messageContentRemainsVisibleAndSelectableSurfaceIsPresent() {
+    fun messageContentAndMetadataRemainVisible() {
         compose.setContent {
             MemoTheme(themeMode = "DARK") {
                 MemoMessageBubble(
