@@ -236,17 +236,49 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
-    /** Append a chat message and confirm its encrypted workspace snapshot before continuing. */
-    suspend fun appendChatMessageAndAwait(
+    /**
+     * Append a chat message and confirm its encrypted workspace snapshot before continuing.
+     * Completion runs in viewModelScope so navigation away from Talk cannot cancel the save.
+     */
+    fun appendChatMessageAndAwait(
         conversationId: String,
         role: String,
         content: String,
         modelId: String = "",
-        sourceType: String = "NATIVE"
-    ): String? {
+        sourceType: String = "NATIVE",
+        onComplete: (String?) -> Unit
+    ) {
         val appendError = appendChatMessage(conversationId, role, content, modelId, sourceType)
-        if (appendError != null) return appendError
-        return awaitLatestPersistence()
+        if (appendError != null) {
+            onComplete(appendError)
+            return
+        }
+        val targetGeneration = persistenceGeneration.get()
+        viewModelScope.launch {
+            onComplete(awaitPersistence(targetGeneration))
+        }
+    }
+
+    suspend fun awaitLatestPersistence(): String? = awaitPersistence(persistenceGeneration.get())
+
+    private suspend fun awaitPersistence(targetGeneration: Long, timeoutMillis: Long = 15_000L): String? {
+        if (_persistedGeneration.value >= targetGeneration) return null
+        _vaultError.value?.let { return it }
+
+        val persisted = withTimeoutOrNull(timeoutMillis) {
+            combine(_persistedGeneration, _vaultError) { generation, error ->
+                when {
+                    generation >= targetGeneration -> true
+                    error != null -> false
+                    else -> null
+                }
+            }.first { it != null }
+        }
+        return when (persisted) {
+            true -> null
+            false -> _vaultError.value ?: "The encrypted workspace write failed."
+            null -> "Memo could not confirm the encrypted workspace save. Your text remains available; retry when storage is ready."
+        }
     }
 
     fun updateChatMessage(conversationId: String, messageId: String, content: String): String? {
