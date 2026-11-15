@@ -99,3 +99,6 @@ These are regression foundations and a narrow state-recovery fix only; they do n
 
 
 - CI's translation-coverage scan found 22 uncovered static strings in existing Work/account/automation surfaces. Added Polish and Turkish translations for those labels and explanatory copy; the scanner must be rerun to reveal any remaining gaps.
+
+
+- The first Android Gradle compile exposed two pre-existing build blockers that source checks had not reached: a `SalesAccountResearchTest` evidence fixture omitted the required `kind`, and `MemoPrimitives` used `Spacer` without its import. The fixture now identifies its source as `WEB_PAGE`; the missing Compose import is added. CI must confirm the compile and test suite now pass.
