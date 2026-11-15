@@ -248,9 +248,23 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         sourceType: String = "NATIVE",
         onComplete: (String?) -> Unit
     ) {
+        val beforeLastMessageId = _snapshot.value.conversations
+            .firstOrNull { it.id == conversationId }?.messages?.lastOrNull()?.id
         val appendError = appendChatMessage(conversationId, role, content, modelId, sourceType)
         if (appendError != null) {
             onComplete(appendError)
+            return
+        }
+        val expectedRole = role.trim().uppercase(Locale.ROOT)
+        val expectedContent = content.trim().take(24_000)
+        val appendedMessage = _snapshot.value.conversations
+            .firstOrNull { it.id == conversationId }?.messages?.lastOrNull()
+        if (appendedMessage == null ||
+            appendedMessage.id == beforeLastMessageId ||
+            appendedMessage.role != expectedRole ||
+            appendedMessage.content != expectedContent
+        ) {
+            onComplete(_vaultError.value ?: "Memo did not accept the message into this conversation.")
             return
         }
         val targetGeneration = persistenceGeneration.get()
@@ -259,11 +273,9 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
-    suspend fun awaitLatestPersistence(): String? = awaitPersistence(persistenceGeneration.get())
-
     private suspend fun awaitPersistence(targetGeneration: Long, timeoutMillis: Long = 15_000L): String? {
-        if (_persistedGeneration.value >= targetGeneration) return null
         _vaultError.value?.let { return it }
+        if (_persistedGeneration.value >= targetGeneration) return null
 
         val persisted = withTimeoutOrNull(timeoutMillis) {
             combine(_persistedGeneration, _vaultError) { generation, error ->
