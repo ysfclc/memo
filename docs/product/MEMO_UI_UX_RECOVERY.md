@@ -36,12 +36,12 @@ Make Memo's existing product capabilities understandable, coherent and dependabl
 - [x] Add Compose UI test support.
 - [x] Add smoke coverage for shared page header, status semantics and message rendering.
 - [x] Wire the Compose smoke suite into the Android API 35 emulator workflow (execution result still pending).
-- [ ] Observe a green CI run and correct any compile/runtime failures. The first PR runs exposed stale static invariants: one still required ephemeral `remember` after the app-shell state was correctly upgraded to `rememberSaveable`, and another required the obsolete label `Continue in Talk` even though the active screen uses the `Message Memo…` composer. Both checks now assert the active implementation rather than dead-screen wording. The next run must verify these corrections.
+- [ ] Observe a green CI run and correct any compile/runtime failures. CI exposed stale source assertions, 22 missing PL/TR UI strings, a test fixture missing `EvidenceRecord.kind`, a missing `Spacer` import, and a missing Compose BOM constraint for Android instrumentation dependencies. The source assertions, translations, fixture, import and test BOM are now corrected; the latest run must verify them. The next run must verify these corrections.
 - [ ] Extend coverage to real primary journeys before broad screen changes.
-- [x] Reduce Talk's competing entry actions: keep the intent composer as the primary action, move transcript import into the page header's contextual action, and leave Council available in its conversation context and the More/system area.
 - Keep build, emulator and physical-device evidence separate.
 
 ### UXR-1 — Talk as the universal entry
+- [x] Make the intent composer the primary entry action; keep transcript import in the page header and Council in conversation context/More.
 - Remove the unnecessary home/dashboard detour and competing shortcut hierarchy.
 - One intent surface accepts text, voice and incoming share/capture material.
 - Conversation history/resume belongs in the same continuous Talk experience.
@@ -81,9 +81,11 @@ A screen is not complete because it compiles or uses shared components. Each jou
 
 ## First increment
 
-- Added Compose UI test support and smoke tests for the shared page header, status semantics and message bubble. The Android API 35 workflow now runs this suite explicitly after the install-over-existing encrypted-store verification; execution is pending a workflow run.
+- Added Compose UI test support and smoke tests for the shared page header, status semantics and message bubble. The Android API 35 workflow now runs this suite explicitly after the install-over-existing encrypted-store verification. CI has passed source invariants and remote-runner tests; core tests and main app Kotlin compilation also completed on the first Gradle run, but Android-test dependency resolution blocked APK assembly before emulator execution.
 - Changed the app-shell tab, selected conversation, pending Talk prompt, browser sub-section and Work section request from ephemeral `remember` state to `rememberSaveable`. The Talk composer draft is also now keyed by conversation and uses `rememberSaveable`, so a rotation/Activity recreation does not silently discard an unsent message. These are saved-instance-state protections, not a substitute for durable persistence in the encrypted workspace.
 - Source inspection found that the old `HomeScreen` dashboard composable has no call site. The actual Talk destination is `ChatsWorkspaceScreen`. Future cleanup should remove or isolate the dead implementation only after confirming no reflection/preview/test dependency; do not design against stale audit wording.
+- The Talk list now gives the intent composer the primary visual position. Import remains available from the header and Council remains available from a conversation and More.
+- Added 22 Polish and Turkish translations for static Work/account/automation strings that CI's coverage scan identified.
 
 These are regression foundations and a narrow state-recovery fix only; they do not claim the Talk/Live/Work/Studio journeys are fixed.
 
@@ -102,3 +104,5 @@ These are regression foundations and a narrow state-recovery fix only; they do n
 
 
 - The first Android Gradle compile exposed two pre-existing build blockers that source checks had not reached: a `SalesAccountResearchTest` evidence fixture omitted the required `kind`, and `MemoPrimitives` used `Spacer` without its import. The fixture now identifies its source as `WEB_PAGE`; the missing Compose import is added. CI must confirm the compile and test suite now pass.
+
+- Android instrumentation dependencies now import the same pinned Compose BOM (`2024.12.01`) as the main app configuration. The preceding Gradle run had compiled core tests and main app Kotlin successfully; it failed only when resolving the unversioned `ui-test-junit4` artifact in the separate Android-test configuration.
