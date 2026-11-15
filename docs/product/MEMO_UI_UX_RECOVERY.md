@@ -36,7 +36,7 @@ Make Memo's existing product capabilities understandable, coherent and dependabl
 - [x] Add Compose UI test support.
 - [x] Add smoke coverage for shared page header, status semantics and message rendering.
 - [x] Wire the Compose smoke suite into the Android API 35 emulator workflow (execution result still pending).
-- [ ] Observe a green CI run and correct any compile/runtime failures.
+- [ ] Observe a green CI run and correct any compile/runtime failures. The first PR run exposed a stale static invariant that still required ephemeral `remember` after the app-shell state was correctly upgraded to `rememberSaveable`; the invariant now checks the actual saveable contract. The next run must verify this correction.
 - [ ] Extend coverage to real primary journeys before broad screen changes.
 - Keep build, emulator and physical-device evidence separate.
 
@@ -81,7 +81,14 @@ A screen is not complete because it compiles or uses shared components. Each jou
 ## First increment
 
 - Added Compose UI test support and smoke tests for the shared page header, status semantics and message bubble. The Android API 35 workflow now runs this suite explicitly after the install-over-existing encrypted-store verification; execution is pending a workflow run.
-- Changed the app-shell tab, selected conversation, pending Talk prompt, browser sub-section and Work section request from ephemeral `remember` state to `rememberSaveable`. This protects the current navigation/handoff context across Activity recreation; it does not replace durable persistence for unsent message drafts or workspace records.
+- Changed the app-shell tab, selected conversation, pending Talk prompt, browser sub-section and Work section request from ephemeral `remember` state to `rememberSaveable`. The Talk composer draft is also now keyed by conversation and uses `rememberSaveable`, so a rotation/Activity recreation does not silently discard an unsent message. These are saved-instance-state protections, not a substitute for durable persistence in the encrypted workspace.
 - Source inspection found that the old `HomeScreen` dashboard composable has no call site. The actual Talk destination is `ChatsWorkspaceScreen`. Future cleanup should remove or isolate the dead implementation only after confirming no reflection/preview/test dependency; do not design against stale audit wording.
 
 These are regression foundations and a narrow state-recovery fix only; they do not claim the Talk/Live/Work/Studio journeys are fixed.
+
+
+## Follow-up found during verification
+
+- The first PR CI run failed before Gradle because `tools/verify_source.py` still asserted the old `remember` implementation for the default Talk tab. This was a stale assertion, not a product regression. The check now requires the new `rememberSaveable` behavior instead of rejecting it.
+- Active Talk composer drafts previously used plain `remember(selectedConversationId)`. They now use `rememberSaveable(selectedConversationId)`; switching conversations still starts a separate draft, while Activity recreation restores the current one.
+- The correction is committed; CI has been retriggered. Android compilation, lint, emulator execution and physical-device behavior remain unverified until the new run completes.
