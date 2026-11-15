@@ -96,3 +96,6 @@ These are regression foundations and a narrow state-recovery fix only; they do n
 
 
 - Talk's list/entry state no longer gives Council and Import equal-width prominence above the composer. Import remains one tap away in the page header; Council remains available inside a conversation and from More. This is a hierarchy correction, not a capability removal.
+
+
+- CI's translation-coverage scan found 22 uncovered static strings in existing Work/account/automation surfaces. Added Polish and Turkish translations for those labels and explanatory copy; the scanner must be rerun to reveal any remaining gaps.
