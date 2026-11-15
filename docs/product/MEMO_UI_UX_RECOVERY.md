@@ -36,7 +36,7 @@ Make Memo's existing product capabilities understandable, coherent and dependabl
 - [x] Add Compose UI test support.
 - [x] Add smoke coverage for shared page header, status semantics and message rendering.
 - [x] Wire the Compose smoke suite into the Android API 35 emulator workflow (execution result still pending).
-- [ ] Observe a green CI run and correct any compile/runtime failures. The first PR run exposed a stale static invariant that still required ephemeral `remember` after the app-shell state was correctly upgraded to `rememberSaveable`; the invariant now checks the actual saveable contract. The next run must verify this correction.
+- [ ] Observe a green CI run and correct any compile/runtime failures. The first PR runs exposed stale static invariants: one still required ephemeral `remember` after the app-shell state was correctly upgraded to `rememberSaveable`, and another required the obsolete label `Continue in Talk` even though the active screen uses the `Message Memo…` composer. Both checks now assert the active implementation rather than dead-screen wording. The next run must verify these corrections.
 - [ ] Extend coverage to real primary journeys before broad screen changes.
 - Keep build, emulator and physical-device evidence separate.
 
@@ -89,6 +89,6 @@ These are regression foundations and a narrow state-recovery fix only; they do n
 
 ## Follow-up found during verification
 
-- The first PR CI run failed before Gradle because `tools/verify_source.py` still asserted the old `remember` implementation for the default Talk tab. This was a stale assertion, not a product regression. The check now requires the new `rememberSaveable` behavior instead of rejecting it.
+- The first PR CI run failed before Gradle because `tools/verify_source.py` still asserted the old `remember` implementation for the default Talk tab. A subsequent run exposed a second stale assertion requiring `Continue in Talk`, a label absent from the active `ChatsWorkspaceScreen` composer. These were verifier drift, not product regressions. The checks now require `rememberSaveable` and the real `Message Memo…` composer.
 - Active Talk composer drafts previously used plain `remember(selectedConversationId)`. They now use `rememberSaveable(selectedConversationId)`; switching conversations still starts a separate draft, while Activity recreation restores the current one.
-- The correction is committed; CI has been retriggered. Android compilation, lint, emulator execution and physical-device behavior remain unverified until the new run completes.
+- Both verifier corrections are committed; CI has been retriggered again. Android compilation, lint, emulator execution and physical-device behavior remain unverified until the new run completes.
