@@ -12,6 +12,13 @@ class TalkRetryPolicyTest {
     }
 
     @Test
+    fun retryAfterCommittedUserTurnWithoutRuntimeResultReusesExistingMessage() {
+        val messages = listOf(ChatMessageRecord(role = "USER", content = "Check this for me"))
+
+        assertFalse(shouldAppendTalkUserMessage(messages, "Check this for me"))
+    }
+
+    @Test
     fun retryAfterRecordedRequestErrorReusesExistingUserMessage() {
         val messages = listOf(
             ChatMessageRecord(role = "USER", content = "Check this for me"),
