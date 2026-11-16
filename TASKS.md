@@ -546,6 +546,14 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - Do not mark a task deferred or complete merely because a new bug has been found. Update the task with the new dependency/blocker and preserve its original acceptance criteria.
 
 
+## 16 November 2026 — Fresh start and deterministic app-runtime increment
+
+- User reaffirmed: build Memo deliberately against the agreed product vision; prioritize useful end-to-end capability over disconnected screens or superficial polish.
+- Baseline inspected before source changes: `fcafb582ad694926823534f768cdd509e93bd44b`; tracking PR #8 remains draft/unmerged; `main` untouched.
+- Fresh-start scope and acceptance gates: `docs/checkpoints/2026-11-16-deterministic-app-runtime.md`.
+- Last verified increment remains ORCH-007 / CI #678. Physical-device acceptance remains pending; do not claim it passed.
+- Next bounded increment: deterministic local Memo app-runtime adapter through the durable attempt journal; no browser/native dispatch or external side effects. Preserve the exact approval, persistence, evidence and recovery boundaries in the checkpoint.
+
 ## 15 November 2026 — ORCH-007 shared runtime and postcondition contracts
 
 - **Task ID/status:** M3.8.A9 / `[x]` contract package implemented and CI-verified; MEMO-ORCH-001 remains partial because concrete adapters/execution are not wired.
