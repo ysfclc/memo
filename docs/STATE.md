@@ -70,6 +70,10 @@ It does not authorize merging PR #8, modifying `main`, production deployment, ch
 
 ## 6. Latest engineering increment — ORCH-007 shared runtime and postcondition contracts
 
+**Fresh start 16 November:** the user reaffirmed deliberate, vision-led Memo development. Baseline source was inspected before implementation; see `docs/checkpoints/2026-11-16-deterministic-app-runtime.md`. The next bounded increment is the deterministic local Memo app-runtime adapter through the durable attempt journal. Browser/native dispatch and external effects remain out of scope. PR #8 remains draft/unmerged; `main` is untouched. Physical-device acceptance is still pending.
+
+
+
 - Source commit: `cef15adb9b6f7b4fd991ef7404e12f8b4bc9da34`.
 - Added `WorkflowRuntimeRequest` and `WorkflowRuntimeAdapterResolver`: validate saved graph, exact TaskSpec runtime/capabilities, capability-manifest fingerprint and current registry, active attempt identity, bounded input/output, deadline and cancellation.
 - Approval-gated, external-write and external-side-effect tasks are rejected at this adapter boundary. Adapters return candidate output; they cannot persist workspace state, grant approvals or mark checkpoints complete.
