@@ -1,5 +1,5 @@
 # State Ledger
-_Last updated: 2026-11-15 — user explicitly resumed incremental Memo development; ORCH-007 shared runtime and postcondition contracts are CI-verified on exact head #678. Physical-device acceptance remains pending._
+_Last updated: 2026-11-16 — first deterministic app.entities proposal workflow is implemented on the stabilization branch; exact-head CI is pending. PR #8 remains draft/unmerged; physical-device acceptance remains pending._
 
 ## 1. Product snapshot
 
@@ -18,9 +18,9 @@ Primary surfaces remain Talk, Live, Work and Studio. Work is the local-first per
 | Product contract | established | Normative scope preserved; social platform remains first-class and unimplemented until provider-backed evidence exists. |
 | Talk | partial | Persistent conversations and text/voice intent entry exist; local TaskSpec expansion is available. Full arbitrary intent-to-outcome orchestration and richer capture remain incomplete. |
 | Work graph | partial | Typed DAG proposals, dependency-aware checkpoint reservation, schema-7 attempt journal and content-bound runtime output receipts exist. |
-| Shared runtime adapter contract | verified | ORCH-007 request/resolver contract is covered by pure-core tests and exact-head CI. No generic dispatcher or concrete adapter is wired yet. |
+| Shared runtime adapter contract | verified | ORCH-007 request/resolver contract is covered by pure-core tests and exact-head CI. The first concrete adapter is app.entities/entity.propose; a generic dispatcher is not yet wired. |
 | Postcondition evidence contract | verified | Registered deterministic observer methods and exact attempt/task/evidence binding exist. No browser/native observer implementation is connected; runtime receipts remain NOT_VERIFIED until independent observation. |
-| Deterministic app runtime | not implemented | Next increment: connect safe Memo app capabilities to the durable checkpoint journal, shared timeout/cancellation and process-death recovery. |
+| Deterministic app runtime | partial | app.entities/entity.propose is wired from Talk through the durable attempt journal. It saves source-linked PROPOSED entities and requires an independent read-only Work postcondition before checkpoint completion. Exact-head CI is pending; wider app handlers and a generic dispatcher remain open. |
 | Local-model Work dispatch | partial | Local-model checkpoint can be reserved, dispatched and saved as a review-required artifact. Runtime output receipt proves saved bytes only, not goal completion. |
 | Live | partial | Newest-first projection includes persisted activity, jobs/checkpoints, tasks, action audit, evidence and attempt state. Cross-runtime panes, pause/resume/takeover and verified postconditions remain incomplete. |
 | Studio | partial | Private typed draft creation/edit/export foundation exists; richer revision comparison, restore and templates remain open. |
@@ -70,7 +70,7 @@ It does not authorize merging PR #8, modifying `main`, production deployment, ch
 
 ## 6. Latest engineering increment — ORCH-007 shared runtime and postcondition contracts
 
-**Fresh start 16 November:** the user reaffirmed deliberate, vision-led Memo development. Baseline source was inspected before implementation; see `docs/checkpoints/2026-11-16-deterministic-app-runtime.md`. The next bounded increment is the deterministic local Memo app-runtime adapter through the durable attempt journal. Browser/native dispatch and external effects remain out of scope. PR #8 remains draft/unmerged; `main` is untouched. Physical-device acceptance is still pending.
+**16 November — M3.8.A10:** the first deterministic app capability, app.entities/entity.propose, is now connected to Talk's source-grounded outcome extraction. The adapter is bound to the exact TaskSpec/runtime/capability and persisted attempt; it returns bounded candidate output only. The coordinator writes PROPOSED entities with source-message provenance, a PROPOSES relationship and a content-bound output receipt. A separate read-only app.jobs observer verifies the persisted records and writes separate verification evidence before the checkpoint completes. Proposals remain subject to human review. Exact-head CI is pending. See `docs/checkpoints/2026-11-16-deterministic-app-runtime.md`. PR #8 remains draft/unmerged; `main` untouched. No browser/native/external dispatch, merge, release or data migration is authorized.
 
 
 
@@ -85,8 +85,8 @@ It does not authorize merging PR #8, modifying `main`, production deployment, ch
 
 ## 7. Known gaps and active defects
 
-- Generic DAG execution is not implemented. `WorkflowCheckpointCoordinator` still has only the existing local-model Work dispatch path.
-- Deterministic app-runtime adapter, browser adapter and native Android adapter remain to be implemented and integrated.
+- General DAG execution remains incomplete. The first deterministic app.entities/entity.propose vertical slice now uses the validated runtime request, journal, output receipt and independent observer; no generic dispatcher or broad set of deterministic app handlers exists yet.
+- Broader deterministic app handlers, a generic dispatcher, browser adapter and native Android adapter remain to be implemented and integrated.
 - Shared workflow-wide step/time/model-call/external-write budgets, cross-runtime cancellation, pause/resume/takeover, process-death recovery through the generic adapter boundary and independently persisted postcondition evidence remain open.
 - Workflow runtime receipts remain `NOT_VERIFIED` until an independent observer proves the declared condition.
 - Workspace vault and native workflow store remain separate. Single-store consolidation must wait for a tested migration preserving both stores.
@@ -107,8 +107,8 @@ It does not authorize merging PR #8, modifying `main`, production deployment, ch
 ## 9. Next three increments
 
 1. **Completed — ORCH-007:** shared runtime adapter contract and deterministic postcondition evidence interface, exact-head CI verified.
-2. **Next — deterministic app-runtime adapter:** connect safe Memo app capabilities to the durable checkpoint journal; enforce shared timeout/cancellation and process-death recovery; prove with pure-core tests before enabling browser/native actions.
-3. **Then — visible browser/native adapters:** preserve existing exact-content approvals and permissions; add independently observed postconditions and integrate real pause/resume/takeover into Live.
+2. **Implemented, awaiting exact-head CI — M3.8.A10:** the app.entities/entity.propose adapter is wired into Talk, saves review-only records through the attempt journal and requires independent read-after-write verification. Fix any exact-head CI failures before starting another implementation increment.
+3. **Next after CI — expand the safe deterministic runtime boundary:** introduce one or two additional Memo-owned capability handlers with the same output-only adapter, durable receipt and independent observer discipline. Only later should browser/native adapters be connected under their existing approval and permission boundaries.
 
 ## 10. User-facing workflow and control audit
 
