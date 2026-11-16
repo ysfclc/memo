@@ -1,3 +1,16 @@
+# Current source increment — 16 November 2026
+
+**Status: SOURCE INTEGRATION COMMITTED; EXACT-HEAD CI PENDING. NO NEW APK OR DEVICE ACCEPTANCE CLAIMED.**
+
+- Increment: M3.8.A10, first deterministic Memo app-runtime capability for app.entities/entity.propose.
+- Talk outcome extraction now dispatches through the validated runtime request and durable checkpoint attempt. Exact source-message excerpts are required; records are saved as PROPOSED and remain subject to human review.
+- Runtime output is persisted with the existing content-bound receipt. A separate read-only Work observer checks persisted entities and source provenance before a separate WORKFLOW_VERIFICATION record can complete the checkpoint.
+- Regression tests cover the full adapter/observer path, missing source evidence, duplicate handling and missing persisted records. Static verifier guards the integration.
+- Source commit and exact-head Actions run are pending final repository synchronization. No APK artifact, checksum or signing result is attributed to this increment until a successful exact-head run is observed.
+- Physical-device update/product-flow acceptance remains pending. Do not uninstall Memo or clear app data. PR #8 remains draft/unmerged; main, signing identity and production deployment remain untouched.
+
+---
+
 # Current stabilization status — 15 November 2026
 
 **Status: EXACT-HEAD BUILD, TESTS, API 35 IN-PLACE UPGRADE AND PINNED APK SIGNING VERIFIED; PHYSICAL-DEVICE ACCEPTANCE PENDING.**
