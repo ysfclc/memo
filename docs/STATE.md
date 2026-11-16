@@ -1,5 +1,5 @@
 # State Ledger
-_Last updated: 2026-11-16 — first deterministic app.entities proposal workflow is implemented on the stabilization branch; exact-head CI is pending. PR #8 remains draft/unmerged; physical-device acceptance remains pending._
+_Last updated: 2026-11-16 — M3.8.A10 deterministic app.entities proposal workflow passed exact-head CI #767, including Android build, unit tests and API 35 install-over-existing encrypted-store preservation. PR #8 remains draft/unmerged; physical-device acceptance and final signed APK handoff remain pending._
 
 ## 1. Product snapshot
 
@@ -20,7 +20,7 @@ Primary surfaces remain Talk, Live, Work and Studio. Work is the local-first per
 | Work graph | partial | Typed DAG proposals, dependency-aware checkpoint reservation, schema-7 attempt journal and content-bound runtime output receipts exist. |
 | Shared runtime adapter contract | verified | ORCH-007 request/resolver contract is covered by pure-core tests and exact-head CI. The first concrete adapter is app.entities/entity.propose; a generic dispatcher is not yet wired. |
 | Postcondition evidence contract | verified | Registered deterministic observer methods and exact attempt/task/evidence binding exist. No browser/native observer implementation is connected; runtime receipts remain NOT_VERIFIED until independent observation. |
-| Deterministic app runtime | partial | app.entities/entity.propose is wired from Talk through the durable attempt journal. It saves source-linked PROPOSED entities and requires an independent read-only Work postcondition before checkpoint completion. Exact-head CI is pending; wider app handlers and a generic dispatcher remain open. |
+| Deterministic app runtime | partial | app.entities/entity.propose is wired from Talk through the durable attempt journal. Exact validated input is stored as encrypted WORKFLOW_INPUT evidence and can be restored only after job/step/source/hash checks. It saves source-linked PROPOSED entities and requires an independent read-only Work postcondition before checkpoint completion. Exact-head CI #767 passed; wider app handlers and a generic dispatcher remain open. Physical-device acceptance is pending. |
 | Local-model Work dispatch | partial | Local-model checkpoint can be reserved, dispatched and saved as a review-required artifact. Runtime output receipt proves saved bytes only, not goal completion. |
 | Live | partial | Newest-first projection includes persisted activity, jobs/checkpoints, tasks, action audit, evidence and attempt state. Cross-runtime panes, pause/resume/takeover and verified postconditions remain incomplete. |
 | Studio | partial | Private typed draft creation/edit/export foundation exists; richer revision comparison, restore and templates remain open. |
@@ -29,7 +29,7 @@ Primary surfaces remain Talk, Live, Work and Studio. Work is the local-first per
 | Local/frontier AI | partial | LiteRT local model path and optional API-compatible provider exist. Council is not yet one unified Talk/Live workflow across visible signed-in provider sessions. |
 | Social platform | specified, not implemented | Account management, feed, inbox, engagement, relationships, listening, publishing, analytics, personal brand and monetization remain in scope. Provider support must be verified individually. |
 | Security and storage | partial | Exact-content approval, audit, encrypted workspace/native stores and upgrade safeguards exist. Stores remain separate; single-store migration is deferred. |
-| CI / Android build | verified on exact head | Run #678 passed source checks, remote runner, core/app unit tests, lint, APK build/identity, API 35 in-place upgrade and isolated pinned signing. |
+| CI / Android build | verified on exact head | Run #767 passed source checks, remote runner, core/app unit tests, lint, debug and Android-test APK assembly/identity, and API 35 in-place encrypted-store upgrade/data-preservation tests. PR validation intentionally skipped pinned signing and final APK artifact handoff. |
 | Physical device | pending | User installed the earlier #674 APK but has not checked it. No physical-device behavior or upgrade acceptance is claimed for #678. |
 
 ## 3. Current branch and delivery state
@@ -37,9 +37,10 @@ Primary surfaces remain Talk, Live, Work and Studio. Work is the local-first per
 - Repository: `ysfclc/memo`.
 - Development branch: `stabilization/usable-stage-2026-11-10`.
 - Draft PR #8 remains open and unmerged, targeting `main`: https://github.com/ysfclc/memo/pull/8
-- Exact tested source commit: `cef15adb9b6f7b4fd991ef7404e12f8b4bc9da34`. `main` was not modified.
-- GitHub Actions run #678, ID `43666486553`: https://github.com/ysfclc/memo/actions/runs/43666486553 — completed successfully.
-- Passed: source invariants and checksum verification; remote-runner tests; `:core:test`; `:app:testDebugUnitTest`; `:app:lintDebug`; `:app:assembleDebug`; APK package/version/signature checks; API 35 in-place upgrade instrumentation; isolated pinned signing.
+- Exact tested source commit for M3.8.A10: `989ac28fb6b0da3e5fc66525b1f7b3aff36329df`. `main` was not modified.
+- GitHub Actions run #767, ID `43816799963`: https://github.com/ysfclc/memo/actions/runs/43816799963 — completed successfully.
+- Passed: source invariants and checksum verification; remote-runner tests; `:core:test`; `:app:testDebugUnitTest`; `:app:lintDebug`; `:app:assembleDebug`; `:app:assembleDebugAndroidTest`; APK package/version/signature checks; API 35 in-place upgrade instrumentation proving app-private data and both encrypted Memo stores survive `adb install -r`, including legacy recovery and corruption tests.
+- This was a pull-request validation run. The APK was assembled and emulator-tested, but pinned signing and final APK artifact handoff are intentionally skipped for PR events; no new signed installable APK is available from run #767.
 - APK: package `app.memo.android.debug`, versionCode `678`, versionName `4.0.0-memo-debug`.
 - Final signed artifact: [Memo-Android-debug-APK, artifact 14143185526](https://github.com/ysfclc/memo/actions/runs/43666486553/artifacts/14143185526).
 - APK SHA-256: `026a9be7743e1e91cbc3b7807bed19504db6ea93b3d9249c91046ea15100f469`.
@@ -68,9 +69,9 @@ It does not authorize merging PR #8, modifying `main`, production deployment, ch
 - Safety: deterministic code owns validation, budgets, approvals, state transitions, idempotency and verification. Model output is not proof. Consequential actions require exact content/destination/scope approval; uncertain effects are not blindly replayed.
 - Device/design: Android-first, English/Polish/Turkish, coherent premium mobile UX, useful motion/haptics and accessibility. Preserve package/signing identity and encrypted data across updates.
 
-## 6. Latest engineering increment — ORCH-007 shared runtime and postcondition contracts
+## 6. Latest engineering increment — M3.8.A10 deterministic app-runtime proposal
 
-**16 November — M3.8.A10:** the first deterministic app capability, app.entities/entity.propose, is now connected to Talk's source-grounded outcome extraction. The adapter is bound to the exact TaskSpec/runtime/capability and persisted attempt; it returns bounded candidate output only. The coordinator writes PROPOSED entities with source-message provenance, a PROPOSES relationship and a content-bound output receipt. A separate read-only app.jobs observer verifies the persisted records and writes separate verification evidence before the checkpoint completes. Proposals remain subject to human review. Exact-head CI is pending. See `docs/checkpoints/2026-11-16-deterministic-app-runtime.md`. PR #8 remains draft/unmerged; `main` untouched. No browser/native/external dispatch, merge, release or data migration is authorized.
+The first deterministic app capability, app.entities/entity.propose, is connected to Talk's source-grounded outcome extraction. The adapter is bound to the exact TaskSpec/runtime/capability and persisted attempt; it returns bounded candidate output only. The exact validated input is encrypted as WORKFLOW_INPUT evidence with job, step, source identities and SHA-256 binding, and `restorePrepared` fails closed if it is missing or altered. The coordinator writes PROPOSED entities with source-message provenance, a PROPOSES relationship and a content-bound output receipt. A separate read-only app.jobs observer verifies the persisted records and writes separate verification evidence before the checkpoint completes. Proposals remain subject to human review. Exact-head CI #767 passed all automated gates including API 35 install-over-existing preservation. Physical-device acceptance remains pending. PR #8 remains draft/unmerged; `main` untouched. No browser/native/external dispatch, merge, release or data migration is authorized.
 
 
 
@@ -96,19 +97,19 @@ It does not authorize merging PR #8, modifying `main`, production deployment, ch
 
 ## 8. Verification evidence
 
-- Exact source commit: `cef15adb9b6f7b4fd991ef7404e12f8b4bc9da34`.
-- Actions run #678: https://github.com/ysfclc/memo/actions/runs/43666486553.
-- Source verifier explicitly reports the shared runtime request and postcondition evidence guards passed.
-- Gradle: `BUILD SUCCESSFUL in 4m 49s`; core tests, app unit tests, lint, debug APK and Android test APK assembly passed.
+- Exact source commit for M3.8.A10: `989ac28fb6b0da3e5fc66525b1f7b3aff36329df`.
+- Actions run #767: https://github.com/ysfclc/memo/actions/runs/43816799963.
+- Source verifier reports the deterministic Talk outcome proposal adapter, durable journal and independent read-after-write verification guards passed.
+- Gradle: `BUILD SUCCESSFUL`; `:core:test`, `:app:testDebugUnitTest`, lint, debug APK and Android test APK assembly passed.
 - Emulator: `PASS: signed in-place upgrade preserved app-private data and both real encrypted Memo stores; legacy recovery and corruption tests passed.`
-- Isolated signer verified the persistent pinned certificate and uploaded the final signed APK.
+- APK package/version/signature checks passed. Pinned signing/final APK artifact handoff were skipped because this was a PR validation event.
 - Physical device: not tested by the user yet.
 
 ## 9. Next three increments
 
 1. **Completed — ORCH-007:** shared runtime adapter contract and deterministic postcondition evidence interface, exact-head CI verified.
-2. **Implemented, awaiting exact-head CI — M3.8.A10:** the app.entities/entity.propose adapter is wired into Talk, saves review-only records through the attempt journal and requires independent read-after-write verification. Fix any exact-head CI failures before starting another implementation increment.
-3. **Next after CI — expand the safe deterministic runtime boundary:** introduce one or two additional Memo-owned capability handlers with the same output-only adapter, durable receipt and independent observer discipline. Only later should browser/native adapters be connected under their existing approval and permission boundaries.
+2. **Automated acceptance passed — M3.8.A10:** app.entities/entity.propose is wired into Talk, saves review-only records through the attempt journal, persists recoverable encrypted input and requires independent read-after-write verification. Exact-head CI #767 passed core/app tests, lint, APK identity and API 35 install-over-existing encrypted-store preservation. Physical-device acceptance remains pending.
+3. **Next — expand the safe deterministic runtime boundary:** introduce one or two additional Memo-owned capability handlers with the same output-only adapter, durable receipt and independent observer discipline. Only later should browser/native adapters be connected under their existing approval and permission boundaries.
 
 ## 10. User-facing workflow and control audit
 
