@@ -30,7 +30,7 @@ data class PreparedEntityProposalWorkflow(
     val snapshot: AppSnapshot,
     val jobId: String,
     val taskId: String,
-    val inputJson: String
+    val inputEvidenceId: String
 )
 
 data class SavedEntityProposalOutput(
@@ -68,6 +68,9 @@ object EntityProposalWorkflowCoordinator {
             "Select between 1 and $maxProposals source-grounded proposals."
         }
         require(snapshot.jobs.size < 240) { "The Work plan limit has been reached. Export a backup before removing older plans." }
+        require(snapshot.evidence.size <= MAX_EVIDENCE - 3) {
+            "Evidence storage is too full to persist workflow input, output and independent verification safely. Export a workspace backup first."
+        }
         val sourceJob = snapshot.jobs.singleOrNull { it.id == sourceJobId }
             ?: error("The source extraction job no longer exists.")
         require(sourceJob.sourceConversationId == sourceConversationId &&
@@ -130,6 +133,30 @@ object EntityProposalWorkflowCoordinator {
         val graph = WorkflowGraphCompiler.compile(goal, listOf(task), manifest)
         val jobId = newId()
         val jobTitle = "Save proposals · " + conversation.title.take(90)
+        val inputEvidenceId = sha256("memo.entity-proposal-input.v1|" + idempotencyKey).take(32)
+        require(snapshot.evidence.none { it.id == inputEvidenceId }) {
+            "The deterministic proposal input identity already exists. Reopen Work before retrying."
+        }
+        val inputSha256 = sha256(inputJson)
+        val inputEvidence = EvidenceRecord(
+            id = inputEvidenceId,
+            taskId = jobId,
+            title = "Entity proposal workflow input",
+            sourceUrl = "",
+            kind = "WORKFLOW_INPUT",
+            content = inputJson,
+            summary = "Encrypted, validated source-linked inputs for the deterministic entity-proposal checkpoint.",
+            metadata = JSONObject()
+                .put("jobId", jobId)
+                .put("stepId", task.id)
+                .put("sourceJobId", sourceJobId)
+                .put("sourceConversationId", sourceConversationId)
+                .put("adapterId", "memo.entity-proposal.v1")
+                .put("contentType", EntityProposalRuntimeCodec.CONTENT_TYPE)
+                .put("inputSha256", inputSha256)
+                .toString(),
+            capturedAt = now
+        )
         val job = WorkJobRecord(
             id = jobId,
             title = jobTitle,
@@ -147,6 +174,7 @@ object EntityProposalWorkflowCoordinator {
         )
         PreparedEntityProposalWorkflow(
             snapshot = snapshot.copy(
+                evidence = listOf(inputEvidence) + snapshot.evidence,
                 jobs = listOf(job) + snapshot.jobs,
                 activity = (listOf(ActivityRecord(
                     at = now,
@@ -156,7 +184,52 @@ object EntityProposalWorkflowCoordinator {
             ),
             jobId = jobId,
             taskId = task.id,
-            inputJson = inputJson
+            inputEvidenceId = inputEvidenceId
+        )
+    }
+
+    /**
+     * Rebuild a prepared invocation from the encrypted workspace after process recreation.
+     * The saved graph and exact input artifact remain the source of truth; no model call is repeated.
+     */
+    fun restorePrepared(
+        snapshot: AppSnapshot,
+        jobId: String
+    ): Result<PreparedEntityProposalWorkflow> = runCatching {
+        val job = snapshot.jobs.singleOrNull { it.id == jobId }
+            ?: error("The deterministic proposal workflow no longer exists.")
+        val graph = WorkflowGraph.fromJson(job.workflowGraphJson)
+        require(graph.nodes.size == 1 && graph.nodes.single().id == TASK_ID) {
+            "The saved proposal workflow is not a supported deterministic entity-proposal plan."
+        }
+        val task = graph.nodes.single()
+        val matches = snapshot.evidence.filter { evidence ->
+            if (evidence.kind != "WORKFLOW_INPUT" || evidence.taskId != jobId) return@filter false
+            val metadata = runCatching { JSONObject(evidence.metadata) }.getOrNull() ?: return@filter false
+            metadata.optString("stepId") == task.id &&
+                metadata.optString("adapterId") == "memo.entity-proposal.v1"
+        }
+        require(matches.size == 1) {
+            "The exact encrypted proposal input is missing or ambiguous. Keep this workflow in review; do not regenerate its payload."
+        }
+        val inputEvidence = matches.single()
+        val metadata = JSONObject(inputEvidence.metadata)
+        val input = EntityProposalRuntimeCodec.parseInput(inputEvidence.content)
+        require(metadata.optString("jobId") == job.id &&
+            metadata.optString("sourceJobId") == input.sourceJobId &&
+            metadata.optString("sourceConversationId") == input.sourceConversationId &&
+            metadata.optString("contentType") == EntityProposalRuntimeCodec.CONTENT_TYPE &&
+            metadata.optString("inputSha256") == sha256(inputEvidence.content) &&
+            job.sourceConversationId == input.sourceConversationId &&
+            snapshot.jobs.any { it.id == input.sourceJobId } &&
+            snapshot.conversations.any { it.id == input.sourceConversationId }) {
+            "The encrypted proposal input no longer matches the saved plan and source identities."
+        }
+        PreparedEntityProposalWorkflow(
+            snapshot = snapshot,
+            jobId = job.id,
+            taskId = task.id,
+            inputEvidenceId = inputEvidence.id
         )
     }
 
@@ -173,6 +246,22 @@ object EntityProposalWorkflowCoordinator {
             "The saved proposal workflow changed. Reopen Work before running it."
         }
         val task = graph.nodes.single()
+        val inputEvidence = snapshot.evidence.singleOrNull { it.id == prepared.inputEvidenceId }
+            ?: error("The exact encrypted proposal input is missing. Review the workflow instead of rebuilding its payload.")
+        require(inputEvidence.kind == "WORKFLOW_INPUT" && inputEvidence.taskId == job.id) {
+            "The proposal input is not linked to this exact Work checkpoint."
+        }
+        val inputMetadata = JSONObject(inputEvidence.metadata)
+        val input = EntityProposalRuntimeCodec.parseInput(inputEvidence.content)
+        require(inputMetadata.optString("jobId") == job.id &&
+            inputMetadata.optString("stepId") == task.id &&
+            inputMetadata.optString("sourceJobId") == input.sourceJobId &&
+            inputMetadata.optString("sourceConversationId") == input.sourceConversationId &&
+            inputMetadata.optString("contentType") == EntityProposalRuntimeCodec.CONTENT_TYPE &&
+            inputMetadata.optString("inputSha256") == sha256(inputEvidence.content) &&
+            job.sourceConversationId == input.sourceConversationId) {
+            "The exact proposal input no longer matches the saved TaskSpec or source."
+        }
         val manifest = CapabilityCompiler.compileForTasks(graph.goal, graph.nodes, registeredRuntimes)
         val attempt = snapshot.workflowAttempts.singleOrNull {
             it.jobId == prepared.jobId && it.stepId == prepared.taskId && it.status == "RUNNING"
@@ -182,7 +271,7 @@ object EntityProposalWorkflowCoordinator {
             taskId = task.id,
             capabilityManifest = manifest,
             attempt = attempt,
-            inputJson = prepared.inputJson,
+            inputJson = inputEvidence.content,
             deadlineAt = attempt.startedAt + task.timeoutMs,
             cancellation = cancellation
         ).also { it.validate(registeredRuntimes) }
@@ -198,6 +287,16 @@ object EntityProposalWorkflowCoordinator {
         output.validate()
         require(output.contentType == EntityProposalRuntimeCodec.CONTENT_TYPE) {
             "The app runtime returned an unsupported proposal content type."
+        }
+        val inputSha256 = sha256(request.inputJson)
+        require(snapshot.evidence.any { evidence ->
+            if (evidence.kind != "WORKFLOW_INPUT" || evidence.taskId != request.attempt.jobId) return@any false
+            val metadata = runCatching { JSONObject(evidence.metadata) }.getOrNull() ?: return@any false
+            metadata.optString("stepId") == request.task.id &&
+                metadata.optString("inputSha256") == inputSha256 &&
+                evidence.content == request.inputJson
+        }) {
+            "The exact encrypted workflow input is no longer present. The output cannot be committed."
         }
         val input = EntityProposalRuntimeCodec.parseInput(request.inputJson)
         val batch = EntityProposalRuntimeCodec.parseOutput(output.content)
