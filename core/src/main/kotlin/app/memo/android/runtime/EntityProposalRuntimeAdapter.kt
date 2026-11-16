@@ -49,7 +49,7 @@ object EntityProposalRuntimeCodec {
     const val CONTENT_TYPE = "application/vnd.memo.entity-proposals+json"
     const val MAX_PROPOSALS = 12
     private val allowedTypes = setOf(
-        "PROJECT", "TASK", "DECISION", "KNOWLEDGE", "PERSON", "ORGANIZATION", "ARTIFACT"
+        "PROJECT", "TASK", "DECISION", "KNOWLEDGE", "PERSON", "ORGANIZATION", "ARTIFACT", "SELF_MODEL_FACT"
     )
 
     fun encodeInput(input: EntityProposalRuntimeInput): String = JSONObject().apply {
