@@ -1,3 +1,17 @@
+# Current verified increment — 16 November 2026
+
+**STATUS: M3.8.A10 EXACT-HEAD CI PASSED. PHYSICAL-DEVICE ACCEPTANCE AND FINAL PINNED APK HANDOFF REMAIN PENDING.**
+
+- Exact tested source commit: `989ac28fb6b0da3e5fc66525b1f7b3aff36329df` on `stabilization/usable-stage-2026-11-10`; PR #8 remains draft/unmerged; `main` untouched.
+- GitHub Actions run **#767**, ID `43816799963`: [successful exact-head validation](https://github.com/ysfclc/memo/actions/runs/43816799963).
+- Passed: source checksum refresh and verifier; remote-runner tests; `:core:test`; `:app:testDebugUnitTest`; `:app:lintDebug`; `:app:assembleDebug`; `:app:assembleDebugAndroidTest`; APK package/version/signature checks.
+- API 35 emulator upgrade test passed: signed install-over-existing preserved app-private data and both real encrypted Memo stores; legacy recovery and corruption tests passed. No uninstall or clear-data step was used.
+- M3.8.A10 remains partial at product/device level: the deterministic app.entities/entity.propose path is implemented and automated gates pass, but physical-device Talk → Work review acceptance is not yet performed.
+- This was a pull-request validation event. Debug APK assembly and emulator checks passed, but pinned signing and final APK artifact handoff are intentionally skipped for PR events. Only the build-report artifact exists; no new signed installable APK is claimed.
+- No merge, release, production deployment, signing identity change or destructive migration is authorized. Do not uninstall Memo or clear app data.
+
+---
+
 # Current source increment — 16 November 2026
 
 **Status: SOURCE INTEGRATION COMMITTED; EXACT-HEAD CI PENDING. NO NEW APK OR DEVICE ACCEPTANCE CLAIMED.**
