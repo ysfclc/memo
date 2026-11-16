@@ -1,4 +1,12 @@
 # Changelog
+## 16 November 2026 — deterministic Talk outcome proposals
+
+- Connected Talk's existing outcome extraction to the first deterministic Memo app-runtime capability, app.entities/entity.propose.
+- Candidate excerpts must match an individual original conversation message. Persisted records retain source conversation, message, extraction job and excerpt provenance.
+- Work proposals stay PROPOSED for explicit human review. A separate read-only postcondition observer verifies persisted records before the workflow checkpoint is completed.
+- Added regression tests and source-verifier guards for exact-runtime execution, source-evidence rejection, duplicate handling and missing-record verification.
+- Exact-head CI is pending; no new APK or physical-device acceptance is claimed.
+
 
 ## 12 November 2026 — stabilization branch signed-build path
 
