@@ -19,7 +19,6 @@ import app.memo.android.runtime.WorkflowPostconditionObserverDescriptor
 import app.memo.android.runtime.WorkflowPostconditionOutcome
 import app.memo.android.runtime.WorkflowPostconditionRequest
 import app.memo.android.runtime.WorkflowRuntimeOutput
-import app.memo.android.runtime.WorkflowRuntimeReceipt
 import app.memo.android.runtime.WorkflowRuntimeRequest
 import app.memo.android.runtime.workflowTaskSpecSha256
 import org.json.JSONArray
