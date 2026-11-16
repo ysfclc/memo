@@ -133,7 +133,7 @@ object EntityProposalWorkflowCoordinator {
         val graph = WorkflowGraphCompiler.compile(goal, listOf(task), manifest)
         val jobId = newId()
         val jobTitle = "Save proposals · " + conversation.title.take(90)
-        val inputEvidenceId = sha256("memo.entity-proposal-input.v1|" + idempotencyKey).take(32)
+        val inputEvidenceId = sha256("memo.entity-proposal-input.v1|" + jobId + "|" + idempotencyKey).take(32)
         require(snapshot.evidence.none { it.id == inputEvidenceId }) {
             "The deterministic proposal input identity already exists. Reopen Work before retrying."
         }
