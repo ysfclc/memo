@@ -1,7 +1,7 @@
 # M3.8.A10 — first deterministic Memo app-runtime capability
 
 **Date:** 16 November 2026
-**Status:** Source implementation and regression tests committed; exact-head CI pending. No new APK or physical-device acceptance is claimed.
+**Status:** Source implementation and regression tests committed; exact-head CI #767 passed all automated gates including API 35 install-over-existing encrypted-store preservation. Physical-device acceptance and final pinned APK handoff remain pending.
 **Branch:** stabilization/usable-stage-2026-11-10
 **Draft PR:** https://github.com/ysfclc/memo/pull/8
 
@@ -28,7 +28,7 @@ The ViewModel persists the prepared job and active attempt before running the ad
 - No browser submission, Android tap, external write, frontier-provider request or other external side effect is enabled by this adapter.
 - The adapter implements only entity.propose; it is not yet a general dispatcher for every registered Memo capability.
 - Missing source evidence, mismatched input/output, invalid receipts, a duplicate-only batch or a non-verified observer result cannot complete the checkpoint.
-- Process-death recovery continues to use the existing attempt journal and requires review for interrupted work.
+- Process-death recovery continues to use the existing attempt journal and requires review for interrupted work. The exact input remains encrypted and can be reconstructed with restorePrepared; missing, ambiguous or hash-mismatched input evidence fails closed rather than regenerating a new payload. Each new workflow job gets a distinct input-evidence identity, including repeated identical batches.
 
 ## Files
 
@@ -46,9 +46,10 @@ The ViewModel persists the prepared job and active attempt before running the ad
 - Rejection of excerpts that cannot be linked to one original conversation message.
 - Duplicate detection without creating a second entity.
 - Proof that a missing persisted proposal cannot pass the independent postcondition.
+- Recovery of the exact encrypted input after workspace recreation, refusal when input evidence is missing, and distinct input records for repeated identical batches.
 
 ## Verification boundary and next step
 
-Source integration and regression tests are committed. Exact-head CI must still pass source verification, remote-runner tests, core and app unit tests, lint, APK assembly and identity checks, and the API 35 encrypted-store in-place upgrade test. Until then this increment remains partial, not accepted. No new signed APK has been produced by this increment, and physical-device acceptance remains pending.
+Exact-head CI #767 passed source verification, remote-runner tests, core and app unit tests, lint, debug/Android-test APK assembly, APK identity/signature checks, and the API 35 encrypted-store install-over-existing test. The emulator verified that app-private data and both real encrypted Memo stores survive the update, and legacy recovery/corruption tests passed. This was a PR validation run, so pinned signing and final APK artifact handoff were skipped; no new signed installable APK is claimed. The increment remains partial pending physical-device Talk → Work review acceptance.
 
-After exact-head CI succeeds, continue broadening Memo's deterministic app-runtime path one safe internal capability at a time. Browser and native Android adapters remain separate later increments because they need their existing approval, permission and visible-control boundaries.
+After physical-device acceptance, broaden Memo's deterministic app-runtime path one safe internal capability at a time. The next useful candidates should close another concrete Talk → Work outcome gap while reusing the encrypted input, durable attempt, receipt and independent observer contracts. Browser and native Android adapters remain separate later increments because they need their existing approval, permission and visible-control boundaries.
