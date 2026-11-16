@@ -544,33 +544,29 @@ fun ChatsWorkspaceScreen(
                                             emptyList()
                                         }
                                         if (proposals.isNotEmpty()) {
-                                            var saved = 0
-                                            proposals.forEach { proposal ->
-                                                val normalizeEvidence: (String) -> String = { it.trim().replace(Regex("\\s+"), " ").lowercase(Locale.ROOT) }
-                                                val sourceMessage = current.messages.firstOrNull { normalizeEvidence(it.content).contains(normalizeEvidence(proposal.evidence)) }
-                                                val createError = viewModel.createEntity(
-                                                    type = proposal.type,
-                                                    title = proposal.title,
-                                                    description = proposal.description,
-                                                    properties = proposal.properties,
-                                                    sourceConversationId = current.id,
-                                                    sourceMessageId = sourceMessage?.id.orEmpty(),
-                                                    sourceJobId = jobId,
-                                                    sourceExcerpt = proposal.evidence,
-                                                    reviewStatus = "PROPOSED"
+                                            viewModel.saveOutcomeProposalsThroughRuntime(jobId, current.id, proposals) { result ->
+                                                result.fold(
+                                                    onSuccess = { summary ->
+                                                        val duplicateNote = if (summary.duplicateCount > 0) {
+                                                            " Skipped " + summary.duplicateCount + " existing duplicate(s)."
+                                                        } else {
+                                                            ""
+                                                        }
+                                                        onShowMessage(
+                                                            "Saved and independently verified " + summary.savedCount +
+                                                                " source-grounded proposal(s)." + duplicateNote +
+                                                                " Review them in Work; nothing was automatically approved."
+                                                        )
+                                                        onOpenWork()
+                                                    },
+                                                    onFailure = { error ->
+                                                        onShowMessage(
+                                                            "The proposal workflow needs review: " +
+                                                                (error.message ?: "Memo could not verify the saved records.").take(180)
+                                                        )
+                                                        onOpenWork()
+                                                    }
                                                 )
-                                                if (createError == null) saved++
-                                            }
-                                            if (saved == 0) {
-                                                job?.steps?.getOrNull(2)?.let { viewModel.updateJobStep(jobId, it.id, "FAILED", "All candidates were duplicates or failed validation.") }
-                                                viewModel.updateJobStatus(jobId, "FAILED", "No new proposals were saved; candidates were duplicates or failed validation.")
-                                                onShowMessage("No new outcomes were saved. Check existing entities for duplicates.")
-                                            } else {
-                                                job?.steps?.getOrNull(2)?.let { viewModel.updateJobStep(jobId, it.id, "COMPLETED", "$saved proposal(s) passed validation and were saved in review state.", "proposal-count:$saved") }
-                                                job?.steps?.getOrNull(3)?.let { viewModel.updateJobStep(jobId, it.id, "NEEDS_REVIEW", "Approve, edit or reject each candidate in Work.", "proposal-count:$saved") }
-                                                viewModel.updateJobStatus(jobId, "WAITING_FOR_USER", "$saved source-grounded proposal(s) saved. They are not committed until you approve them.")
-                                                onShowMessage("Saved $saved source-grounded proposal(s). Review them in Work.")
-                                                onOpenWork()
                                             }
                                         } else if (response.isNotBlank()) {
                                             // Parsing failed; a failed job is more useful than a false-success message.
