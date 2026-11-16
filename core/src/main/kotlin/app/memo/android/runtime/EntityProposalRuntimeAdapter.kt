@@ -257,14 +257,18 @@ class EntityProposalRuntimeAdapter(
                 completedAt = System.currentTimeMillis()
             )
         } catch (error: WorkflowRuntimeCancelledException) {
-            WorkflowRuntimeResult.Cancelled(System.currentTimeMillis())
+            WorkflowRuntimeResult.Cancelled(minOf(System.currentTimeMillis(), request.deadlineAt))
         } catch (error: WorkflowRuntimeDeadlineExceededException) {
-            WorkflowRuntimeResult.Failed("DEADLINE_EXCEEDED", error.message ?: "The deterministic runtime exceeded its deadline.", System.currentTimeMillis())
+            WorkflowRuntimeResult.Failed(
+                "DEADLINE_EXCEEDED",
+                error.message ?: "The deterministic runtime exceeded its deadline.",
+                request.deadlineAt
+            )
         } catch (error: Throwable) {
             WorkflowRuntimeResult.Failed(
                 "INVALID_PROPOSAL_INPUT",
                 (error.message ?: "The entity proposal batch could not be validated.").take(2_000),
-                System.currentTimeMillis()
+                minOf(System.currentTimeMillis(), request.deadlineAt)
             )
         }
     }
