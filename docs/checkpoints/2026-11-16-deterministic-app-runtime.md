@@ -1,58 +1,54 @@
-# Memo Fresh Start — 16 November 2026
+# M3.8.A10 — first deterministic Memo app-runtime capability
 
-**Repository:** `ysfclc/memo`  
-**Working branch:** `stabilization/usable-stage-2026-11-10`  
-**Baseline source:** `fcafb582ad694926823534f768cdd509e93bd44b`  
-**Tracking PR:** [#8](https://github.com/ysfclc/memo/pull/8), draft/unmerged  
-**Product authority:** `docs/MEMO_PRODUCT_CONTRACT.md`  
-**Execution ledger:** `TASKS.md`
+**Date:** 16 November 2026
+**Status:** Source implementation and regression tests committed; exact-head CI pending. No new APK or physical-device acceptance is claimed.
+**Branch:** stabilization/usable-stage-2026-11-10
+**Draft PR:** https://github.com/ysfclc/memo/pull/8
 
-## User direction
+## Product decision
 
-The user asked to build Memo correctly, with deliberate product judgement: every increment must materially serve the agreed vision. Preserve the complete product contract, prior defects, recovery requirements and data. Do not build disconnected modules, generic dashboards, demo-only flows or superficial UI.
+The first useful runtime increment for Memo's agreed vision is a real, deterministic capability inside Memo itself, connected to Talk and Work. The selected capability is app.entities / entity.propose. It turns source-checked Talk outcome candidates into reviewable Work records. This is intentionally narrower than a generic agent or executor and is not a new silo product.
 
-## Baseline verified before changes
+## Execution path
 
-- Memo is the Android-first personal AI operating agent described in `docs/MEMO_PRODUCT_CONTRACT.md`.
-- The intended continuous loop remains capture intent → retrieve permitted context → compile a typed workflow → route to the right runtime → show/control execution in Live → independently verify the outcome → persist useful work in Work/Studio.
-- Talk, Live, Work and Studio remain connected surfaces over one local-first workspace; conversation is not the database.
-- ORCH-007 shared runtime request/resolver and postcondition evidence contracts are implemented and exact-head CI verified.
-- Run #678 passed source verification, remote-runner tests, core/app JVM tests, lint, APK assembly/identity, API 35 in-place encrypted-store upgrade instrumentation and isolated pinned signing.
-- Run #678 APK is versionCode 678, package `app.memo.android.debug`; artifact ID `14143185526`.
-- Physical-device install-over-existing and product-flow acceptance remain pending. Do not claim phone acceptance or ask the user to uninstall/clear data.
-- No merge, production release/deployment, signing-identity change or destructive migration is authorized.
+1. Talk retains its existing model-based candidate extraction and OutcomeParser validation. Remote model use remains behind the existing explicit per-request consent control.
+2. Before persistence, the coordinator requires every candidate excerpt to match an individual original message in the exact source conversation. Missing or cross-message excerpts fail closed.
+3. Memo compiles a one-node TaskSpec for the exact registered app.entities / entity.propose capability. The invocation binds the saved graph, active attempt, capability-manifest fingerprint, idempotency identity, bounded input and deadline.
+4. EntityProposalRuntimeAdapter validates and canonicalizes the bounded batch. It returns candidate output only; it does not write the workspace, approve records or claim success.
+5. The orchestration coordinator rechecks the returned batch against the exact input, then writes source-linked EntityRecord proposals, PROPOSES relationships and a Work artifact through the existing LocalWorkArtifactCoordinator. All entity records remain PROPOSED.
+6. The saved Work artifact receives the existing content-bound runtime receipt. OUTPUT_SAVED proves only that output bytes were persisted; its postcondition remains NOT_VERIFIED.
+7. A separate read-only app.jobs / job.verify observer reads the saved workspace snapshot and checks each proposal's identity, PROPOSED state, source conversation, source job, original message ID and exact excerpt.
+8. Only VERIFIED observer evidence is saved as a separate WORKFLOW_VERIFICATION record and may complete the checkpoint. Talk's parent extraction job then moves to the explicit Work review step. Nothing is auto-approved.
 
-## Last completed engineering increment
+The ViewModel persists the prepared job and active attempt before running the adapter, persists output before observation, and persists verification before updating the source Talk extraction history.
 
-**ORCH-007 — shared runtime adapter and postcondition evidence contracts** (15 Nov 2026; source commit `cef15adb9b6f7b4fd991ef7404e12f8b4bc9da34`).
+## Safety boundaries
 
-It establishes exact TaskSpec/attempt/runtime/capability binding, manifest integrity, bounded inputs/outputs, deadlines/cancellation, and independently observed postconditions. Adapters cannot persist workspace state, grant approval or self-declare success.
+- No entity is automatically approved.
+- No browser submission, Android tap, external write, frontier-provider request or other external side effect is enabled by this adapter.
+- The adapter implements only entity.propose; it is not yet a general dispatcher for every registered Memo capability.
+- Missing source evidence, mismatched input/output, invalid receipts, a duplicate-only batch or a non-verified observer result cannot complete the checkpoint.
+- Process-death recovery continues to use the existing attempt journal and requires review for interrupted work.
 
-## This increment — deterministic Memo app-runtime adapter
+## Files
 
-**Why this is the next useful step:** Memo's typed workflow graph and durable attempt journal currently stop at reservation; there is no connected deterministic app runtime. Without this bridge, Talk can propose work but cannot reliably turn safe internal Memo tasks into saved outcomes. This is the central product loop, not a standalone feature.
+- core/src/main/kotlin/app/memo/android/runtime/EntityProposalRuntimeAdapter.kt
+- core/src/main/kotlin/app/memo/android/data/EntityProposalWorkflowCoordinator.kt
+- core/src/test/kotlin/app/memo/android/data/EntityProposalWorkflowCoordinatorTest.kt
+- app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt
+- app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt
+- tools/verify_source.py
+- TASKS.md, docs/STATE.md, IMPLEMENTATION_LOG.md and BUILD_STATUS.md
 
-**Scope boundary:**
-1. Implement only deterministic, local Memo-owned capabilities with explicit registered handlers.
-2. Dispatch through the existing validated runtime request and durable per-node attempt journal.
-3. Keep persistence/state transitions outside the adapter; return typed candidate output for the existing receipt/review path.
-4. Enforce exact runtime/capability identity, input/output bounds, deadline and cooperative cancellation.
-5. Recover an interrupted RUNNING attempt as INTERRUPTED/NEEDS_REVIEW; never blindly replay it.
-6. Reject approval-gated, external-write, browser and Android-app tasks. No network, browser submission, Android accessibility action or external side effect in this increment.
-7. Add focused tests for successful deterministic dispatch, missing/duplicate handler, manifest drift, cancellation, timeout, invalid output and process-death recovery.
-8. Update source verifier/checksums and the status ledger; run exact-head CI.
+## Regression coverage
 
-**Explicitly out of scope:** generic browser/native adapters, external action execution, full workflow-wide scheduler, pause/resume/takeover UI, redesign, new product modules, merge/deployment, signing changes and data migration.
+- Full execution through the exact runtime and independent read-after-write verification.
+- Rejection of excerpts that cannot be linked to one original conversation message.
+- Duplicate detection without creating a second entity.
+- Proof that a missing persisted proposal cannot pass the independent postcondition.
 
-## Acceptance gates
+## Verification boundary and next step
 
-- Pure-core tests prove the adapter cannot bypass the validated request, mutate persistence, approve actions or mark a checkpoint complete.
-- Safe internal capability execution is deterministic and idempotency-aware.
-- Output receipt is not treated as proof of the user's goal; only the independent postcondition path can verify completion.
-- Interrupted attempts remain review-required and preserve prior evidence.
-- Source verifier, checksum verification, core/app tests, lint, APK identity and emulator encrypted-store upgrade pass on the exact commit.
-- Physical-device acceptance remains a separate gate and must be reported honestly.
+Source integration and regression tests are committed. Exact-head CI must still pass source verification, remote-runner tests, core and app unit tests, lint, APK assembly and identity checks, and the API 35 encrypted-store in-place upgrade test. Until then this increment remains partial, not accepted. No new signed APK has been produced by this increment, and physical-device acceptance remains pending.
 
-## Stop conditions
-
-If the available app data model cannot safely support a capability without crossing the encrypted-store transaction boundary, do not invent a shortcut. Record the blocker and implement only the safe contract/test foundation. Do not merge PR #8 or modify `main`.
+After exact-head CI succeeds, continue broadening Memo's deterministic app-runtime path one safe internal capability at a time. Browser and native Android adapters remain separate later increments because they need their existing approval, permission and visible-control boundaries.
