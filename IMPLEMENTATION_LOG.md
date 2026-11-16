@@ -194,3 +194,14 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - **Verification:** source/test consistency inspected. The new test code has **not** been executed; current PR Actions preflight failures occur with `runner_id: 0` and no steps, so Gradle tests, lint and Android compilation remain blocked. No APK or device acceptance is claimed.
 - **Risk:** the 180-second runner deadline is cooperative; non-yielding native LiteRT calls cannot be forcibly terminated by coroutine cancellation.
 - **Status:** tests added; acceptance remains open until exact-head CI and device timing evidence exist.
+
+
+### 2026-11-16 — Fresh start: deterministic app-runtime increment
+
+- **User direction:** build Memo deliberately against the agreed personal AI operating-agent vision; each increment must materially improve the continuous intent-to-outcome loop and preserve existing scope/defects.
+- **Baseline:** `stabilization/usable-stage-2026-11-10` at `fcafb582ad694926823534f768cdd509e93bd44b`; PR #8 remains draft/unmerged; `main` untouched.
+- **Checkpoint:** `docs/checkpoints/2026-11-16-deterministic-app-runtime.md`.
+- **Last verified:** ORCH-007 shared runtime/postcondition contracts; exact-head CI #678 passed source checks, JVM tests, lint, APK identity, API 35 encrypted-store in-place upgrade and pinned signing. Physical-device acceptance remains pending.
+- **Next bounded increment:** implement deterministic local Memo app capability dispatch through the durable attempt journal, with exact request validation, bounded output, deadline/cancellation and process-death recovery. Keep adapter side-effect-free with respect to persistence and approvals; candidate output is not completion evidence.
+- **Safety boundary:** no browser submission, Android accessibility actions, remote provider calls, external writes, merge, deployment, signing changes or destructive migration in this increment.
+- **Verification:** planning and baseline documentation recorded first; no new source behavior is claimed by this entry.
