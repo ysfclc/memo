@@ -4,6 +4,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.security.MessageDigest
 import java.util.Locale
+import java.util.concurrent.CancellationException
 
 /**
  * The first deterministic Memo app adapter.
@@ -256,6 +257,8 @@ class EntityProposalRuntimeAdapter(
                 ),
                 completedAt = System.currentTimeMillis()
             )
+        } catch (error: CancellationException) {
+            throw error
         } catch (error: WorkflowRuntimeCancelledException) {
             WorkflowRuntimeResult.Cancelled(minOf(System.currentTimeMillis(), request.deadlineAt))
         } catch (error: WorkflowRuntimeDeadlineExceededException) {
