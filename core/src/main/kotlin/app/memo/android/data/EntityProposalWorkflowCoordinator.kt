@@ -78,7 +78,7 @@ object EntityProposalWorkflowCoordinator {
             ?: error("The source conversation no longer exists.")
         val rows = proposals.map { proposal ->
             val type = proposal.type.trim().uppercase(Locale.ROOT)
-            require(type in setOf("PROJECT", "TASK", "DECISION", "KNOWLEDGE", "PERSON", "ORGANIZATION", "ARTIFACT")) {
+            require(type in setOf("PROJECT", "TASK", "DECISION", "KNOWLEDGE", "PERSON", "ORGANIZATION", "ARTIFACT", "SELF_MODEL_FACT")) {
                 "Unsupported proposal type '$type'."
             }
             val title = proposal.title.trim().take(240)
