@@ -2,6 +2,7 @@ package app.memo.android.data
 
 import app.memo.android.orchestration.WorkflowCheckpointCoordinator
 import app.memo.android.runtime.EntityProposalRuntimeAdapter
+import app.memo.android.runtime.EntityProposalRuntimeCodec
 import app.memo.android.runtime.WorkflowPostconditionOutcome
 import app.memo.android.runtime.WorkflowRuntimeAdapterResolver
 import app.memo.android.runtime.WorkflowRuntimeResult
