@@ -40,6 +40,14 @@ data class SavedEntityProposalOutput(
     val outputEvidenceId: String
 )
 
+data class EntityProposalWorkflowSummary(
+    val jobId: String,
+    val savedCount: Int,
+    val duplicateCount: Int,
+    val outputEvidenceId: String,
+    val verificationEvidenceId: String
+)
+
 /**
  * Coordinates the first real deterministic app-runtime workflow:
  * source-checked proposal input -> exact app capability -> durable output receipt ->
