@@ -8,7 +8,6 @@ import androidx.lifecycle.viewModelScope
 import app.memo.android.automation.TaskRules
 import app.memo.android.runtime.RuntimeRegistry
 import app.memo.android.runtime.EntityProposalRuntimeAdapter
-import app.memo.android.runtime.EntityProposalPostconditionObserver
 import app.memo.android.runtime.WorkflowCancellationSignal
 import app.memo.android.runtime.WorkflowRuntimeAdapterResolver
 import app.memo.android.runtime.WorkflowRuntimeResult
