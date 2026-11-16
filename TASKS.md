@@ -568,3 +568,7 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - **APK:** `app.memo.android.debug`, versionCode 678, versionName `4.0.0-memo-debug`; [artifact 14143185526](https://github.com/ysfclc/memo/actions/runs/43666486553/artifacts/14143185526). APK SHA-256 `026a9be7743e1e91cbc3b7807bed19504db6ea93b3d9249c91046ea15100f469`; pinned certificate SHA-256 `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a`.
 - **Not claimed:** generic dispatcher/adapter implementation, browser/native observer wiring, or physical-device acceptance. The user installed #674 but has not tested it.
 - **Next:** deterministic app-runtime adapter through the checkpoint journal with shared timeout/cancellation and process-death recovery. WF-01–WF-13 and all wider milestones remain active.
+## 16 November 2026 — Requested signed APK build
+
+- User requested a fresh APK from the current stabilization source. This ledger-only commit triggers the existing push build path; it does not change application code, merge PR #8, or touch `main`.
+- Required source verification, JVM tests, lint, APK assembly, emulator upgrade/data-preservation checks and isolated pinned-certificate signing must all pass before delivery.
