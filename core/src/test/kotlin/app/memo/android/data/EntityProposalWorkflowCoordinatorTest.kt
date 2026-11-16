@@ -143,6 +143,61 @@ class EntityProposalWorkflowCoordinatorTest {
         WorkflowAttemptJournal.validate(completed)
     }
 
+    @Test fun restoresTheExactEncryptedInputAfterWorkspaceRecreation() {
+        val initial = fixture()
+        val prepared = EntityProposalWorkflowCoordinator.prepare(
+            initial,
+            "source-job",
+            "conversation-1",
+            listOf(proposal("Acme Robotics", "Acme Robotics currently uses a legacy ERP.")),
+            runtimes
+        ).getOrThrow()
+
+        // Simulate reopening the encrypted workspace: only the saved snapshot and job ID survive.
+        val restored = EntityProposalWorkflowCoordinator.restorePrepared(
+            prepared.snapshot.copy(),
+            prepared.jobId
+        ).getOrThrow()
+        assertEquals(prepared.inputEvidenceId, restored.inputEvidenceId)
+
+        val started = WorkflowCheckpointCoordinator.start(
+            restored.snapshot, restored.jobId, restored.taskId, runtimes, System.currentTimeMillis()
+        ).getOrThrow()
+        val request = EntityProposalWorkflowCoordinator.buildRequest(started, restored, runtimes)
+        assertTrue(request.inputJson.contains("Acme Robotics currently uses a legacy ERP."))
+        assertEquals("source-job", EntityProposalRuntimeCodec.parseInput(request.inputJson).sourceJobId)
+    }
+
+    @Test fun refusesToRestoreWhenTheExactEncryptedInputEvidenceIsMissing() {
+        val prepared = EntityProposalWorkflowCoordinator.prepare(
+            fixture(),
+            "source-job",
+            "conversation-1",
+            listOf(proposal("Acme Robotics", "Acme Robotics currently uses a legacy ERP.")),
+            runtimes
+        ).getOrThrow()
+        val withoutInput = prepared.snapshot.copy(
+            evidence = prepared.snapshot.evidence.filterNot { it.id == prepared.inputEvidenceId }
+        )
+        val restored = EntityProposalWorkflowCoordinator.restorePrepared(withoutInput, prepared.jobId)
+        assertTrue(restored.isFailure)
+        assertTrue(restored.exceptionOrNull()?.message.orEmpty().contains("missing or ambiguous"))
+    }
+
+    @Test fun repeatedIdenticalProposalBatchesGetDistinctDurableInputRecords() {
+        val initial = fixture()
+        val proposals = listOf(proposal("Acme Robotics", "Acme Robotics currently uses a legacy ERP."))
+        val first = EntityProposalWorkflowCoordinator.prepare(
+            initial, "source-job", "conversation-1", proposals, runtimes
+        ).getOrThrow()
+        val second = EntityProposalWorkflowCoordinator.prepare(
+            first.snapshot, "source-job", "conversation-1", proposals, runtimes
+        ).getOrThrow()
+        assertTrue(first.jobId != second.jobId)
+        assertTrue(first.inputEvidenceId != second.inputEvidenceId)
+        assertEquals(2, second.snapshot.evidence.count { it.kind == "WORKFLOW_INPUT" })
+    }
+
     @Test fun rejectsEvidenceThatCannotBeLinkedToOneOriginalConversationMessage() {
         val result = EntityProposalWorkflowCoordinator.prepare(
             fixture(),
