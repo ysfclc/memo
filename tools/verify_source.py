@@ -651,6 +651,11 @@ for marker in (
     'WorkflowParticipant.DETERMINISTIC',
     'requiredCapabilities = listOf("entity.propose")',
     'EntityProposalRuntimeCodec.encodeInput(',
+    'kind = "WORKFLOW_INPUT"',
+    'inputEvidenceId = inputEvidenceId',
+    'fun restorePrepared(',
+    'EntityProposalRuntimeCodec.parseInput(inputEvidence.content)',
+    'inputMetadata.optString("inputSha256") == sha256(inputEvidence.content)',
     'normalize(message.content).contains(normalizedExcerpt)',
     'LocalWorkArtifactCoordinator.saveForReview(',
     'WorkflowRuntimeReceipt.fromEvidence(',
@@ -675,6 +680,9 @@ if "saveOutcomeProposalsThroughRuntime(jobId, current.id, proposals)" not in cha
     fail("Talk outcome extraction still bypasses the deterministic entity-proposal runtime")
 for marker in (
     "executesEntityProposalThroughExactRuntimeAndIndependentReadAfterWriteVerification",
+    "restoresTheExactEncryptedInputAfterWorkspaceRecreation",
+    "refusesToRestoreWhenTheExactEncryptedInputEvidenceIsMissing",
+    "repeatedIdenticalProposalBatchesGetDistinctDurableInputRecords",
     "rejectsEvidenceThatCannotBeLinkedToOneOriginalConversationMessage",
     "skipsExistingDuplicateAndPersistsOnlyTheNewProposals",
     "missingPersistedProposalCannotPassTheIndependentPostcondition",
