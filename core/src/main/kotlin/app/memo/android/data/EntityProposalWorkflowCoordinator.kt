@@ -266,7 +266,7 @@ object EntityProposalWorkflowCoordinator {
         val attempt = snapshot.workflowAttempts.singleOrNull {
             it.jobId == prepared.jobId && it.stepId == prepared.taskId && it.status == "RUNNING"
         } ?: error("The deterministic proposal checkpoint has no single active journal attempt.")
-        WorkflowRuntimeRequest(
+        return WorkflowRuntimeRequest(
             graph = graph,
             taskId = task.id,
             capabilityManifest = manifest,
