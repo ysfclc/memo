@@ -93,6 +93,12 @@ class EntityProposalWorkflowCoordinatorTest {
         ).getOrThrow()
 
         assertEquals(1, prepared.snapshot.jobs.size - initial.jobs.size)
+        val inputEvidence = prepared.snapshot.evidence.single { it.id == prepared.inputEvidenceId }
+        assertEquals("WORKFLOW_INPUT", inputEvidence.kind)
+        assertEquals(prepared.jobId, inputEvidence.taskId)
+        assertTrue(inputEvidence.content.isNotBlank())
+        val restored = EntityProposalWorkflowCoordinator.restorePrepared(prepared.snapshot, prepared.jobId).getOrThrow()
+        assertEquals(prepared.inputEvidenceId, restored.inputEvidenceId)
         val started = WorkflowCheckpointCoordinator.start(
             prepared.snapshot, prepared.jobId, prepared.taskId, runtimes, System.currentTimeMillis()
         ).getOrThrow()
@@ -196,6 +202,52 @@ class EntityProposalWorkflowCoordinatorTest {
         assertTrue(first.jobId != second.jobId)
         assertTrue(first.inputEvidenceId != second.inputEvidenceId)
         assertEquals(2, second.snapshot.evidence.count { it.kind == "WORKFLOW_INPUT" })
+    }
+
+    @Test fun restoresInputAndStableIdempotencyAfterInterruptedAttempt() {
+        val prepared = EntityProposalWorkflowCoordinator.prepare(
+            fixture(),
+            "source-job",
+            "conversation-1",
+            listOf(proposal("Acme Robotics", "Acme Robotics currently uses a legacy ERP.")),
+            runtimes
+        ).getOrThrow()
+        val firstStartTime = System.currentTimeMillis()
+        val firstStarted = WorkflowCheckpointCoordinator.start(
+            prepared.snapshot, prepared.jobId, prepared.taskId, runtimes, firstStartTime
+        ).getOrThrow()
+        val firstRequest = EntityProposalWorkflowCoordinator.buildRequest(firstStarted, prepared, runtimes)
+
+        val recovered = firstStarted.recoverInterruptedTasks()
+        assertEquals("INTERRUPTED", recovered.workflowAttempts.single { it.jobId == prepared.jobId }.status)
+        assertEquals("NEEDS_REVIEW", recovered.jobs.single { it.id == prepared.jobId }.steps.single().status)
+
+        val restored = EntityProposalWorkflowCoordinator.restorePrepared(recovered, prepared.jobId).getOrThrow()
+        val secondStarted = WorkflowCheckpointCoordinator.start(
+            recovered, restored.jobId, restored.taskId, runtimes, firstStartTime + 5_000L
+        ).getOrThrow()
+        val resumedRequest = EntityProposalWorkflowCoordinator.buildRequest(secondStarted, restored, runtimes)
+
+        assertEquals(firstRequest.inputJson, resumedRequest.inputJson)
+        assertEquals(firstRequest.attempt.idempotencyKey, resumedRequest.attempt.idempotencyKey)
+        assertEquals(2, resumedRequest.attempt.attemptNumber)
+        assertTrue(resumedRequest.inputJson.contains("Acme Robotics"))
+    }
+
+    @Test fun rejectsTamperedOrMissingPersistedWorkflowInput() {
+        val prepared = EntityProposalWorkflowCoordinator.prepare(
+            fixture(),
+            "source-job",
+            "conversation-1",
+            listOf(proposal("Acme Robotics", "Acme Robotics currently uses a legacy ERP.")),
+            runtimes
+        ).getOrThrow()
+        val tampered = prepared.snapshot.copy(evidence = prepared.snapshot.evidence.map { evidence ->
+            if (evidence.id == prepared.inputEvidenceId) evidence.copy(content = evidence.content + " ") else evidence
+        })
+        assertTrue(EntityProposalWorkflowCoordinator.restorePrepared(tampered, prepared.jobId).isFailure)
+        val missing = prepared.snapshot.copy(evidence = prepared.snapshot.evidence.filterNot { it.id == prepared.inputEvidenceId })
+        assertTrue(EntityProposalWorkflowCoordinator.restorePrepared(missing, prepared.jobId).isFailure)
     }
 
     @Test fun rejectsEvidenceThatCannotBeLinkedToOneOriginalConversationMessage() {
