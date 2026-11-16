@@ -32,6 +32,9 @@ REQUIRED = [
     "core/src/main/kotlin/app/memo/android/orchestration/WorkflowProposalApplier.kt",
     "core/src/main/kotlin/app/memo/android/data/OutcomeParser.kt",
     "core/src/main/kotlin/app/memo/android/runtime/RuntimeContracts.kt",
+    "core/src/main/kotlin/app/memo/android/runtime/EntityProposalRuntimeAdapter.kt",
+    "core/src/main/kotlin/app/memo/android/data/EntityProposalWorkflowCoordinator.kt",
+    "core/src/test/kotlin/app/memo/android/data/EntityProposalWorkflowCoordinatorTest.kt",
     "core/src/test/kotlin/app/memo/android/data/OutcomeParserTest.kt",
     "core/src/test/kotlin/app/memo/android/data/ActionApprovalLedgerTest.kt",
     "core/src/test/kotlin/app/memo/android/data/LiveTimelineProjectorTest.kt",
@@ -628,5 +631,56 @@ for marker in (
         fail(f"postcondition evidence regression coverage is missing: {marker}")
 print("PASS: shared runtime requests are manifest-bound, approval-gated, time-bounded and covered by pure-core tests")
 print("PASS: postcondition evidence requires a registered independent deterministic observer and exact saved-attempt binding")
+
+proposal_adapter_source = (ROOT / "core/src/main/kotlin/app/memo/android/runtime/EntityProposalRuntimeAdapter.kt").read_text()
+proposal_coordinator_source = (ROOT / "core/src/main/kotlin/app/memo/android/data/EntityProposalWorkflowCoordinator.kt").read_text()
+proposal_workflow_tests = (ROOT / "core/src/test/kotlin/app/memo/android/data/EntityProposalWorkflowCoordinatorTest.kt").read_text()
+proposal_view_model = (ROOT / "app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt").read_text()
+for marker in (
+    'override val runtimeId: String = "app.entities"',
+    'override val capabilityIds: Set<String> = setOf("entity.propose")',
+    'const val CONTENT_TYPE = "application/vnd.memo.entity-proposals+json"',
+    'MAX_PROPOSALS = 12',
+    'request.validate(registeredRuntimes)',
+    'request.checkActive(System.currentTimeMillis())',
+    'WorkflowRuntimeResult.Output(',
+):
+    if marker not in proposal_adapter_source:
+        fail(f"deterministic entity-proposal adapter is missing its bounded runtime contract: {marker}")
+for marker in (
+    'WorkflowParticipant.DETERMINISTIC',
+    'requiredCapabilities = listOf("entity.propose")',
+    'EntityProposalRuntimeCodec.encodeInput(',
+    'normalize(message.content).contains(normalizedExcerpt)',
+    'LocalWorkArtifactCoordinator.saveForReview(',
+    'WorkflowRuntimeReceipt.fromEvidence(',
+    'WorkflowPostconditionRequest.create(',
+    'WorkflowPostconditionOutcome.VERIFIED',
+    'kind = "WORKFLOW_VERIFICATION"',
+    'WorkflowAttemptJournal.validate(it)',
+    'reviewStatus = "PROPOSED"',
+):
+    if marker not in proposal_coordinator_source:
+        fail(f"deterministic entity-proposal workflow is missing its persistence/verification guard: {marker}")
+for marker in (
+    'EntityProposalWorkflowCoordinator.prepare(',
+    'WorkflowRuntimeAdapterResolver.resolve(',
+    'persistAndAwait()',
+    'EntityProposalPostconditionObserver(_snapshot.value).observe(',
+    'recordOutcomeProposalProgress(',
+):
+    if marker not in proposal_view_model:
+        fail(f"Talk-to-Work deterministic runtime wiring is missing: {marker}")
+if "saveOutcomeProposalsThroughRuntime(jobId, current.id, proposals)" not in chat:
+    fail("Talk outcome extraction still bypasses the deterministic entity-proposal runtime")
+for marker in (
+    "executesEntityProposalThroughExactRuntimeAndIndependentReadAfterWriteVerification",
+    "rejectsEvidenceThatCannotBeLinkedToOneOriginalConversationMessage",
+    "skipsExistingDuplicateAndPersistsOnlyTheNewProposals",
+    "missingPersistedProposalCannotPassTheIndependentPostcondition",
+):
+    if marker not in proposal_workflow_tests:
+        fail(f"deterministic entity-proposal workflow regression coverage is missing: {marker}")
+print("PASS: Talk outcome proposals use the deterministic app.entities adapter, durable journal and separate read-after-write verification")
 
 print("NOTE: This script does not compile Kotlin, run Gradle, prove Android runtime behavior, or verify a device.")
