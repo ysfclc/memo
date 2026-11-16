@@ -1,6 +1,12 @@
 # Changelog
 ## 16 November 2026 — deterministic Talk outcome proposals
 
+- Exact-head CI #767 passed source verification, remote-runner, core/app unit tests, lint, debug/Android-test APK assembly and APK identity/signature checks.
+- API 35 install-over-existing emulator acceptance passed: app-private data and both encrypted Memo stores survived; legacy recovery and corruption tests passed.
+- The exact validated proposal input is now persisted as encrypted WORKFLOW_INPUT evidence with job/step/source/hash binding and fail-closed restoration tests.
+- Physical-device Talk → Work acceptance remains pending. PR validation intentionally skipped pinned signing and final APK artifact handoff; no new signed APK is claimed.
+
+
 - Connected Talk's existing outcome extraction to the first deterministic Memo app-runtime capability, app.entities/entity.propose.
 - Candidate excerpts must match an individual original conversation message. Persisted records retain source conversation, message, extraction job and excerpt provenance.
 - Work proposals stay PROPOSED for explicit human review. A separate read-only postcondition observer verifies persisted records before the workflow checkpoint is completed.
