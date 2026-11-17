@@ -7,6 +7,8 @@ Memo is the personal AI operating agent on the phone: it understands what the us
 
 The normative product source is `docs/MEMO_PRODUCT_CONTRACT.md`; the complete social operating-layer requirements are in `docs/SOCIAL_PLATFORM_PRODUCT_SPEC.md`. These are user-approved scope, not optional future ideas to be silently reduced. `TASKS.md` is the execution ledger; `docs/DECISION_LOG.md` records material changes.
 
+The locked interpretation of the user's feedback on prompt feeding, workflows, browser automation, native Android app automation, Council and recovery is recorded in [MEMO_REORIENTATION_AND_FEEDBACK_BASELINE_2026-11-17.md](MEMO_REORIENTATION_AND_FEEDBACK_BASELINE_2026-11-17.md). It supplements rather than replaces the Product Contract and social specification. This is a product-direction decision, not a claim that the listed capabilities are implemented or device-verified.
+
 The intended continuous path is: capture intent → clarify and retrieve permitted context → assemble a typed, versioned workflow → route steps to deterministic code/local AI/frontier AI/visible browser/Android runtime/user → show progress and checkpoints in Live → verify actual postconditions → save evidence and deliverables in Work/Studio. Conversation is the interface, not the database.
 
 Primary surfaces remain Talk, Live, Work and Studio. Work is the local-first persistent graph; Today prioritizes MUST / SHOULD / COULD / NOT TODAY. Memo is not a chatbot skin, generic browser, CRM clone, static task manager or dashboard of disconnected modules.
