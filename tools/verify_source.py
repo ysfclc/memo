@@ -92,6 +92,8 @@ approval_ledger = (ROOT / "core/src/main/kotlin/app/memo/android/data/ActionAppr
 approval_test = (ROOT / "core/src/test/kotlin/app/memo/android/data/ActionApprovalLedgerTest.kt").read_text()
 browser_session = (ROOT / "app/src/main/java/app/memo/android/browser/BrowserSession.kt").read_text()
 workflow_screen = (ROOT / "app/src/main/java/app/memo/android/ui/BrowserWorkflowScreen.kt").read_text()
+browser_workflow = (ROOT / "app/src/main/java/app/memo/android/browser/BrowserWorkflow.kt").read_text()
+browser_workflow_test = (ROOT / "app/src/test/java/app/memo/android/browser/BrowserWorkflowPromptsTest.kt").read_text()
 view_model = (ROOT / "app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt").read_text()
 for marker in ("contentHash", "fun approve(", "fun beginExecution(", "fun completeVerified(", "verifyAuditChain", "recoverAfterRestart"):
     if marker not in approval_ledger:
@@ -121,8 +123,6 @@ for marker in ("Original request", "Prompt to send", "Apply revision · request 
         fail(f"editable prompt review UI is missing: {marker}")
 print("PASS: exact-content approval, safe prompt revision and reject-to-edit behavior are wired in source")
 
-browser_workflow = (ROOT / "app/src/main/java/app/memo/android/browser/BrowserWorkflow.kt").read_text()
-browser_workflow_test = (ROOT / "app/src/test/java/app/memo/android/browser/BrowserWorkflowPromptsTest.kt").read_text()
 for marker in ("object BrowserWorkflowRecoveryPolicy", "status == BrowserWorkflowStatus.WAITING_FOR_USER", "sentForCurrentStep", "providerPageMatches", "MIN_MANUAL_RESPONSE_LENGTH"):
     if marker not in browser_workflow:
         fail(f"manual browser-response recovery policy is missing: {marker}")
