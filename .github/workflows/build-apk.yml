@@ -891,13 +891,13 @@ jobs:
         if: always() && steps.delivery.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
-          name: Memo-Android-ci-debug-APK
+          name: INTERNAL-DO-NOT-INSTALL-Memo-Android-ci-signing-input
           path: |
             ${{ runner.temp }}/memo-delivery/Memo-Android-debug-ci-signed.apk
             ${{ runner.temp }}/memo-delivery/Memo-Source-Archive-SHA256.txt
           if-no-files-found: error
           compression-level: 0
-          retention-days: 14
+          retention-days: 1
 
       - name: Upload integrated repository artifact
         if: always() && steps.delivery.outcome == 'success'
@@ -942,7 +942,7 @@ jobs:
       - name: Download the CI-debug-signed APK artifact
         uses: actions/download-artifact@v4
         with:
-          name: Memo-Android-ci-debug-APK
+          name: INTERNAL-DO-NOT-INSTALL-Memo-Android-ci-signing-input
           path: ${{ runner.temp }}/memo-unsigned
 
       - name: Set up Android build tools

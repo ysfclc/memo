@@ -450,6 +450,18 @@ if any(alternate in workflow for alternate in ("Memo-Android-source.zip", "Memo-
     fail("GitHub workflow must not fall back to an alternate/stale ZIP")
 if "Expected exactly one Android Gradle project root" not in workflow or "Memo-Android-debug-APK" not in workflow:
     fail("GitHub workflow is missing canonical-root or artifact-delivery checks")
+app_gradle = (ROOT / "app/build.gradle").read_text()
+if "applicationId 'app.memo.android'" not in app_gradle or "applicationIdSuffix = memoPreviewPackage ? '.preview' : '.debug'" not in app_gradle:
+    fail("Memo debug and preview application IDs must remain deliberately distinct")
+if "INTERNAL-DO-NOT-INSTALL-Memo-Android-ci-signing-input" not in workflow:
+    fail("The ephemeral CI signing input must be unmistakably internal and not installable")
+if workflow.count("INTERNAL-DO-NOT-INSTALL-Memo-Android-ci-signing-input") != 2:
+    fail("The internal CI artifact upload and isolated download must use the same protected name")
+if "retention-days: 1" not in workflow:
+    fail("The ephemeral-key CI signing input must have short retention")
+if "a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a" not in workflow:
+    fail("The final APK must remain pinned to the persistent Memo signing certificate")
+
 if "sha256sum -c SOURCE_SHA256SUMS.txt" not in workflow or "Memo-Source-Archive-SHA256.txt" not in workflow:
     fail("GitHub workflow is missing source-integrity verification/receipt")
 if "build_current_source" not in workflow or "MEMO_BUILD_CURRENT_SOURCE: ${{ inputs.build_current_source }}" not in workflow:

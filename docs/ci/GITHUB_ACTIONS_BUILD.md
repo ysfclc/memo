@@ -18,12 +18,12 @@ The workflow runs source invariants, remote-runner tests, core/app unit tests, l
 
 ## Artifacts
 
-- `Memo-Android-debug-APK`: final APK signed with the pinned Memo certificate.
+- `Memo-Android-debug-APK`: **the only installable APK artifact**. Final APK signed with the pinned Memo certificate; this is the one to download.
 - `Memo-Android-Build-Reports`: test, lint, identity and build evidence.
 - `Memo-Android-Integrated-Repository`: exact source snapshot and checksums.
 
-Do not install `Memo-Android-ci-debug-APK`; it is an intermediate artifact signed with an ephemeral CI key and exists only as input to the isolated signing job.
+An internal artifact named `INTERNAL-DO-NOT-INSTALL-Memo-Android-ci-signing-input` is retained for one day solely as the isolated signing job's input. It is signed with an ephemeral CI key. Never download or install it. If that internal artifact is ever exposed to end users by mistake, Android can reject it as a signature conflict.
 
 ## Update safety
 
-An APK is an in-place update only when its application ID and signing certificate match the installed app and its version code is not lower. Never uninstall Memo or clear app storage to work around an install conflict. The stabilization build currently targets `app.memo.android.debug`; confirm that this matches the installed package before installing. Physical-device upgrade acceptance remains required even after emulator acceptance.
+An APK is an in-place update only when its application ID and signing certificate match the installed app and its version code is not lower. Never uninstall Memo or clear app storage to work around an install conflict. The stabilization build targets `app.memo.android.debug`, keeps the pinned certificate SHA-256 `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a`, and increases `versionCode` from the GitHub run number. The Vercel preview deliberately uses a different package, `app.memo.android.preview`; it is not an update for the debug installation. Physical-device upgrade acceptance remains required even after emulator acceptance.
