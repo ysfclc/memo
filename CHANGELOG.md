@@ -1,4 +1,12 @@
 # Changelog
+## 17 November 2026 — shared runtime dispatcher
+
+- Added a shared dispatcher over the existing manifest-bound runtime request and durable attempt.
+- Routed the deterministic app.entities/entity.propose capability through the dispatcher rather than invoking its adapter inline.
+- Enforced the remaining original attempt deadline in the Android host and rechecked cancellation/deadline plus candidate-output validity at the shared boundary.
+- Added regression coverage for exact adapter selection, expired attempts, post-execution cancellation and invalid output.
+- CI and signed APK validation pending; no generic DAG/browser/native executor or physical-device acceptance is claimed.
+
 ## 16 November 2026 — deterministic Talk outcome proposals
 
 - Exact-head CI #767 passed source verification, remote-runner, core/app unit tests, lint, debug/Android-test APK assembly and APK identity/signature checks.

@@ -6,11 +6,26 @@ import app.memo.android.orchestration.TaskSpec
 import app.memo.android.orchestration.WorkflowGraphCompiler
 import app.memo.android.orchestration.WorkflowNodeKind
 import app.memo.android.orchestration.WorkflowParticipant
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlin.coroutines.Continuation
+import kotlin.coroutines.EmptyCoroutineContext
+import kotlin.coroutines.startCoroutine
 
 class WorkflowRuntimeAdapterTest {
     private val runtimes = RuntimeRegistry().listRuntimes()
+
+    private fun <T> runSuspend(block: suspend () -> T): T {
+        var outcome: Result<T>? = null
+        block.startCoroutine(object : Continuation<T> {
+            override val context = EmptyCoroutineContext
+            override fun resumeWith(result: Result<T>) {
+                outcome = result
+            }
+        })
+        return requireNotNull(outcome).getOrThrow()
+    }
 
     private fun task(
         capability: String = "model.generate",
@@ -61,13 +76,21 @@ class WorkflowRuntimeAdapterTest {
 
     private class FakeAdapter(
         override val runtimeId: String,
-        override val capabilityIds: Set<String>
-    ) : WorkflowRuntimeAdapter {
-        override suspend fun execute(request: WorkflowRuntimeRequest): WorkflowRuntimeResult =
+        override val capabilityIds: Set<String>,
+        private val executeBlock: (WorkflowRuntimeRequest) -> WorkflowRuntimeResult = {
             WorkflowRuntimeResult.Output(
                 WorkflowRuntimeOutput("Draft output", "text/plain", "Saved draft"),
                 completedAt = 200L
             )
+        }
+    ) : WorkflowRuntimeAdapter {
+        var executions: Int = 0
+            private set
+
+        override suspend fun execute(request: WorkflowRuntimeRequest): WorkflowRuntimeResult {
+            executions += 1
+            return executeBlock(request)
+        }
     }
 
     @Test fun requestBindsThePersistedAttemptToExactRuntimeAndCompiledCapabilities() {
@@ -225,4 +248,71 @@ class WorkflowRuntimeAdapterTest {
             WorkflowRuntimeResult.Failed("bad code", "Failed", 200L).validateFor(request)
         }.isFailure)
     }
+    @Test fun dispatcherRunsOnlyTheResolvedAdapterAndValidatesItsOutput() {
+        val request = request()
+        var now = 150L
+        val browser = FakeAdapter("runtime.browser", setOf("browser.navigate_https"))
+        val models = FakeAdapter("app.models", setOf("model.generate"))
+        val result = runSuspend {
+            WorkflowRuntimeDispatcher.dispatch(request, runtimes, listOf(browser, models), now = { now++ })
+        }
+        assertTrue(result is WorkflowRuntimeResult.Output)
+        assertEquals(0, browser.executions)
+        assertEquals(1, models.executions)
+    }
+
+    @Test fun dispatcherRejectsExpiredRequestBeforeInvokingAdapter() {
+        val request = request()
+        val adapter = FakeAdapter("app.models", setOf("model.generate"))
+        val result = runCatching {
+            runSuspend {
+                WorkflowRuntimeDispatcher.dispatch(request, runtimes, listOf(adapter), now = { request.deadlineAt })
+            }
+        }
+        assertTrue(result.isFailure)
+        assertEquals(0, adapter.executions)
+    }
+
+    @Test fun dispatcherRechecksCancellationAfterAdapterReturns() {
+        var cancelled = false
+        val request = request().copy(cancellation = WorkflowCancellationSignal { cancelled })
+        val adapter = FakeAdapter("app.models", setOf("model.generate")) {
+            cancelled = true
+            WorkflowRuntimeResult.Output(
+                WorkflowRuntimeOutput("Draft output", "text/plain", "Saved draft"),
+                completedAt = 200L
+            )
+        }
+        val result = runCatching {
+            runSuspend {
+                WorkflowRuntimeDispatcher.dispatch(request, runtimes, listOf(adapter), now = { 250L })
+            }
+        }
+        assertTrue(result.isFailure)
+        assertEquals(1, adapter.executions)
+    }
+
+    @Test fun dispatcherRejectsAdapterResultOutsideTheExactAttemptDeadline() {
+        val request = request()
+        val adapter = FakeAdapter("app.models", setOf("model.generate")) {
+            WorkflowRuntimeResult.Output(
+                WorkflowRuntimeOutput("Late output", "text/plain", "Too late"),
+                completedAt = request.deadlineAt + 1L
+            )
+        }
+        val result = runCatching {
+            runSuspend {
+                WorkflowRuntimeDispatcher.dispatch(request, runtimes, listOf(adapter), now = { 150L })
+            }
+        }
+        assertTrue(result.isFailure)
+        assertEquals(1, adapter.executions)
+    }
+
+    @Test fun remainingTimeUsesThePersistedAttemptDeadlineAndRejectsExpiredWork() {
+        val request = request()
+        assertEquals(450L, request.remainingTimeMs(150L))
+        assertTrue(runCatching { request.remainingTimeMs(request.deadlineAt) }.isFailure)
+    }
+
 }

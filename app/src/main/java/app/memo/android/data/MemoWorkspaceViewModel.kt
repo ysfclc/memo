@@ -9,7 +9,9 @@ import app.memo.android.automation.TaskRules
 import app.memo.android.runtime.RuntimeRegistry
 import app.memo.android.runtime.EntityProposalRuntimeAdapter
 import app.memo.android.runtime.WorkflowCancellationSignal
-import app.memo.android.runtime.WorkflowRuntimeAdapterResolver
+import app.memo.android.runtime.WorkflowRuntimeDispatcher
+import app.memo.android.runtime.WorkflowRuntimeDeadlineExceededException
+import app.memo.android.runtime.WorkflowRuntimeCancelledException
 import app.memo.android.runtime.WorkflowRuntimeResult
 import app.memo.android.orchestration.IntentPlanner
 import app.memo.android.orchestration.CapabilityCompiler
@@ -27,6 +29,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withTimeout
@@ -822,32 +825,36 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
                 onComplete(Result.failure(error))
                 return@launch
             }
-            val runtimeAdapter = try {
-                WorkflowRuntimeAdapterResolver.resolve(
-                    request, registeredRuntimes, listOf(EntityProposalRuntimeAdapter(registeredRuntimes))
-                )
-            } catch (error: Throwable) {
-                markEntityProposalAttemptNeedsReview(prepared, error.message ?: "The app runtime is unavailable.")
-                recordOutcomeProposalProgress(sourceJobId, prepared.jobId, 0, 0, error.message.orEmpty(), verified = false)
-                onComplete(Result.failure(error))
-                return@launch
-            }
-
             val runtimeResult = try {
-                withTimeout(request.task.timeoutMs) {
-                    runtimeAdapter.execute(request)
+                val remainingTimeoutMs = request.remainingTimeMs(nowMillis())
+                withTimeout(remainingTimeoutMs) {
+                    WorkflowRuntimeDispatcher.dispatch(
+                        request,
+                        registeredRuntimes,
+                        listOf(EntityProposalRuntimeAdapter(registeredRuntimes)),
+                        now = ::nowMillis
+                    )
                 }
             } catch (timeout: TimeoutCancellationException) {
                 WorkflowRuntimeResult.Failed(
                     "DEADLINE_EXCEEDED",
-                    "The deterministic proposal runtime exceeded its bounded deadline.",
+                    "The deterministic proposal runtime exceeded its persisted attempt deadline.",
                     request.deadlineAt
                 )
-            }
-            try {
-                runtimeResult.validateFor(request)
+            } catch (cancelled: WorkflowRuntimeCancelledException) {
+                WorkflowRuntimeResult.Cancelled(
+                    nowMillis().coerceIn(request.attempt.startedAt, request.deadlineAt)
+                )
+            } catch (deadline: WorkflowRuntimeDeadlineExceededException) {
+                WorkflowRuntimeResult.Failed(
+                    "DEADLINE_EXCEEDED",
+                    deadline.message ?: "The deterministic proposal runtime exceeded its persisted attempt deadline.",
+                    request.deadlineAt
+                )
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (error: Throwable) {
-                markEntityProposalAttemptNeedsReview(prepared, error.message ?: "The runtime result failed validation.")
+                markEntityProposalAttemptNeedsReview(prepared, error.message ?: "The app runtime failed.")
                 recordOutcomeProposalProgress(sourceJobId, prepared.jobId, 0, 0, error.message.orEmpty(), verified = false)
                 onComplete(Result.failure(error))
                 return@launch

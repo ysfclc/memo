@@ -310,3 +310,14 @@ A follow-up review found the new persistence-verifier guard referenced `view_mod
 - The source verifier guards the dedicated callback, state-aware action and destination route.
 - PR validation is limited to opened/reopened events; push validation handles subsequent commits and the signed APK stage, avoiding duplicate PR/push builds.
 - Exact-head CI and physical-device navigation acceptance pending.
+
+
+## Update 6 — Shared runtime dispatcher (17 November 2026)
+
+- **Work package:** M3.8.A7 / MEMO-ORCH-001 — extract generic adapter invocation from the first deterministic app capability.
+- **User outcome:** future Memo-owned, browser and native capabilities can share one validated invocation boundary rather than each implementing a different runtime-selection path.
+- **Changed:** WorkflowRuntimeAdapter.kt adds WorkflowRuntimeDispatcher and persisted-deadline remaining-time calculation. MemoWorkspaceViewModel routes the existing app.entities/entity.propose adapter through it and wraps execution in the remaining timeout. WorkflowRuntimeAdapterTest adds dispatcher selection, expired-attempt refusal, post-execution cancellation and invalid-result tests. tools/verify_source.py guards the integration.
+- **Safety boundary:** dispatcher only invokes the exact registered adapter and validates candidate output. It cannot persist records, approve external actions or mark postconditions verified. The current request contract still rejects approval-gated/external-side-effect work.
+- **Verification:** targeted source review completed; exact-head source verifier, JVM tests, lint, APK assembly, emulator upgrade and isolated signing are pending.
+- **Not claimed:** generic DAG scheduling, browser/native adapters, device acceptance, merge or release.
+- **Next:** add a second Memo-owned deterministic capability and its independent read-only postcondition observer through the same dispatcher, then generalize output/verification persistence without bypassing the durable attempt journal.

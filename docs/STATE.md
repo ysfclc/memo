@@ -133,3 +133,11 @@ The first deterministic app capability, app.entities/entity.propose, is connecte
 - **APK:** `app.memo.android.debug`, versionCode `802`, versionName `4.0.0-memo-debug`; artifact [14298479094](https://github.com/ysfclc/memo/actions/runs/44016406556/artifacts/14298479094). SHA-256 `69345f8b680feb0b7cbb59d83161561693e3f1d3f079fe1d52c288c82b224db3`; pinned certificate SHA-256 `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a`.
 - **Data preservation:** API 35 emulator passed install-over-existing and verified app-private data, both real encrypted stores, legacy recovery and corruption tests. This did not use or modify the user's physical phone.
 - **Still open:** physical-device UX and provider-session walkthrough; browser task-context integration; unified workflow execution across browser/native runtimes; the broader automation roadmap. WF-01–WF-13 are not closed by source/CI alone.
+
+
+## 17 November 2026 — shared runtime dispatch boundary (source committed; CI pending)
+
+- Added a shared dispatcher over the existing exact TaskSpec, capability-manifest and persisted-attempt request.
+- The first deterministic app capability now invokes through the dispatcher. The Android host applies the remaining original attempt deadline; the dispatcher checks cancellation/deadline before and after execution and validates the returned candidate.
+- The dispatcher does not persist workspace records, approve actions or verify postconditions. Existing output persistence and independent observer remain separate.
+- No generic DAG executor, browser/native adapter, physical-device acceptance, merge or release is claimed.

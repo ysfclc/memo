@@ -148,6 +148,12 @@ data class WorkflowRuntimeRequest(
         }
     }
 
+    /** Remaining host-enforced timeout, measured from the original persisted attempt start. */
+    fun remainingTimeMs(now: Long): Long {
+        checkActive(now)
+        return deadlineAt - now
+    }
+
     companion object {
         const val MAX_INPUT_CHARS = 64_000
         const val MAX_OUTPUT_CHARS = 256_000
@@ -261,6 +267,30 @@ object WorkflowRuntimeAdapterResolver {
             "The selected runtime adapter does not implement every required TaskSpec capability."
         }
         return adapter
+    }
+}
+
+/**
+ * Shared invocation path for every runtime adapter.
+ *
+ * The host wraps this call in its coroutine timeout using request.remainingTimeMs(now).
+ * Adapters must also call request.checkActive during long-running work. The dispatcher
+ * rechecks cancellation/deadline after execution and validates the returned candidate;
+ * it never persists workspace state or verifies a postcondition.
+ */
+object WorkflowRuntimeDispatcher {
+    suspend fun dispatch(
+        request: WorkflowRuntimeRequest,
+        registeredRuntimes: List<RuntimeDescriptor>,
+        adapters: List<WorkflowRuntimeAdapter>,
+        now: () -> Long = System::currentTimeMillis
+    ): WorkflowRuntimeResult {
+        val adapter = WorkflowRuntimeAdapterResolver.resolve(request, registeredRuntimes, adapters)
+        request.checkActive(now())
+        val result = adapter.execute(request)
+        request.checkActive(now())
+        result.validateFor(request)
+        return result
     }
 }
 

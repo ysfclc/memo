@@ -605,6 +605,8 @@ for marker in (
     "data class WorkflowRuntimeRequest(",
     "capabilityManifestFingerprint(capabilityManifest)",
     "WorkflowRuntimeAdapterResolver",
+    "WorkflowRuntimeDispatcher",
+    "remainingTimeMs(now: Long)",
     "WorkflowCancellationSignal",
     "WorkflowRuntimeDeadlineExceededException",
     "MAX_INPUT_CHARS = 64_000",
@@ -642,6 +644,11 @@ for marker in (
     "approvalGatedTasksCannotBypassTheDedicatedApprovalFlow",
     "runtimeDeadlineAndCancellationAreEnforcedByTheSharedRequest",
     "runtimeOutputIsBoundedAndDoesNotClaimPostconditionVerification",
+    "dispatcherRunsOnlyTheResolvedAdapterAndValidatesItsOutput",
+    "dispatcherRejectsExpiredRequestBeforeInvokingAdapter",
+    "dispatcherRechecksCancellationAfterAdapterReturns",
+    "dispatcherRejectsAdapterResultOutsideTheExactAttemptDeadline",
+    "remainingTimeUsesThePersistedAttemptDeadlineAndRejectsExpiredWork",
 ):
     if marker not in runtime_adapter_tests:
         fail(f"runtime adapter contract regression coverage is missing: {marker}")
@@ -693,7 +700,9 @@ for marker in (
         fail(f"deterministic entity-proposal workflow is missing its persistence/verification guard: {marker}")
 for marker in (
     'EntityProposalWorkflowCoordinator.prepare(',
-    'WorkflowRuntimeAdapterResolver.resolve(',
+    'WorkflowRuntimeDispatcher.dispatch(',
+    'request.remainingTimeMs(nowMillis())',
+    'withTimeout(remainingTimeoutMs)',
     'persistAndAwait()',
     'EntityProposalPostconditionObserver(_snapshot.value).observe(',
     'recordOutcomeProposalProgress(',
