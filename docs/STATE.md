@@ -1,5 +1,5 @@
 # State Ledger
-_Last updated: 2026-11-17 — Product direction and recovered automation feedback are locked in [MEMO_REORIENTATION_AND_FEEDBACK_BASELINE_2026-11-17.md](MEMO_REORIENTATION_AND_FEEDBACK_BASELINE_2026-11-17.md). The implementation and verification details in this ledger remain dated 2026-11-16 unless separately evidenced; no new physical-device acceptance is claimed._
+_Last updated: 2026-11-17 — locked feedback baseline retained; UI design-system and editable prompt checkpoint are build-verified on source commit `090a2de99dacbc65cfcc0351be9333bbf00aa182` by Actions run #802. Physical-device acceptance remains pending._
 
 ## 1. Product snapshot
 
@@ -122,3 +122,14 @@ The first deterministic app capability, app.entities/entity.propose, is connecte
 - Saved workflow definitions are not equivalent to a complete cross-runtime execution history. Live still needs runtime-backed pause/resume/takeover and independent postcondition evidence.
 - Do not claim the end-to-end prompt → enhancement → approval → browser → captured-result journey accepted until the user-facing device walkthrough passes.
 
+
+
+## 11. Latest implementation and verified APK — 17 November 2026
+
+- **Current source commit:** `090a2de99dacbc65cfcc0351be9333bbf00aa182`; branch `stabilization/usable-stage-2026-11-10`; PR #8 remains draft and unmerged.
+- **UI cleanup:** existing `MemoPanel`, `MemoSectionHeading` and `MemoStatusTag` are now the shared primitives for the migrated screens. Duplicate panel/heading implementations were deleted; unique status and empty-state helpers remain.
+- **Prompt flow:** original intent stays visible beside an editable provider prompt. Revision rejects the previous pending ledger record and creates a new exact hash and approval. Editing does not send. Reject, provider skip and whole-run cancel are distinct actions. Prompt UI strings are translated in English, Polish and Turkish.
+- **Automated acceptance:** [Actions run #802](https://github.com/ysfclc/memo/actions/runs/44016406556) passed source verification, localization checks, remote-runner tests, core/app JVM tests, lint, APK assembly, APK identity/signature, API 35 encrypted-store in-place upgrade and isolated pinned signing.
+- **APK:** `app.memo.android.debug`, versionCode `802`, versionName `4.0.0-memo-debug`; artifact [14298479094](https://github.com/ysfclc/memo/actions/runs/44016406556/artifacts/14298479094). SHA-256 `69345f8b680feb0b7cbb59d83161561693e3f1d3f079fe1d52c288c82b224db3`; pinned certificate SHA-256 `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a`.
+- **Data preservation:** API 35 emulator passed install-over-existing and verified app-private data, both real encrypted stores, legacy recovery and corruption tests. This did not use or modify the user's physical phone.
+- **Still open:** physical-device UX and provider-session walkthrough; browser task-context integration; unified workflow execution across browser/native runtimes; the broader automation roadmap. WF-01–WF-13 are not closed by source/CI alone.

@@ -41,7 +41,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: memo-source-import-${{ github.ref }}
+  group: memo-source-import-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:

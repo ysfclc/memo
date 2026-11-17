@@ -264,3 +264,39 @@ A follow-up review found the new persistence-verifier guard referenced `view_mod
 - **Regression tests:** added eligibility tests for pre-submission editing, uncertain/sent states, blank prompts and the 7,900-character provider prompt bound.
 - **First exact-head validation attempt:** [run #44014394039](https://github.com/ysfclc/memo/actions/runs/44014394039) and duplicate [run #44014387122](https://github.com/ysfclc/memo/actions/runs/44014387122) reached source verification but failed one stale guard that expected the old literal dialog label `Reject and stop`. No Gradle unit tests, lint or APK assembly ran on commit `2ee5f8a`. The guard is being updated to require the new reject-to-edit and exact-revision invariants; the failed run is not treated as a code compilation result.
 - **Next:** rerun exact-head source verification, core/app tests, lint and APK build for the corrected verifier. Do not claim physical-device acceptance until the user journey is exercised on the actual phone.
+
+
+## Update 4 — prompt revision, design-system cleanup and exact-head acceptance (17 November 2026)
+
+### Source changes
+- Design-system cleanup commit `49fa0900fdca7ae9b28a32d13d408d4de9528ac0`: five screens migrated to canonical Memo primitives; duplicate panel/heading definitions deleted; unique helpers preserved. Exact-head runs #44012466706 and #44012460788 passed on that cleanup commit.
+- Prompt-editing commit `2ee5f8adce415828a9a1900e9621bcedbda64acd`: pre-submission prompt editing and exact-hash approval revision added.
+- Follow-up verifier commits `2a7186ceec0dacdad97880866cc0921f99558251` and `ad364b3ed62a93f534cdee63f3486142cdde2b6c`: guards strengthened to enforce reject-to-edit, approval supersession, no send from edit and workflow-policy regression tests; a verifier initialization-order error was corrected.
+- Prompt/UX follow-up commit `b428bca63c09ed3ed7240532f2f5bbdf12cd61dd`: Polish/Turkish prompt UI translations added and whole-run cancel made available inside the modal approval checkpoint.
+- Final integration fix `090a2de99dacbc65cfcc0351be9333bbf00aa182`: imported `BrowserWorkflowRecoveryPolicy` into the screen and removed a repeated provider label.
+
+### Validation history and corrections
+- The first prompt-edit attempt failed a source guard because the dialog title had been changed. The stable title was retained and the provider name moved into dialog content.
+- The next source-verifier iteration exposed variable initialization order; corrected before proceeding.
+- The next source check caught untranslated prompt-editor strings; Polish/Turkish translations were added rather than suppressing the localization check.
+- The first Android compile then found the missing `BrowserWorkflowRecoveryPolicy` import. The import was added; the repeated provider label was removed in the same source fix.
+- These failed attempts did not pass app compilation and are not acceptance evidence. The final exact-head run below supersedes them.
+
+### Exact-head verification
+- **Commit:** `090a2de99dacbc65cfcc0351be9333bbf00aa182`.
+- **GitHub Actions run #802:** [44016406556](https://github.com/ysfclc/memo/actions/runs/44016406556) — completed successfully.
+- Source verification and static localization coverage: PASS.
+- Remote runner tests: PASS.
+- Gradle: `BUILD SUCCESSFUL`; `:core:test`, `:app:testDebugUnitTest`, lint, debug APK and Android-test APK assembly: PASS.
+- APK identity and signature verification: PASS.
+- API 35 in-place upgrade/data-preservation: PASS. The emulator installed a higher-version APK over the baseline, verified app-private sentinel and both encrypted Memo stores, and passed legacy recovery/corruption tests.
+- Isolated pinned signing: PASS; certificate SHA-256 `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a`.
+- Signed APK artifact: [Memo-Android-debug-APK, artifact 14298479094](https://github.com/ysfclc/memo/actions/runs/44016406556/artifacts/14298479094).
+- Package `app.memo.android.debug`; versionCode `802`; versionName `4.0.0-memo-debug`.
+- APK SHA-256: `69345f8b680feb0b7cbb59d83161561693e3f1d3f079fe1d52c288c82b224db3`.
+
+### Acceptance boundary and next
+- The shared primitives and prompt editor are source-, JVM-, lint-, APK-, emulator-upgrade- and signing-verified on this exact commit.
+- Physical-device UX and real signed-in provider interaction have not been exercised. WF-01–WF-13 and the full prompt-to-result journey remain OPEN / NOT DEVICE-ACCEPTED.
+- No merge to `main`, production release/deployment, signing identity change or destructive migration occurred.
+- Next increment: task-attached browser runtime/Live presentation, only after this verified handoff and preserving the current four-surface design system.

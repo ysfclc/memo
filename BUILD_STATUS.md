@@ -242,3 +242,18 @@ The action inbox and first top-level stop control are present in source. Static/
 - Required source, runner, JVM, lint and APK identity gates: PASS
 - Signing mode: pinned persistent upload keystore
 - Workflow run: https://github.com/ysfclc/memo/actions/runs/42530596381
+
+
+## Verified source build — 2026-11-17 (run #802)
+
+- Exact source commit: `090a2de99dacbc65cfcc0351be9333bbf00aa182` on `stabilization/usable-stage-2026-11-10`.
+- GitHub Actions: [run #802](https://github.com/ysfclc/memo/actions/runs/44016406556) — **success**.
+- Source verifier and localization coverage: PASS.
+- Remote-runner tests: PASS.
+- `:core:test`, `:app:testDebugUnitTest`, `:app:lintDebug`, `:app:assembleDebug` and Android-test APK assembly: PASS.
+- APK package/version/identity checks: PASS.
+- API 35 install-over-existing upgrade: PASS; app-private sentinel, both encrypted stores, legacy recovery and corruption tests passed.
+- Isolated pinned signing job: PASS; persistent certificate SHA-256 `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a`.
+- Signed APK: package `app.memo.android.debug`, versionCode `802`, versionName `4.0.0-memo-debug`; artifact [Memo-Android-debug-APK #14298479094](https://github.com/ysfclc/memo/actions/runs/44016406556/artifacts/14298479094).
+- APK SHA-256: `69345f8b680feb0b7cbb59d83161561693e3f1d3f079fe1d52c288c82b224db3`.
+- This is automated/emulator/signing acceptance only. Physical-device and real provider-session acceptance remain pending.
