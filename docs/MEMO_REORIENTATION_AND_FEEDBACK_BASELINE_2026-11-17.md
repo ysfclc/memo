@@ -395,3 +395,12 @@ Before each substantial change:
 8. Do not silently begin an unrelated increment or claim device acceptance without evidence.
 
 **Locked north star:** Memo turns human intentions into real, reusable, controlled and verifiable work across the user's own information and authorized digital environments.
+
+## 14. Source records behind this baseline
+
+- [User-facing workflow and control audit](handoff/MEMO_USER_WORKFLOW_CONTROL_AUDIT_2026-11-13.md) — the reported prompt → enhancement → approval → browser → captured-result failure and UWF-01 through UWF-08.
+- [Workflow recovery execution plan](handoff/MEMO_WORKFLOW_RECOVERY_EXECUTION_PLAN_2026-11-13.md) — WF-01 through WF-13, recovery semantics, dependencies and acceptance invariants.
+- [Workflow stabilization progress](handoff/MEMO_STABILIZATION_PROGRESS_2026-11-13.md) — implementation history and the distinction between source changes and unverified runtime behavior.
+- [Feature audit](../FEATURE_AUDIT.md) — what source paths exist, what is partial, and what is not implemented or device-verified.
+- [System architecture map](architecture/MEMO_SYSTEM_ARCHITECTURE.md) — current module/runtime boundaries, data ownership and known migration debt.
+- [Product Contract](MEMO_PRODUCT_CONTRACT.md), [Social Platform Product Spec](SOCIAL_PLATFORM_PRODUCT_SPEC.md), [Requirement Traceability](REQUIREMENT_TRACEABILITY.md) and [TASKS](../TASKS.md) — normative scope, stable requirement IDs and engineering sequence.
