@@ -93,6 +93,14 @@ class MemoLocalizationTest {
     }
 
     @Test
+    fun liveBrowserWorkflowActionsTranslateInPolishAndTurkish() {
+        assertEquals("Sprawdź polecenie i elementy sterujące", MemoLocalization.translate("Review prompt and controls", "PL"))
+        assertEquals("İstemi ve kontrolleri incele", MemoLocalization.translate("Review prompt and controls", "TR"))
+        assertEquals("Otwórz elementy sterujące przepływem", MemoLocalization.translate("Open workflow controls", "PL"))
+        assertEquals("İş akışı kontrollerini aç", MemoLocalization.translate("Open workflow controls", "TR"))
+    }
+
+    @Test
     fun unsupportedLanguageFallsBackToOriginalText() {
         assertEquals("Settings", MemoLocalization.translate("Settings", "XX"))
     }

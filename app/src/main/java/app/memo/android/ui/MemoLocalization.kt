@@ -58,6 +58,8 @@ object MemoLocalization {
         "No active browser workflow" to ("Brak aktywnego przepływu przeglądarki" to "Etkin tarayıcı akışı yok"),
         "When a website or frontier-AI workflow is running, its real session and approval checkpoint will appear here." to ("Gdy działa witryna lub przepływ frontier AI, pojawi się tu rzeczywista sesja i punkt zatwierdzenia." to "Bir web sitesi veya frontier AI akışı çalışırken gerçek oturum ve onay noktası burada görünür."),
         "Inspect live browser" to ("Sprawdź aktywną przeglądarkę" to "Canlı tarayıcıyı incele"),
+        "Review prompt and controls" to ("Sprawdź polecenie i elementy sterujące" to "İstemi ve kontrolleri incele"),
+        "Open workflow controls" to ("Otwórz elementy sterujące przepływem" to "İş akışı kontrollerini aç"),
         "Work in motion" to ("Trwające zadania" to "Devam eden işler"),
         "Resumable plans and tasks that need attention" to ("Wznawialne plany i zadania wymagające uwagi" to "Devam ettirilebilir planlar ve ilgilenilmesi gereken görevler"),
         "Nothing needs attention right now" to ("Nic nie wymaga teraz uwagi" to "Şu anda ilgilenilmesi gereken bir şey yok"),

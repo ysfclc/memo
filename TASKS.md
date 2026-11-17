@@ -585,3 +585,13 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - **APK:** package `app.memo.android.debug`, versionCode `802`, versionName `4.0.0-memo-debug`; [signed artifact 14298479094](https://github.com/ysfclc/memo/actions/runs/44016406556/artifacts/14298479094). APK SHA-256: `69345f8b680feb0b7cbb59d83161561693e3f1d3f079fe1d52c288c82b224db3`. Pinned certificate SHA-256: `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a`.
 - **Upgrade proof:** API 35 emulator installed the higher-version APK over the baseline package and verified app-private data plus both encrypted Memo stores, legacy recovery and corruption handling. No uninstall or clear-data step was used.
 - **Acceptance boundary:** this proves source, automated tests, emulator upgrade and signing—not physical-device behavior or real signed-in provider interaction. WF-01–WF-13 and the end-to-end prompt-to-result journey remain open until required device acceptance is recorded. PR #8 remains draft/unmerged; `main` is untouched.
+
+
+## 17 November 2026 — Live browser workflow re-entry
+
+- Live's active browser card now returns to the existing task workflow workspace instead of routing to generic browsing. The existing `BrowserSession`, prompt, approval ledger, provider page and recovery controls are reused.
+- The generic top-level Browser session action remains a distinct way to start ordinary browsing.
+- The active card is state-aware: “Review prompt and controls” while prompt approval is waiting; otherwise “Open workflow controls”. Polish and Turkish translations and unit coverage are included.
+- The source verifier checks both the Live control and the route to `ToolSection.WORKFLOWS`.
+- CI runs PR validation on open/reopen only; subsequent branch updates run the push workflow, which includes the isolated signed APK stage. This prevents duplicate unsigned PR builds from racing/cancelling signed push builds.
+- Exact-head CI and device acceptance pending.

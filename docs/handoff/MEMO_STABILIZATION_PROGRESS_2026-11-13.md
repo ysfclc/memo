@@ -300,3 +300,13 @@ A follow-up review found the new persistence-verifier guard referenced `view_mod
 - Physical-device UX and real signed-in provider interaction have not been exercised. WF-01–WF-13 and the full prompt-to-result journey remain OPEN / NOT DEVICE-ACCEPTED.
 - No merge to `main`, production release/deployment, signing identity change or destructive migration occurred.
 - Next increment: task-attached browser runtime/Live presentation, only after this verified handoff and preserving the current four-surface design system.
+
+
+## Update 5 — Live browser workflow re-entry (17 November 2026)
+
+- Live's active browser session card now routes to the existing `AppTab.BROWSER / ToolSection.WORKFLOWS` screen, not the generic browser. This restores access to the task prompt, approval checkpoint, browser pane and recovery controls without creating another session or WebView.
+- The ordinary Browser session action at the top of Live remains unchanged.
+- The active card labels its action “Review prompt and controls” while prompt approval is pending, and “Open workflow controls” otherwise. Both are included in Polish/Turkish localization and unit tests.
+- The source verifier guards the dedicated callback, state-aware action and destination route.
+- PR validation is limited to opened/reopened events; push validation handles subsequent commits and the signed APK stage, avoiding duplicate PR/push builds.
+- Exact-head CI and physical-device navigation acceptance pending.

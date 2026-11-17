@@ -38,6 +38,7 @@ fun LiveWorkspaceScreen(
     snapshot: AppSnapshot,
     browserState: BrowserWorkflowUiState,
     onOpenBrowser: () -> Unit,
+    onOpenBrowserWorkflow: () -> Unit,
     onOpenApps: () -> Unit,
     onOpenApprovals: () -> Unit,
     onOpenWork: () -> Unit,
@@ -95,7 +96,15 @@ fun LiveWorkspaceScreen(
                         }
                     }
                     Text(browserState.message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    TextButton(onClick = onOpenBrowser) { Text("Inspect live browser") }
+                    OutlinedButton(
+                        onClick = onOpenBrowserWorkflow,
+                        modifier = Modifier.fillMaxWidth().height(MemoTokens.Spacing.minimumTouch)
+                    ) {
+                        Text(
+                            if (browserState.awaitingPromptApproval) "Review prompt and controls"
+                            else "Open workflow controls"
+                        )
+                    }
                 } else {
                     EmptyState(
                         title = "No active browser workflow",

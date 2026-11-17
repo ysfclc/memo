@@ -185,6 +185,10 @@ for marker in ("combinesWorkspaceRecordsIntoOneNewestFirstTimeline", "legacyActi
 if "LiveTimelineProjector.build(snapshot)" not in live_screen or "Workspace timeline" not in live_screen:
     fail("Live does not render the durable cross-workspace timeline")
 print("PASS: Live combines durable activity, jobs, checkpoints, tasks, action audit and evidence records")
+for marker in ("onOpenBrowserWorkflow", "browserState.awaitingPromptApproval", "Review prompt and controls", "Open workflow controls"):
+    if marker not in live_screen:
+        fail(f"Live active browser workflow re-entry is missing: {marker}")
+
 
 studio_source = (ROOT / "app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt").read_text()
 artifact_factory = (ROOT / "core/src/main/kotlin/app/memo/android/data/WorkArtifactFactory.kt").read_text()
@@ -372,6 +376,11 @@ for marker in ('sourceConversationId: String = ""', 'sourceConversationId = sour
 for marker in ("Start with Memo", "onInitialPromptConsumed", "onOpenCouncil", "onStartConversation", "onStartConversation: (String, Boolean) -> Boolean"):
     if marker not in chat:
         fail(f"Talk entry/composer is missing: {marker}")
+live_route = home.split("AppTab.LIVE -> LiveWorkspaceScreen(", 1)[1].split("AppTab.STUDIO ->", 1)[0]
+if "onOpenBrowserWorkflow = { tab = AppTab.BROWSER; toolSection = ToolSection.WORKFLOWS }" not in live_route:
+    fail("Live active browser must reopen the existing workflow workspace")
+if "liveBrowserWorkflowActionsTranslateInPolishAndTurkish" not in localization_test.read_text():
+    fail("Live workflow re-entry must have Polish/Turkish localization regression coverage")
 print("PASS: one Memo Activity, universal Talk intent router, linked source conversations, four product surfaces, and safe draft handoff")
 
 # Estimate coverage of the static string literals passed to the custom UI Text wrapper.

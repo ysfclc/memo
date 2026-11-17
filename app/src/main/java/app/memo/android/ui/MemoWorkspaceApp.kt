@@ -584,6 +584,7 @@ fun MemoWorkspaceApp(
                         snapshot = snapshot,
                         browserState = browser.workflowState,
                         onOpenBrowser = { tab = AppTab.BROWSER; toolSection = ToolSection.BROWSER },
+                        onOpenBrowserWorkflow = { tab = AppTab.BROWSER; toolSection = ToolSection.WORKFLOWS },
                         onOpenApps = { tab = AppTab.APPS },
                         onOpenApprovals = { tab = AppTab.APPROVALS },
                         onOpenWork = { tab = AppTab.WORK },

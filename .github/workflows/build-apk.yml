@@ -27,6 +27,9 @@ name: Memo — Import source ZIP and build Android APK
       - 'settings.gradle'
       - 'settings.gradle.kts'
   pull_request:
+    types:
+      - opened
+      - reopened
     branches:
       - main
   workflow_dispatch:
