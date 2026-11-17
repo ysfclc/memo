@@ -1,5 +1,5 @@
 # State Ledger
-_Last updated: 2026-11-16 — M3.8.A10 deterministic app.entities proposal workflow passed exact-head CI #767, including Android build, unit tests and API 35 install-over-existing encrypted-store preservation. PR #8 remains draft/unmerged; physical-device acceptance and final signed APK handoff remain pending._
+_Last updated: 2026-11-17 — Product direction and recovered automation feedback are locked in [MEMO_REORIENTATION_AND_FEEDBACK_BASELINE_2026-11-17.md](MEMO_REORIENTATION_AND_FEEDBACK_BASELINE_2026-11-17.md). The implementation and verification details in this ledger remain dated 2026-11-16 unless separately evidenced; no new physical-device acceptance is claimed._
 
 ## 1. Product snapshot
 
