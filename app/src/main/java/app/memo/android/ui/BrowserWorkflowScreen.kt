@@ -63,8 +63,6 @@ import app.memo.android.data.MemoWorkspaceViewModel
 import app.memo.android.data.FrontierResponseCaptureRequest
 import app.memo.android.data.FrontierResponseCaptureStatus
 import app.memo.android.data.nowMillis
-import app.memo.android.ui.components.SectionHeading
-import app.memo.android.ui.components.SurfaceCard
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -633,8 +631,8 @@ fun BrowserWorkflowScreen(
             modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 14.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            SectionHeading("Frontier workflows", "Local AI structures the intent; frontier models consult, challenge and contribute through their actual websites.")
-            SurfaceCard {
+            MemoSectionHeading("Frontier workflows", supporting = "Local AI structures the intent; frontier models consult, challenge and contribute through their actual websites.")
+            MemoPanel {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("Saved workflows", style = MaterialTheme.typography.titleSmall)
                     if (savedWorkflows.isEmpty()) {
@@ -652,7 +650,7 @@ fun BrowserWorkflowScreen(
                     }
                 }
             }
-            SurfaceCard {
+            MemoPanel {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("Workflow definition", style = MaterialTheme.typography.titleMedium)
                     OutlinedTextField(value = title, onValueChange = { title = it.take(160) }, label = { Text("Workflow name") }, singleLine = true, modifier = Modifier.fillMaxWidth())
@@ -735,7 +733,7 @@ fun BrowserWorkflowScreen(
                     }
                 }
             }
-            SurfaceCard {
+            MemoPanel {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Live execution", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))

@@ -155,9 +155,7 @@ import app.memo.android.data.TaskRecord
 import app.memo.android.data.TaskStatus
 import app.memo.android.ui.components.DotLabel
 import app.memo.android.ui.components.EmptyState
-import app.memo.android.ui.components.SectionHeading
 import app.memo.android.ui.components.StatusPill
-import app.memo.android.ui.components.SurfaceCard
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -968,7 +966,7 @@ private fun VaultWarning(
     onImport: () -> Unit,
     onImportEncrypted: () -> Unit
 ) {
-    SurfaceCard(modifier = Modifier.padding(horizontal = MemoTokens.Spacing.md, vertical = MemoTokens.Spacing.xs)) {
+    MemoPanel(modifier = Modifier.padding(horizontal = MemoTokens.Spacing.md, vertical = MemoTokens.Spacing.xs)) {
         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
             Icon(Icons.Rounded.Fingerprint, contentDescription = null, tint = MaterialTheme.colorScheme.error)
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -1079,7 +1077,7 @@ private fun HomeScreen(
                     val entities = snapshot.entities.filter { item -> item.reviewStatus !in setOf("REJECTED", "MERGED") && (item.title.contains(query, true) || item.type.contains(query, true) || item.description.contains(query, true) || item.properties.values.any { it.contains(query, true) }) }.take(3)
                     val jobs = snapshot.jobs.filter { item -> item.title.contains(query, true) || item.goal.contains(query, true) || item.steps.any { it.title.contains(query, true) || it.detail.contains(query, true) } }.take(3)
                     val evidence = snapshot.evidence.filter { item -> item.title.contains(query, true) || item.summary.contains(query, true) || item.content.contains(query, true) || item.sourceUrl.contains(query, true) }.take(3)
-                    SurfaceCard {
+                    MemoPanel {
                         Text("Local search · ${conversations.size + entities.size + jobs.size + evidence.size} result(s)", style = MaterialTheme.typography.titleSmall)
                         if (conversations.isEmpty() && entities.isEmpty() && jobs.isEmpty() && evidence.isEmpty()) {
                             Text("No matching records. Memo searches only information already saved to this workspace; it does not search the web from this field.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -1121,7 +1119,7 @@ private fun HomeScreen(
             }
         }
         item {
-            SurfaceCard {
+            MemoPanel {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Box(
                         modifier = Modifier.size(42.dp).clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.primaryContainer),
@@ -1190,7 +1188,7 @@ private fun HomeScreen(
                 }
             }
         }
-        item { SectionHeading("Your world, in one place", "Durable records and evidence—not just chat history") }
+        item { MemoSectionHeading("Your world, in one place", supporting = "Durable records and evidence—not just chat history") }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.xs), modifier = Modifier.fillMaxWidth()) {
                 MetricCard("Conversations", snapshot.conversations.size.toString(), "ideas and decisions", Modifier.weight(1f))
@@ -1199,7 +1197,7 @@ private fun HomeScreen(
             }
         }
         item {
-            SurfaceCard {
+            MemoPanel {
                 Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
                     Icon(
                         if (reviewCount > 0) Icons.Rounded.Tune else Icons.Rounded.CheckCircle,
@@ -1225,9 +1223,9 @@ private fun HomeScreen(
             }
         }
         if (latestConversation != null) {
-            item { SectionHeading("Pick up where you left off", "Your latest conversation keeps its history and source labels") }
+            item { MemoSectionHeading("Pick up where you left off", supporting = "Your latest conversation keeps its history and source labels") }
             item {
-                SurfaceCard(modifier = Modifier.clickable { onOpenConversation(latestConversation.id) }) {
+                MemoPanel(modifier = Modifier.clickable { onOpenConversation(latestConversation.id) }) {
                     Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
                         Icon(Icons.Rounded.ChatBubbleOutline, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 2.dp))
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -1247,12 +1245,12 @@ private fun HomeScreen(
             }
         }
         if (attentionTasks.isNotEmpty()) {
-            item { SectionHeading("Work in motion", "Resume, inspect or review before continuing") }
+            item { MemoSectionHeading("Work in motion", supporting = "Resume, inspect or review before continuing") }
             items(attentionTasks, key = { it.id }) { task -> TaskCompactCard(task = task, onRun = { onResumeTask(task) }) }
         }
-        item { SectionHeading("Tools around your work", "Specialist capabilities support the workspace; they are not separate sources of truth") }
+        item { MemoSectionHeading("Tools around your work", supporting = "Specialist capabilities support the workspace; they are not separate sources of truth") }
         item {
-            SurfaceCard(modifier = Modifier.clickable(onClick = onTools)) {
+            MemoPanel(modifier = Modifier.clickable(onClick = onTools)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
                     Icon(Icons.Rounded.Public, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -1264,7 +1262,7 @@ private fun HomeScreen(
             }
         }
         item {
-            SurfaceCard {
+            MemoPanel {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
                     Icon(Icons.Rounded.Fingerprint, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -1284,7 +1282,7 @@ private fun HomeScreen(
                 }
             }
         }
-        item { SectionHeading("Recent activity", "A local trail of what happened") }
+        item { MemoSectionHeading("Recent activity", supporting = "A local trail of what happened") }
         if (activity.isEmpty()) item { EmptyState("Nothing recorded yet", "As Memo captures sources and completes work, the activity trail will show observable events—not invented progress.") }
         else items(activity, key = { it.id }) { event -> ActivityLine(event) }
         item { Spacer(Modifier.height(4.dp)) }
@@ -1299,7 +1297,7 @@ private fun ActivityLine(event: ActivityRecord) {
         "SUCCESS" -> MaterialTheme.colorScheme.tertiary
         else -> MaterialTheme.colorScheme.primary
     }
-    SurfaceCard {
+    MemoPanel {
         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
             Icon(
                 imageVector = if (event.level.equals("ERROR", true)) Icons.Rounded.StopCircle else Icons.Rounded.CheckCircle,
@@ -1317,7 +1315,7 @@ private fun ActivityLine(event: ActivityRecord) {
 
 @Composable
 private fun MetricCard(title: String, value: String, hint: String, modifier: Modifier = Modifier) {
-    SurfaceCard(modifier) {
+    MemoPanel(modifier) {
         Text(value, style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
         Spacer(Modifier.height(2.dp))
         Text(title, style = MaterialTheme.typography.titleSmall)
@@ -1327,7 +1325,7 @@ private fun MetricCard(title: String, value: String, hint: String, modifier: Mod
 
 @Composable
 private fun QuickSiteCard(site: QuickSite, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    SurfaceCard(modifier = modifier.clickable(onClick = onClick)) {
+    MemoPanel(modifier = modifier.clickable(onClick = onClick)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.xs)) {
             Icon(Icons.Rounded.Public, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
             Text(site.label, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -1339,7 +1337,7 @@ private fun QuickSiteCard(site: QuickSite, modifier: Modifier = Modifier, onClic
 
 @Composable
 private fun TaskCompactCard(task: TaskRecord, onRun: () -> Unit) {
-    SurfaceCard {
+    MemoPanel {
         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
             Icon(Icons.Rounded.TaskAlt, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 2.dp))
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -1423,7 +1421,7 @@ private fun BrowserScreen(
             OutlinedButton(onClick = { onQuickTask(TaskKind.EXTRACT_LINKS, "") }, enabled = browser.currentUrl.isNotBlank() && !browser.isLoading, modifier = Modifier.weight(1f).height(MemoTokens.Spacing.minimumTouch), contentPadding = PaddingValues(horizontal = 8.dp)) { Icon(Icons.Rounded.Link, contentDescription = null); Spacer(Modifier.width(4.dp)); Text("Links") }
         }
         if (browser.pendingTask != null) {
-            SurfaceCard {
+            MemoPanel {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text("Task ready", style = MaterialTheme.typography.titleSmall)
@@ -1438,7 +1436,7 @@ private fun BrowserScreen(
             }
         }
         if (browser.preparedPrompt.isNotBlank()) {
-            SurfaceCard {
+            MemoPanel {
                 Text("Prompt prepared · not sent", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
                 Text("The prompt is in the website composer. Review it before sending.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (browser.sendMessage.isNotBlank()) Text(browser.sendMessage, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -1526,7 +1524,7 @@ private fun TasksScreen(
     }
     Column(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.md), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
-            SectionHeading("Browser tasks", "Small, inspectable actions that you can resume")
+            MemoSectionHeading("Browser tasks", supporting = "Small, inspectable actions that you can resume")
             Button(onClick = { showCreate = true }, modifier = Modifier.fillMaxWidth().height(MemoTokens.Spacing.minimumTouch)) {
                 Icon(Icons.Rounded.Add, contentDescription = null); Spacer(Modifier.width(8.dp)); Text("Create task")
             }
@@ -1567,7 +1565,7 @@ private fun TasksScreen(
 
 @Composable
 private fun TaskCard(task: TaskRecord, active: Boolean, onRun: () -> Unit, onDelete: () -> Unit) {
-    SurfaceCard {
+    MemoPanel {
         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
             Box(modifier = Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
                 Icon(Icons.Rounded.TaskAlt, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
@@ -1651,7 +1649,7 @@ private fun EvidenceScreen(evidence: List<EvidenceRecord>, onSelect: (EvidenceRe
     }
     Column(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.md), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
-            SectionHeading("Evidence ledger", "Captured content keeps its source and collection context")
+            MemoSectionHeading("Evidence ledger", supporting = "Captured content keeps its source and collection context")
             Row(horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.xs), verticalAlignment = Alignment.CenterVertically) {
                 OutlinedTextField(
                     value = search, onValueChange = { search = it }, modifier = Modifier.weight(1f), singleLine = true,
@@ -1672,7 +1670,7 @@ private fun EvidenceScreen(evidence: List<EvidenceRecord>, onSelect: (EvidenceRe
 
 @Composable
 private fun EvidenceCard(item: EvidenceRecord, onSelect: () -> Unit, onDelete: () -> Unit) {
-    SurfaceCard {
+    MemoPanel {
         Column(modifier = Modifier.fillMaxWidth().clickable(onClick = onSelect), verticalArrangement = Arrangement.spacedBy(7.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Surface(color = MaterialTheme.colorScheme.tertiaryContainer, shape = RoundedCornerShape(8.dp)) {
@@ -1828,9 +1826,9 @@ private fun SettingsScreen(
         }
     }
     LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(MemoTokens.Spacing.pageMargin), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.md)) {
-        item { SectionHeading("Settings", "Privacy, appearance and your local workspace") }
+        item { MemoSectionHeading("Settings", supporting = "Privacy, appearance and your local workspace") }
         item {
-            SurfaceCard {
+            MemoPanel {
                 Text("Language", style = MaterialTheme.typography.titleLarge)
                 Text("Choose the language for Memo's interface.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(MemoTokens.Spacing.sm))
@@ -1846,7 +1844,7 @@ private fun SettingsScreen(
             }
         }
         item {
-            SurfaceCard {
+            MemoPanel {
                 Text("Notifications & reminders", style = MaterialTheme.typography.titleLarge)
                 Text("Optional local notifications. Reminder text stays generic on the lock screen; Memo does not need a push-notification server.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(MemoTokens.Spacing.sm))
@@ -1893,7 +1891,7 @@ private fun SettingsScreen(
             }
         }
         item {
-            SurfaceCard {
+            MemoPanel {
                 Text("Appearance", style = MaterialTheme.typography.titleLarge)
                 Text("Choose how Memo should look. System follows Android settings.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(MemoTokens.Spacing.sm))
@@ -1909,7 +1907,7 @@ private fun SettingsScreen(
             }
         }
         item {
-            SurfaceCard {
+            MemoPanel {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Rounded.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(26.dp))
                     Spacer(Modifier.width(MemoTokens.Spacing.sm))
@@ -1923,7 +1921,7 @@ private fun SettingsScreen(
             }
         }
         item {
-            SurfaceCard {
+            MemoPanel {
                 Text("Backup and restore", style = MaterialTheme.typography.titleLarge)
                 Text("Plain JSON is readable by anyone with the file. Prefer a passphrase-encrypted backup for moving personal workspace data between devices. Restore replaces this device's workspace after confirmation.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(MemoTokens.Spacing.sm))
@@ -1937,7 +1935,7 @@ private fun SettingsScreen(
             }
         }
         item {
-            SurfaceCard {
+            MemoPanel {
                 Text("Automation boundaries", style = MaterialTheme.typography.titleLarge)
                 Text("Council roles organize model work; they do not grant independent authority. Outputs remain inspectable, disagreements are preserved, and you own the final decision. Browser actions remain bounded to user-visible HTTPS pages and do not bypass sign-in, certificate errors or access controls.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(MemoTokens.Spacing.sm))

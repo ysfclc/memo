@@ -132,3 +132,11 @@ The header becomes context-aware instead of repeating a generic Memo bar. Lock/p
 - [ ] Verify Polish/Turkish strings, large font scale, keyboard insets, edge-to-edge and reduced motion on a physical Android device.
 
 **Do not claim the design system is complete because the token file exists.** Completion requires reusable components, screen migration, visual review and device verification. Preserve existing navigation, encrypted storage, app identity, signing and migrations throughout.
+
+
+## 17 November 2026 — canonical primitive consolidation
+
+- Migrated screen call sites from the parallel `components.SurfaceCard` and `components.SectionHeading` implementations to the shared `MemoPanel` and `MemoSectionHeading` primitives.
+- Removed duplicate panel/heading implementations and routed task status rendering through the shared `MemoStatusTag` semantic system. Kept only unique helpers (`DotLabel`, `EmptyState` and the domain-aware task-status mapping).
+- `MemoPanel` now exposes `ColumnScope` so existing nested Compose layouts can reuse it without changing their layout semantics.
+- This is source-level consolidation. Visual review across light/dark themes, compact devices, large text and a physical Android device remains an acceptance requirement; no visual/device acceptance is claimed by this note.

@@ -121,7 +121,6 @@ import app.memo.android.orchestration.IntentPlanner
 import app.memo.android.orchestration.WorkflowTaskProposalParser
 import app.memo.android.ui.components.DotLabel
 import app.memo.android.ui.components.EmptyState
-import app.memo.android.ui.components.SurfaceCard
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -2502,7 +2501,7 @@ fun MoreWorkspaceScreen(
             Text("Model management, multi-model workflows, workspace security and the actual capabilities exposed to Memo jobs.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         item {
-            SurfaceCard {
+            MemoPanel {
                 Text("Workspaces", style = MaterialTheme.typography.titleLarge)
                 MoreAction("Apps & automation", "Open installed apps, create versioned flows and inspect run evidence", Icons.Rounded.Apps, onOpenApps)
                 MoreAction("Action approval inbox", "Review exact outbound content and actions with uncertain outcomes", Icons.Rounded.Security, onOpenApprovals)
@@ -2512,7 +2511,7 @@ fun MoreWorkspaceScreen(
             }
         }
         item {
-            SurfaceCard {
+            MemoPanel {
                 Text("Runtime registry", style = MaterialTheme.typography.titleLarge)
                 Text("App and browser capabilities are deliberately registered separately. A capability is available only to the runtime that declares it.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 runtimes.forEach { runtime ->

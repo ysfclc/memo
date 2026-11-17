@@ -72,8 +72,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import app.memo.android.ui.components.EmptyState
-import app.memo.android.ui.components.SectionHeading
-import app.memo.android.ui.components.SurfaceCard
 import com.synthos.runtime.data.RunRecord
 import com.synthos.runtime.data.SynthStore
 import com.synthos.runtime.data.Workflow
@@ -194,13 +192,10 @@ fun AppsWorkspaceScreen(onShowMessage: (String) -> Unit) {
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
-            SectionHeading(
-                "Apps & automation",
-                "Open real Android apps, build reusable workflows and verify visible outcomes. Nothing runs until you start it."
-            )
+            MemoSectionHeading("Apps & automation", supporting = "Open real Android apps, build reusable workflows and verify visible outcomes. Nothing runs until you start it.")
         }
         item {
-            SurfaceCard {
+            MemoPanel {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Surface(
                         color = if (accessibilityConnected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.errorContainer,
@@ -253,7 +248,7 @@ fun AppsWorkspaceScreen(onShowMessage: (String) -> Unit) {
         }
         if (loadError.isNotBlank()) {
             item {
-                SurfaceCard {
+                MemoPanel {
                     Text("Workflow storage issue", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
                     Text(loadError, style = MaterialTheme.typography.bodySmall)
                     OutlinedButton(onClick = { loadError = ""; refreshNow() }) { Icon(Icons.Rounded.Refresh, null); Text("Retry") }
@@ -262,7 +257,7 @@ fun AppsWorkspaceScreen(onShowMessage: (String) -> Unit) {
         }
         if (lastRemoteJobId.isNotBlank()) {
             item {
-                SurfaceCard {
+                MemoPanel {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text("Last guest run", style = MaterialTheme.typography.titleMedium)
@@ -358,7 +353,7 @@ fun AppsWorkspaceScreen(onShowMessage: (String) -> Unit) {
             items(runs.take(12), key = { it.id }) { run -> RunHistoryCard(run = run, onClick = { runDetails = run }) }
         }
         item {
-            SurfaceCard {
+            MemoPanel {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text("Installed apps", style = MaterialTheme.typography.titleMedium)
@@ -539,7 +534,7 @@ private fun NativeWorkflowCard(
     onHistory: () -> Unit,
     onDelete: () -> Unit
 ) {
-    SurfaceCard {
+    MemoPanel {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
                 Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(10.dp), modifier = Modifier.size(40.dp)) {
@@ -578,7 +573,7 @@ private fun NativeWorkflowCard(
 
 @Composable
 private fun RunHistoryCard(run: RunRecord, onClick: () -> Unit) {
-    SurfaceCard {
+    MemoPanel {
         Column(Modifier.fillMaxWidth().clickable(onClick = onClick), verticalArrangement = Arrangement.spacedBy(5.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(run.workflowName, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))

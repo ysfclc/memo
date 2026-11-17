@@ -80,8 +80,6 @@ import app.memo.android.data.CouncilTurnRecord
 import app.memo.android.data.EvidenceRecord
 import app.memo.android.ui.components.DotLabel
 import app.memo.android.ui.components.EmptyState
-import app.memo.android.ui.components.SectionHeading
-import app.memo.android.ui.components.SurfaceCard
 import java.util.Locale
 
 private data class CouncilStarter(val label: String, val template: String)
@@ -150,7 +148,7 @@ fun CouncilScreen(
             Text("Run a traceable workflow across models: independent analysis, handoffs, criticism, debate, or a specialist panel. The final synthesis keeps disagreement visible.", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
-        SurfaceCard {
+        MemoPanel {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Icon(Icons.Rounded.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
                 Column(modifier = Modifier.weight(1f)) {
@@ -190,7 +188,7 @@ fun CouncilScreen(
             }
         }
 
-        SurfaceCard {
+        MemoPanel {
             Text("Your task", style = MaterialTheme.typography.titleLarge)
             Text("Start with a task frame, then edit it to fit the actual problem.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Row(
@@ -311,12 +309,12 @@ fun CouncilScreen(
 
         val visibleTurns = if (state.running) state.activeTurns else displayedRun?.turns.orEmpty()
         if (visibleTurns.isNotEmpty()) {
-            SectionHeading(if (state.running) "Live Council trace" else "Council trace", "Each contribution is preserved under its model and role")
+            MemoSectionHeading(if (state.running) "Live Council trace" else "Council trace", supporting = "Each contribution is preserved under its model and role")
             visibleTurns.forEachIndexed { index, turn -> TurnCard(index + 1, turn) }
         }
 
         if (!state.running && displayedRun != null) {
-            SurfaceCard {
+            MemoPanel {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Rounded.Security, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(25.dp))
                     Spacer(Modifier.width(8.dp))
@@ -348,9 +346,9 @@ fun CouncilScreen(
         }
 
         if (snapshot.councilRuns.isNotEmpty()) {
-            SectionHeading("Recent runs", "Open a prior trace and its recorded decision")
+            MemoSectionHeading("Recent runs", supporting = "Open a prior trace and its recorded decision")
             snapshot.councilRuns.take(12).forEach { run ->
-                SurfaceCard(modifier = Modifier.fillMaxWidth().clickable { selectedRunId = run.id }) {
+                MemoPanel(modifier = Modifier.fillMaxWidth().clickable { selectedRunId = run.id }) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text(run.prompt, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -370,7 +368,7 @@ fun CouncilScreen(
 @Composable
 private fun TurnCard(index: Int, turn: CouncilTurnRecord) {
     var showInput by remember(turn.id) { mutableStateOf(false) }
-    SurfaceCard {
+    MemoPanel {
         Row(verticalAlignment = Alignment.Top) {
             Surface(color = if (turn.status == "FAILED") MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(10.dp), modifier = Modifier.size(34.dp)) {
                 Box(contentAlignment = Alignment.Center) { Text(index.toString(), style = MaterialTheme.typography.titleSmall, color = if (turn.status == "FAILED") MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer) }
@@ -419,7 +417,7 @@ fun ModelsScreen(runtime: AiRuntimeViewModel, onShowMessage: (String) -> Unit) {
             Text("Choose the intelligence. Keep control.", style = MaterialTheme.typography.headlineLarge)
             Text("Model runtimes are replaceable. Local weights remain on this phone; cloud access is configured separately and requires a per-run permission.", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        SurfaceCard {
+        MemoPanel {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Rounded.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(25.dp))
                 Spacer(Modifier.width(8.dp))
@@ -457,7 +455,7 @@ fun ModelsScreen(runtime: AiRuntimeViewModel, onShowMessage: (String) -> Unit) {
             Text("Compatibility note: the built-in models use Google LiteRT-LM. A random GGUF file or an Ollama model folder cannot be loaded directly in this runtime; import a compatible .litertlm artifact.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
-        SurfaceCard {
+        MemoPanel {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Rounded.Cloud, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(25.dp))
                 Spacer(Modifier.width(8.dp))
@@ -508,7 +506,7 @@ private fun ModelCatalogCard(
     onCancel: () -> Unit,
     onDelete: () -> Unit
 ) {
-    SurfaceCard {
+    MemoPanel {
         Row(verticalAlignment = Alignment.Top) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(entry.name, style = MaterialTheme.typography.titleMedium)
