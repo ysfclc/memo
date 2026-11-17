@@ -964,7 +964,18 @@ fun BrowserWorkflowScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text("Provider · ${workflowState.currentProviderName}", style = MaterialTheme.typography.labelLarge)
-                    Text("Destination · ${workflowState.approvalDestination.ifBlank { "Not yet approved" }}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Provider", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(workflowState.currentProviderName, style = MaterialTheme.typography.bodySmall)
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Destination", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            workflowState.approvalDestination.ifBlank { "Not yet approved" },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                     if (hasCurrentApproval && !promptHasChanges) {
                         Text("Payload fingerprint · ${workflowState.currentPromptHash.take(20)}…", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -1031,33 +1042,46 @@ fun BrowserWorkflowScreen(
                 }
             },
             dismissButton = {
-                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    if (showApprovalCheckpoint && hasCurrentApproval) {
-                        TextButton(onClick = {
-                            if (browser.rejectCurrentPrompt()) {
-                                showPromptEditor = true
-                                onShowMessage("Prompt rejected. Nothing was sent. Edit it or skip this provider.")
-                            } else {
-                                onShowMessage("Memo could not reject the pending prompt safely.")
-                            }
-                        }) { Text("Reject · return to editing") }
-                    } else {
-                        TextButton(onClick = { showPromptEditor = false }) { Text("Close editor") }
-                    }
-                    if (!workflowState.sentForCurrentStep && !workflowState.submissionUncertain) {
-                        TextButton(onClick = {
-                            if (workflowState.awaitingPromptApproval) {
-                                if (browser.skipCurrentProvider()) {
-                                    showPromptEditor = false
-                                    onShowMessage("Provider skipped. Earlier captured responses remain saved.")
+                Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        if (showApprovalCheckpoint && hasCurrentApproval) {
+                            TextButton(onClick = {
+                                if (browser.rejectCurrentPrompt()) {
+                                    showPromptEditor = true
+                                    onShowMessage("Prompt rejected. Nothing was sent. Edit it or skip this provider.")
                                 } else {
-                                    onShowMessage("Memo cannot safely skip this provider in the current state.")
+                                    onShowMessage("Memo could not reject the pending prompt safely.")
                                 }
-                            } else {
-                                showPromptEditor = false
-                            }
-                        }) { Text(if (workflowState.awaitingPromptApproval) "Skip provider" else "Close") }
+                            }) { Text("Reject · return to editing") }
+                        } else {
+                            TextButton(onClick = { showPromptEditor = false }) { Text("Close editor") }
+                        }
+                        if (!workflowState.sentForCurrentStep && !workflowState.submissionUncertain) {
+                            TextButton(onClick = {
+                                if (workflowState.awaitingPromptApproval) {
+                                    if (browser.skipCurrentProvider()) {
+                                        showPromptEditor = false
+                                        onShowMessage("Provider skipped. Earlier captured responses remain saved.")
+                                    } else {
+                                        onShowMessage("Memo cannot safely skip this provider in the current state.")
+                                    }
+                                } else {
+                                    showPromptEditor = false
+                                }
+                            }) { Text(if (workflowState.awaitingPromptApproval) "Skip provider" else "Close") }
+                        }
                     }
+                    TextButton(onClick = {
+                        pendingApproval?.let { proposal ->
+                            viewModel.rejectExternalAction(
+                                proposal.id,
+                                "User cancelled the complete consultation before provider submission."
+                            )
+                        }
+                        showPromptEditor = false
+                        browser.stopBrowserWorkflow()
+                        onShowMessage("Consultation cancelled. The pending provider prompt was not sent.")
+                    }) { Text("Cancel entire run") }
                 }
             }
         )
