@@ -37,6 +37,18 @@ enum class BrowserWorkflowStatus {
 
 object BrowserWorkflowRecoveryPolicy {
     const val MIN_MANUAL_RESPONSE_LENGTH = 8
+    const val MAX_PROVIDER_PROMPT_LENGTH = 7_900
+
+    fun canEditPreparedPrompt(
+        status: BrowserWorkflowStatus,
+        sentForCurrentStep: Boolean,
+        submissionUncertain: Boolean,
+        prompt: String
+    ): Boolean = status == BrowserWorkflowStatus.WAITING_FOR_USER &&
+        !sentForCurrentStep &&
+        !submissionUncertain &&
+        prompt.trim().isNotEmpty() &&
+        prompt.trim().length <= MAX_PROVIDER_PROMPT_LENGTH
 
     fun canCaptureManually(
         status: BrowserWorkflowStatus,
@@ -112,6 +124,8 @@ data class BrowserWorkflowUiState(
 
 class BrowserWorkflowCallbacks(
     val onApprovalRequired: (index: Int, provider: BrowserModelProvider, prompt: String, destination: String, contentHash: String) -> Unit = { _, _, _, _, _ -> },
+    /** Must reject the still-pending old payload before a revised prompt can be proposed. */
+    val onApprovalSuperseded: (oldContentHash: String, destination: String) -> Boolean = { _, _ -> false },
     val onStepStarted: (index: Int, provider: BrowserModelProvider, prompt: String) -> Unit = { _, _, _ -> },
     val onStepCompleted: (index: Int, response: BrowserModelResponse, complete: (persisted: Boolean, message: String) -> Unit) -> Unit =
         { _, _, complete -> complete(false, "No durable response-capture handler is connected.") },

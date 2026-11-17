@@ -505,6 +505,76 @@ class BrowserSession(
         return true
     }
 
+    /**
+     * Replace the prepared provider prompt before submission. The previous pending approval is
+     * rejected in the durable ledger first; the new payload receives a fresh hash and approval.
+     * This method never writes to the provider page or triggers a send.
+     */
+    fun reviseCurrentPrompt(prompt: String): Boolean {
+        if (disposed) return false
+        val cleanPrompt = prompt.trim()
+        if (!BrowserWorkflowRecoveryPolicy.canEditPreparedPrompt(
+                status = workflowState.status,
+                sentForCurrentStep = workflowState.sentForCurrentStep || workflowPromptSent,
+                submissionUncertain = workflowState.submissionUncertain,
+                prompt = cleanPrompt
+            )
+        ) return false
+
+        val provider = workflowProviders.getOrNull(workflowIndex) ?: return false
+        val destination = approvalDestination(currentUrl) ?: return false
+        if (!providerMatches(provider, currentUrl) || workflowState.currentProviderId != provider.id) return false
+
+        val callbacks = workflowCallbacks ?: return false
+        if (workflowState.awaitingPromptApproval) {
+            val oldHash = workflowState.currentPromptHash
+            if (oldHash.isBlank() || workflowState.approvalDestination != destination) return false
+            val actualOldHash = ActionApprovalLedger.contentHash(
+                "runtime.browser", "browser.submit_prompt", destination, workflowState.currentPrompt
+            )
+            if (actualOldHash != oldHash || !callbacks.onApprovalSuperseded(oldHash, destination)) return false
+        }
+
+        workflowApprovedHash = ""
+        workflowApprovedDestination = ""
+        val revisedHash = ActionApprovalLedger.contentHash(
+            "runtime.browser", "browser.submit_prompt", destination, cleanPrompt
+        )
+        publishWorkflowState(workflowState.copy(
+            status = BrowserWorkflowStatus.WAITING_FOR_USER,
+            currentPrompt = cleanPrompt,
+            currentPromptHash = revisedHash,
+            approvalDestination = destination,
+            awaitingPromptApproval = true,
+            message = "Prompt revised. Review this exact version and approve it before Memo sends anything."
+        ))
+        callbacks.onApprovalRequired(workflowIndex, provider, cleanPrompt, destination, revisedHash)
+        return true
+    }
+
+    /**
+     * Reject the current pending prompt and return to editing. The consultation stays active;
+     * no provider submission is made and the user can revise or skip this provider.
+     */
+    fun rejectCurrentPrompt(): Boolean {
+        if (disposed || workflowState.status != BrowserWorkflowStatus.WAITING_FOR_USER ||
+            !workflowState.awaitingPromptApproval || workflowState.sentForCurrentStep || workflowState.submissionUncertain
+        ) return false
+        val destination = workflowState.approvalDestination
+        val hash = workflowState.currentPromptHash
+        val callbacks = workflowCallbacks ?: return false
+        if (destination.isBlank() || hash.isBlank() || !callbacks.onApprovalSuperseded(hash, destination)) return false
+        workflowApprovedHash = ""
+        workflowApprovedDestination = ""
+        publishWorkflowState(workflowState.copy(
+            currentPromptHash = "",
+            approvalDestination = "",
+            awaitingPromptApproval = false,
+            message = "Prompt rejected. Nothing was sent. Edit the prepared prompt or skip this provider."
+        ))
+        return true
+    }
+
     /** Continue only when the currently shown provider and exact prompt still match the approval. */
     fun approveCurrentPrompt(expectedHash: String, expectedDestination: String): Boolean {
         if (disposed || workflowState.status != BrowserWorkflowStatus.WAITING_FOR_USER || !workflowState.awaitingPromptApproval) return false
@@ -522,11 +592,6 @@ class BrowserSession(
         ))
         attemptWorkflowPrompt(workflowGeneration)
         return true
-    }
-
-    /** Declining a prompt stops the sequence; no other provider receives the same authority. */
-    fun rejectCurrentPrompt() {
-        if (workflowState.awaitingPromptApproval) stopBrowserWorkflow()
     }
 
     private fun approvalDestination(url: String): String? {

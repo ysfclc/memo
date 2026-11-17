@@ -108,6 +108,10 @@ fun BrowserWorkflowScreen(
     var manualResponseDraft by remember(workflowState.currentProviderId, workflowState.currentStep) {
         mutableStateOf("")
     }
+    var promptEditDraft by remember(workflowState.currentProviderId, workflowState.currentStep, workflowState.currentPrompt) {
+        mutableStateOf(workflowState.currentPrompt)
+    }
+    var showPromptEditor by remember { mutableStateOf(false) }
 
     fun loadTemplate(entityId: String) {
         val entity = savedWorkflows.firstOrNull { it.id == entityId } ?: return
@@ -313,6 +317,22 @@ fun BrowserWorkflowScreen(
                     onShowMessage("Memo could not persist and verify this provider prompt's approval record. The workflow has been stopped without sending it.")
                     browser.stopBrowserWorkflow()
                 }
+            },
+            onApprovalSuperseded = { oldContentHash, destination ->
+                val stepId = activeStepIds.getOrNull(providerStepOffset + browser.workflowState.currentStep - 1).orEmpty()
+                val oldProposal = viewModel.snapshot.value.actionApprovals.firstOrNull {
+                    it.jobId == jobId &&
+                        it.stepId == stepId &&
+                        it.status == "PENDING" &&
+                        it.runtimeId == "runtime.browser" &&
+                        it.capabilityId == "browser.submit_prompt" &&
+                        it.destination == destination &&
+                        it.contentHash == oldContentHash
+                }
+                oldProposal != null && viewModel.rejectExternalAction(
+                    oldProposal.id,
+                    "Superseded by a revised prompt before external submission."
+                )
             },
             onStepStarted = { index, provider, prompt ->
                 val stepIndex = providerStepOffset + index
@@ -797,6 +817,18 @@ fun BrowserWorkflowScreen(
                             }
                         }
                     }
+                    if (workflowState.status == BrowserWorkflowStatus.WAITING_FOR_USER &&
+                        !workflowState.awaitingPromptApproval && !workflowState.sentForCurrentStep &&
+                        !workflowState.submissionUncertain && workflowState.currentPrompt.isNotBlank()
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                promptEditDraft = workflowState.currentPrompt
+                                showPromptEditor = true
+                            },
+                            modifier = Modifier.fillMaxWidth().height(48.dp)
+                        ) { Text("Edit prepared prompt / request approval") }
+                    }
                     if (workflowState.status == BrowserWorkflowStatus.WAITING_FOR_USER && !workflowState.awaitingPromptApproval) {
                         if (workflowState.sentForCurrentStep) {
                             Text(
@@ -883,60 +915,149 @@ fun BrowserWorkflowScreen(
             }
         }
     }
+    val activeApprovalStepId = activeStepIds.getOrNull(providerStepOffset + workflowState.currentStep - 1).orEmpty()
     val pendingApproval = snapshot.actionApprovals.firstOrNull {
-        it.status == "PENDING" && it.contentHash == workflowState.currentPromptHash &&
-            it.destination == workflowState.approvalDestination && it.capabilityId == "browser.submit_prompt"
+        it.jobId == activeJobId &&
+            it.stepId == activeApprovalStepId &&
+            it.status == "PENDING" &&
+            it.contentHash == workflowState.currentPromptHash &&
+            it.destination == workflowState.approvalDestination &&
+            it.capabilityId == "browser.submit_prompt"
     }
-    if (pendingApproval != null && workflowState.awaitingPromptApproval) {
-        val actionId = pendingApproval.id
+    val showApprovalCheckpoint = workflowState.status == BrowserWorkflowStatus.WAITING_FOR_USER &&
+        workflowState.awaitingPromptApproval
+    if (showApprovalCheckpoint || showPromptEditor) {
+        val actionId = pendingApproval?.id.orEmpty()
+        val hasCurrentApproval = pendingApproval != null && showApprovalCheckpoint
+        val promptHasChanges = promptEditDraft.trim() != workflowState.currentPrompt
         AlertDialog(
-            onDismissRequest = { /* Approval cannot be dismissed implicitly; choose Approve or Reject. */ },
-            title = { Text("Approve exact external prompt?") },
+            onDismissRequest = {
+                if (!showApprovalCheckpoint) showPromptEditor = false
+            },
+            title = { Text(if (hasCurrentApproval) "Review prompt for ${workflowState.currentProviderName}" else "Edit prepared prompt") },
             text = {
                 Column(
-                    Modifier.fillMaxWidth().heightIn(max = 500.dp).verticalScroll(rememberScrollState()),
+                    Modifier.fillMaxWidth().heightIn(max = 560.dp).verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Text("Destination", style = MaterialTheme.typography.labelLarge)
-                    Text(workflowState.approvalDestination, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
-                    Text("Payload fingerprint · ${workflowState.currentPromptHash.take(20)}…", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text("Memo will send only the exact text below to ${workflowState.currentProviderName}. If any part or the destination changes, this approval is invalidated. You can reject and stop the workflow.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Surface(color = MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
-                        Text(workflowState.currentPrompt, Modifier.padding(12.dp), style = MaterialTheme.typography.bodySmall)
+                    MemoSectionHeading("Original request", supporting = "Your wording is preserved and is not changed by prompt editing.")
+                    MemoPanel {
+                        Text(workflowState.goal, style = MaterialTheme.typography.bodyMedium)
+                    }
+                    MemoSectionHeading("Prepared provider prompt", supporting = "Inspect and edit the exact text that will be sent.")
+                    OutlinedTextField(
+                        value = promptEditDraft,
+                        onValueChange = { value ->
+                            if (value.length <= BrowserWorkflowRecoveryPolicy.MAX_PROVIDER_PROMPT_LENGTH) {
+                                promptEditDraft = value
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Prompt to send") },
+                        minLines = 6,
+                        maxLines = 14,
+                        enabled = !workflowState.sentForCurrentStep && !workflowState.submissionUncertain
+                    )
+                    Text(
+                        "${promptEditDraft.length} / ${BrowserWorkflowRecoveryPolicy.MAX_PROVIDER_PROMPT_LENGTH} characters",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text("Destination · ${workflowState.approvalDestination.ifBlank { "Not yet approved" }}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                    if (hasCurrentApproval && !promptHasChanges) {
+                        Text("Payload fingerprint · ${workflowState.currentPromptHash.take(20)}…", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    if (promptHasChanges || !hasCurrentApproval) {
+                        Text(
+                            "Applying this revision does not send it. Memo rejects the previous pending approval, creates a new exact-content approval and asks you to review it again.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        Text(
+                            "Only the exact approved text and destination can be submitted. You can still edit it before approving.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    if (showApprovalCheckpoint && !hasCurrentApproval) {
+                        Text(
+                            "The matching approval record is unavailable. Memo will not send this prompt. You may skip this provider or cancel the run.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
                     }
                 }
             },
             confirmButton = {
-                Button(onClick = {
-                    val hash = workflowState.currentPromptHash
-                    val destination = workflowState.approvalDestination
-                    val proposal = viewModel.snapshot.value.actionApprovals.firstOrNull { it.id == actionId }
-                    if (proposal == null || proposal.contentHash != hash || !viewModel.approveExternalAction(actionId, hash)) {
-                        onShowMessage("Approval could not be verified. No prompt was sent.")
-                        browser.rejectCurrentPrompt()
-                    } else if (!viewModel.beginExternalAction(actionId, proposal.runtimeId, proposal.capabilityId, destination, workflowState.currentPrompt)) {
-                        viewModel.markExternalActionNeedsReview(actionId, "The exact-content approval could not pass the execution gate.")
-                        onShowMessage("The execution gate refused this prompt. Nothing was sent.")
-                        browser.rejectCurrentPrompt()
-                    } else {
-                        currentExternalActionId = actionId
-                        val resumed = browser.approveCurrentPrompt(hash, destination)
-                        if (!resumed) {
-                            viewModel.markExternalActionNeedsReview(actionId, "The browser destination or prompt changed before submission.")
-                            currentExternalActionId = ""
-                            browser.rejectCurrentPrompt()
-                            onShowMessage("The browser changed before submission. The action was stopped and needs review; nothing was intentionally sent.")
+                Button(
+                    enabled = promptEditDraft.trim().isNotEmpty() &&
+                        promptEditDraft.length <= BrowserWorkflowRecoveryPolicy.MAX_PROVIDER_PROMPT_LENGTH &&
+                        (promptHasChanges || (!hasCurrentApproval && !showApprovalCheckpoint) || hasCurrentApproval),
+                    onClick = {
+                        if (promptHasChanges || !hasCurrentApproval) {
+                            if (browser.reviseCurrentPrompt(promptEditDraft)) {
+                                showPromptEditor = false
+                                onShowMessage("Prompt revision saved. Review the new exact-content approval before sending.")
+                            } else {
+                                onShowMessage("Memo could not safely revise this prompt. The previous approval remains unusable and nothing was sent.")
+                            }
+                        } else {
+                            val hash = workflowState.currentPromptHash
+                            val destination = workflowState.approvalDestination
+                            val proposal = viewModel.snapshot.value.actionApprovals.firstOrNull { it.id == actionId }
+                            if (proposal == null || proposal.contentHash != hash || !viewModel.approveExternalAction(actionId, hash)) {
+                                onShowMessage("Approval could not be verified. No prompt was sent.")
+                                browser.stopBrowserWorkflow()
+                            } else if (!viewModel.beginExternalAction(actionId, proposal.runtimeId, proposal.capabilityId, destination, workflowState.currentPrompt)) {
+                                viewModel.markExternalActionNeedsReview(actionId, "The exact-content approval could not pass the execution gate.")
+                                onShowMessage("The execution gate refused this prompt. Nothing was sent.")
+                                browser.stopBrowserWorkflow()
+                            } else {
+                                currentExternalActionId = actionId
+                                val resumed = browser.approveCurrentPrompt(hash, destination)
+                                if (!resumed) {
+                                    viewModel.markExternalActionNeedsReview(actionId, "The browser destination or prompt changed before submission.")
+                                    currentExternalActionId = ""
+                                    browser.stopBrowserWorkflow()
+                                    onShowMessage("The browser changed before submission. The action was stopped and needs review; nothing was intentionally sent.")
+                                }
+                            }
                         }
                     }
-                }) { Text("Approve and send") }
+                ) {
+                    Text(if (promptHasChanges || !hasCurrentApproval) "Apply revision · request approval" else "Approve and send")
+                }
             },
             dismissButton = {
-                TextButton(onClick = {
-                    viewModel.rejectExternalAction(actionId, "User rejected the exact external prompt.")
-                    currentExternalActionId = ""
-                    browser.rejectCurrentPrompt()
-                    onShowMessage("Prompt rejected. Memo stopped the workflow before sending it.")
-                }) { Text("Reject and stop") }
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    if (showApprovalCheckpoint && hasCurrentApproval) {
+                        TextButton(onClick = {
+                            if (browser.rejectCurrentPrompt()) {
+                                showPromptEditor = true
+                                onShowMessage("Prompt rejected. Nothing was sent. Edit it or skip this provider.")
+                            } else {
+                                onShowMessage("Memo could not reject the pending prompt safely.")
+                            }
+                        }) { Text("Reject · return to editing") }
+                    } else {
+                        TextButton(onClick = { showPromptEditor = false }) { Text("Close editor") }
+                    }
+                    if (!workflowState.sentForCurrentStep && !workflowState.submissionUncertain) {
+                        TextButton(onClick = {
+                            if (workflowState.awaitingPromptApproval) {
+                                if (browser.skipCurrentProvider()) {
+                                    showPromptEditor = false
+                                    onShowMessage("Provider skipped. Earlier captured responses remain saved.")
+                                } else {
+                                    onShowMessage("Memo cannot safely skip this provider in the current state.")
+                                }
+                            } else {
+                                showPromptEditor = false
+                            }
+                        }) { Text(if (workflowState.awaitingPromptApproval) "Skip provider" else "Close") }
+                    }
+                }
             }
         )
     }

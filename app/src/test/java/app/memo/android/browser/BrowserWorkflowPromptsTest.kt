@@ -172,6 +172,62 @@ class BrowserWorkflowPromptsTest {
     }
 
     @Test
+    fun preparedPromptCanBeEditedOnlyBeforeSubmissionAndWithoutUncertainty() {
+        assertTrue(
+            BrowserWorkflowRecoveryPolicy.canEditPreparedPrompt(
+                BrowserWorkflowStatus.WAITING_FOR_USER,
+                sentForCurrentStep = false,
+                submissionUncertain = false,
+                prompt = "A revised provider prompt with enough content."
+            )
+        )
+        assertFalse(
+            BrowserWorkflowRecoveryPolicy.canEditPreparedPrompt(
+                BrowserWorkflowStatus.WAITING_FOR_RESPONSE,
+                sentForCurrentStep = true,
+                submissionUncertain = false,
+                prompt = "A revised provider prompt."
+            )
+        )
+        assertFalse(
+            BrowserWorkflowRecoveryPolicy.canEditPreparedPrompt(
+                BrowserWorkflowStatus.WAITING_FOR_USER,
+                sentForCurrentStep = true,
+                submissionUncertain = false,
+                prompt = "A revised provider prompt."
+            )
+        )
+        assertFalse(
+            BrowserWorkflowRecoveryPolicy.canEditPreparedPrompt(
+                BrowserWorkflowStatus.WAITING_FOR_USER,
+                sentForCurrentStep = false,
+                submissionUncertain = true,
+                prompt = "A revised provider prompt."
+            )
+        )
+    }
+
+    @Test
+    fun preparedPromptEditRejectsBlankAndOversizedContent() {
+        assertFalse(
+            BrowserWorkflowRecoveryPolicy.canEditPreparedPrompt(
+                BrowserWorkflowStatus.WAITING_FOR_USER,
+                sentForCurrentStep = false,
+                submissionUncertain = false,
+                prompt = "   "
+            )
+        )
+        assertFalse(
+            BrowserWorkflowRecoveryPolicy.canEditPreparedPrompt(
+                BrowserWorkflowStatus.WAITING_FOR_USER,
+                sentForCurrentStep = false,
+                submissionUncertain = false,
+                prompt = "x".repeat(BrowserWorkflowRecoveryPolicy.MAX_PROVIDER_PROMPT_LENGTH + 1)
+            )
+        )
+    }
+
+    @Test
     fun responseCaptureWaitStateRemainsAnActiveWorkflowState() {
         val saving = BrowserWorkflowUiState(status = BrowserWorkflowStatus.SAVING_RESPONSE)
         val waiting = BrowserWorkflowUiState(status = BrowserWorkflowStatus.WAITING_FOR_USER)
