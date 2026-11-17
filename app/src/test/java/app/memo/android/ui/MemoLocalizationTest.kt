@@ -30,8 +30,8 @@ class MemoLocalizationTest {
         assertEquals("Sohbet", MemoLocalization.translate("Talk", "TR"))
         assertEquals("Na żywo", MemoLocalization.translate("Live", "PL"))
         assertEquals("Canlı", MemoLocalization.translate("Live", "TR"))
-        assertEquals("ZAMIAR / PRACA / DOWODY", MemoLocalization.translate("INTENT / WORK / EVIDENCE", "PL"))
-        assertEquals("NİYET / İŞ / KANIT", MemoLocalization.translate("INTENT / WORK / EVIDENCE", "TR"))
+        assertEquals("ROZMOWA / NA ŻYWO / PRACA / STUDIO", MemoLocalization.translate("TALK / LIVE / WORK / STUDIO", "PL"))
+        assertEquals("SOHBET / CANLI / İŞ / STÜDYO", MemoLocalization.translate("TALK / LIVE / WORK / STUDIO", "TR"))
         assertEquals("Studio", MemoLocalization.translate("Studio", "PL"))
         assertEquals("Stüdyo", MemoLocalization.translate("Studio", "TR"))
         assertEquals("Głos", MemoLocalization.translate("Voice", "PL"))
@@ -98,6 +98,16 @@ class MemoLocalizationTest {
         assertEquals("İstemi ve kontrolleri incele", MemoLocalization.translate("Review prompt and controls", "TR"))
         assertEquals("Otwórz elementy sterujące przepływem", MemoLocalization.translate("Open workflow controls", "PL"))
         assertEquals("İş akışı kontrollerini aç", MemoLocalization.translate("Open workflow controls", "TR"))
+    }
+
+    @Test
+    fun contextualRoutesTranslateInPolishAndTurkish() {
+        assertEquals("Sesja przeglądarki", MemoLocalization.translate("Browser session", "PL"))
+        assertEquals("Tarayıcı oturumu", MemoLocalization.translate("Browser session", "TR"))
+        assertEquals("Aplikacje telefonu", MemoLocalization.translate("Phone apps", "PL"))
+        assertEquals("Telefon uygulamaları", MemoLocalization.translate("Phone apps", "TR"))
+        assertEquals("Skrzynka zatwierdzeń", MemoLocalization.translate("Approval inbox", "PL"))
+        assertEquals("Onay kutusu", MemoLocalization.translate("Approval inbox", "TR"))
     }
 
     @Test

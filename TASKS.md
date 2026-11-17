@@ -604,3 +604,12 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - The host timeout is calculated from the persisted attempt's original deadline, not restarted from dispatch time. The dispatcher rechecks cancellation/deadline after the adapter returns and validates the candidate output before it can be persisted.
 - Approval-gated/external side effects remain rejected by the existing request contract. Persistence and independent postcondition verification remain in their existing coordinator; this increment does not claim a generic DAG executor.
 - Exact-head CI and APK validation pending. Physical-device acceptance and WF-01–WF-13 remain open.
+
+## 17 November 2026 — Four-surface navigation and route clarity
+
+- **UIX-01 — Specialist route context:** Browser, Phone apps and Approval inbox display a shared parent-aware route strip under Live; Council returns to Talk; Models and Settings return to the originating primary surface. Android Back follows the same parent relationship.
+- **UIX-02 — System destinations:** Models and Settings move into the header system menu; the separate More landing route is no longer part of the navigable shell. The four primary destinations remain Talk / Live / Work / Studio.
+- **UIX-03 — Live action grouping:** Browser session, Phone apps and Approval inbox share one compact horizontally grouped action row.
+- **UIX-04 — Contextual emergency stop:** the global Stop control is shown only while a model run, browser workflow, Work job or phone task reports RUNNING/active state.
+- **Scope boundary:** specialist screens, workflow engine, approvals, encrypted stores and task semantics are reused unchanged. Automated and physical-device UX acceptance remain pending; do not mark these items complete without evidence.
+- **Release invariant:** package app.memo.android.debug, persistent signing certificate, and encrypted data compatibility remain unchanged.

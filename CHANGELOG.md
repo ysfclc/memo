@@ -185,3 +185,9 @@ Retained from the integrated source branch: visible browser-based frontier consu
 - Added a 180-second local inference deadline and a distinct timeout failure, with cancellation propagated to the LiteRT conversation. Partial output is not promoted to a completed response. Full Android verification and device cancellation timing remain pending.
 
 - Work now exposes a visible Stop generation control during active local checkpoint generation, with partial output retained only in the live surface and no false completed-artifact save.
+
+## 17 November 2026 — UI navigation clarity
+
+- Simplified the navigation model without removing product capabilities: Talk / Live / Work / Studio remain primary; Council and runtime tools now show their parent surface; Models and Settings live in the header menu.
+- Added a compact Live action row and made the emergency Stop affordance appear only when Memo reports active work.
+- Kept package identity, signing and encrypted storage paths unchanged.

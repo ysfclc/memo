@@ -141,3 +141,12 @@ The first deterministic app capability, app.entities/entity.propose, is connecte
 - The first deterministic app capability now invokes through the dispatcher. The Android host applies the remaining original attempt deadline; the dispatcher checks cancellation/deadline before and after execution and validates the returned candidate.
 - The dispatcher does not persist workspace records, approve actions or verify postconditions. Existing output persistence and independent observer remain separate.
 - No generic DAG executor, browser/native adapter, physical-device acceptance, merge or release is claimed.
+
+## 12. UI/UX increment — 17 November 2026
+
+- The four product surfaces remain the only primary navigation destinations.
+- Specialist destinations retain parent context and provide direct sibling navigation. Browser, Phone apps and Approval inbox belong to Live; Council belongs to Talk; Models and Settings are system-level routes that return to the originating surface.
+- The More landing page is removed from the active shell. The header menu is reserved for Models and Settings.
+- Stop is contextual to observable active work rather than permanently competing with Lock in the header.
+- Live runtime entry points are grouped into one horizontal action row.
+- Source/device acceptance status: exact-head CI and APK update tests pending; physical-device visual/touch/back-navigation acceptance remains pending.

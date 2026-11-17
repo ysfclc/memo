@@ -1,6 +1,7 @@
 package app.memo.android.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import app.memo.android.ui.MemoText as Text
@@ -62,17 +64,20 @@ fun LiveWorkspaceScreen(
             )
         }
         item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = onOpenBrowser, modifier = Modifier.weight(1f).height(MemoTokens.Spacing.minimumTouch)) {
+            Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedButton(onClick = onOpenBrowser, modifier = Modifier.height(MemoTokens.Spacing.minimumTouch)) {
                     Text("Browser session")
                 }
-                OutlinedButton(onClick = onOpenApps, modifier = Modifier.weight(1f).height(MemoTokens.Spacing.minimumTouch)) {
+                OutlinedButton(onClick = onOpenApps, modifier = Modifier.height(MemoTokens.Spacing.minimumTouch)) {
                     Text("Phone apps")
                 }
-            }
-            OutlinedButton(onClick = onOpenApprovals, modifier = Modifier.fillMaxWidth().height(MemoTokens.Spacing.minimumTouch)) {
-                val pending = snapshot.actionApprovals.count { it.status in setOf("PENDING", "APPROVED", "IN_PROGRESS", "NEEDS_REVIEW") }
-                Text(if (pending == 0) "Approval inbox" else "Review actions · $pending")
+                OutlinedButton(onClick = onOpenApprovals, modifier = Modifier.height(MemoTokens.Spacing.minimumTouch)) {
+                    Text("Approval inbox")
+                }
             }
         }
         item {

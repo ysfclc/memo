@@ -231,3 +231,12 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - **Artifact boundary:** run #767 was a pull_request validation event. Debug APK and Android test APK were assembled and emulator-tested, but pinned signing and final APK artifact handoff are intentionally skipped for PR events. Only Memo-Android-Build-Reports artifact 14202544317 was uploaded; no new signed installable APK is claimed.
 - **Remaining acceptance:** physical-device install-over-existing and actual Talk → Work proposal review on the user's existing phone remain pending. Do not uninstall Memo or clear data. PR #8 remains draft/unmerged; main untouched.
 - **Next:** after physical-device acceptance, add another concrete Memo-owned capability only if it closes a real Talk → Work outcome gap and can reuse the same encrypted-input, durable-attempt, output-receipt and independent-observer discipline. Generic DAG/browser/native expansion remains later.
+
+## 17 November 2026 — Four-surface route clarity and Live controls
+
+- **User-visible outcome:** removed the competing More workspace from the active navigation flow and added a consistent parent/context strip to specialist routes. Council returns to Talk; Browser, Phone apps and Approval inbox remain nested under Live; Models and Settings return to the originating primary surface.
+- **Navigation behavior:** Android Back and the on-screen parent control follow the same hierarchy. System destinations are available from a small header menu and preserve the surface from which they were opened.
+- **Live surface:** Browser session, Phone apps and Approval inbox now form one horizontal runtime-action group. The emergency Stop affordance appears only when an observable model/browser/Work/phone run is active.
+- **Preserved behavior:** existing specialist screens, runtime adapters, prompt approvals, encrypted persistence and data schemas are reused; no destructive migration or signing/package change is included.
+- **Validation added:** source verifier guards the four-surface hierarchy, route strip, contextual Stop and compact Live action row. Localization unit coverage verifies EN/PL/TR route copy.
+- **Acceptance status:** exact-head GitHub Actions and signed in-place-upgrade checks required; physical-device touch target, horizontal-scroll and Back navigation behavior remains pending user/device evidence.

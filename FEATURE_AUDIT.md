@@ -154,3 +154,7 @@ A top-level Stop active work control now requests cancellation of the current lo
 - **First implementation slice:** M7.A1 / MEMO-SALES-001 — evidence-backed account research, transparent factor-level ICP score, duplicate-safe matching and operator accept/reject.
 - **Not included:** a second CRM, contact harvesting, cold-email/auto-DM, provider connectors or external contact actions.
 - **Evidence status:** no account-research implementation or Android acceptance is claimed in this source audit.
+
+## 17 November 2026 — Navigation hierarchy correction
+
+The source UI previously had four bottom destinations but exposed secondary routes without a consistent parent indicator; the separate More page duplicated system and runtime destinations. The current UI increment establishes the four-surface hierarchy in the actual shell: Talk owns Council, Live owns Browser/Phone apps/Approval inbox, and Models/Settings are temporary system routes that return to the originating surface. The reusable route strip and compact Live action row are implemented; this is not evidence that the wider product journey or physical-device UX is complete.

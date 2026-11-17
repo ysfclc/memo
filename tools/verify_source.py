@@ -330,7 +330,7 @@ for marker in ("setAndAllowWhileIdle", "cancelNudge", "VISIBILITY_PRIVATE", "get
 print("PASS: local reminder scheduling/cancellation, monochrome notification icon, private lock-screen visibility, and opt-in workflow alerts are present")
 
 localization = (ROOT / "app/src/main/java/app/memo/android/ui/MemoLocalization.kt").read_text()
-for marker in ('"EN" to "English"', '"PL" to "Polski"', '"TR" to "Türkçe"', '"Notifications & reminders"', '"Voice input"'):
+for marker in ('"EN" to "English"', '"PL" to "Polski"', '"TR" to "Türkçe"', '"Notifications & reminders"', '"Voice input"', '"TALK / LIVE / WORK / STUDIO"'):
     if marker not in localization:
         fail(f"language catalog missing marker: {marker}")
 localization_test = ROOT / "app/src/test/java/app/memo/android/ui/MemoLocalizationTest.kt"
@@ -369,6 +369,29 @@ for marker in (
         fail(f"Memo four-surface shell is missing: {marker}")
 if 'Triple(AppTab.BROWSER' in home:
     fail("Browser must remain a runtime route, not a primary navigation destination")
+for marker in (
+    "private fun WorkspaceRouteStrip(",
+    "WorkspaceRouteContext(",
+    'WorkspaceRouteContext(AppTab.LIVE, "Browser session"',
+    'WorkspaceRouteContext(AppTab.LIVE, "Phone apps"',
+    'WorkspaceRouteContext(AppTab.LIVE, "Approval inbox"',
+    "onBack = { openPrimary(context.parent) }",
+    "systemReturnTab",
+    "fun isPrimarySelected(destination: AppTab): Boolean",
+    "val selected = isPrimarySelected(dest)",
+    "AutomationAccessibilityService.isExecuting()",
+    "if (showStop)",
+    "onOpenSettings = { openSystem(AppTab.SETTINGS) }",
+):
+    if marker not in home:
+        fail(f"Memo contextual navigation contract is missing: {marker}")
+if "AppTab.MORE" in home or "MoreWorkspaceScreen(" in home:
+    fail("Models and Settings must not sit behind a separate competing More workspace")
+if 'Text("TALK / LIVE / WORK / STUDIO"' not in home:
+    fail("Memo header must name all four connected product surfaces")
+live_ui_source = (ui_dir / "LiveWorkspaceScreen.kt").read_text()
+if "horizontalScroll(rememberScrollState())" not in live_ui_source or live_ui_source.count('Text("Browser session")') != 1:
+    fail("Live runtime destinations must be grouped into one compact action row")
 view_model = (ROOT / "app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt").read_text()
 for marker in ('sourceConversationId: String = ""', 'sourceConversationId = sourceId'):
     if marker not in view_model:
