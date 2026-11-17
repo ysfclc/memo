@@ -56,6 +56,7 @@ import app.memo.android.browser.BrowserModelProviders
 import app.memo.android.browser.BrowserSession
 import app.memo.android.browser.BrowserWorkflowCallbacks
 import app.memo.android.browser.BrowserWorkflowMode
+import app.memo.android.browser.BrowserWorkflowRecoveryPolicy
 import app.memo.android.browser.BrowserWorkflowStatus
 import app.memo.android.data.AppSnapshot
 import app.memo.android.data.OutcomeParser
@@ -963,7 +964,6 @@ fun BrowserWorkflowScreen(
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Text("Provider · ${workflowState.currentProviderName}", style = MaterialTheme.typography.labelLarge)
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Provider", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(workflowState.currentProviderName, style = MaterialTheme.typography.bodySmall)
