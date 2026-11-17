@@ -389,7 +389,7 @@ if "AppTab.MORE" in home or "MoreWorkspaceScreen(" in home:
     fail("Models and Settings must not sit behind a separate competing More workspace")
 if 'Text("TALK / LIVE / WORK / STUDIO"' not in home:
     fail("Memo header must name all four connected product surfaces")
-live_ui_source = (ui_dir / "LiveWorkspaceScreen.kt").read_text()
+live_ui_source = (ROOT / "app/src/main/java/app/memo/android/ui/LiveWorkspaceScreen.kt").read_text()
 if "horizontalScroll(rememberScrollState())" not in live_ui_source or live_ui_source.count('Text("Browser session")') != 1:
     fail("Live runtime destinations must be grouped into one compact action row")
 view_model = (ROOT / "app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt").read_text()
