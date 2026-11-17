@@ -101,10 +101,25 @@ for marker in ("changedPayloadOrDestinationCannotReuseApproval", "tamperedStored
         fail(f"action ledger regression test missing: {marker}")
 if "approveCurrentPrompt" not in browser_session or "awaitingPromptApproval" not in browser_session:
     fail("visible browser session lacks the exact-content approval state gate")
-for marker in ("Approve exact external prompt?", "workflowState.currentPrompt", "Approve and send", "Reject and stop"):
+for marker in ("Approve exact external prompt?", "workflowState.currentPrompt", "Approve and send", "Reject · return to editing"):
     if marker not in workflow_screen:
         fail(f"browser workflow UI is missing exact-content approval behavior: {marker}")
-print("PASS: exact-content action ledger, regression tests, visible prompt gate and evidence completion are wired in source")
+revision_action = browser_session.split("fun reviseCurrentPrompt", 1)[1].split("/** Continue only when", 1)[0]
+if "callbacks.onApprovalSuperseded" not in revision_action or "callbacks.onApprovalRequired" not in revision_action or "sendPreparedPrompt" in revision_action:
+    fail("prompt revision must invalidate the old pending approval, create a new approval and never send")
+reject_action = browser_session.split("fun rejectCurrentPrompt", 1)[1].split("/** Continue only when", 1)[0]
+if "onApprovalSuperseded" not in reject_action or "stopBrowserWorkflow" in reject_action:
+    fail("rejecting a pending prompt must return to editing without cancelling the full consultation")
+for marker in ("fun canEditPreparedPrompt", "MAX_PROVIDER_PROMPT_LENGTH"):
+    if marker not in browser_workflow:
+        fail(f"prepared prompt edit policy is missing: {marker}")
+for marker in ("preparedPromptCanBeEditedOnlyBeforeSubmissionAndWithoutUncertainty", "preparedPromptEditRejectsBlankAndOversizedContent"):
+    if marker not in browser_workflow_test:
+        fail(f"prepared prompt editing regression test is missing: {marker}")
+for marker in ("Original request", "Prompt to send", "Apply revision · request approval"):
+    if marker not in workflow_screen:
+        fail(f"editable prompt review UI is missing: {marker}")
+print("PASS: exact-content approval, safe prompt revision and reject-to-edit behavior are wired in source")
 
 browser_workflow = (ROOT / "app/src/main/java/app/memo/android/browser/BrowserWorkflow.kt").read_text()
 browser_workflow_test = (ROOT / "app/src/test/java/app/memo/android/browser/BrowserWorkflowPromptsTest.kt").read_text()

@@ -253,3 +253,14 @@ A follow-up review found the new persistence-verifier guard referenced `view_mod
 - **Upgrade proof:** API 35 emulator installed the new signed APK over the existing package, reopened both real encrypted stores, and passed legacy recovery/corruption checks. No uninstall or clear-data step.
 - **Not claimed:** no generic runtime dispatcher or concrete adapter is wired; no browser/native observer implementation; no physical-device acceptance. The user installed #674 but has not checked it.
 - **Next:** deterministic app-runtime adapter through the checkpoint journal with shared timeout/cancellation and process-death recovery. Browser/native adapters remain later increments.
+
+
+## 17 November 2026 — shared UI primitives and editable provider prompt
+
+- **Working branch:** `stabilization/usable-stage-2026-11-10`; PR #8 remains draft/unmerged.
+- **UI cleanup commit:** `49fa0900fdca7ae9b28a32d13d408d4de9528ac0`. Screen call sites were moved to the existing `MemoPanel`, `MemoSectionHeading` and `MemoStatusTag`; duplicate panel/heading implementations were removed while unique empty-state, dot-label and domain status helpers were retained.
+- **UI cleanup verification:** exact-head CI runs [#44012466706](https://github.com/ysfclc/memo/actions/runs/44012466706) and [#44012460788](https://github.com/ysfclc/memo/actions/runs/44012460788) both passed. This verifies the shared-primitive consolidation compiles and passes the build workflow on that exact commit.
+- **Prompt editing commit:** `2ee5f8adce415828a9a1900e9621bcedbda64acd`. Added a pre-submission editor showing original intent and prepared provider prompt, exact-hash revision, invalidation of the previous pending approval, fresh approval proposal, and reject-to-edit behavior. A rejected prompt no longer cancels the entire consultation. Approval-gate failures after execution begins still stop into review.
+- **Regression tests:** added eligibility tests for pre-submission editing, uncertain/sent states, blank prompts and the 7,900-character provider prompt bound.
+- **First exact-head validation attempt:** [run #44014394039](https://github.com/ysfclc/memo/actions/runs/44014394039) and duplicate [run #44014387122](https://github.com/ysfclc/memo/actions/runs/44014387122) reached source verification but failed one stale guard that expected the old literal dialog label `Reject and stop`. No Gradle unit tests, lint or APK assembly ran on commit `2ee5f8a`. The guard is being updated to require the new reject-to-edit and exact-revision invariants; the failed run is not treated as a code compilation result.
+- **Next:** rerun exact-head source verification, core/app tests, lint and APK build for the corrected verifier. Do not claim physical-device acceptance until the user journey is exercised on the actual phone.

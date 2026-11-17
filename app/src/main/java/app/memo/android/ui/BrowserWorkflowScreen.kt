@@ -934,7 +934,7 @@ fun BrowserWorkflowScreen(
             onDismissRequest = {
                 if (!showApprovalCheckpoint) showPromptEditor = false
             },
-            title = { Text(if (hasCurrentApproval) "Review prompt for ${workflowState.currentProviderName}" else "Edit prepared prompt") },
+            title = { Text(if (hasCurrentApproval) "Approve exact external prompt?" else "Edit prepared prompt") },
             text = {
                 Column(
                     Modifier.fillMaxWidth().heightIn(max = 560.dp).verticalScroll(rememberScrollState()),
@@ -963,6 +963,7 @@ fun BrowserWorkflowScreen(
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    Text("Provider · ${workflowState.currentProviderName}", style = MaterialTheme.typography.labelLarge)
                     Text("Destination · ${workflowState.approvalDestination.ifBlank { "Not yet approved" }}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                     if (hasCurrentApproval && !promptHasChanges) {
                         Text("Payload fingerprint · ${workflowState.currentPromptHash.take(20)}…", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
