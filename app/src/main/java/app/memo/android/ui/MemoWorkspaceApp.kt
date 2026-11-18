@@ -967,8 +967,9 @@ private fun ToolsHubScreen(
                     onQuickTask = onQuickTask,
                     onCancelTask = onCancelTask,
                     onClearPrompt = onClearPrompt,
-                    onReturnToWorkflow = browser.workflowState.status != app.memo.android.browser.BrowserWorkflowStatus.IDLE
-                        .takeIf { it }?.let { { onSectionChange(ToolSection.WORKFLOWS) } }
+                    onReturnToWorkflow = if (browser.workflowState.status != app.memo.android.browser.BrowserWorkflowStatus.IDLE) {
+                        { onSectionChange(ToolSection.WORKFLOWS) }
+                    } else null
                 )
                 ToolSection.WORKFLOWS -> BrowserWorkflowScreen(
                     snapshot = snapshot,
