@@ -373,6 +373,9 @@ for marker in (
     "private fun WorkspaceRouteStrip(",
     "WorkspaceRouteContext(",
     'WorkspaceRouteContext(AppTab.LIVE, "Browser session"',
+    'WorkspaceRouteContext(AppTab.WORK, toolSection.label, emptyList())',
+    'tab == AppTab.BROWSER -> tab = if (toolSection == ToolSection.BROWSER) AppTab.LIVE else AppTab.WORK',
+    'ToolSection.entries.filter { it != ToolSection.BROWSER }',
     'WorkspaceRouteContext(AppTab.LIVE, "Phone apps"',
     'WorkspaceRouteContext(AppTab.LIVE, "Approval inbox"',
     "onBack = { openPrimary(context.parent) }",
@@ -404,6 +407,20 @@ if "onOpenBrowserWorkflow = { tab = AppTab.BROWSER; toolSection = ToolSection.WO
     fail("Live active browser must reopen the existing workflow workspace")
 if "liveBrowserWorkflowActionsTranslateInPolishAndTurkish" not in localization_test.read_text():
     fail("Live workflow re-entry must have Polish/Turkish localization regression coverage")
+if "workExecutionRoutesTranslateInPolishAndTurkish" not in localization_test.read_text():
+    fail("Work execution routes must have Polish/Turkish localization regression coverage")
+for marker in (
+    "onOpenBrowserWorkflows: () -> Unit = {}",
+    "onOpenBrowserTasks: () -> Unit = {}",
+    "onOpenEvidenceLibrary: () -> Unit = {}",
+    'title = "Execution tools"',
+    'label = { Text("Browser workflows") }',
+    'label = { Text("Browser tasks") }',
+):
+    if marker not in chat:
+        fail(f"Work execution entry points are missing: {marker}")
+if 'ToolSection.BROWSER -> "Browser session"' not in home or 'ToolSection.WORKFLOWS -> "Workflows"' not in home or 'ToolSection.EVIDENCE -> "Evidence"' not in home:
+    fail("Browser and Work subroutes need distinct headings so their purpose is visible")
 print("PASS: one Memo Activity, universal Talk intent router, linked source conversations, four product surfaces, and safe draft handoff")
 
 # Estimate coverage of the static string literals passed to the custom UI Text wrapper.
