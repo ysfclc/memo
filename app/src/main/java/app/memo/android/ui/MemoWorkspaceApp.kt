@@ -167,7 +167,7 @@ private enum class AppTab(val label: String) {
     HOME("Talk"), LIVE("Live"), WORK("Work"), STUDIO("Studio"), BROWSER("Browser"), APPS("Apps"), APPROVALS("Approvals"), COUNCIL("Council"), MODELS("Models"), SETTINGS("Settings")
 }
 
-private enum class ToolSection(val label: String) { BROWSER("Browser"), WORKFLOWS("Workflows"), TASKS("Tasks"), EVIDENCE("Evidence") }
+private enum class ToolSection(val label: String) { BROWSER("Browser session"), WORKFLOWS("Workflows"), TASKS("Browser tasks"), EVIDENCE("Evidence") }
 
 private data class QuickSite(val label: String, val url: String)
 
@@ -423,7 +423,8 @@ fun MemoWorkspaceApp(
         when {
             evidenceDetail != null -> evidenceDetail = null
             tab == AppTab.HOME && activeConversationId != null -> activeConversationId = null
-            tab in setOf(AppTab.BROWSER, AppTab.APPS, AppTab.APPROVALS) -> tab = AppTab.LIVE
+            tab == AppTab.BROWSER -> tab = if (toolSection == ToolSection.BROWSER) AppTab.LIVE else AppTab.WORK
+            tab in setOf(AppTab.APPS, AppTab.APPROVALS) -> tab = AppTab.LIVE
             tab == AppTab.COUNCIL -> tab = AppTab.HOME
             tab == AppTab.MODELS || tab == AppTab.SETTINGS -> openPrimary(systemReturnTab)
             tab != AppTab.HOME -> { activeConversationId = null; tab = AppTab.HOME }
@@ -490,7 +491,11 @@ fun MemoWorkspaceApp(
         val expandedLayout = maxWidth >= 840.dp
         val routeContext = when (tab) {
             AppTab.COUNCIL -> WorkspaceRouteContext(AppTab.HOME, "Council", listOf("Models" to AppTab.MODELS))
-            AppTab.BROWSER -> WorkspaceRouteContext(AppTab.LIVE, "Browser session", listOf("Phone apps" to AppTab.APPS, "Approval inbox" to AppTab.APPROVALS))
+            AppTab.BROWSER -> if (toolSection == ToolSection.BROWSER) {
+                WorkspaceRouteContext(AppTab.LIVE, "Browser session", listOf("Phone apps" to AppTab.APPS, "Approval inbox" to AppTab.APPROVALS))
+            } else {
+                WorkspaceRouteContext(AppTab.WORK, toolSection.label, emptyList())
+            }
             AppTab.APPS -> WorkspaceRouteContext(AppTab.LIVE, "Phone apps", listOf("Browser session" to AppTab.BROWSER, "Approval inbox" to AppTab.APPROVALS))
             AppTab.APPROVALS -> WorkspaceRouteContext(AppTab.LIVE, "Approval inbox", listOf("Browser session" to AppTab.BROWSER, "Phone apps" to AppTab.APPS))
             AppTab.MODELS -> WorkspaceRouteContext(systemReturnTab, "Models", listOf("Settings" to AppTab.SETTINGS))
@@ -663,6 +668,9 @@ fun MemoWorkspaceApp(
                         onOpenApprovals = { tab = AppTab.APPROVALS },
                         onOpenEvidence = { id -> evidenceDetail = viewModel.snapshot.value.evidence.firstOrNull { it.id == id } },
                         onOpenModels = { openSystem(AppTab.MODELS) },
+                        onOpenBrowserWorkflows = { toolSection = ToolSection.WORKFLOWS; tab = AppTab.BROWSER },
+                        onOpenBrowserTasks = { toolSection = ToolSection.TASKS; tab = AppTab.BROWSER },
+                        onOpenEvidenceLibrary = { toolSection = ToolSection.EVIDENCE; tab = AppTab.BROWSER },
                         onShowMessage = ::snack
                     )
                     AppTab.COUNCIL -> CouncilScreen(
