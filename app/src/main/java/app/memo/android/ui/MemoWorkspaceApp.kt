@@ -931,16 +931,30 @@ private fun ToolsHubScreen(
     onDeleteEvidence: (EvidenceRecord) -> Unit,
     onExportEvidence: () -> Unit
 ) {
+    val heading = when (section) {
+        ToolSection.BROWSER -> "Browser session"
+        ToolSection.WORKFLOWS -> "Workflows"
+        ToolSection.TASKS -> "Browser tasks"
+        ToolSection.EVIDENCE -> "Evidence"
+    }
+    val supporting = when (section) {
+        ToolSection.BROWSER -> "A separate website session for navigation and visible provider work. Saved outcomes return to Work."
+        ToolSection.WORKFLOWS -> "Review provider workflows, checkpoints and recovery controls."
+        ToolSection.TASKS -> "Create, resume and inspect bounded browser tasks."
+        ToolSection.EVIDENCE -> "Inspect captured source material and saved workflow results."
+    }
     Column(Modifier.fillMaxSize()) {
-        Column(Modifier.padding(horizontal = MemoTokens.Spacing.md, vertical = MemoTokens.Spacing.xs), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text("Browser runtime", style = MaterialTheme.typography.titleLarge)
-            Text("A separate website session with its own navigation, page state, bounded browser tasks and captured evidence. This is not the native app runtime.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Row(
-                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                ToolSection.entries.forEach { candidate ->
-                    FilterChip(selected = section == candidate, onClick = { onSectionChange(candidate) }, label = { Text(candidate.label) })
+        Column(Modifier.padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.md), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
+            Text(heading, style = MaterialTheme.typography.titleLarge)
+            Text(supporting, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (section != ToolSection.BROWSER) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    ToolSection.entries.filter { it != ToolSection.BROWSER }.forEach { candidate ->
+                        FilterChip(selected = section == candidate, onClick = { onSectionChange(candidate) }, label = { Text(candidate.label) })
+                    }
                 }
             }
         }
