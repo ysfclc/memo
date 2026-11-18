@@ -111,6 +111,20 @@ class MemoLocalizationTest {
     }
 
     @Test
+    fun workExecutionRoutesTranslateInPolishAndTurkish() {
+        assertEquals("Przepływy", MemoLocalization.translate("Workflows", "PL"))
+        assertEquals("İş akışları", MemoLocalization.translate("Workflows", "TR"))
+        assertEquals("Zadania przeglądarki", MemoLocalization.translate("Browser tasks", "PL"))
+        assertEquals("Tarayıcı görevleri", MemoLocalization.translate("Browser tasks", "TR"))
+        assertEquals("Przepływy przeglądarki", MemoLocalization.translate("Browser workflows", "PL"))
+        assertEquals("Tarayıcı iş akışları", MemoLocalization.translate("Browser workflows", "TR"))
+        assertEquals("Narzędzia wykonawcze", MemoLocalization.translate("Execution tools", "PL"))
+        assertEquals("Yürütme araçları", MemoLocalization.translate("Execution tools", "TR"))
+        assertTrue(MemoLocalization.translate("Inspect captured source material and saved workflow results.", "PL").contains("materiały źródłowe"))
+        assertTrue(MemoLocalization.translate("Inspect captured source material and saved workflow results.", "TR").contains("kaynak materyalleri"))
+    }
+
+    @Test
     fun unsupportedLanguageFallsBackToOriginalText() {
         assertEquals("Settings", MemoLocalization.translate("Settings", "XX"))
     }
