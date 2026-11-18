@@ -997,6 +997,9 @@ fun WorkWorkspaceScreen(
     onOpenApprovals: () -> Unit = {},
     onOpenEvidence: (String) -> Unit = {},
     onOpenModels: () -> Unit = {},
+    onOpenBrowserWorkflows: () -> Unit = {},
+    onOpenBrowserTasks: () -> Unit = {},
+    onOpenEvidenceLibrary: () -> Unit = {},
     onShowMessage: (String) -> Unit
 ) {
     var section by remember { mutableStateOf(initialSection) }
@@ -1028,6 +1031,18 @@ fun WorkWorkspaceScreen(
                 FilterChip(selected = section == "ENTITIES", onClick = { section = "ENTITIES"; onSectionChanged("ENTITIES") }, label = { Text("Entities · ${snapshot.entities.count { it.reviewStatus !in setOf("REJECTED", "MERGED") }}") })
                 FilterChip(selected = section == "ARCHIVE", onClick = { section = "ARCHIVE"; onSectionChanged("ARCHIVE") }, label = { Text("Archive · ${snapshot.entities.count { it.reviewStatus in setOf("REJECTED", "MERGED") }}") })
                 FilterChip(selected = section == "JOBS", onClick = { section = "JOBS"; onSectionChanged("JOBS") }, label = { Text("Plans · ${snapshot.jobs.size}") })
+            }
+            MemoSectionHeading(
+                title = "Execution tools",
+                supporting = "Browser workflows, browser tasks and saved evidence"
+            )
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(selected = false, onClick = onOpenBrowserWorkflows, label = { Text("Browser workflows") })
+                FilterChip(selected = false, onClick = onOpenBrowserTasks, label = { Text("Browser tasks") })
+                FilterChip(selected = false, onClick = onOpenEvidenceLibrary, label = { Text("Evidence") })
             }
         }
         val hasActiveWorkCheckpoint = snapshot.jobs.any { job ->
