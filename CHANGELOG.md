@@ -1,4 +1,13 @@
 # Changelog
+## 18 November 2026 — Work / Live boundary and signed APK
+
+- Work now exposes browser workflows, browser tasks and saved evidence as execution tools. Live retains the active browser session, phone apps and external-action approvals.
+- Browser session routes return to Live; workflows, browser tasks and evidence return to Work. Android Back, visible parent context, primary-tab selection and Models/Settings return context follow the same ownership rule.
+- New route headings and shared page/section headers use the language-aware text wrapper; English, Polish and Turkish regression coverage was added.
+- Exact-head GitHub Actions #821 passed source verification, remote-runner tests, 178 core tests, 43 app tests, lint (0 errors), debug APK assembly, APK identity verification and API 35 encrypted-store in-place upgrade acceptance.
+- The final APK was signed in the isolated signing job with the persistent Memo certificate; package `app.memo.android.debug`, versionCode `821`. Artifact ID `14387410285`.
+- Physical-device visual/touch/Back acceptance remains pending. PR #8 stays draft/unmerged; main, runtime data formats and signing identity remain unchanged.
+
 ## 17 November 2026 — shared runtime dispatcher
 
 - Added a shared dispatcher over the existing manifest-bound runtime request and durable attempt.

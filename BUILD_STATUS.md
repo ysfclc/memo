@@ -1,3 +1,24 @@
+# Current verified increment — 18 November 2026
+
+**STATUS: UIX-05 EXACT-HEAD CI #821 PASSED; API 35 IN-PLACE DATA-PRESERVATION AND ISOLATED PINNED APK SIGNING PASSED. PHYSICAL-DEVICE UX ACCEPTANCE REMAINS PENDING.**
+
+- Exact tested source commit: `028a5cda60ac0a4761fc23eb9f4537f879cbd6d0` on `stabilization/usable-stage-2026-11-10`; PR #8 remains draft and unmerged; `main` is untouched.
+- GitHub Actions run **#821**, ID `44211136288`: [successful exact-source build and signing](https://github.com/ysfclc/memo/actions/runs/44211136288).
+- UIX-05 moves browser workflows, browser tasks and evidence into Work; Live remains the active browser/phone runtime and approval surface. Parent navigation, Android Back, primary selection and system-menu return context agree. Existing runtime/data handlers are reused.
+- Passed source verification, 432/432 static UI translation checks, remote-runner tests, **178 core tests**, **43 app unit tests**, Android lint (0 errors; 42 warnings and 5 hints), debug and Android-test APK assembly, package/version/signature verification.
+- API 35 in-place upgrade passed: lower-version baseline was upgraded with `adb install -r`; app-private data and both encrypted Memo stores reopened successfully; legacy recovery and corruption checks passed.
+- Final installable artifact: [`Memo-Android-debug-APK`, artifact ID `14387410285`](https://github.com/ysfclc/memo/actions/runs/44211136288/artifacts/14387410285). The archive contains `Memo-Android-debug.apk`, identity report and SHA-256 manifest.
+- APK identity: package `app.memo.android.debug`, versionCode `821`, versionName `4.0.0-memo-debug`.
+- APK SHA-256: `55c25716c5d7540e5bdf15b86183c78bd260bdc22b29d774832e1d45c0a02dfb`.
+- Artifact ZIP SHA-256: `3a21448731d10aae5fdbb3e2c16561f8185813c433ea110306f4e6d9e32a3ab2`.
+- Persistent signing certificate SHA-256: `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a` (matches the previously installable Memo certificate).
+- Source fingerprint: `47f5a33c243cc6cf08eeea17369fa25daf6b02a236b7506cf95526891eb4942b`.
+- Build reports: [artifact ID `14386322351`](https://github.com/ysfclc/memo/actions/runs/44211136288/artifacts/14386322351).
+- **Still pending:** physical-device visual, touch and Back-navigation acceptance on the user's existing phone. Do not claim phone acceptance; do not uninstall Memo or clear app data.
+- No merge, release, production deployment, signing identity change or destructive migration is authorized. PR #8 remains draft; `main` remains untouched.
+
+---
+
 # Current verified increment — 16 November 2026
 
 **STATUS: M3.8.A10 EXACT-HEAD CI PASSED. PHYSICAL-DEVICE ACCEPTANCE AND FINAL PINNED APK HANDOFF REMAIN PENDING.**

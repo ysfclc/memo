@@ -151,12 +151,13 @@ The first deterministic app capability, app.entities/entity.propose, is connecte
 - Live runtime entry points are grouped into one horizontal action row.
 - Source/device acceptance status: exact-head CI and APK update tests pending; physical-device visual/touch/back-navigation acceptance remains pending.
 
-## 13. UIX-05 — Work and Live responsibility boundary (18 November 2026; source committed, CI pending)
+## 13. UIX-05 — Work and Live responsibility boundary (18 November 2026; exact-head CI and signed APK passed)
 
-- Work now exposes browser workflows, browser tasks and the evidence library as explicit execution tools alongside Today, Plans and the work graph. These routes remain backed by the existing browser/task/evidence implementations; no runtime or data model was replaced.
-- Live retains the live browser session, phone apps and the external-action approval inbox. Opening active browser workflow controls now enters the Work-owned workflow route, while ordinary browsing remains a Live route.
-- Browser session back navigation returns to Live; browser workflows, browser tasks and evidence return to Work. Android Back and the visible parent route strip use the same ownership rule.
+- Work exposes browser workflows, browser tasks and the evidence library as execution tools alongside Today, Plans and the work graph. These routes reuse the existing browser/task/evidence implementations; no runtime or data model was replaced.
+- Live retains the live browser session, phone apps and the external-action approval inbox. Opening active browser workflow controls enters the Work-owned workflow route, while ordinary browsing remains a Live route.
+- Browser session back navigation returns to Live; browser workflows, browser tasks and evidence return to Work. Android Back, the visible parent route strip, primary-tab selection and Models/Settings return context follow the same ownership rule.
 - Work subroutes have distinct headings and descriptions. Their section switcher no longer presents ordinary Browser session as if it were a Work tool.
-- Shared page headers/section headings now use the language-aware text wrapper; new route labels and descriptions have English, Polish and Turkish catalog coverage.
-- Existing tasks, evidence, approvals, browser session, exact-content approvals, recovery controls, encrypted storage and package/signing identity are preserved.
-- Exact-head CI, APK signing and API 35 in-place data-preservation checks are pending. Physical-device visual, touch and Back acceptance remain pending.
+- Shared page headers/section headings use the language-aware text wrapper; route labels/descriptions have English, Polish and Turkish catalog coverage.
+- Existing tasks, evidence, approvals, browser session, exact-content approvals, recovery controls, encrypted storage, app ID and package/signing identity are preserved.
+- **Verified:** Actions #821 exact-source build, 432/432 static UI translation coverage, remote-runner tests, 178 core tests, 43 app tests, lint with zero errors, debug APK assembly, persistent pinned signing and API 35 install-over-existing preservation of both encrypted stores.
+- **Pending:** physical-device visual, touch and Back-navigation acceptance on the user's phone. Do not uninstall Memo or clear app data. PR #8 remains draft/unmerged; main is untouched.
