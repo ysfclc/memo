@@ -356,6 +356,15 @@ fun ChatsWorkspaceScreen(
                     IconButton(onClick = onOpenCouncil) { Icon(Icons.Rounded.Hub, contentDescription = "Open Council") }
                     IconButton(onClick = { conversationDeleteTarget = selectedConversation }) { Icon(Icons.Rounded.Delete, contentDescription = "Delete conversation") }
                 }
+
+            }
+
+            LazyColumn(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                contentPadding = PaddingValues(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.sm),
+                verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)
+            ) 
+                item {
                 if (modelOptions.isEmpty()) {
                     Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
                         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -417,13 +426,8 @@ fun ChatsWorkspaceScreen(
                         }
                     }
                 }
-            }
-
-            LazyColumn(
-                modifier = Modifier.weight(1f).fillMaxWidth(),
-                contentPadding = PaddingValues(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.sm),
-                verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)
-            ) {
+                }
+{
                 if (selectedConversation.messages.isEmpty()) {
                     item { EmptyState("Start anywhere", "Ask a question, bring in some context, or ask Memo to extract source-grounded project outcomes from the conversation.") }
                 }
