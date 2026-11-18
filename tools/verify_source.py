@@ -225,6 +225,12 @@ if "AndroidView(" in workflow_screen or "browser.webView" in workflow_screen:
     fail("Browser workflow page must not embed the live WebView over its scrollable controls")
 if "Open browser" not in workflow_screen or "verticalScroll(rememberScrollState())" not in workflow_screen:
     fail("Browser workflow page must remain scrollable and link to the dedicated browser")
+browser_hub = (ROOT / "app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt").read_text()
+browser_screen = browser_hub.split("private fun BrowserScreen(", 1)[1].split("if (showNewConversationConfirm)", 1)[0]
+if "onReturnToWorkflow" not in browser_screen or "Back to workflow" not in browser_screen:
+    fail("Dedicated browser screen must provide a direct return path to active workflow controls")
+if "onReturnToWorkflow = if (browser.workflowState.status !=" not in browser_hub:
+    fail("Active browser workflows must wire the browser return action to the workflow section")
 proposal_applier = (ROOT / "core/src/main/kotlin/app/memo/android/orchestration/WorkflowProposalApplier.kt").read_text()
 proposal_applier_test = (ROOT / "core/src/test/kotlin/app/memo/android/orchestration/WorkflowProposalApplierTest.kt").read_text()
 for marker in ("expandDraftWorkflowWithLocalModel(", "WorkflowTaskProposalParser.parse(raw, intent, runtimes)", "viewModel.applyValidatedWorkflowProposal(jobId", "Expand with local model", "Expand the plan with a local model", "onStartConversation(intent, expandWithLocalModel)", "canExpandCurrentDraft", "IntentPlanner.shouldCreateWorkflow(draft)"):
