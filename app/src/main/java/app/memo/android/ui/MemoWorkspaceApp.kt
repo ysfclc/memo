@@ -223,7 +223,8 @@ fun MemoWorkspaceApp(
     fun openSystem(destination: AppTab) {
         systemReturnTab = when (tab) {
             AppTab.HOME, AppTab.COUNCIL -> AppTab.HOME
-            AppTab.LIVE, AppTab.BROWSER, AppTab.APPS, AppTab.APPROVALS -> AppTab.LIVE
+            AppTab.LIVE, AppTab.APPS, AppTab.APPROVALS -> AppTab.LIVE
+            AppTab.BROWSER -> if (toolSection == ToolSection.BROWSER) AppTab.LIVE else AppTab.WORK
             AppTab.WORK -> AppTab.WORK
             AppTab.STUDIO -> AppTab.STUDIO
             else -> systemReturnTab
@@ -235,8 +236,8 @@ fun MemoWorkspaceApp(
         if (tab == AppTab.MODELS || tab == AppTab.SETTINGS) return systemReturnTab == destination
         return when (destination) {
             AppTab.HOME -> tab in setOf(AppTab.HOME, AppTab.COUNCIL)
-            AppTab.LIVE -> tab in setOf(AppTab.LIVE, AppTab.BROWSER, AppTab.APPS, AppTab.APPROVALS)
-            AppTab.WORK -> tab == AppTab.WORK
+            AppTab.LIVE -> tab in setOf(AppTab.LIVE, AppTab.APPS, AppTab.APPROVALS) || (tab == AppTab.BROWSER && toolSection == ToolSection.BROWSER)
+            AppTab.WORK -> tab == AppTab.WORK || (tab == AppTab.BROWSER && toolSection != ToolSection.BROWSER)
             AppTab.STUDIO -> tab == AppTab.STUDIO
             else -> false
         }
@@ -262,7 +263,8 @@ fun MemoWorkspaceApp(
                 else -> AppTab.HOME
             }
             systemReturnTab = when (requestedTab) {
-                AppTab.LIVE, AppTab.BROWSER, AppTab.APPS, AppTab.APPROVALS -> AppTab.LIVE
+                AppTab.LIVE, AppTab.APPS, AppTab.APPROVALS -> AppTab.LIVE
+                AppTab.BROWSER -> if (toolSection == ToolSection.BROWSER) AppTab.LIVE else AppTab.WORK
                 AppTab.COUNCIL, AppTab.MODELS, AppTab.SETTINGS -> AppTab.HOME
                 else -> requestedTab
             }
