@@ -208,7 +208,7 @@ work_source = (ROOT / "app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt
 # Talk's conversation index and all Work sections must share one page-level
 # LazyColumn. This guards against fixed header stacks and nested vertical lists
 # that make content unreachable on short screens.
-talk_index = work_source.split("fun ChatsWorkspaceScreen(", 1)[1].split("    } else {", 1)[0]
+talk_index = work_source.split("if (selectedConversation == null) {", 1)[1].split("    } else {\n        Column(Modifier.fillMaxSize()) {", 1)[0]
 if "LazyColumn(" not in talk_index or "MemoPageHeader(title = \"Talk\"" not in talk_index or "items(filtered, key = { it.id })" not in talk_index:
     fail("Talk conversation index must include its header, empty state and cards in one page-level lazy list")
 work_screen = work_source.split("fun WorkWorkspaceScreen(", 1)[1].split("@Composable\nfun SelfModelStudioScreen", 1)[0]
