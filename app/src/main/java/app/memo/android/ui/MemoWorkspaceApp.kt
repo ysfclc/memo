@@ -966,7 +966,9 @@ private fun ToolsHubScreen(
                     browser = browser,
                     onQuickTask = onQuickTask,
                     onCancelTask = onCancelTask,
-                    onClearPrompt = onClearPrompt
+                    onClearPrompt = onClearPrompt,
+                    onReturnToWorkflow = browser.workflowState.status != app.memo.android.browser.BrowserWorkflowStatus.IDLE
+                        .takeIf { it }?.let { { onSectionChange(ToolSection.WORKFLOWS) } }
                 )
                 ToolSection.WORKFLOWS -> BrowserWorkflowScreen(
                     snapshot = snapshot,
@@ -1473,7 +1475,8 @@ private fun BrowserScreen(
     browser: BrowserSession,
     onQuickTask: (TaskKind, String) -> Unit,
     onCancelTask: () -> Unit,
-    onClearPrompt: () -> Unit
+    onClearPrompt: () -> Unit,
+    onReturnToWorkflow: (() -> Unit)?
 ) {
     var address by remember { mutableStateOf("") }
     var prompt by remember { mutableStateOf("") }
@@ -1481,6 +1484,25 @@ private fun BrowserScreen(
     var expandedBrowser by remember { mutableStateOf(false) }
     LaunchedEffect(browser.currentUrl) { address = browser.currentUrl }
     Column(modifier = Modifier.fillMaxSize().imePadding().padding(horizontal = MemoTokens.Spacing.sm, vertical = MemoTokens.Spacing.xs), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.xs)) {
+        if (onReturnToWorkflow != null) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text("Workflow browser", style = MaterialTheme.typography.labelLarge)
+                    Text(
+                        browser.workflowState.message,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                TextButton(onClick = onReturnToWorkflow) { Text("Back to workflow") }
+            }
+        }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             OutlinedTextField(
                 value = address,
