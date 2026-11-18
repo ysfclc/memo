@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -252,106 +253,91 @@ fun ChatsWorkspaceScreen(
     }
 
     if (selectedConversation == null) {
-        Column(Modifier.fillMaxSize()) {
-            Column(Modifier.padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.md), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
-                MemoPageHeader(title = "Talk", eyebrow = "MEMO / TALK", description = "A searchable home for ongoing conversations, imported transcripts and the work they produce.")
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    OutlinedButton(onClick = onOpenCouncil, modifier = Modifier.weight(1f).height(44.dp)) {
-                        Icon(Icons.Rounded.Hub, contentDescription = null); Spacer(Modifier.width(7.dp)); Text("Council")
+        val filtered = conversations.filter { conversation ->
+            search.isBlank() || conversation.title.contains(search, true) || conversation.messages.any { it.content.contains(search, true) }
+        }
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.sm),
+            verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)
+        ) {
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
+                    MemoPageHeader(title = "Talk", eyebrow = "MEMO / TALK", description = "A searchable home for ongoing conversations, imported transcripts and the work they produce.")
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                        OutlinedButton(onClick = onOpenCouncil, modifier = Modifier.weight(1f).height(44.dp)) {
+                            Icon(Icons.Rounded.Hub, contentDescription = null); Spacer(Modifier.width(7.dp)); Text("Council")
+                        }
+                        OutlinedButton(onClick = { showImport = true }, modifier = Modifier.weight(1f).height(44.dp)) {
+                            Icon(Icons.Rounded.ImportExport, contentDescription = null); Spacer(Modifier.width(7.dp)); Text("Import")
+                        }
                     }
-                    OutlinedButton(onClick = { showImport = true }, modifier = Modifier.weight(1f).height(44.dp)) {
-                        Icon(Icons.Rounded.ImportExport, contentDescription = null); Spacer(Modifier.width(7.dp)); Text("Import")
-                    }
-                }
-                MemoPanel {
-                    MemoSectionHeading(
-                        title = "Start with Memo",
-                        supporting = "A thought, question or task. The conversation and its related work stay together."
-                    )
-                    OutlinedTextField(
-                        value = draft,
-                        onValueChange = { if (it.length <= 6_000) draft = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("What do you want Memo to help you accomplish?") },
-                        minLines = 2,
-                        maxLines = 4,
-                        shape = RoundedCornerShape(MemoTokens.Radius.medium),
-                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
-                    )
-                    if (runtimeState.installedModels.isNotEmpty() && canExpandCurrentDraft) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(
-                                checked = expandWithLocalModel,
-                                onCheckedChange = { expandWithLocalModel = it },
-                                enabled = !runtimeState.running
-                            )
-                            Column(Modifier.weight(1f)) {
-                                Text("Expand the plan with a local model", style = MaterialTheme.typography.bodySmall)
-                                Text(
-                                    "Creates a more detailed draft in Work. It will not run any steps.",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                    MemoPanel {
+                        MemoSectionHeading(title = "Start with Memo", supporting = "A thought, question or task. The conversation and its related work stay together.")
+                        OutlinedTextField(
+                            value = draft, onValueChange = { if (it.length <= 6_000) draft = it },
+                            modifier = Modifier.fillMaxWidth(), placeholder = { Text("What do you want Memo to help you accomplish?") },
+                            minLines = 2, maxLines = 4, shape = RoundedCornerShape(MemoTokens.Radius.medium),
+                            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
+                        )
+                        if (runtimeState.installedModels.isNotEmpty() && canExpandCurrentDraft) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = expandWithLocalModel, onCheckedChange = { expandWithLocalModel = it }, enabled = !runtimeState.running)
+                                Column(Modifier.weight(1f)) {
+                                    Text("Expand the plan with a local model", style = MaterialTheme.typography.bodySmall)
+                                    Text("Creates a more detailed draft in Work. It will not run any steps.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
+                            OutlinedButton(onClick = launchVoiceInput, modifier = Modifier.height(MemoTokens.Spacing.minimumTouch)) {
+                                Icon(Icons.Rounded.Mic, contentDescription = null); Spacer(Modifier.width(6.dp)); Text("Voice")
+                            }
+                            Button(
+                                onClick = { val intent = draft.trim(); if (intent.isNotBlank() && onStartConversation(intent, expandWithLocalModel)) draft = "" },
+                                enabled = draft.isNotBlank(), modifier = Modifier.weight(1f).height(MemoTokens.Spacing.minimumTouch)
+                            ) {
+                                Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = null); Spacer(Modifier.width(7.dp)); Text("Start with Memo")
                             }
                         }
                     }
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedButton(onClick = launchVoiceInput, modifier = Modifier.height(MemoTokens.Spacing.minimumTouch)) {
-                            Icon(Icons.Rounded.Mic, contentDescription = null); Spacer(Modifier.width(6.dp)); Text("Voice")
-                        }
-                        Button(
-                            onClick = { val intent = draft.trim(); if (intent.isNotBlank() && onStartConversation(intent, expandWithLocalModel)) draft = "" },
-                            enabled = draft.isNotBlank(),
-                            modifier = Modifier.weight(1f).height(MemoTokens.Spacing.minimumTouch)
-                        ) {
-                            Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = null); Spacer(Modifier.width(7.dp)); Text("Start with Memo")
-                        }
-                    }
+                    OutlinedTextField(
+                        value = search, onValueChange = { search = it }, modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("Search conversations and messages") }, leadingIcon = { Icon(Icons.Rounded.Search, null) },
+                        singleLine = true, shape = RoundedCornerShape(MemoTokens.Radius.medium)
+                    )
+                    MemoSectionHeading(title = "Conversations", supporting = "${filtered.size} saved")
                 }
-                OutlinedTextField(
-                    value = search, onValueChange = { search = it }, modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Search conversations and messages") }, leadingIcon = { Icon(Icons.Rounded.Search, null) },
-                    singleLine = true, shape = RoundedCornerShape(MemoTokens.Radius.medium)
-                )
-            }
-            val filtered = conversations.filter { conversation ->
-                search.isBlank() || conversation.title.contains(search, true) || conversation.messages.any { it.content.contains(search, true) }
             }
             if (filtered.isEmpty()) {
-                EmptyState(
-                    title = if (conversations.isEmpty()) "Your work starts with a conversation" else "No conversations found",
-                    body = if (conversations.isEmpty()) "Create a chat with an available model or import a transcript from an external AI service. Imported content stays labelled with its source." else "Try another search term, or create a new conversation."
-                )
+                item {
+                    EmptyState(
+                        title = if (conversations.isEmpty()) "Your work starts with a conversation" else "No conversations found",
+                        body = if (conversations.isEmpty()) "Create a chat with an available model or import a transcript from an external AI service. Imported content stays labelled with its source." else "Try another search term, or create a new conversation."
+                    )
+                }
                 if (conversations.isEmpty()) {
-                    Button(onClick = onOpenModels, modifier = Modifier.fillMaxWidth().padding(horizontal = MemoTokens.Spacing.pageMargin)) { Icon(Icons.Rounded.Tune, null); Spacer(Modifier.width(8.dp)); Text("Configure a model") }
+                    item {
+                        Button(onClick = onOpenModels, modifier = Modifier.fillMaxWidth()) {
+                            Icon(Icons.Rounded.Tune, null); Spacer(Modifier.width(8.dp)); Text("Configure a model")
+                        }
+                    }
                 }
             } else {
-                LazyColumn(
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
-                    contentPadding = PaddingValues(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.xs),
-                    verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)
-                ) {
-                    item {
-                        MemoSectionHeading(
-                            title = "Conversations",
-                            supporting = "${filtered.size} saved"
-                        )
-                    }
-                    items(filtered, key = { it.id }) { conversation ->
-                        MemoPanel {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(12.dp), modifier = Modifier.size(44.dp)) {
-                                    Box(contentAlignment = Alignment.Center) { Icon(Icons.Rounded.ChatBubbleOutline, null, tint = MaterialTheme.colorScheme.onPrimaryContainer) }
-                                }
-                                Column(Modifier.weight(1f).clickable { onSelectConversation(conversation.id) }, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    Text(conversation.title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                                    Text("${conversation.messages.size} messages · ${conversation.sourceType.lowercase().replace('_', ' ')}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Text(conversation.messages.lastOrNull()?.content.orEmpty().take(110).ifBlank { "No messages yet. Open to begin." }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                                    Text(formatWorkspaceDate(conversation.updatedAt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                                }
-                                IconButton(onClick = { renameTarget = conversation; renameText = conversation.title }) { Icon(Icons.Rounded.Edit, contentDescription = "Rename conversation") }
-                                IconButton(onClick = { conversationDeleteTarget = conversation }) { Icon(Icons.Rounded.Delete, contentDescription = "Delete conversation") }
+                items(filtered, key = { it.id }) { conversation ->
+                    MemoPanel {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(12.dp), modifier = Modifier.size(44.dp)) {
+                                Box(contentAlignment = Alignment.Center) { Icon(Icons.Rounded.ChatBubbleOutline, null, tint = MaterialTheme.colorScheme.onPrimaryContainer) }
                             }
+                            Column(Modifier.weight(1f).clickable { onSelectConversation(conversation.id) }, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text(conversation.title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                Text("${conversation.messages.size} messages · ${conversation.sourceType.lowercase().replace('_', ' ')}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(conversation.messages.lastOrNull()?.content.orEmpty().take(110).ifBlank { "No messages yet. Open to begin." }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                Text(formatWorkspaceDate(conversation.updatedAt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                            }
+                            IconButton(onClick = { renameTarget = conversation; renameText = conversation.title }) { Icon(Icons.Rounded.Edit, contentDescription = "Rename conversation") }
+                            IconButton(onClick = { conversationDeleteTarget = conversation }) { Icon(Icons.Rounded.Delete, contentDescription = "Delete conversation") }
                         }
                     }
                 }
@@ -803,8 +789,7 @@ private fun ImportConversationDialog(onDismiss: () -> Unit, onImport: (String, S
     )
 }
 
-@Composable
-private fun TodayWorkScreen(
+private fun LazyListScope.todayWorkItems(
     snapshot: AppSnapshot,
     onSetTaskPriority: (String, String) -> Unit,
     onSetJobPriority: (String, String) -> Unit,
@@ -825,11 +810,6 @@ private fun TodayWorkScreen(
         "NOT_TODAY" to "Not today"
     )
     val openEntities = snapshot.entities.filter { it.reviewStatus !in setOf("REJECTED", "MERGED") }
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.sm),
-        verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)
-    ) {
         item {
             MemoPanel {
                 Text("Your active work, from the encrypted workspace.", style = MaterialTheme.typography.bodyMedium)
@@ -903,7 +883,6 @@ private fun TodayWorkScreen(
                 )
             }
         }
-    }
 }
 
 @Composable
@@ -1023,8 +1002,13 @@ fun WorkWorkspaceScreen(
         inSection && (search.isBlank() || entity.title.contains(search, true) || entity.type.contains(search, true) || entity.description.contains(search, true))
     }.sortedWith(compareBy<EntityRecord> { if (it.reviewStatus == "PROPOSED") 0 else 1 }.thenByDescending { it.updatedAt })
 
-    Column(Modifier.fillMaxSize()) {
-        Column(Modifier.padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.md), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.sm),
+        verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)
+    ) {
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
             MemoPageHeader(title = "Work", eyebrow = "MEMO / WORK", description = "Conversations become projects, tasks, decisions and linked knowledge. Every proposal keeps its source.")
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(selected = section == "TODAY", onClick = { section = "TODAY"; onSectionChanged("TODAY") }, label = { Text("Today") })
@@ -1044,11 +1028,12 @@ fun WorkWorkspaceScreen(
                 FilterChip(selected = false, onClick = onOpenBrowserTasks, label = { Text("Browser tasks") })
                 FilterChip(selected = false, onClick = onOpenEvidenceLibrary, label = { Text("Evidence") })
             }
+            }
         }
         val hasActiveWorkCheckpoint = snapshot.jobs.any { job ->
             job.status == "RUNNING" && job.steps.any { it.status == "RUNNING" }
         }
-        if (section == "JOBS" && runtimeState.running && hasActiveWorkCheckpoint) {
+        if (section == "JOBS" && runtimeState.running && hasActiveWorkCheckpoint) item {
             MemoPanel(modifier = Modifier.padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.xs)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Column(Modifier.weight(1f)) {
@@ -1075,7 +1060,7 @@ fun WorkWorkspaceScreen(
             }
         }
         if (section == "TODAY") {
-            TodayWorkScreen(
+            todayWorkItems(
                 snapshot = snapshot,
                 onSetTaskPriority = viewModel::setTaskTodayPriority,
                 onSetJobPriority = viewModel::setJobTodayPriority,
@@ -1084,7 +1069,8 @@ fun WorkWorkspaceScreen(
                 onOpenEntity = { selectedEntity = it }
             )
         } else if (section != "JOBS") {
-            Row(Modifier.padding(horizontal = MemoTokens.Spacing.pageMargin), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            item {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = search, onValueChange = { search = it }, modifier = Modifier.weight(1f),
                     placeholder = { Text(if (section == "ARCHIVE") "Find archived entities" else "Find entities") }, leadingIcon = { Icon(Icons.Rounded.Search, null) }, singleLine = true,
@@ -1095,7 +1081,8 @@ fun WorkWorkspaceScreen(
                     IconButton(onClick = { showCreateEntity = true }, modifier = Modifier.size(52.dp)) { Icon(Icons.Rounded.Add, "Create entity") }
                 }
             }
-            if (section == "ENTITIES" && pending.isNotEmpty()) {
+            }
+            if (section == "ENTITIES" && pending.isNotEmpty()) item {
                 MemoPanel(
                     modifier = Modifier.padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.xs)
                 ) {
@@ -1111,12 +1098,11 @@ fun WorkWorkspaceScreen(
                 }
             }
             if (visibleEntities.isEmpty()) {
-                EmptyState(
+                item { EmptyState(
                     if (section == "ARCHIVE") "Nothing in the archive" else if (search.isBlank()) "Your work graph is empty" else "No matching entities",
                     if (section == "ARCHIVE") "Rejected proposals and merged source records are retained here so you can inspect their history." else "Create an entity manually, or open an AI conversation and run Extract outcomes. Candidate entities are source-checked and remain proposals until you approve them."
-                )
+                ) }
             } else {
-                LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.sm), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
                     items(visibleEntities, key = { it.id }) { entity ->
                         EntityCard(
                             entity = entity,
@@ -1127,13 +1113,11 @@ fun WorkWorkspaceScreen(
                             onReject = { viewModel.setEntityReviewStatus(entity.id, "REJECTED"); onShowMessage("Rejected ${entity.title}.") }
                         )
                     }
-                }
             }
         } else {
             if (snapshot.jobs.isEmpty()) {
-                EmptyState("No plans yet", "Action-oriented requests become editable plans here. Review each checkpoint and its requirements before starting; completed work needs a real outcome and evidence.")
+                item { EmptyState("No plans yet", "Action-oriented requests become editable plans here. Review each checkpoint and its requirements before starting; completed work needs a real outcome and evidence.") }
             } else {
-                LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.sm), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
                     items(snapshot.jobs.sortedByDescending { it.updatedAt }, key = { it.id }) { job ->
                         JobCard(
                             job,
@@ -1230,7 +1214,6 @@ fun WorkWorkspaceScreen(
                             onOpenEvidence = onOpenEvidence
                         )
                     }
-                }
             }
         }
     }
