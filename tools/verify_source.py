@@ -217,6 +217,14 @@ if talk_thread.index("LazyColumn(") > talk_thread.index("if (modelOptions.isEmpt
 work_screen = work_source.split("fun WorkWorkspaceScreen(", 1)[1].split("@Composable\nfun SelfModelStudioScreen", 1)[0]
 if work_screen.count("LazyColumn(") != 1 or "todayWorkItems(" not in work_screen or "items(visibleEntities, key = { it.id })" not in work_screen or "items(snapshot.jobs.sortedByDescending { it.updatedAt }" not in work_screen:
     fail("Work sections must use one page-level lazy list without nested vertical scrolling")
+
+workflow_screen = (ROOT / "app/src/main/java/app/memo/android/ui/BrowserWorkflowScreen.kt").read_text()
+# Android WebView can render above Compose siblings. Keep it on the dedicated
+# Browser page, not mounted inside the independently scrolling workflow page.
+if "AndroidView(" in workflow_screen or "browser.webView" in workflow_screen:
+    fail("Browser workflow page must not embed the live WebView over its scrollable controls")
+if "Open browser" not in workflow_screen or "verticalScroll(rememberScrollState())" not in workflow_screen:
+    fail("Browser workflow page must remain scrollable and link to the dedicated browser")
 proposal_applier = (ROOT / "core/src/main/kotlin/app/memo/android/orchestration/WorkflowProposalApplier.kt").read_text()
 proposal_applier_test = (ROOT / "core/src/test/kotlin/app/memo/android/orchestration/WorkflowProposalApplierTest.kt").read_text()
 for marker in ("expandDraftWorkflowWithLocalModel(", "WorkflowTaskProposalParser.parse(raw, intent, runtimes)", "viewModel.applyValidatedWorkflowProposal(jobId", "Expand with local model", "Expand the plan with a local model", "onStartConversation(intent, expandWithLocalModel)", "canExpandCurrentDraft", "IntentPlanner.shouldCreateWorkflow(draft)"):
