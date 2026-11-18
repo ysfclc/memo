@@ -613,3 +613,13 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - **UIX-04 — Contextual emergency stop:** the global Stop control is shown only while a model run, browser workflow, Work job or phone task reports RUNNING/active state.
 - **Scope boundary:** specialist screens, workflow engine, approvals, encrypted stores and task semantics are reused unchanged. Automated and physical-device UX acceptance remain pending; do not mark these items complete without evidence.
 - **Release invariant:** package app.memo.android.debug, persistent signing certificate, and encrypted data compatibility remain unchanged.
+
+## 18 November 2026 — Work / Live navigation responsibility boundary
+
+- **User outcome:** stop scattering execution records across the Live browser surface and the Work workspace. Work should be the place to manage workflows, browser tasks and evidence; Live should remain the place to inspect active runtimes and make live control/approval decisions.
+- **UIX-05:** Work now links directly to Browser workflows, Browser tasks and Evidence. These routes reuse ToolsHubScreen and its existing runtime/data handlers.
+- Live's current-browser card still opens the exact active workflow controls, but the destination is now owned by Work. Ordinary Browser session, Phone apps and Approval inbox remain Live routes.
+- Browser route ownership is explicit: Browser session returns to Live; Workflows, Browser tasks and Evidence return to Work. Android Back and the visible parent route strip agree.
+- Work and Live labels/descriptions are localized in English, Polish and Turkish. Shared page headers and section headings now use the language-aware text component.
+- No existing capability, task, evidence record, approval, runtime, storage format, app ID or signing identity was removed or changed.
+- **Status:** source committed on stabilization/usable-stage-2026-11-10; exact-head source verifier, localization tests, Gradle tests/lint, APK build, pinned signing and API 35 install-over-existing checks pending. Do not claim device acceptance until tested on the user's phone.
