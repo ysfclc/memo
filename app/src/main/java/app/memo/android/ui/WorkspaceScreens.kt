@@ -363,7 +363,7 @@ fun ChatsWorkspaceScreen(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 contentPadding = PaddingValues(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.sm),
                 verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)
-            ) 
+            ) {
                 item {
                 if (modelOptions.isEmpty()) {
                     Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
@@ -427,7 +427,6 @@ fun ChatsWorkspaceScreen(
                     }
                 }
                 }
-{
                 if (selectedConversation.messages.isEmpty()) {
                     item { EmptyState("Start anywhere", "Ask a question, bring in some context, or ask Memo to extract source-grounded project outcomes from the conversation.") }
                 }
