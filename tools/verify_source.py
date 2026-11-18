@@ -211,6 +211,9 @@ work_source = (ROOT / "app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt
 talk_index = work_source.split("if (selectedConversation == null) {", 1)[1].split("    } else {\n        Column(Modifier.fillMaxSize()) {", 1)[0]
 if "LazyColumn(" not in talk_index or "MemoPageHeader(title = \"Talk\"" not in talk_index or "items(filtered, key = { it.id })" not in talk_index:
     fail("Talk conversation index must include its header, empty state and cards in one page-level lazy list")
+talk_thread = work_source.split("    } else {\n        Column(Modifier.fillMaxSize()) {", 1)[1].split("Surface(tonalElevation = 2.dp", 1)[0]
+if talk_thread.index("LazyColumn(") > talk_thread.index("if (modelOptions.isEmpty())"):
+    fail("Talk request controls must scroll with the message history rather than consume a fixed page section")
 work_screen = work_source.split("fun WorkWorkspaceScreen(", 1)[1].split("@Composable\nfun SelfModelStudioScreen", 1)[0]
 if work_screen.count("LazyColumn(") != 1 or "todayWorkItems(" not in work_screen or "items(visibleEntities, key = { it.id })" not in work_screen or "items(snapshot.jobs.sortedByDescending { it.updatedAt }" not in work_screen:
     fail("Work sections must use one page-level lazy list without nested vertical scrolling")
