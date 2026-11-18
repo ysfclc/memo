@@ -1,6 +1,5 @@
 package app.memo.android.ui
 
-import android.view.ViewGroup
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -49,7 +48,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import app.memo.android.ai.AiRuntimeViewModel
 import app.memo.android.ai.ModelRuntimeUiState
 import app.memo.android.browser.BrowserModelProviders
@@ -897,22 +895,18 @@ fun BrowserWorkflowScreen(
                 }
             }
         }
-        Column(Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                androidx.compose.material3.Icon(Icons.Rounded.Cloud, null, tint = MaterialTheme.colorScheme.primary)
-                Column(Modifier.weight(1f)) {
-                    Text(browser.pageTitle.ifBlank { "Frontier provider browser" }, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(browser.currentUrl.ifBlank { "No provider open yet" }, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            MemoPanel {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    androidx.compose.material3.Icon(Icons.Rounded.Cloud, null, tint = MaterialTheme.colorScheme.primary)
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(browser.pageTitle.ifBlank { "Frontier provider browser" }, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(browser.currentUrl.ifBlank { "No provider open yet" }, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    if (browser.isLoading) CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                    OutlinedButton(onClick = onOpenBrowser, modifier = Modifier.height(40.dp), contentPadding = PaddingValues(horizontal = 12.dp)) {
+                        Text("Open browser")
+                    }
                 }
-                TextButton(onClick = onOpenBrowser) { Text("Full browser") }
-                if (browser.isLoading) CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-            }
-            Box(Modifier.fillMaxWidth().height(250.dp).clip(RoundedCornerShape(14.dp))) {
-                AndroidView(
-                    factory = { browser.webView },
-                    modifier = Modifier.fillMaxSize(),
-                    update = { view -> if (view.parent == null) view.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT) }
-                )
             }
         }
     }
