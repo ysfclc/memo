@@ -233,9 +233,11 @@ if "onReturnToWorkflow = if (browser.workflowState.status !=" not in browser_hub
     fail("Active browser workflows must wire the browser return action to the workflow section")
 proposal_applier = (ROOT / "core/src/main/kotlin/app/memo/android/orchestration/WorkflowProposalApplier.kt").read_text()
 proposal_applier_test = (ROOT / "core/src/test/kotlin/app/memo/android/orchestration/WorkflowProposalApplierTest.kt").read_text()
-for marker in ("expandDraftWorkflowWithLocalModel(", "WorkflowTaskProposalParser.parse(raw, intent, runtimes)", "viewModel.applyValidatedWorkflowProposal(jobId", "Expand with local model", "Expand the plan with a local model", "onStartConversation(intent, expandWithLocalModel)", "canExpandCurrentDraft", "IntentPlanner.shouldCreateWorkflow(draft)"):
+for marker in ("expandDraftWorkflowWithLocalModel(", "WorkflowTaskProposalParser.parse(raw, intent, runtimes)", "viewModel.applyValidatedWorkflowProposal(jobId"):
     if marker not in work_source:
-        fail(f"Talk/Work local TaskSpec expansion is missing: {marker}")
+        fail(f"Work local TaskSpec expansion is missing: {marker}")
+if "onStartConversation(intent)" not in work_source or "IntentPlanner.shouldCreateWorkflow(draft)" in work_source or "Expand the plan with a local model" in work_source:
+    fail("Talk must submit every intent to the conversation first without asking the user to choose a workflow")
 for marker in ("original user goal", "runtimeStatus != \"AVAILABLE\"", "externalSideEffect", "No nodes were executed"):
     if marker not in proposal_applier:
         fail(f"Validated workflow proposal application is missing: {marker}")
@@ -373,9 +375,12 @@ if "interface Listener" not in bridge.read_text() or "openForExternalCapture" no
     fail("Memo runtime bridge is missing listeners or capture entry points")
 home = (ROOT / "app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt").read_text()
 chat = (ROOT / "app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt").read_text()
-for marker in ("onContinueWithMemo", "IntentPlanner.shouldCreateWorkflow", "RecognizerIntent.ACTION_RECOGNIZE_SPEECH", "speechResultLauncher", "Manifest.permission.RECORD_AUDIO", "Make sense of what matters.", "Needs your decision", "sourceMessageId = sourceMessageId"):
+for marker in ("onContinueWithMemo", "RecognizerIntent.ACTION_RECOGNIZE_SPEECH", "speechResultLauncher", "Manifest.permission.RECORD_AUDIO", "Make sense of what matters.", "Needs your decision", "pendingChatPrompt = clean", "activeConversationId = id"):
     if marker not in home:
         fail(f"Memo-first home is missing product marker: {marker}")
+intent_router = home.split("fun startTalkIntent(", 1)[1].split("\n    }", 1)[0]
+if "IntentPlanner.shouldCreateWorkflow" in intent_router or "tab = AppTab.WORK" in intent_router or "createIntentPlan(" in intent_router:
+    fail("Talk entry must not route users into a separate workflow destination before understanding their intent")
 for marker in ("initialPrompt", "onInitialPromptConsumed", "draft = initialPrompt.take(6_000)"):
     if marker not in chat:
         fail(f"home-to-chat draft handoff is missing marker: {marker}")
