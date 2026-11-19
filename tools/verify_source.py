@@ -871,7 +871,7 @@ governance_files = {
 governance_markers = {
     "agents": (
         "Never infer product direction from an example, use case, assistant suggestion",
-        "Client discovery is exactly one use case, not an outbound product",
+        "one use case, not an outbound product",
         "IDEA (UNCOMMITTED)",
         "BUG_REPORT",
         "Memo 2 is a historical comparison/reference only",
