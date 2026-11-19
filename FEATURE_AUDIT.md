@@ -154,7 +154,7 @@ A top-level Stop active work control now requests cancellation of the current lo
 - **Scope:** optional user-specific use-case material only; not Memo's product definition, core architecture or default roadmap priority. See `docs/USER_INPUT_LEDGER.md` and the current Product Contract.
 - **Status:** scenario documentation exists; implementation is not authorized unless the user explicitly selects this scenario. The six flows live in `docs/use-cases/sales-operations/`.
 - **Reusable source primitives:** `EntityRecord(type = "ORGANIZATION")`, `EntityRelationship`, `EvidenceRecord`, Work jobs/tasks and the existing capability/approval boundaries.
-- **First implementation slice:** M7.A1 / MEMO-SALES-001 — evidence-backed account research, transparent factor-level ICP score, duplicate-safe matching and operator accept/reject.
+- **Prior proposed first slice (not authorized unless explicitly selected):** M7.A1 / MEMO-SALES-001 — evidence-backed account research, transparent factor-level fit score, duplicate-safe matching and operator accept/reject.
 - **Not included:** a second CRM, contact harvesting, cold-email/auto-DM, provider connectors or external contact actions.
 - **Evidence status:** no account-research implementation or Android acceptance is claimed in this source audit.
 
