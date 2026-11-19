@@ -269,3 +269,14 @@ The critical invariant is:
 **Once an external provider has produced an answer, Memo must provide a user-controlled way to capture and preserve it, independent of whether automatic DOM detection succeeds.**
 
 Until the end-to-end scenarios pass on a physical Android device, mark this journey **OPEN / NOT ACCEPTED**.
+
+## 9. Additional user reproduction feedback — 19 November 2026
+
+New reports (INPUT-2026-11-19-004 through -006) extend, rather than replace, the original acceptance matrix:
+
+- The current browser workflow is Frontier-provider-specific. General browser automation must resolve user-intended permitted websites/targets; Frontier providers remain optional presets.
+- The user selected Frontier providers and reports that no browser opened despite accounts already being logged in. The source has a navigation call, so the precise failure must be reproduced by tracing the actual entry route, local-model stage, WebView callbacks/errors and Memo's own browser session. Do not assume external Chrome login state is shared with the embedded WebView.
+- The approval action is not discoverable. Source inspection confirms "Approve and send" lives in a conditional dialog, while the Action Approval Inbox does not expose approval itself. The approval inbox and in-context control must converge on one actionable record.
+- Checkpoints and approvals are experienced as repetitive/confusing. Read-only observation, navigation, local AI and planning must not be treated as external-action authorization. Distinguish progress, input-needed, result-review, recovery/uncertainty and explicit authorization.
+
+Add BRW-14/15, APR-01 and CHK-01 to the existing WF-01–WF-13 acceptance run. Do not close earlier items or weaken exact-content/one-use approval to reduce friction.

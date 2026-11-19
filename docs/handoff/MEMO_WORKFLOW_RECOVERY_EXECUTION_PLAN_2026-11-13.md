@@ -101,3 +101,15 @@ Do not batch several unverified fixes and then report them as complete. Mark a t
 - The current branch has an unverified local-model GPU fallback patch and outstanding encrypted-store, signing and physical-device gates. See [STOP-WORK stabilization plan](MEMO_STABILIZATION_PLAN_2026-11-13.md).
 
 These blockers do not prevent careful source inspection, targeted implementation and adding tests, but they do prevent calling a patch verified or the app fixed.
+
+## 8. Addendum — generic browser, approval discoverability and checkpoint clarity (19 November 2026)
+
+The user's latest device feedback is recorded verbatim in INPUT-2026-11-19-004 through -006. Add these tasks to the existing recovery sequence:
+
+1. **BRW-15 diagnosis first:** reproduce the selected-provider/no-browser symptom. Trace Talk/Work route → optional local intent brief → startBrowserWorkflow → beginWorkflowStep → navigate(provider.startUrl) → WebView onPageStarted/onPageFinished/error → provider matching. Record the first state transition that diverges. Verify the actual Memo WebView account session; external Chrome sign-in is not proof of embedded WebView sign-in.
+2. **BRW-14 generalize browser target resolution:** separate a reusable, user-goal-driven visible browser runtime from the Frontier consultation preset. Use registered capabilities and target metadata; no fixed provider catalogue as the universe of browser destinations. Preserve Frontier as an optional scenario.
+3. **APR-01 expose one approval surface:** add a visible approve/reject action to the pending-action inbox and keep the same action available in context. Reuse the canonical ActionApprovalLedger. Do not create a parallel ledger or allow approval from an inbox card whose exact payload/destination cannot be revalidated.
+4. **CHK-01 simplify state semantics:** progress checkpoints are informational; read-only/local work does not need external authorization; missing user input and uncertain outcomes are separate states; artifact review is not action approval. Only a concrete external/destructive side effect creates a pending approval. Explain every pause and show one relevant next action.
+5. Add tests for generic target resolution, navigation callback failures, no-op prevention, approval discoverability/one-use/stale hash, no-approval read-only tasks, and status-to-UI mapping. Then run exact-head CI and the full physical-device journey.
+
+These are additive to WF-01–WF-13 and STAB-05; they do not defer existing capture, retry, cancellation, data-preservation or provider/device acceptance.
