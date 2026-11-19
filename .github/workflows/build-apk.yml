@@ -13,6 +13,7 @@ name: Memo — Import source ZIP and build Android APK
       - 'core/**'
       - 'gradle/**'
       - 'tools/**'
+      - 'AGENTS.md'
       - 'MEMO2_ALIGNMENT_MATRIX.md'
       - 'PRODUCT_GAP_REGISTRY.md'
       - 'FEATURE_AUDIT.md'
@@ -109,7 +110,7 @@ jobs:
           fi
 
           CHANGED_FILES="$(git diff --name-only "$GITHUB_SHA^1" "$GITHUB_SHA" 2>/dev/null || git diff-tree --root --no-commit-id --name-only -r "$GITHUB_SHA")"
-          DIRECT_SOURCE_CHANGE="$(printf '%s\n' "$CHANGED_FILES" | grep -Ec '^(.circleci/|.github/workflows/build-apk.yml|app/|core/|gradle/|tools/|docs/|README[.]md$|TASKS[.]md$|ROADMAP[.]md$|FEATURE_AUDIT[.]md$|PRODUCT_GAP_REGISTRY[.]md$|MEMO2_ALIGNMENT_MATRIX[.]md$|CHANGELOG[.]md$|.*[.]gradle([.]kts)?$|gradle[.]properties$|settings[.]gradle([.]kts)?$)' || true)"
+          DIRECT_SOURCE_CHANGE="$(printf '%s\n' "$CHANGED_FILES" | grep -Ec '^(.circleci/|.github/workflows/build-apk.yml|app/|core/|gradle/|tools/|AGENTS[.]md$|docs/|README[.]md$|TASKS[.]md$|ROADMAP[.]md$|FEATURE_AUDIT[.]md$|PRODUCT_GAP_REGISTRY[.]md$|MEMO2_ALIGNMENT_MATRIX[.]md$|CHANGELOG[.]md$|.*[.]gradle([.]kts)?$|gradle[.]properties$|settings[.]gradle([.]kts)?$)' || true)"
           INCOMING_ARCHIVE_CHANGE="$(printf '%s\n' "$CHANGED_FILES" | grep -Ec '^incoming/memo[.]zip$' || true)"
           mapfile -t PRESENT_ZIPS < <(find incoming -maxdepth 1 -type f -iname '*.zip' -print 2>/dev/null | sort)
 
