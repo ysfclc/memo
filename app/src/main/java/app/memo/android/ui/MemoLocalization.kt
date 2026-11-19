@@ -134,6 +134,7 @@ object MemoLocalization {
         "Audit events" to ("Zdarzenia audytu" to "Denetim olayları"),
         "No audit events found." to ("Nie znaleziono zdarzeń audytu." to "Denetim olayı bulunamadı."),
         "Open live approval" to ("Otwórz aktywne zatwierdzenie" to "Canlı onayı aç"),
+        "Review prompt & approve" to ("Sprawdź prompt i zatwierdź" to "İstemi incele ve onayla"),
         "Reject proposal" to ("Odrzuć propozycję" to "Öneriyi reddet"),
         "This proposal is not connected to the matching live prompt. Memo will not approve or send it from history." to ("Ta propozycja nie jest powiązana z pasującym aktywnym promptem. Memo nie zatwierdzi ani nie wyśle jej z historii." to "Bu öneri eşleşen canlı isteme bağlı değil. Memo bunu geçmişten onaylamaz veya göndermez."),
         "Do not retry automatically. Inspect the destination and confirm whether the side effect occurred. Marking for review does not undo a submission already started." to ("Nie ponawiaj automatycznie. Sprawdź cel i potwierdź, czy działanie zewnętrzne nastąpiło. Oznaczenie do sprawdzenia nie cofnie wysyłki, która już się rozpoczęła." to "Otomatik yeniden deneme yapma. Hedefi incele ve dış etkinin gerçekleşip gerçekleşmediğini doğrula. İnceleme için işaretlemek başlamış bir gönderimi geri almaz."),
