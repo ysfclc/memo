@@ -14,6 +14,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 REQUIRED = [
+    "AGENTS.md",
+    "docs/USER_INPUT_LEDGER.md",
+    "DEVELOPMENT_GOVERNANCE.md",
+    "IMPLEMENTATION_CONTRACT.md",
+    "docs/MEMO_PRODUCT_CONTRACT.md",
+    "docs/DECISION_LOG.md",
+    "docs/REQUIREMENT_TRACEABILITY.md",
+    "docs/SESSION_CHECKPOINT_TEMPLATE.md",
+    "MEMO2_ALIGNMENT_MATRIX.md",
     "settings.gradle",
     "build.gradle",
     "core/build.gradle",
@@ -840,5 +849,97 @@ for marker in (
     if marker not in proposal_workflow_tests:
         fail(f"deterministic entity-proposal workflow regression coverage is missing: {marker}")
 print("PASS: Talk outcome proposals use the deterministic app.entities adapter, durable journal and separate read-after-write verification")
+
+
+# Product-direction and user-input governance: prevent examples, legacy classifiers or
+# historical blueprints from becoming accidental product authority.
+governance_files = {
+    "agents": (ROOT / "AGENTS.md").read_text(),
+    "input_ledger": (ROOT / "docs/USER_INPUT_LEDGER.md").read_text(),
+    "governance": (ROOT / "DEVELOPMENT_GOVERNANCE.md").read_text(),
+    "implementation_contract": (ROOT / "IMPLEMENTATION_CONTRACT.md").read_text(),
+    "product_contract": (ROOT / "docs/MEMO_PRODUCT_CONTRACT.md").read_text(),
+    "decision_log": (ROOT / "docs/DECISION_LOG.md").read_text(),
+    "traceability": (ROOT / "docs/REQUIREMENT_TRACEABILITY.md").read_text(),
+    "tasks": (ROOT / "TASKS.md").read_text(),
+    "sales_use_case": (ROOT / "docs/use-cases/sales-operations/README.md").read_text(),
+    "memo2_matrix": (ROOT / "MEMO2_ALIGNMENT_MATRIX.md").read_text(),
+    "checkpoint": (ROOT / "docs/SESSION_CHECKPOINT_TEMPLATE.md").read_text(),
+    "intent_planner": (ROOT / "core/src/main/kotlin/app/memo/android/orchestration/IntentPlanner.kt").read_text(),
+    "capability_compiler": (ROOT / "core/src/main/kotlin/app/memo/android/orchestration/CapabilityCompiler.kt").read_text(),
+}
+governance_markers = {
+    "agents": (
+        "Never infer product direction from an example, use case, assistant suggestion",
+        "Client discovery is exactly one use case, not an outbound product",
+        "IDEA (UNCOMMITTED)",
+        "BUG_REPORT",
+        "Memo 2 is a historical comparison/reference only",
+    ),
+    "input_ledger": (
+        "INPUT-2026-11-19-001",
+        "INPUT-2026-11-19-002",
+        "INPUT-2026-11-19-003",
+        "But again, we are not building outbound. This is just a use case.",
+        "IDEA (UNCOMMITTED)",
+        "BUG_REPORT",
+    ),
+    "governance": (
+        "docs/USER_INPUT_LEDGER.md",
+        "The user's latest explicit instruction, correction or approval",
+        "A new message never silently deletes an earlier bug",
+    ),
+    "implementation_contract": (
+        "Memo 2 is a historical reference",
+        "follow the single hierarchy in",
+    ),
+    "product_contract": (
+        "Capture → Observe → Plan → Execute",
+        "Non-defining acceptance scenario: client discovery (not an outbound product)",
+        "A public contact route is not consent",
+        "not a fixed module map",
+    ),
+    "decision_log": ("PROD-002", "Memo is not an outbound/cold-outreach product"),
+    "traceability": ("optional, domain-specific scenario pack only", "not core Memo requirements"),
+    "tasks": (
+        "Optional Sales Operations use-case pack (not Memo core architecture)",
+        "inactive / not authorized for current build",
+        "Client discovery is one non-defining acceptance scenario only",
+    ),
+    "sales_use_case": (
+        "Optional user-specific domain scenario pack / proposed workflows; not Memo's product definition",
+        "does not authorize building an outbound",
+    ),
+    "memo2_matrix": (
+        "historical Memo 2 → Memo 1 comparison matrix",
+        "not a product authority",
+    ),
+    "checkpoint": (
+        "User-input ledger latest IDs read",
+        "New user-input IDs appended this session",
+    ),
+    "intent_planner": (
+        "LEGACY / PROTOTYPE classifier and planner",
+        "not Memo's canonical intent classifier, smart router",
+    ),
+    "capability_compiler": (
+        "LEGACY / PROTOTYPE NOTE",
+        "not Memo's canonical smart-router architecture",
+    ),
+}
+for file_key, markers in governance_markers.items():
+    for marker in markers:
+        if marker not in governance_files[file_key]:
+            fail(f"product governance regression in {file_key}: missing {marker!r}")
+
+if "Memo 2 is the product blueprint" in governance_files["implementation_contract"]:
+    fail("historical Memo 2 blueprint wording must not outrank user-approved Memo product direction")
+if "### Example end-to-end mission: find clients" in governance_files["product_contract"]:
+    fail("client discovery must remain explicitly labelled a non-defining use case")
+if "personal sales-operations co-pilot and controlled operator" in governance_files["sales_use_case"]:
+    fail("optional Sales Operations scenario must not redefine Memo as a sales product")
+if "outreach drafts" in governance_files["product_contract"].split("## 3. Four connected product surfaces", 1)[0]:
+    fail("client discovery example must not imply outreach drafts are part of the general acceptance scenario")
+print("PASS: user corrections, ideas, bugs and feedback have durable governance; client discovery remains a non-defining use case; legacy keyword routing is marked as prototype")
 
 print("NOTE: This script does not compile Kotlin, run Gradle, prove Android runtime behavior, or verify a device.")
