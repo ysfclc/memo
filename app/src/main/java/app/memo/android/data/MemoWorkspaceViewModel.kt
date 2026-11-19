@@ -18,6 +18,7 @@ import app.memo.android.orchestration.CapabilityCompiler
 import app.memo.android.orchestration.WorkflowGraphCompiler
 import app.memo.android.orchestration.WorkflowGraph
 import app.memo.android.orchestration.WorkflowProposalApplier
+import app.memo.android.orchestration.ConversationWorkflowDraftFactory
 import org.json.JSONObject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -673,6 +674,33 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         }
         val saved = _snapshot.value.jobs.any { it.id == job.id }
         return if (saved) Result.success(job.id) else Result.failure(IllegalStateException("The plan could not be persisted. Check workspace status."))
+    }
+
+    /**
+     * Persist a validated dynamic workflow as a Work draft linked to the exact Talk user message.
+     * Snapshot equality prevents a stale planning callback from overwriting newer workspace state.
+     */
+    fun createConversationWorkflowDraft(
+        sourceConversationId: String,
+        sourceMessageId: String,
+        proposal: WorkflowGraph
+    ): Result<String> {
+        if (!_vaultReady.value) return Result.failure(IllegalStateException("Unlock the workspace before creating work."))
+        if (_vaultError.value != null) return Result.failure(IllegalStateException("Workspace persistence is unavailable. Resolve the workspace issue before creating work."))
+        val before = _snapshot.value
+        val job = runCatching {
+            ConversationWorkflowDraftFactory.create(
+                before, sourceConversationId, sourceMessageId, proposal, runtimeRegistry.listRuntimes(), nowMillis()
+            )
+        }.getOrElse { return Result.failure(it) }
+        updateSnapshot { current ->
+            if (current != before) current
+            else current.copy(jobs = (listOf(job) + current.jobs).take(240))
+                .withActivity("Dynamic workflow draft prepared from Talk: ${job.title}", job.id)
+        }
+        val committed = _snapshot.value.jobs.firstOrNull { it.id == job.id }
+        return if (committed?.workflowGraphJson == job.workflowGraphJson) Result.success(job.id)
+        else Result.failure(IllegalStateException("The workspace changed while Memo was preparing this draft. The conversation was kept; no work was started."))
     }
 
     /**
