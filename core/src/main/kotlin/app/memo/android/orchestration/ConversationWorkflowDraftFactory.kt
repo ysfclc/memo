@@ -15,7 +15,8 @@ object ConversationWorkflowDraftFactory {
         "app.models" to "model.list",
         "app.models" to "model.generate",
         "runtime.browser" to "browser.navigate_https",
-        "runtime.browser" to "browser.inspect_page"
+        "runtime.browser" to "browser.inspect_page",
+        "runtime.browser" to "browser.capture_evidence"
     )
 
     fun create(
