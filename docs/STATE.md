@@ -218,3 +218,9 @@ The user tested browser automation and reported that it is hardcoded around Fron
 - **Approval and checkpoint behavior:** local intent structuring is opt-in by default. The duplicate broad preflight consent checkbox was removed because the exact per-provider prompt dialog already displays the destination and full content and still requires a one-use explicit approval before sending. Manual sign-in/page-setup waits no longer become NEEDS_REVIEW approval checkpoints; exact approval, sent and uncertain actions remain review-gated. Paused Work jobs say "Needs your input".
 - **Still open:** BRW-14 general-purpose browser target resolution; physical-device reproduction and provider-session validation for BRW-15; direct inbox approval only if it can share the same canonical execution gate for APR-01; broader cross-runtime checkpoint audit for CHK-01.
 - **Verification boundary:** source and docs are committed on the stabilization branch; exact-head CI, APK assembly/signing and device acceptance are pending. No claim that the phone or real provider sessions have been tested. Do not uninstall or clear Memo data. PR #8 remains draft/open; main remains untouched.
+
+
+## 19 November 2026 — Final source state queued for exact-head validation
+
+- Browser visibility, approval re-entry, shared action identity and checkpoint-friction changes are complete in source. The integrity manifest and this state update are committed atomically so CI validates one consistent final revision.
+- Exact-head CI is pending. No signed APK, physical-device or real provider-session acceptance is claimed yet.
