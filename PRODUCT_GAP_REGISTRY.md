@@ -67,8 +67,10 @@ These additions are derived from the combined source inventory and the design bl
 - [ ] **Goal measurement contract.** For each measurable workflow, define the metric, source, sample period, threshold and stopping rule. Preserve the observed numbers and their source; present optimizations as proposals until accepted.
 
 
-## P1 — Sales Operations extension (specified 10 November 2026)
+## Optional scenario pack — Sales Operations (not a core P1 gap or roadmap priority)
 
-- [ ] **M7.A1 — Evidence-backed industrial account research.** Reuse Work organization entities and source evidence; score ICP fit transparently with factor rationales and explicit unknowns; detect possible duplicates without destructive merging; require operator accept/reject. No outbound contact in this slice.
-- [ ] **M7.A2–M7.A6 — Qualification, permissioned engagement, inbound/listening, proposals, delivery and reporting.** Deliver separately, one feature branch/worktree per slice, with legal/privacy/platform gates and evidence-backed acceptance.
-- [ ] Do not create a second CRM, scrape restricted sources, infer marketing consent from public contact data, or report unverified external outcomes as successful.
+The entries below preserve a previously documented optional scenario pack. They are not core Memo product gaps, not an active priority and not authorization to build an outbound product. Do not schedule or implement them unless the user explicitly selects this scenario.
+
+- [ ] **M7.A1 — Optional evidence-backed industrial account research.** Reuse Work organization entities and source evidence; score fit transparently with factor rationales and explicit unknowns; detect possible duplicates without destructive merging; require operator accept/reject. Read-only; no outbound contact.
+- [ ] **M7.A2–M7.A6 — Optional qualification, inbound/listening, proposals, delivery and reporting.** Retain the scenario record, but do not start these slices without explicit user selection. Any future channel action requires a separate explicit request and applicable approval; no inferred consent.
+- [ ] Preserve safety boundaries: no second CRM, no restricted-source scraping, no inference of consent from public contact data, and no unverified external-success claims.
