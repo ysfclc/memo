@@ -1,17 +1,17 @@
 # State Ledger
-_Last updated: 2026-11-17 — locked feedback baseline retained; UI design-system and editable prompt checkpoint are build-verified on source commit `090a2de99dacbc65cfcc0351be9333bbf00aa182` by Actions run #802. Physical-device acceptance remains pending._
+_Last updated: 2026-11-19 — permanent user-input ledger and scope correction added. The current branch head must be freshly validated; older run records below are historical and do not prove the latest head. Physical-device acceptance remains pending._
 
 ## 1. Product snapshot
 
 Memo is the personal AI operating agent on the phone: it understands what the user wants, assembles and runs the right workflow across the user's information, models, websites and Android apps, produces useful work, and keeps the user in control.
 
-The normative product source is `docs/MEMO_PRODUCT_CONTRACT.md`; the complete social operating-layer requirements are in `docs/SOCIAL_PLATFORM_PRODUCT_SPEC.md`. These are user-approved scope, not optional future ideas to be silently reduced. `TASKS.md` is the execution ledger; `docs/DECISION_LOG.md` records material changes.
+The normative product source is `docs/MEMO_PRODUCT_CONTRACT.md`; every user correction, requirement, bug report, feedback item, idea and use-case boundary is preserved in `docs/USER_INPUT_LEDGER.md`. The social operating-layer requirements are in `docs/SOCIAL_PLATFORM_PRODUCT_SPEC.md`. `TASKS.md` is the execution ledger; `docs/DECISION_LOG.md` records material decisions. `AGENTS.md` and `DEVELOPMENT_GOVERNANCE.md` enforce one authority hierarchy.
 
 The locked interpretation of the user's feedback on prompt feeding, workflows, browser automation, native Android app automation, Council and recovery is recorded in [MEMO_REORIENTATION_AND_FEEDBACK_BASELINE_2026-11-17.md](MEMO_REORIENTATION_AND_FEEDBACK_BASELINE_2026-11-17.md). It supplements rather than replaces the Product Contract and social specification. This is a product-direction decision, not a claim that the listed capabilities are implemented or device-verified.
 
 The intended continuous path is: capture intent → clarify and retrieve permitted context → assemble a typed, versioned workflow → route steps to deterministic code/local AI/frontier AI/visible browser/Android runtime/user → show progress and checkpoints in Live → verify actual postconditions → save evidence and deliverables in Work/Studio. Conversation is the interface, not the database.
 
-Primary surfaces remain Talk, Live, Work and Studio. Work is the local-first persistent graph; Today prioritizes MUST / SHOULD / COULD / NOT TODAY. Memo is not a chatbot skin, generic browser, CRM clone, static task manager or dashboard of disconnected modules.
+Primary surfaces remain Talk, Live, Work and Studio. Work is the local-first persistent graph; Today prioritizes MUST / SHOULD / COULD / NOT TODAY. Memo is not a chatbot skin, generic browser, CRM clone, static task manager or dashboard of disconnected modules. Client discovery is one optional acceptance scenario, not an outbound product or the product's defining direction; Sales Operations remains an optional domain scenario pack.
 
 ## 2. Status board
 
@@ -31,7 +31,7 @@ Primary surfaces remain Talk, Live, Work and Studio. Work is the local-first per
 | Local/frontier AI | partial | LiteRT local model path and optional API-compatible provider exist. Council is not yet one unified Talk/Live workflow across visible signed-in provider sessions. |
 | Social platform | specified, not implemented | Account management, feed, inbox, engagement, relationships, listening, publishing, analytics, personal brand and monetization remain in scope. Provider support must be verified individually. |
 | Security and storage | partial | Exact-content approval, audit, encrypted workspace/native stores and upgrade safeguards exist. Stores remain separate; single-store migration is deferred. |
-| CI / Android build | verified on exact head | Run #767 passed source checks, remote runner, core/app unit tests, lint, debug and Android-test APK assembly/identity, and API 35 in-place encrypted-store upgrade/data-preservation tests. PR validation intentionally skipped pinned signing and final APK artifact handoff. |
+| CI / Android build | historical evidence; current head unverified | TASKS.md records a later successful run #821, but its tested source SHA is not recorded alongside that claim. The inspected head `a604a553ce2f77cb5fbb05cd4bc38479835fcdb5` had no confirmed Android Actions result in this inspection; combined status showed only a failed Vercel check. Do not claim current-head Android verification until exact-commit Actions evidence is attached. |
 | Physical device | pending | User installed the earlier #674 APK but has not checked it. No physical-device behavior or upgrade acceptance is claimed for #678. |
 
 ## 3. Current branch and delivery state
@@ -39,7 +39,7 @@ Primary surfaces remain Talk, Live, Work and Studio. Work is the local-first per
 - Repository: `ysfclc/memo`.
 - Development branch: `stabilization/usable-stage-2026-11-10`.
 - Draft PR #8 remains open and unmerged, targeting `main`: https://github.com/ysfclc/memo/pull/8
-- Exact tested source commit for M3.8.A10: `989ac28fb6b0da3e5fc66525b1f7b3aff36329df`. `main` was not modified.
+- Inspected branch head before governance correction on 2026-11-19: `a604a553ce2f77cb5fbb05cd4bc38479835fcdb5`. The subsequent governance commits require their own validation. `main` was not modified.
 - GitHub Actions run #767, ID `43816799963`: https://github.com/ysfclc/memo/actions/runs/43816799963 — completed successfully.
 - Passed: source invariants and checksum verification; remote-runner tests; `:core:test`; `:app:testDebugUnitTest`; `:app:lintDebug`; `:app:assembleDebug`; `:app:assembleDebugAndroidTest`; APK package/version/signature checks; API 35 in-place upgrade instrumentation proving app-private data and both encrypted Memo stores survive `adb install -r`, including legacy recovery and corruption tests.
 - This was a pull-request validation run. The APK was assembled and emulator-tested, but pinned signing and final APK artifact handoff are intentionally skipped for PR events; no new signed installable APK is available from run #767.
@@ -65,7 +65,7 @@ It does not authorize merging PR #8, modifying `main`, production deployment, ch
 - Live: one chronological execution view across runtimes, visible status, pause/resume/cancel/takeover, approval checkpoints and NEEDS_REVIEW for uncertain side effects.
 - Work: encrypted, searchable, typed graph for projects, goals, tasks, people, companies, relationships, jobs, applications, notes, sources, evidence, decisions, workflows, capabilities, providers and artifacts.
 - Studio: private, editable, versioned, evidence-grounded deliverables, including career documents, research, plans, proposals and content. External submission/publishing is a separate approved action.
-- General workflows: brainstorm-to-project, CRM capture, job search/application, content creation/publishing/learning, arbitrary user goals, social operations and Sales Operations. These are not separate silo products.
+- General workflows: brainstorm-to-project, CRM capture, job search/application, content creation/publishing/learning, arbitrary user goals and social operations. These are examples/domains supported by the same general platform, not separate silo products. Sales Operations/client discovery is an optional scenario pack, not a core product track or authorization for outbound automation.
 - Social platform: connect/revoke accounts; provider-aware feed and inbox; supported messages/comments/reactions; relationship management; listening/discovery; publishing; analytics; personal brand; customer acquisition and monetization. Never invent provider support or metrics.
 - Intelligence: local-first encrypted source of truth; local models coordinate where supported; frontier providers are visible and consent-bound, never silent fallbacks.
 - Safety: deterministic code owns validation, budgets, approvals, state transitions, idempotency and verification. Model output is not proof. Consequential actions require exact content/destination/scope approval; uncertain effects are not blindly replayed.
@@ -161,3 +161,12 @@ The first deterministic app capability, app.entities/entity.propose, is connecte
 - Existing tasks, evidence, approvals, browser session, exact-content approvals, recovery controls, encrypted storage, app ID and package/signing identity are preserved.
 - **Verified:** Actions #821 exact-source build, 432/432 static UI translation coverage, remote-runner tests, 178 core tests, 43 app tests, lint with zero errors, debug APK assembly, persistent pinned signing and API 35 install-over-existing preservation of both encrypted stores.
 - **Pending:** physical-device visual, touch and Back-navigation acceptance on the user's phone. Do not uninstall Memo or clear app data. PR #8 remains draft/unmerged; main is untouched.
+
+## 14. Permanent user-input governance and scope correction — 19 November 2026
+
+- `AGENTS.md` is the mandatory instruction file for agents and contributors; `docs/USER_INPUT_LEDGER.md` is the append-only source for user corrections, requirements, feedback, bug reports, ideas and use-case boundaries.
+- The user explicitly corrected the client-finding example: **Memo is not an outbound product; client finding is only a use case.** It must not define architecture, product identity, global classification or default roadmap priority.
+- Sales Operations documentation is preserved as an optional domain scenario. It is not core Memo architecture, and channel-send/outbound tasks are not authorized by that scenario.
+- Ideas remain uncommitted until explicitly adopted. Bug reports and feedback remain active until evidence-backed closure or explicit user closure. Corrections override assistant interpretations; conflicts with prior explicit user decisions must be surfaced rather than silently resolved.
+- Earlier UWF-01–UWF-08 and WF-01–WF-13 feedback remains active according to its existing acceptance evidence; this governance change does not close or postpone it.
+- **Validation boundary at audit start:** PR #8 head was `a604a553ce2f77cb5fbb05cd4bc38479835fcdb5`. The queried PR-triggered Android workflow lookup returned no run for that head and combined status showed only a failed Vercel check. Prior successful CI claims are historical until exact tested SHAs are mapped. This governance-only work must not be described as Android-build or device verified.
