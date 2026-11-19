@@ -2455,7 +2455,7 @@ private fun JobCard(
                 Text(job.title, style = MaterialTheme.typography.titleMedium)
                 Text(job.goal.substringBefore("\n\nMemo route:"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 3, overflow = TextOverflow.Ellipsis)
                 MemoStatusTag(
-                    label = job.status.lowercase().replace('_', ' '),
+                    label = if (job.status == "WAITING_FOR_USER") "Needs your input" else job.status.lowercase().replace('_', ' '),
                     tone = when (job.status) {
                         "FAILED", "BLOCKED" -> MemoStatusTone.ERROR
                         "NEEDS_REVIEW", "WAITING_FOR_USER" -> MemoStatusTone.WARNING
