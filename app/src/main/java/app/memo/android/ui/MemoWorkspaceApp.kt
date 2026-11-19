@@ -681,7 +681,7 @@ fun MemoWorkspaceApp(
                     AppTab.APPROVALS -> ActionApprovalInboxScreen(
                         snapshot = snapshot,
                         browserState = browser.workflowState,
-                        onOpenBrowser = { tab = AppTab.BROWSER; toolSection = ToolSection.BROWSER },
+                        onOpenBrowser = { tab = AppTab.BROWSER; toolSection = ToolSection.WORKFLOWS },
                         onReject = { id ->
                             val pending = viewModel.snapshot.value.actionApprovals.firstOrNull { it.id == id }
                             val matchesLivePrompt = pending != null && browser.workflowState.awaitingPromptApproval &&
