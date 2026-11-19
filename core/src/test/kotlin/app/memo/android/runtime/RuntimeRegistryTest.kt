@@ -32,8 +32,16 @@ class RuntimeRegistryTest {
         assertFalse(local.requiresUserApproval)
         assertTrue(remote.requiresUserApproval)
         assertFalse(remote.externalSideEffect)
-        assertTrue(RuntimeRegistry().browser().capabilities.first { it.id == "browser.submit_prompt" }.externalSideEffect)
-        assertFalse(RuntimeRegistry().browser().capabilities.first { it.id == "browser.prepare_prompt" }.externalSideEffect)
+        val browser = RuntimeRegistry().browser()
+        val prepare = browser.capabilities.first { it.id == "browser.prepare_prompt" }
+        val submit = browser.capabilities.first { it.id == "browser.submit_prompt" }
+        val multiChat = browser.capabilities.first { it.id == "browser.run_multi_chat_workflow" }
+        assertFalse(prepare.requiresUserApproval)
+        assertFalse(prepare.externalSideEffect)
+        assertTrue(submit.requiresUserApproval)
+        assertTrue(submit.externalSideEffect)
+        assertFalse(multiChat.requiresUserApproval)
+        assertFalse(multiChat.externalSideEffect)
     }
 
     @Test fun humanApprovalInboxIsARegisteredRuntimeDistinctFromTheJobWorkbench() {
