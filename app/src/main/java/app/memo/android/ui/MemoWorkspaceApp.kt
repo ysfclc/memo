@@ -433,56 +433,18 @@ fun MemoWorkspaceApp(
         }
     }
 
-    fun startTalkIntent(rawIntent: String, expandWithLocalModel: Boolean): Boolean {
+    fun startTalkIntent(rawIntent: String): Boolean {
         val clean = rawIntent.trim().take(6_000)
         if (clean.isBlank()) return false
         val title = clean.lineSequence().firstOrNull().orEmpty().take(64).ifBlank { "New conversation" }
-        if (IntentPlanner.shouldCreateWorkflow(clean)) {
-            val sourceId = viewModel.createConversation(title = title)
-            if (sourceId.isBlank()) {
-                snack("Memo reached its conversation limit. Export a backup before removing older records.")
-                return false
-            }
-            val captureError = viewModel.appendChatMessage(sourceId, "USER", clean)
-            if (captureError != null) {
-                snack("Your draft was not saved: $captureError")
-                return false
-            }
-            val sourceMessageId = viewModel.snapshot.value.conversations.firstOrNull { it.id == sourceId }?.messages?.lastOrNull()?.id.orEmpty()
-            if (sourceMessageId.isBlank()) {
-                activeConversationId = sourceId
-                tab = AppTab.HOME
-                snack("The request is saved in Talk, but its source message could not be linked to Work.")
-                return true
-            }
-            viewModel.createIntentPlan(clean, uiLanguage, sourceConversationId = sourceId, sourceMessageId = sourceMessageId).fold(
-                onSuccess = { jobId ->
-                    workSectionRequest = "JOBS"
-                    tab = AppTab.WORK
-                    val checkpoints = viewModel.snapshot.value.jobs.firstOrNull { it.id == jobId }?.steps?.size ?: 0
-                    snack("Draft plan created with $checkpoints checkpoints and linked to its source conversation. Review it before starting; no external action has run.")
-                    if (expandWithLocalModel) {
-                        val localModel = modelState.installedModels.firstOrNull()
-                        if (localModel == null) {
-                            snack("No local model is currently installed. The original draft plan is ready in Work.")
-                        } else {
-                            expandDraftWorkflowWithLocalModel(jobId, localModel.id, aiRuntime, viewModel, ::snack)
-                        }
-                    }
-                },
-                onFailure = { error ->
-                    activeConversationId = sourceId
-                    tab = AppTab.HOME
-                    snack("The request is saved in Talk, but its plan could not be created: ${error.message ?: "unknown error"}")
-                }
-            )
-            return true
-        }
         val id = viewModel.createConversation(title = title)
         if (id.isBlank()) {
             snack("Memo reached its conversation limit. Export a backup before removing older records.")
             return false
         }
+        // Every intent starts as a conversation. Memo must understand the request
+        // before deciding whether it needs a Work plan, browser, local capability,
+        // or a human checkpoint. The user never chooses "chat vs workflow" here.
         pendingChatPrompt = clean
         activeConversationId = id
         tab = AppTab.HOME
