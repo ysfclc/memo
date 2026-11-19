@@ -125,6 +125,21 @@ class MemoLocalizationTest {
     }
 
     @Test
+    fun workflowRecoveryAndExecutionLabelsTranslateInPolishAndTurkish() {
+        val expected = mapOf(
+            "Back to workflow" to ("Wróć do przepływu" to "İş akışına dön"),
+            "Open Work" to ("Otwórz obszar pracy" to "Çalışma alanını aç"),
+            "Open browser" to ("Otwórz przeglądarkę" to "Tarayıcıyı aç"),
+            "Plan only · no action has been executed" to ("Tylko plan — nie wykonano żadnego działania" to "Yalnızca plan — hiçbir işlem gerçekleştirilmedi"),
+            "Workflow browser" to ("Przeglądarka przepływu pracy" to "İş akışı tarayıcısı")
+        )
+        expected.forEach { (source, translations) ->
+            assertEquals("Polish translation for: $source", translations.first, MemoLocalization.translate(source, "PL"))
+            assertEquals("Turkish translation for: $source", translations.second, MemoLocalization.translate(source, "TR"))
+        }
+    }
+
+    @Test
     fun unsupportedLanguageFallsBackToOriginalText() {
         assertEquals("Settings", MemoLocalization.translate("Settings", "XX"))
     }
