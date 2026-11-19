@@ -920,7 +920,7 @@ governance_markers = {
     ),
     "intent_planner": (
         "LEGACY / PROTOTYPE classifier and planner",
-        "not Memo's canonical intent classifier, smart router",
+        "not Memo's canonical intent classifier or smart router",
     ),
     "capability_compiler": (
         "LEGACY / PROTOTYPE NOTE",
