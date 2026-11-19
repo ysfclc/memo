@@ -98,7 +98,7 @@ Close data recovery, encrypted backup/restore, app lock, permission centre, diag
 For each task in `TASKS.md`:
 
 1. State task ID, requirement, dependencies, files owned and acceptance criteria before editing.
-2. Read the relevant Memo 1 implementation and blueprint section.
+2. Read the relevant user-approved Product Contract, ledger entries, accepted requirement and Memo 1 implementation. A historical blueprint may be consulted only as comparison material; it cannot add scope or acceptance criteria.
 3. Make the smallest coherent implementation; add regression tests and fixtures.
 4. Run targeted tests, core tests, Android unit tests, lint and build checks appropriate to the change.
 5. Review the full diff, especially data loss, policy bypass, privacy, concurrency, cancellation, audit and error handling.
