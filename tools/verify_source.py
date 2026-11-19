@@ -28,6 +28,8 @@ REQUIRED = [
     "PRODUCT_GAP_REGISTRY.md",
     "IMPLEMENTATION_LOG.md",
     "MEMO2_ALIGNMENT_MATRIX.md",
+    "core/src/main/kotlin/app/memo/android/orchestration/IntentPlanner.kt",
+    "core/src/main/kotlin/app/memo/android/orchestration/CapabilityCompiler.kt",
     "settings.gradle",
     "build.gradle",
     "core/build.gradle",
@@ -900,6 +902,7 @@ governance_files = {
     "checkpoint": (ROOT / "docs/SESSION_CHECKPOINT_TEMPLATE.md").read_text(),
     "intent_planner": (ROOT / "core/src/main/kotlin/app/memo/android/orchestration/IntentPlanner.kt").read_text(),
     "capability_compiler": (ROOT / "core/src/main/kotlin/app/memo/android/orchestration/CapabilityCompiler.kt").read_text(),
+    "workspace_screens": (ROOT / "app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt").read_text(),
 }
 governance_markers = {
     "agents": (
@@ -981,6 +984,10 @@ governance_markers = {
     "capability_compiler": (
         "LEGACY / PROTOTYPE NOTE",
         "not Memo's canonical smart-router architecture",
+    ),
+    "workspace_screens": (
+        "keyword classification is not policy enforcement",
+        "registered-runtime validator below remain independent safety gates",
     ),
 }
 for file_key, markers in governance_markers.items():
