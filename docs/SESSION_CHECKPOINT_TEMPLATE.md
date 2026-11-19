@@ -10,6 +10,8 @@
 - Head commit SHA:
 - Base branch / PR:
 - Working tree state (if known):
+- User-input ledger latest IDs read:
+- New user-input IDs appended this session (corrections / decisions / bugs / feedback / ideas / use cases):
 - Product/requirement IDs:
 
 ## User outcome
@@ -51,6 +53,7 @@ Do not write passed without the exact command/run and commit. Distinguish source
 
 ## Requirement and task ledger updates
 
+- User-input ledger entries appended or status events recorded:
 - Requirement IDs and old → new status:
 - TASKS.md IDs and checkbox changes:
 - Feature audit / gap registry updates:
@@ -59,6 +62,8 @@ Do not write passed without the exact command/run and commit. Distinguish source
 ## Decisions and deviations
 
 - Decision:
+- User-input ID(s) preserved:
+- Was this user-authored, assistant-proposed, or an uncommitted idea?:
 - Alternatives considered:
 - Reason:
 - User approval required?:
