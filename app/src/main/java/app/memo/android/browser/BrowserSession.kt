@@ -72,6 +72,9 @@ class BrowserSession(
         private set
     var workflowState by mutableStateOf(BrowserWorkflowUiState())
         private set
+    // Shared across Browser and Workflow screens: Compose may recreate either screen
+    // while a browser-backed action is awaiting review or collecting response evidence.
+    var activeExternalActionId by mutableStateOf("")
 
     private var workflowProviders: List<BrowserModelProvider> = emptyList()
     private var workflowGoal: String = ""
