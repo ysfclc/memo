@@ -116,3 +116,12 @@ For each new material input, append a new entry:
 - **Acceptance required:** Distinguish (1) progress/informational checkpoint, (2) user input or recovery needed, (3) review of a produced artifact/result, and (4) explicit authorization for a specific external/destructive side effect. Read-only navigation, observation, local inference, planning, draft generation and persistence must not trigger an external-action approval. One external side effect produces one pending approval bound to the exact action; no repeated prompt for the same unchanged action. Recovery/uncertainty is labelled "Needs review", not disguised as an approval request. Keep fail-closed security; do not remove legitimate approvals to make the UI quieter.
 - **Related:** MEMO-LIVE-001, MEMO-ORCH-001, MEMO-BROWSER-001; new CHK-01 and APR-01; WF-03, WF-06, WF-07, WF-11, WF-12.
 - **Status:** Active; not yet reproduced/closed on a physical device.
+
+
+### Implementation update — 2026-11-19 (INPUT-2026-11-19-004 through -006)
+
+- Source tracing confirmed a visibility/navigation defect: BrowserWorkflowScreen initiated the provider navigation, but only the separate BrowserScreen hosted the Android WebView. The workflow now routes to that visible BrowserScreen at start and after approval.
+- The browser now exposes "Review prompt & approve" while an exact prompt is waiting; the inbox routes to the live workflow confirmation surface rather than the ordinary browser. Active action identity is shared through BrowserSession across screen changes.
+- The duplicate broad preflight consent was removed; each outbound prompt still requires a separate exact-content, destination-bound, one-use approval. Local intent structuring is opt-in by default.
+- Manual sign-in/page-setup waits no longer create a false NEEDS_REVIEW approval checkpoint; paused Work jobs are labelled "Needs your input".
+- This is implementation progress, not closure. Exact-head CI and physical-device/provider-session acceptance remain pending; general-purpose browser target resolution and the wider cross-runtime checkpoint audit remain open.
