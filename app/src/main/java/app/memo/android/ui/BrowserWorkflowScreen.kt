@@ -103,7 +103,6 @@ fun BrowserWorkflowScreen(
     var finalStepIndex by remember { mutableStateOf(0) }
     var originalIntent by remember { mutableStateOf("") }
     var localBrief by remember { mutableStateOf("") }
-    var currentExternalActionId by remember { mutableStateOf("") }
     var manualResponseDraft by remember(workflowState.currentProviderId, workflowState.currentStep) {
         mutableStateOf("")
     }
@@ -296,10 +295,10 @@ fun BrowserWorkflowScreen(
         val callbacks = BrowserWorkflowCallbacks(
             onApprovalRequired = { index, provider, prompt, destination, contentHash ->
                 val stepId = activeStepIds.getOrNull(providerStepOffset + index).orEmpty()
-                val previousAction = currentExternalActionId
+                val previousAction = browser.activeExternalActionId
                 if (previousAction.isNotBlank()) {
                     viewModel.markExternalActionNeedsReview(previousAction, "A new provider step was reached before the previous external action had a verified outcome.")
-                    currentExternalActionId = ""
+                    browser.activeExternalActionId = ""
                 }
                 val proposalId = viewModel.proposeExternalAction(
                     jobId = jobId,
@@ -346,17 +345,17 @@ fun BrowserWorkflowScreen(
                 if (pendingApproval != null) {
                     viewModel.rejectExternalAction(pendingApproval.id, "User skipped this provider before approving or sending its prompt.")
                 }
-                if (currentExternalActionId.isNotBlank()) {
-                    viewModel.markExternalActionNeedsReview(currentExternalActionId, "Provider step was skipped while the external submission state was not fully confirmed. Inspect the provider page before any retry.")
-                    currentExternalActionId = ""
+                if (browser.activeExternalActionId.isNotBlank()) {
+                    viewModel.markExternalActionNeedsReview(browser.activeExternalActionId, "Provider step was skipped while the external submission state was not fully confirmed. Inspect the provider page before any retry.")
+                    browser.activeExternalActionId = ""
                 }
                 val stepId = activeStepIds.getOrNull(providerStepOffset + index)
                 if (stepId != null) viewModel.updateJobStep(jobId, stepId, "SKIPPED", reason)
             },
             onStepStopped = { index, provider, reason ->
-                if (currentExternalActionId.isNotBlank()) {
-                    viewModel.markExternalActionNeedsReview(currentExternalActionId, reason)
-                    currentExternalActionId = ""
+                if (browser.activeExternalActionId.isNotBlank()) {
+                    viewModel.markExternalActionNeedsReview(browser.activeExternalActionId, reason)
+                    browser.activeExternalActionId = ""
                 }
                 val stepId = activeStepIds.getOrNull(providerStepOffset + index)
                 if (stepId != null) viewModel.updateJobStep(jobId, stepId, "NEEDS_REVIEW", reason)
@@ -370,7 +369,7 @@ fun BrowserWorkflowScreen(
                         jobId = jobId,
                         stepId = stepId,
                         conversationId = conversationId,
-                        actionId = currentExternalActionId,
+                        actionId = browser.activeExternalActionId,
                         consultationTitle = title.trim().ifBlank { "Frontier consultation" },
                         providerId = response.providerId,
                         providerName = response.providerName,
@@ -386,7 +385,7 @@ fun BrowserWorkflowScreen(
                         val durablyCaptured = result.status != FrontierResponseCaptureStatus.FAILED &&
                             result.evidenceId.isNotBlank()
                         if (durablyCaptured) {
-                            currentExternalActionId = ""
+                            browser.activeExternalActionId = ""
                             if (result.entityId.isBlank()) {
                                 providerEntitySaveFailures++
                             } else if (result.entityId !in providerEntityIds) {
@@ -428,9 +427,9 @@ fun BrowserWorkflowScreen(
             },
             onFinished = { state ->
                 if (state.status != BrowserWorkflowStatus.COMPLETED) starting = false
-                if (state.status != BrowserWorkflowStatus.COMPLETED && currentExternalActionId.isNotBlank()) {
-                    viewModel.markExternalActionNeedsReview(currentExternalActionId, "Workflow ended before the provider response was verified. Inspect the provider conversation before deciding whether to retry.")
-                    currentExternalActionId = ""
+                if (state.status != BrowserWorkflowStatus.COMPLETED && browser.activeExternalActionId.isNotBlank()) {
+                    viewModel.markExternalActionNeedsReview(browser.activeExternalActionId, "Workflow ended before the provider response was verified. Inspect the provider conversation before deciding whether to retry.")
+                    browser.activeExternalActionId = ""
                 }
                 if (state.status == BrowserWorkflowStatus.COMPLETED && state.responses.isEmpty()) {
                     val message = "No provider answer was captured. Skipped ${state.skippedProviderIds.size} provider(s) and stopped ${state.stoppedProviderIds.size} step(s). The run was not marked successful; review the skipped/stopped steps and decide what to do next."
@@ -1023,11 +1022,11 @@ fun BrowserWorkflowScreen(
                                 onShowMessage("The execution gate refused this prompt. Nothing was sent.")
                                 browser.stopBrowserWorkflow()
                             } else {
-                                currentExternalActionId = actionId
+                                browser.activeExternalActionId = actionId
                                 val resumed = browser.approveCurrentPrompt(hash, destination)
                                 if (!resumed) {
                                     viewModel.markExternalActionNeedsReview(actionId, "The browser destination or prompt changed before submission.")
-                                    currentExternalActionId = ""
+                                    browser.activeExternalActionId = ""
                                     browser.stopBrowserWorkflow()
                                     onShowMessage("The browser changed before submission. The action was stopped and needs review; nothing was intentionally sent.")
                                 } else {
