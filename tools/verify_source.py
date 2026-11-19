@@ -676,6 +676,13 @@ runtime_registry_tests = (ROOT / "core/src/test/kotlin/app/memo/android/runtime/
 for marker in ("RuntimeDescriptor(\"app.approvals\"", "approval.approve_exact", "approval.reject", "model.generate_remote", "externalSideEffect: Boolean = false", "browser.submit_prompt", "true, true"):
     if marker not in runtime_registry:
         fail(f"human approval runtime contract is missing: {marker}")
+if 'RuntimeCapability("browser.prepare_prompt", "Prepare prompt", "Fill a supported chat composer for review without submitting it.", true)' in runtime_registry:
+    fail("safe browser prompt preparation must not require an approval checkpoint")
+if 'RuntimeCapability("browser.run_multi_chat_workflow", "Run multi-chat workflow", "Coordinate visible provider sessions; each outbound submission is separately gated by browser.submit_prompt.", true, true)' in runtime_registry:
+    fail("multi-chat orchestration must not create a blanket approval in addition to per-send approvals")
+capability_compiler = (ROOT / "core/src/main/kotlin/app/memo/android/orchestration/CapabilityCompiler.kt").read_text()
+if '"runtime.browser" to "browser.prepare_prompt"' in capability_compiler or '"runtime.browser" to "browser.submit_prompt"' not in capability_compiler:
+    fail("external browser approval must bind to submit_prompt, not prepare_prompt")
 if "localInferenceAndRemoteProviderConsentAreDifferentCapabilities" not in runtime_registry_tests:
     fail("local and remote model approval policy test is missing")
 if "humanApprovalInboxIsARegisteredRuntimeDistinctFromTheJobWorkbench" not in runtime_registry_tests:
