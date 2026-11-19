@@ -1462,7 +1462,11 @@ private fun BrowserScreen(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                TextButton(onClick = onReturnToWorkflow) { Text("Back to workflow") }
+                if (browser.workflowState.awaitingPromptApproval) {
+                    Button(onClick = onReturnToWorkflow) { Text("Review prompt & approve") }
+                } else {
+                    TextButton(onClick = onReturnToWorkflow) { Text("Back to workflow") }
+                }
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
