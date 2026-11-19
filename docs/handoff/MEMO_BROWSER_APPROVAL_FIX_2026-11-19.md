@@ -29,6 +29,7 @@ The original reports remain in USER_INPUT_LEDGER.md as INPUT-2026-11-19-004 thro
 - Make local intent structuring opt-in by default.
 - Remove the duplicate broad preflight consent checkbox. Keep the exact-content, destination-bound, one-use approval before every provider send.
 - Do not label manual sign-in/page setup as NEEDS_REVIEW approval. Reserve NEEDS_REVIEW for exact approval, sent or uncertain actions. Label paused Work jobs "Needs your input".
+- Corrected the generic runtime capability policy: browser.prepare_prompt (fill only) and browser.run_multi_chat_workflow (orchestration) do not create blanket approvals; browser.submit_prompt is the external side effect and remains explicitly approved. CapabilityCompiler adds browser.submit_prompt for external browser sends, and tests guard the distinction.
 - Extend tools/verify_source.py with source-level regression checks for these routes and distinctions.
 
 ## Physical-device acceptance checklist
@@ -54,6 +55,7 @@ Do not uninstall Memo or clear app data. Install the next signed APK over the ex
 - APR-01: consider direct inbox approval only if it can use the same canonical exact-action gate; no parallel approval ledger.
 - CHK-01: complete the cross-runtime audit of WAITING_FOR_USER, NEEDS_REVIEW and approval producers.
 - CI, APK signing, API 35 in-place upgrade and device acceptance must pass on the exact final branch head before calling this phase verified.
+- BRW-14 remains partial: generic read-only browser tasks exist for arbitrary HTTPS pages, but the universal DOM/action executor, dynamic intent-to-target resolution and independently verified action postconditions are not yet implemented.
 
 ## Verification boundary
 
