@@ -1,6 +1,6 @@
 # Memo Android — private operating environment
 
-Memo is a local-first personal execution environment. Conversation is the easiest way in; durable records, relationships, source evidence, tasks and verified work live behind it. Browser sessions, local models and optional Android automation are capabilities around Memo—not separate sources of truth. Other project archives contribute bounded primitives only; they do not define Memo’s product shell. This archive is a development build, not a production-readiness claim.
+Memo is a personal AI operating agent for Android. Conversation is the easiest way in; durable records, relationships, source evidence, tasks and verified work live behind it. Local models, permitted frontier AI, browser sessions and Android runtimes are capabilities around Memo—not separate products or sources of truth. Other project archives contribute bounded primitives only; they do not define Memo’s product direction. This archive is a development build, not a production-readiness claim.
 
 **Development workflow:** [`AGENTS.md`](AGENTS.md) gives mandatory agent/product-integrity rules. [`DEVELOPMENT_GOVERNANCE.md`](DEVELOPMENT_GOVERNANCE.md) defines the Fresh Start, one source-of-truth hierarchy, quality gates and handoff rules. Every user correction, requirement, feedback item, bug report, idea and use-case boundary is preserved in the append-only [`docs/USER_INPUT_LEDGER.md`](docs/USER_INPUT_LEDGER.md). The current session ledger is [`docs/STATE.md`](docs/STATE.md); known drift vulnerabilities and safeguards are recorded in the historical [`docs/PRODUCT_INTEGRITY_AUDIT_2026-11-19.md`](docs/PRODUCT_INTEGRITY_AUDIT_2026-11-19.md); stable requirement IDs live in [`docs/REQUIREMENT_TRACEABILITY.md`](docs/REQUIREMENT_TRACEABILITY.md); material decisions are indexed in [`docs/DECISION_LOG.md`](docs/DECISION_LOG.md); session handoffs use [`docs/SESSION_CHECKPOINT_TEMPLATE.md`](docs/SESSION_CHECKPOINT_TEMPLATE.md).
 
@@ -106,7 +106,7 @@ Memo uses a bounded executor and explicit human checkpoints rather than claiming
 
 ## Product direction
 
-The normative product contract and ordered backlog are in [`TASKS.md`](TASKS.md). It explicitly separates Memo’s own experience from optional borrowed runtimes and records what remains unverified.
+The user-approved product definition is in [`docs/MEMO_PRODUCT_CONTRACT.md`](docs/MEMO_PRODUCT_CONTRACT.md), and user corrections, requirements, bugs, feedback and uncommitted ideas are preserved in [`docs/USER_INPUT_LEDGER.md`](docs/USER_INPUT_LEDGER.md). [`TASKS.md`](TASKS.md) is the engineering execution ledger, not the product-definition source.
 
 ## Optional Sales Operations use-case pack
 
