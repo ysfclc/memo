@@ -4,8 +4,16 @@ import app.memo.android.runtime.RuntimeDescriptor
 import java.security.MessageDigest
 
 /**
- * Compiles an intent plan into a deterministic, inspectable capability manifest.
- * It only selects registered capabilities; it never grants permissions or executes actions.
+ * Compiles a typed proposal into an inspectable capability manifest.
+ *
+ * LEGACY / PROTOTYPE NOTE: the domain-to-route table for [IntentPlan] is a compatibility
+ * mechanism, not Memo's canonical smart-router architecture or a complete capability router.
+ * Do not grow static per-domain keyword routes into the product's general orchestration model.
+ * Exact registered-runtime resolution in [compileForTasks] is a deterministic validation
+ * boundary; it does not itself classify arbitrary user intent or choose the final strategy.
+ * Changes must preserve the general-purpose product contract and all user-input ledger entries.
+ *
+ * This class only selects registered capabilities; it never grants permissions or executes actions.
  */
 data class CompiledCapability(
     val runtimeId: String,
