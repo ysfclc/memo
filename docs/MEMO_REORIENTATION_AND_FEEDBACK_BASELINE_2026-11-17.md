@@ -3,8 +3,8 @@
 **Date:** 17 November 2026  
 **Repository:** `ysfclc/memo`  
 **Working branch:** `stabilization/usable-stage-2026-11-10`  
-**Status:** **Product direction locked; implementation and device acceptance remain in progress.**  
-**Authority:** This is a dated companion to `docs/MEMO_PRODUCT_CONTRACT.md`, not a replacement. The Product Contract and `docs/SOCIAL_PLATFORM_PRODUCT_SPEC.md` remain authoritative for product scope. `TASKS.md` remains the engineering execution ledger.
+**Status:** Historical recovered-feedback baseline from 17 November 2026; implementation and device acceptance remain in progress. Later explicit user corrections supersede assistant interpretations in this document.  
+**Authority:** This is a dated companion, not a complete user-input record or replacement for current project governance. The append-only `docs/USER_INPUT_LEDGER.md` preserves subsequent and future user inputs; `AGENTS.md` and `docs/DEVELOPMENT_GOVERNANCE.md` define precedence. The current Product Contract governs accepted product scope; `TASKS.md` remains the engineering execution ledger.
 
 ## 1. Why this document exists
 
@@ -12,7 +12,9 @@ The user reported feeling lost about Memo's vision, architecture, progress and d
 
 This document locks the recovered interpretation so future sessions do not repeatedly reinterpret the product, reduce it to the latest implementation, or mistake technical work for user-visible progress.
 
-It records four different kinds of information separately:
+It records four different kinds of information separately. Treat its interpretation as a baseline captured on that date; do not elevate assistant-authored implementation details to user decisions without checking the user-input ledger.
+
+It records these four categories separately:
 
 1. **Product decisions:** what Memo must be, based on the user-approved Product Contract and explicit direction.
 2. **Reported feedback and failures:** what the user said was frustrating or missing, especially in prompt feeding and browser workflows.
@@ -27,9 +29,9 @@ A source file, screen, old task checkbox or passing CI run is not proof that an 
 
 The operating model is:
 
-- **Local AI is the brain** when a compatible on-device model is available: it helps understand intent, retrieve and organize context, plan, route work, prepare instructions and synthesize results.
-- **Authorized applications and browser sessions are the hands:** Memo can operate through the user's permitted, visible sessions and supported Android interfaces.
-- **Deterministic Memo code is the control plane:** it owns schemas, capability discovery, permissions, state transitions, budgets, hashes, idempotency, approvals, audit, recovery and verification.
+- **AI participation:** local models may be used when compatible and appropriate; explicitly permitted frontier providers may also contribute through their approved routes. Which model or participant does which work is a routing decision, not a local-only rule.
+- **Authorized applications and browser sessions:** these are potential operating interfaces for capabilities Memo is permitted to use, not assumptions that a provider or app exposes a supported integration.
+- **Deterministic Memo code:** one candidate responsibility split is to use deterministic code for schemas, capability discovery, permissions, state transitions, budgets, hashes, idempotency, approvals, audit, recovery and verification. Treat this as an implementation model to validate, not a fully user-specified module boundary.
 - **The user remains the authority:** Memo cannot grant itself new access or approval. Consequential actions require the required human checkpoint.
 
 Using ChatGPT, Claude, Gemini or another frontier service through its normal signed-in website/app is a distinct route from calling that provider's inference API. The preferred multi-provider workflow uses authorized, visible website/app sessions where appropriate. Direct API integrations are optional, separately configured and explicitly disclosed; they are never a silent substitute or automatic fallback.
