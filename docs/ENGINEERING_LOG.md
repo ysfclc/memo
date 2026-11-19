@@ -53,3 +53,11 @@ Append-only session and implementation record. Do not rewrite historical entries
 - **Checkpoint friction:** local intent structuring is now opt-in rather than automatically delaying browser navigation whenever a local model is installed. Removed the duplicate broad preflight consent checkbox; each external send still requires the exact provider, destination and full prompt to be reviewed and approved through the one-use ledger. Manual sign-in/page-setup waits no longer mark the job step as NEEDS_REVIEW; exact approval, sent and uncertain actions still do. Paused jobs are labelled "Needs your input".
 - **Regression coverage:** source verifier now checks the Browser/Workflow navigation loop, shared approval identity, exact-prompt route, no duplicate preflight consent, and separation of manual input waits from approval checkpoints. Source SHA-256 manifest refreshed.
 - **Verification boundary:** code changes are committed to stabilization/usable-stage-2026-11-10; exact-head CI is pending. No APK, Android emulator, physical phone or real provider-session test is claimed yet. BRW-14 remains open; BRW-15, APR-01 and CHK-01 are partial pending device and broader cross-runtime acceptance.
+
+
+## 2026-11-19 — Remove redundant browser capability approval gates
+
+- A second source-level approval defect was found in the generic capability compiler: it treated browser.prepare_prompt (fill a visible composer, do not submit) as approval-gated and used it as the approval capability for external actions. The multi-chat orchestration capability was also marked as a blanket external side effect, even though each browser.submit_prompt is already independently approved.
+- Corrected the runtime contract: browser.prepare_prompt and browser.run_multi_chat_workflow are orchestration/preparation capabilities without a blanket approval; browser.submit_prompt remains the approval-gated external side effect.
+- CapabilityCompiler now adds browser.submit_prompt—not browser.prepare_prompt—when an external browser send is required. RuntimeRegistryTest and CapabilityCompilerTest cover the distinction. The source verifier now guards against reintroducing these duplicate checkpoints.
+- This reduces unnecessary approvals without weakening the exact per-send gate. Other runtimes and WAITING_FOR_USER producers remain under CHK-01 audit.
