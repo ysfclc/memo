@@ -1,10 +1,12 @@
 # Memo Development Governance
 
-**Status:** Active workflow proposal for this repository  
-**Established:** 9 November 2026  
-**Product authority:** [docs/MEMO_PRODUCT_CONTRACT.md](docs/MEMO_PRODUCT_CONTRACT.md)  
-**Social domain contract:** [docs/SOCIAL_PLATFORM_PRODUCT_SPEC.md](docs/SOCIAL_PLATFORM_PRODUCT_SPEC.md)  
-**Requirement ledger:** [docs/REQUIREMENT_TRACEABILITY.md](docs/REQUIREMENT_TRACEABILITY.md)  
+**Status:** Mandatory project governance
+**Agent instructions:** [AGENTS.md](AGENTS.md)
+**User-input ledger:** [docs/USER_INPUT_LEDGER.md](docs/USER_INPUT_LEDGER.md)
+**Product authority:** [docs/MEMO_PRODUCT_CONTRACT.md](docs/MEMO_PRODUCT_CONTRACT.md)
+**Approved domain specifications:** [docs/SOCIAL_PLATFORM_PRODUCT_SPEC.md](docs/SOCIAL_PLATFORM_PRODUCT_SPEC.md) and optional scenario packs within their stated scope
+**Requirement ledger:** [docs/REQUIREMENT_TRACEABILITY.md](docs/REQUIREMENT_TRACEABILITY.md)
+**Decision history:** [docs/DECISION_LOG.md](docs/DECISION_LOG.md)
 **Engineering ledger:** [TASKS.md](TASKS.md)
 
 ## 1. Purpose
@@ -13,27 +15,32 @@ This document governs how Memo work is selected, designed, implemented, verified
 
 The process must protect build time, not replace it with paperwork. Keep records concise, update them as part of the work, and automate checks where practical.
 
-## 2. Source-of-truth hierarchy
+## 2. One source-of-truth hierarchy
 
-When records conflict, resolve them in this order:
+When project records conflict, resolve them in this order:
 
-1. Explicit, latest user decision or approval, recorded in the Decision Log.
-2. Product Contract and linked domain specifications: what Memo must be.
-3. Requirement Traceability Register: stable requirement IDs and acceptance criteria.
-4. TASKS.md and ROADMAP.md: implementation sequence and engineering work.
-5. Source code, tests, CI, runtime evidence and device evidence: what actually exists and what has been proven.
-6. Session checkpoints and chat history: temporary context, never a substitute for repository records.
+1. The user's latest explicit instruction, correction or approval, preserved in `docs/USER_INPUT_LEDGER.md`. Material decisions are also indexed in `docs/DECISION_LOG.md`.
+2. The user-approved Product Contract and domain specifications only within their explicitly approved scope. A domain specification cannot redefine Memo's core product merely because it is detailed.
+3. `docs/REQUIREMENT_TRACEABILITY.md`: accepted requirement IDs and acceptance criteria.
+4. `TASKS.md` and `ROADMAP.md`: implementation sequence and engineering work.
+5. Source code, tests, CI, runtime and device evidence: truth about what exists and what has been proven, never authority to redefine product direction.
+6. `docs/STATE.md`, dated checkpoints, README, `IMPLEMENTATION_CONTRACT.md`, `MEMO2_ALIGNMENT_MATRIX.md`, historical archives and chat summaries: handoff/reference material subordinate to the records above.
 
-A source file, screen, mock, prototype, fixture or old completion marker does not override the product contract. A task is not complete merely because a related class or UI exists.
+Memo 2 is a historical comparison/reference only. It cannot add requirements, override corrections or become the product blueprint by inference. `IMPLEMENTATION_CONTRACT.md` is an engineering procedure, not a higher product authority. Source code, prototypes, existing screens, use cases and assistant proposals do not override user intent.
 
-### Change control
+### User-input retention and interpretation
 
-- Never silently delete, narrow, rename away or weaken a product requirement.
-- If a requirement changes, add a dated decision with the old requirement ID, new wording, reason, impact and user approval where the change reduces scope or changes a non-negotiable.
-- Preserve superseded wording and historical evidence. Do not rewrite history to make the current plan appear consistent.
-- Every new material product requirement gets a stable ID in the traceability register before implementation.
-- Every implementation task references one or more requirement IDs. Engineering tasks may support several requirements; each requirement retains its own acceptance criteria.
-- A temporary deferral is not a product-scope deletion. Record the reason, dependencies, risk and revisit condition.
+Every material user correction, requirement, decision, bug report, feedback item, idea and use-case boundary must be appended to `docs/USER_INPUT_LEDGER.md` before or in the same change as related implementation. Preserve the original wording and label any normalized interpretation separately.
+
+- **CORRECTION:** overrides an assistant interpretation. Preserve the old interpretation as history; do not repeat it.
+- **REQUIREMENT / DECISION:** a clear user request or approval may enter accepted scope.
+- **BUG_REPORT:** remains active until the exact defect is fixed and verified against acceptance criteria, or the user explicitly closes it.
+- **FEEDBACK:** preserve it and trace the response; do not discard it when priorities change.
+- **IDEA (UNCOMMITTED):** preserve permanently, but do not promote to scope, priority or implementation until the user adopts it.
+- **USE_CASE:** scenario for testing general capabilities; not a product definition, architecture mandate or permission to build a domain product.
+- **CONSTRAINT / NON_GOAL:** boundary every plan and implementation must preserve.
+
+If input classification is ambiguous, retain it as uncommitted instead of guessing. A new message never silently deletes an earlier bug, requirement, correction, feedback item or idea. Append status changes; do not rewrite history. If a new input conflicts with an earlier explicit user decision, record the conflict and ask rather than silently choosing.
 
 ## 3. Required status vocabulary
 
@@ -53,15 +60,16 @@ implemented, verified and device_verified are not interchangeable. Do not use do
 
 ## 4. Fresh Start protocol — before substantial work
 
-1. Read this governance document and the current product contract.
-2. Read the relevant domain specification and stable requirement IDs.
-3. Read the latest session checkpoint; if none exists, create a baseline checkpoint.
-4. Inspect the actual GitHub repository, target branch, latest commit and open PRs. Never assume the last conversation's branch is still current.
-5. Inspect relevant source files, tests, recent history and current CI evidence. Do not infer implementation from documentation alone.
-6. Check uncommitted or competing work where the available environment permits; do not overwrite work you cannot inspect.
-7. Identify dependencies, affected surfaces, data migrations, security/privacy boundaries and likely regression paths.
-8. Select one meaningful work package. State the user value, scope, non-goals, acceptance tests and rollback/recovery plan.
-9. Update task/traceability records before implementation if the work changes scope or acceptance criteria.
+1. Read `AGENTS.md`, this governance document and `docs/USER_INPUT_LEDGER.md`.
+2. Read the Product Contract, Decision Log, requirement register and relevant domain specification; separate approved platform scope from optional scenario packs.
+3. Read the current State Ledger and latest dated checkpoint; if none exists, create a baseline checkpoint.
+4. Before implementation, append every new material user correction, requirement, bug report, feedback item, idea or use-case boundary with its original wording and classification.
+5. Inspect the actual repository, target branch, latest commit and open PRs. Never assume the prior session's branch is current.
+6. Inspect relevant source, tests, recent history and exact-head CI evidence. Do not infer implementation from documentation alone.
+7. Check competing/uncommitted work where available; do not overwrite work you cannot inspect.
+8. Identify dependencies, affected surfaces, migrations, security/privacy boundaries and regression paths.
+9. Select one meaningful work package with user value, scope, non-goals, acceptance tests and recovery plan.
+10. Update task/traceability records before implementation if scope or acceptance criteria change.
 
 If repository state, credentials, source access or test environment is unavailable, stop at that boundary and report exactly what could and could not be inspected. Do not invent a baseline.
 
@@ -135,7 +143,8 @@ A milestone closes only when all required child tasks are accepted, CI evidence 
 ## 9. Session close protocol
 
 1. Record the branch and exact head commit.
-2. List files changed and the user-visible outcome.
+2. Confirm every material user input from the session is preserved in `docs/USER_INPUT_LEDGER.md`, with links to its decisions, requirements, bugs, tasks, feedback or uncommitted ideas.
+3. List files changed and the user-visible outcome.
 3. Record tests with exact commands and pass/fail/blocked outcomes.
 4. Link CI runs, artifacts and device evidence; distinguish each evidence type.
 5. Update requirement statuses and task checkboxes only to the level justified by evidence.
