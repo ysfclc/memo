@@ -10,6 +10,14 @@ import app.memo.android.runtime.RuntimeDescriptor
  * This boundary persists inspectable steps only: it never starts a checkpoint or performs I/O.
  */
 object ConversationWorkflowDraftFactory {
+    private val allowedRuntimes = setOf("app.jobs", "app.models", "runtime.browser")
+    private val allowedCapabilities = setOf(
+        "app.models" to "model.list",
+        "app.models" to "model.generate",
+        "runtime.browser" to "browser.navigate_https",
+        "runtime.browser" to "browser.inspect_page"
+    )
+
     fun create(
         snapshot: AppSnapshot,
         sourceConversationId: String,
@@ -39,6 +47,22 @@ object ConversationWorkflowDraftFactory {
             it.sourceConversationId == sourceConversationId && it.sourceMessageId == sourceMessageId
         }) {
             "A workflow draft already exists for this user message."
+        }
+        require(proposed.nodes.all { it.runtimeId in allowedRuntimes }) {
+            "Talk workflow drafts may use only Memo jobs, local models and the visible browser runtime."
+        }
+        require(proposed.nodes.all {
+            it.participant in setOf(
+                WorkflowParticipant.DETERMINISTIC, WorkflowParticipant.LOCAL_MODEL,
+                WorkflowParticipant.BROWSER, WorkflowParticipant.USER
+            )
+        }) {
+            "Talk workflow drafts contain an unsupported execution participant."
+        }
+        require(proposed.nodes.all { node ->
+            node.requiredCapabilities.all { capability -> (node.runtimeId to capability) in allowedCapabilities }
+        }) {
+            "The workflow proposal requested a capability outside the automatic read-only allowlist."
         }
         require(proposed.nodes.none {
             it.externalWrite || it.externalSideEffect || it.requiresApproval ||
