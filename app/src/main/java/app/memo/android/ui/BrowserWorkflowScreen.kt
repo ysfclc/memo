@@ -405,8 +405,13 @@ fun BrowserWorkflowScreen(
                 if (state.status == BrowserWorkflowStatus.WAITING_FOR_USER) {
                     viewModel.updateJobStatus(jobId, "WAITING_FOR_USER", state.message)
                     val currentStepId = activeStepIds.getOrNull(providerStepOffset + state.currentStep - 1)
-                    if (currentStepId != null && !state.sentForCurrentStep) {
-                        viewModel.updateJobStep(jobId, currentStepId, "NEEDS_REVIEW", if (state.awaitingPromptApproval) "Waiting for exact-content human approval before the external send." else state.message)
+                    if (currentStepId != null && (state.awaitingPromptApproval || state.sentForCurrentStep || state.submissionUncertain)) {
+                        val detail = when {
+                            state.awaitingPromptApproval -> "Exact prompt is ready. Review the destination and content, then approve or reject this external send."
+                            state.submissionUncertain -> "The external submission outcome is uncertain. Inspect the provider page before retrying."
+                            else -> state.message
+                        }
+                        viewModel.updateJobStep(jobId, currentStepId, "NEEDS_REVIEW", detail)
                     }
                 } else if (state.status in setOf(
                         BrowserWorkflowStatus.NAVIGATING,
