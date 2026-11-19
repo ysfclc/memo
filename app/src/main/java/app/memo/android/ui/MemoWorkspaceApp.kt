@@ -1465,7 +1465,11 @@ private fun BrowserScreen(
                 if (browser.workflowState.awaitingPromptApproval) {
                     Button(onClick = onReturnToWorkflow) { Text("Review prompt & approve") }
                 } else {
+                    if (browser.workflowState.awaitingPromptApproval) {
+                    Button(onClick = onReturnToWorkflow) { Text("Review prompt & approve") }
+                } else {
                     TextButton(onClick = onReturnToWorkflow) { Text("Back to workflow") }
+                }
                 }
             }
         }
