@@ -1,12 +1,12 @@
 # Memo — Product Contract
 
 **Version:** 1.0  
-**Reconciled:** 5 November 2026  
+**Reconciled:** 19 November 2026  
 **Product:** Memo for Android  
 **Integration branch:** `main`  
-**Authority:** This document records the user's product decisions and is the product-level source of truth for future implementation. `TASKS.md` is the engineering execution ledger. Older architecture drafts and inherited app implementations are subordinate where they conflict with this contract. The full social platform requirements are specified in [SOCIAL_PLATFORM_PRODUCT_SPEC.md](SOCIAL_PLATFORM_PRODUCT_SPEC.md) and are equally in scope; they must not be reduced to content publishing.
+**Authority:** This document records the user's accepted product decisions and is the product-level source of truth. The append-only [USER_INPUT_LEDGER.md](USER_INPUT_LEDGER.md) preserves each user correction, requirement, bug report, feedback item, idea and use-case boundary; the latest explicit user correction takes precedence over an assistant interpretation recorded here. `TASKS.md` is the engineering execution ledger. Domain specifications apply only within their explicitly approved scope and do not redefine Memo. The full social platform requirements are specified in [SOCIAL_PLATFORM_PRODUCT_SPEC.md](SOCIAL_PLATFORM_PRODUCT_SPEC.md) and remain a domain of Memo, not a replacement product.
 
-**Delivery governance:** [../DEVELOPMENT_GOVERNANCE.md](../DEVELOPMENT_GOVERNANCE.md) defines how this contract is protected and verified. Stable capability IDs are tracked in [REQUIREMENT_TRACEABILITY.md](REQUIREMENT_TRACEABILITY.md); material decisions are recorded in [DECISION_LOG.md](DECISION_LOG.md).
+**Delivery governance:** [../AGENTS.md](../AGENTS.md) and [../DEVELOPMENT_GOVERNANCE.md](../DEVELOPMENT_GOVERNANCE.md) define mandatory agent and change-control rules. Stable capability IDs are tracked in [REQUIREMENT_TRACEABILITY.md](REQUIREMENT_TRACEABILITY.md); material decisions are recorded in [DECISION_LOG.md](DECISION_LOG.md).
 
 ## 1. The product in one sentence
 
@@ -53,19 +53,23 @@ The user's mental model stays simple: **Capture → Observe → Plan → Execute
 - **Verify:** inspect observable outputs/evidence and postconditions. Distinguish proposed, attempted, completed, verified, failed and uncertain states; model-generated claims are not execution evidence.
 - **Present:** return the deliverable, evidence/provenance, outcome, unresolved blockers and next useful action. Keep the user informed without requiring supervision.
 
-### Smart routers (one coordinated routing system)
+### Smart routing (working architecture vocabulary)
 
-Intent/task routing, capability routing, model routing, execution routing, strategy routing, recovery routing and verification routing are coordinated components sharing one typed task, context manifest, policy, budget, graph and state. They are not eight independent agents or new navigation destinations. Routing may use deterministic constraints first, AI judgment where ambiguity or strategic choice warrants it, and re-evaluate when observations or execution results change. A fallback route must be explicit, compatible, permission-eligible and observable; never silently switch provider or disclose context beyond consent.
+The user's requirement is smart routing across suitable AI and deterministic capabilities. Labels such as intent/task, capability, model, execution, strategy, recovery and verification describe useful internal responsibilities. They are not a fixed module map, a mandate to create separate agents/services/screens, or a user-approved architectural decomposition. Treat this breakdown as working design vocabulary that may evolve; do not attribute each named router or module boundary to the user unless explicitly approved.
+
+The routing system shares one typed task, context manifest, policy, budget, graph and state. It may apply deterministic constraints first, use AI judgment where ambiguity or strategic choice warrants it, and re-evaluate as observations or execution results change. A fallback route must be explicit, compatible, permission-eligible and observable; never silently switch provider or disclose context beyond consent.
 
 ### AI + deterministic engineering contract
 
 AI supplies flexible understanding, research, reasoning, planning, extraction, analysis, adaptation and evaluation. Deterministic code supplies typed interfaces, capability registry, policy/consent checks, schemas, state transitions, storage, routing constraints, execution, idempotency, bounded retries, verification and audit evidence. Known operations should use reliable deterministic paths; AI is not required for every step. Use both where the task benefits. No workflow may claim execution or success without verified runtime evidence.
 
-### Example end-to-end mission: find clients
+### Non-defining acceptance scenario: client discovery (not an outbound product)
 
-A request such as “Find potential clients for my automation/software skills; use Maps, Google, LinkedIn or other useful sources and prepare outreach” should run from Talk without a source-selection wizard. Memo dynamically discovers business/company prospects and relevant decision-makers; observes actual websites, listings, job posts and other accessible signals; classifies evidence, fit, pain/opportunity, contactability and confidence; investigates promising prospects; deduplicates and verifies; matches each opportunity to the user's real capabilities and existing proof; and presents an evidence-linked ranked shortlist with source URLs, identified opportunity, contact route when publicly available, recommended approach and personalized outreach drafts.
+**Scope boundary:** This is one example for testing Memo's general-purpose orchestration. It is not a product pillar, domain-specific architecture, outbound product requirement or roadmap priority. It does not authorize cold outreach, bulk messaging, auto-DMs or a dedicated prospecting subsystem. Do not treat this example as more authoritative than other materially different use cases.
 
-The mission is not successful merely because search results were collected. Lead existence, evidence quality, relevance and source provenance must be checked. No invented contacts, pain points or false personalization. Messaging, submissions, purchases or other external side effects remain behind the appropriate approval boundary. The user should not need to select Google Maps, LinkedIn, browser, model or agent manually; Memo chooses available routes and recovers/adapts when a route fails.
+A request such as “Find potential clients for my automation/software skills; use Maps, Google, LinkedIn or other useful sources” can test whether Memo starts from one Talk intent and independently selects appropriate available capabilities. Memo may discover relevant companies, observe actual websites/listings/public signals, classify evidence and fit, investigate and deduplicate candidates, distinguish confirmed facts from hypotheses, and present a source-linked shortlist with verified findings, confidence, unknowns and public contact routes where available.
+
+The scenario is not complete merely because search results were collected. Candidate existence, evidence quality, relevance and provenance must be checked. No invented contacts, pain points or false personalization. A public contact route is not consent. Contacting, messaging, submitting or otherwise acting externally is outside this scenario and requires a separate explicit user request plus the applicable approval boundary. This scenario validates the general capture/observe/classify/plan/route/execute/verify/present system; it must not dictate that system's architecture.
 
 ## 3. Four connected product surfaces
 
@@ -225,11 +229,11 @@ Exact-head GitHub Actions run #678 passed source verification, remote-runner tes
 No feature is complete because a screen or button exists. Require source changes, named tests, green CI, and physical-device evidence for Android-specific behavior.
 
 
-## UC-7 — Sales Operations and industrial account research
+## UC-7 — Optional domain scenario: Sales Operations and industrial account research
 
-Memo can support a one-person, evidence-backed B2B sales-operations practice through the existing Talk / Work / Live / Studio product. The domain sequence is Discover → Research → Qualify → Permissioned route → Approved interaction → Proposal → Delivery → Report. The six detailed use cases, operator constraints, service hypothesis, compliance gates and acceptance criteria live in [docs/use-cases/sales-operations/README.md](use-cases/sales-operations/README.md).
+This is an optional, user-specific scenario pack that can exercise Memo's general Talk / Work / Live / Studio capabilities. It does not define Memo's core identity, architecture, priority order or required build sequence. The detailed scenarios and their constraints live in [docs/use-cases/sales-operations/README.md](use-cases/sales-operations/README.md).
 
-This does not create a separate CRM or authorise scraping, cold-message automation, fabricated company facts, inferred consent, unapproved external actions or legal/tax decisions. The first implementation milestone is account research using existing Work entities and source evidence; outbound actions are explicitly outside that first slice.
+This scenario does not authorize building an outbound product or a cold-contact automation system. The initial account-research slice is read-only and evidence-backed; any channel engagement or external contact action is outside current scope unless the user separately requests it. Preserve the scenario and its history without promoting it into the general platform architecture.
 
 
 ## 10 November 2026 — Unified experience implementation
