@@ -40,6 +40,33 @@ One intent entry point should lead into one continuous flow:
 
 No fake progress, silent network fallback, hidden listening, or opaque agent behavior.
 
+## 2A. Memo's internal operating cycle and smart routing
+
+The user's mental model stays simple: **Capture → Observe → Plan → Execute**. Classification and verification are mandatory internal stages, not extra screens or user chores. The full internal cycle is **Capture → Observe → Classify → Plan → Route → Execute → Verify → Present**. Observe/Classify/Plan/Route may repeat dynamically; the execution plan is a living state, not a one-time static checklist.
+
+- **Capture:** preserve the user's original intent and receive text, voice, URLs, screenshots, files, shared content and relevant context.
+- **Observe:** inspect permission-eligible workspace context, sources, websites, apps and available environment state; gather evidence before assuming.
+- **Classify:** determine task type, outcome, complexity, constraints, ambiguity, risk, required capabilities, and done conditions. Do not expose classification as a mandatory user selection.
+- **Plan:** compose a bounded, typed, inspectable DAG/workflow dynamically. Resolve dependencies, sequence, parallelizable work, budgets, checkpoints and verification criteria.
+- **Route:** use a unified smart-router/orchestrator—not separate siloed agents—to select compatible model(s), deterministic functions, capability/runtime adapters and strategy. Routes can combine AI and deterministic code; AI reasoning never overrides policy or capability boundaries.
+- **Execute:** deterministic orchestration owns state, permission enforcement, dispatch, persistence, idempotency, timeouts, budgets, checkpoints, retries and side-effect controls. AI can reason, extract, assess, propose, and replan within its assigned scope.
+- **Verify:** inspect observable outputs/evidence and postconditions. Distinguish proposed, attempted, completed, verified, failed and uncertain states; model-generated claims are not execution evidence.
+- **Present:** return the deliverable, evidence/provenance, outcome, unresolved blockers and next useful action. Keep the user informed without requiring supervision.
+
+### Smart routers (one coordinated routing system)
+
+Intent/task routing, capability routing, model routing, execution routing, strategy routing, recovery routing and verification routing are coordinated components sharing one typed task, context manifest, policy, budget, graph and state. They are not eight independent agents or new navigation destinations. Routing may use deterministic constraints first, AI judgment where ambiguity or strategic choice warrants it, and re-evaluate when observations or execution results change. A fallback route must be explicit, compatible, permission-eligible and observable; never silently switch provider or disclose context beyond consent.
+
+### AI + deterministic engineering contract
+
+AI supplies flexible understanding, research, reasoning, planning, extraction, analysis, adaptation and evaluation. Deterministic code supplies typed interfaces, capability registry, policy/consent checks, schemas, state transitions, storage, routing constraints, execution, idempotency, bounded retries, verification and audit evidence. Known operations should use reliable deterministic paths; AI is not required for every step. Use both where the task benefits. No workflow may claim execution or success without verified runtime evidence.
+
+### Example end-to-end mission: find clients
+
+A request such as “Find potential clients for my automation/software skills; use Maps, Google, LinkedIn or other useful sources and prepare outreach” should run from Talk without a source-selection wizard. Memo dynamically discovers business/company prospects and relevant decision-makers; observes actual websites, listings, job posts and other accessible signals; classifies evidence, fit, pain/opportunity, contactability and confidence; investigates promising prospects; deduplicates and verifies; matches each opportunity to the user's real capabilities and existing proof; and presents an evidence-linked ranked shortlist with source URLs, identified opportunity, contact route when publicly available, recommended approach and personalized outreach drafts.
+
+The mission is not successful merely because search results were collected. Lead existence, evidence quality, relevance and source provenance must be checked. No invented contacts, pain points or false personalization. Messaging, submissions, purchases or other external side effects remain behind the appropriate approval boundary. The user should not need to select Google Maps, LinkedIn, browser, model or agent manually; Memo chooses available routes and recovers/adapts when a route fails.
+
 ## 3. Four connected product surfaces
 
 These are the primary user-facing surfaces. They are not separate applications or separate data silos.
