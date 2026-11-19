@@ -260,7 +260,7 @@ for marker in ("NO_WORKFLOW", "PROPOSE", "MAX_RAW_CHARS", "optJSONObject"):
 for marker in ("acceptsNoWorkflowForOrdinaryConversation", "unwrapsTypedWorkflowProposal", "rejectsUnknownDecisionAndMissingWorkflow", "rejectsMalformedAndOversizedOutput"):
     if marker not in intent_decision_test:
         fail(f"Talk workflow-intent parser regression coverage is missing: {marker}")
-for marker in ("sourceMessage.role", "proposed.goal.trim()", "compileForTasks", "registeredById", "WorkflowGraphValidator.topologicalOrder", 'status = "PENDING"', "No nodes were executed"):
+for marker in ("sourceMessage.role", "proposed.goal.trim()", "compileForTasks", "registeredById", "allowedRuntimes", "allowedCapabilities", "WorkflowGraphValidator.topologicalOrder", 'status = "PENDING"', "No nodes were executed"):
     if marker not in talk_draft_factory:
         fail(f"Talk-linked dynamic draft safety contract is missing: {marker}")
 for marker in ("createsLinkedReadOnlyDraftWithoutStartingAnyStep", "rejectsMissingOrNonUserSourceMessage", "rejectsChangedGoalDuplicateSourceAndOptionalRuntime", "rejectsApprovalGatedAndExternalWriteNodes"):
