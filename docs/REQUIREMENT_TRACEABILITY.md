@@ -1,7 +1,8 @@
 # Memo Requirement Traceability Register
 
 **Established:** 9 November 2026  
-**Authority:** [Product Contract](MEMO_PRODUCT_CONTRACT.md), [Social Platform Specification](SOCIAL_PLATFORM_PRODUCT_SPEC.md), [Sales Operations Use Cases](use-cases/sales-operations/README.md)  
+**Authority:** [Product Contract](MEMO_PRODUCT_CONTRACT.md) and user-approved [Social Platform Specification](SOCIAL_PLATFORM_PRODUCT_SPEC.md). The [Sales Operations Use Cases](use-cases/sales-operations/README.md) are an optional, domain-specific scenario pack only; they do not define Memo's core product or create implementation authorization.  
+**User-input source:** [USER_INPUT_LEDGER.md](USER_INPUT_LEDGER.md)  
 **Engineering ledger:** [../TASKS.md](../TASKS.md)  
 **Status:** Initial baseline; not a claim that every source path has been re-audited on this date.
 
@@ -45,7 +46,9 @@ The source observations below are transcribed from the existing [FEATURE_AUDIT.m
 | MEMO-I18N-001 | Provide complete, usable EN/PL/TR interface coverage | Product Contract §13; FEATURE_AUDIT localization row | Translation catalog/static scan evidence exists; dynamic/system/specialist text and device walkthrough remain. | implemented (partial) | Current catalog scan, EN/PL/TR screen walkthrough, accessibility and overflow tests. |
 | MEMO-RELEASE-001 | Reproducible tested build, safe upgrade, signed release and rollback | TASKS M0/M6; ROADMAP release gates | Historical CI/emulator slices exist; current head and physical-device acceptance must be freshly checked. | unknown | Inspect current Actions run on exact head, artifact/signature, install-over-existing and device acceptance. |
 
-## Sales Operations requirements
+## Optional domain requirements — Sales Operations (not core Memo requirements)
+
+These IDs preserve the previously documented optional scenario pack. They are not core platform requirements, do not define Memo's identity, and do not authorize outbound/channel-send implementation. Select a task only when the user explicitly asks for that domain capability.
 
 | MEMO-SALES-001 | Research and review industrial accounts with evidence, unknowns, duplicate-safe identity and transparent ICP rationale | Sales Operations Use Case 01 | Existing ORGANIZATION entities and evidence records are reusable; no dedicated sales-account workflow is yet implemented. | specified | M7.A1; source-backed account projection, factor-level scoring, duplicate and operator-review tests. |
 | MEMO-SALES-002 | Qualify commercial problems without turning hypotheses into facts | Sales Operations Use Case 02 | No dedicated qualification workflow evidenced yet. | specified | M7.A2; fact/client-statement/hypothesis distinction and editable outcomes. |
