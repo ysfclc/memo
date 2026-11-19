@@ -1,5 +1,5 @@
 # State Ledger
-_Last updated: 2026-11-19 — permanent user-input ledger and scope correction added. The current branch head must be freshly validated; older run records below are historical and do not prove the latest head. Physical-device acceptance remains pending._
+_Last updated: 2026-11-19 — product-integrity audit and permanent user-input governance recorded. Run #821 is the latest confirmed Android build only for its exact source SHA; later branch commits remain unverified. Physical-device acceptance remains pending._
 
 ## 1. Product snapshot
 
@@ -178,4 +178,4 @@ The first deterministic app capability, app.entities/entity.propose, is connecte
 - Conflicting authority language, historical Memo 2 blueprint language, Sales Operations priority drift, and over-attribution of the proposed Classify/router architecture were corrected across the Product Contract, governance, implementation contract, task/roadmap/gap records, README, architecture map and dated feedback baseline.
 - Fixed keyword routing is explicitly legacy/prototype. Talk entry no longer imports the legacy classifier; Work compatibility helpers remain clearly labelled and bounded by separate validators.
 - CI source verification now checks governance markers, optional-use-case boundaries, legacy-router labels, and append-only preservation of prior user-input/decision text. Governance document changes trigger the source/build workflow.
-- Current verification limit: run #821 is a verified Android build for SHA 028a5cda60ac0a4761fc23eb9f4537f879cbd6d0 only. The audit changes made after that exact commit have not yet passed exact-head CI. Physical-device acceptance remains pending. Do not claim the new verifier or new branch head is build-verified until a run for the final head is recorded.
+- Latest branch head observed at handoff before this State Ledger update: `aab9917e600944228a07e6f9726497e72777de95` (PR #8, draft/open, base `main`). No exact-head Android Actions success evidence was available in this audit. The combined status exposed only a failed Vercel check due to build-rate limit; this is not an Android build result. Run #821 is a verified Android build for SHA `028a5cda60ac0a4761fc23eb9f4537f879cbd6d0` only. The audit changes after that exact commit have not passed exact-head CI. Physical-device acceptance remains pending. Do not claim the new verifier or newer branch head is build-verified until a run for the final head is recorded.
