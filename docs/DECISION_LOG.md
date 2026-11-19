@@ -59,3 +59,13 @@ This log records material product and engineering decisions. Add dated entries; 
 - **Reason:** The user reported losing the product's overall direction. Review of the Product Contract, prompt/browser workflow audit, workflow recovery plan, feature audit and prior feedback showed that the intended product remains broader than the partial current implementation. The main gap is the incomplete connection from intention through orchestration and interface interaction to a captured, editable and verified outcome.
 - **Consequences:** `docs/MEMO_REORIENTATION_AND_FEEDBACK_BASELINE_2026-11-17.md` is the dated companion baseline for recovered feedback, product interpretation, current implementation reality, acceptance invariants and staged execution. It does not replace `docs/MEMO_PRODUCT_CONTRACT.md`, `docs/SOCIAL_PLATFORM_PRODUCT_SPEC.md`, `TASKS.md` or the Requirement Traceability Register. Future sessions must name the relevant feedback/requirement IDs, inspect exact source and evidence, and preserve all earlier requirements.
 - **Status:** Active / locked.
+
+## 2026-11-19 — PROD-002: Use cases cannot redefine Memo; preserve every user input
+
+- **User correction:** “But again, we are not building outbound. This is just a use case. Please keep track of whatever correction I add in memo. Permanent!”
+- **Decision:** Client finding is one illustrative acceptance scenario for Memo's general-purpose orchestration. Memo is not an outbound/cold-outreach product. Sales Operations material remains an optional domain scenario, not Memo's product definition or an automatic roadmap mandate.
+- **Decision:** Every material user correction, requirement, feedback item, bug report, idea and use-case boundary must be retained in append-only `docs/USER_INPUT_LEDGER.md` with original wording, classification, stable ID and trace links. Ideas remain uncommitted until the user adopts them. Bug reports remain active until evidence-backed closure or explicit user closure.
+- **Architecture clarification:** Smart routing and combined AI/deterministic execution are product goals. Router labels and decomposition are internal working vocabulary, not fixed module boundaries or independent agents unless the user approves that design.
+- **Reason:** Prevent assistant interpretations, examples, legacy code, optional domain specifications or historical blueprints from silently changing product identity, scope or priorities.
+- **Consequences:** `AGENTS.md`, `DEVELOPMENT_GOVERNANCE.md`, the Product Contract, TASKS, State Ledger, traceability register and source-verifier are aligned to one authority hierarchy and input-retention process.
+- **Status:** Active; latest user correction.
