@@ -20,7 +20,7 @@ Conversation is the easiest interface. It is not the database. Browser sessions,
 
 Memo exists to turn thoughts into real progress, not to give the user another system to maintain. It should understand active goals and obligations, remember unfinished work, surface concrete next actions, and help the user decide what matters today.
 
-The daily execution view should classify work as **MUST / SHOULD / COULD / NOT TODAY**. Tasks need a concrete outcome and a clear done condition, not vague entries such as "work on project." Memo should protect time for urgent commitments, paid work, job opportunities and customer acquisition before optional creation or endless configuration. It should support a practical shutdown and weekly review without turning those rituals into another administrative burden.
+The daily execution view should classify work as **MUST / SHOULD / COULD / NOT TODAY**. Tasks need a concrete outcome and a clear done condition, not vague entries such as "work on project." Memo should protect time for urgent commitments, paid work, active opportunities and other user-defined priorities before optional creation or endless configuration. It should support a practical shutdown and weekly review without turning those rituals into another administrative burden.
 
 ## 2. The user's intended experience
 
@@ -183,9 +183,9 @@ Connect the user's permitted social accounts → inspect actual provider capabil
 - Not an unrestricted background agent that hides actions or bypasses Android controls.
 - Not a SaaS requiring account signup or cloud storage to hold the user's own knowledge.
 
-## 9. Current source reality — 15 November 2026
+## 9. Source reality snapshot — 15 November 2026 (historical)
 
-This is a source audit, not a device-acceptance claim.
+This is a historical source audit, not a current-branch status or device-acceptance claim. Use `docs/STATE.md` and exact-head CI evidence for current implementation and verification status; this snapshot must not be treated as the latest build result.
 
 | Intended capability | Current Memo 1 source reality |
 |---|---|
