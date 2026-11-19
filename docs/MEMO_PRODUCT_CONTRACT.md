@@ -40,9 +40,11 @@ One intent entry point should lead into one continuous flow:
 
 No fake progress, silent network fallback, hidden listening, or opaque agent behavior.
 
-## 2A. Memo's internal operating cycle and smart routing
+## 2A. User-stated lifecycle and candidate internal operating model
 
 The lifecycle stated by the user is: **Capture → Observe → Plan → Execute**. The user also raised “Classify” as a possible refinement. Whether classification is a distinct internal stage, and exactly where it belongs, remains a design question rather than a locked user decision or an extra required screen. For implementation discussion, one candidate internal loop is **Capture → Observe → Classify → Plan → Route → Execute → Verify → Present**. This is a working model to validate and revise, not a fixed sequence attributed to the user. Verification is independently required by Memo's existing safety contract before claiming outcomes. Observation, classification, planning, routing and execution may loop dynamically; the plan is living state, not a one-time static checklist.
+
+The descriptions below are candidate implementation responsibilities for evaluating the expanded model; they do not require separate modules, agents or user-facing screens.
 
 - **Capture:** preserve the user's original intent and receive text, voice, URLs, screenshots, files, shared content and relevant context.
 - **Observe:** inspect permission-eligible workspace context, sources, websites, apps and available environment state; gather evidence before assuming.
