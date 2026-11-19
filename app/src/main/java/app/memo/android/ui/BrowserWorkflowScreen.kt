@@ -48,7 +48,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import app.memo.android.ai.AiRuntimeViewModel
 import app.memo.android.ai.ModelRuntimeUiState
 import app.memo.android.browser.BrowserModelProviders
@@ -647,26 +646,6 @@ fun BrowserWorkflowScreen(
     }
 
     Column(Modifier.fillMaxSize()) {
-        // Keep the actual WebView attached while the workflow controls are visible.
-        // BrowserSession.loadUrl() alone is not enough: Android WebView must be hosted
-        // in the active screen for the user to see, interact with and sign in to the page.
-        Surface(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 6.dp).height(232.dp),
-            shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant
-        ) {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(8.dp),
-                verticalArrangement = Arrangement.spacedBy(5.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(browser.pageTitle, modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(if (browser.isLoading) "${browser.progress}%" else browser.currentUrl, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-                AndroidView(factory = { browser.webView }, modifier = Modifier.fillMaxWidth().weight(1f), update = {})
-                Text(browser.browserMessage, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-        }
         Column(
             modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 14.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
