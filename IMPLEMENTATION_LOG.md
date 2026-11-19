@@ -1,13 +1,15 @@
 # Memo 1 — Implementation log and evidence ledger
 
-This file is the durable record of decisions and verified progress for the Memo 2 → Memo 1 implementation. Append entries; do not erase failed attempts or silently rewrite status.
+**Authority:** The user's current instructions in `docs/USER_INPUT_LEDGER.md`, the user-approved `docs/MEMO_PRODUCT_CONTRACT.md`, and [AGENTS.md](AGENTS.md) govern product direction. This log is implementation history/evidence only. Memo 2 references below are historical comparison notes and cannot add product scope or override user corrections. Append entries; do not erase failed attempts or silently rewrite status.
 
 ## Current governing state
 
 - Target repository: `ysfclc/memo`.
-- Blueprint repository: `ysfclc/memo-2` (read-only reference for this mission).
+- Historical reference repository: `ysfclc/memo-2` (read-only comparison only; not product authority).
 - Canonical ZIP input: `incoming/memo.zip` (complete project snapshot; one upload at a time).
-- Active contract: `IMPLEMENTATION_CONTRACT.md`.
+- Active product contract: `docs/MEMO_PRODUCT_CONTRACT.md`.
+- User-input source: `docs/USER_INPUT_LEDGER.md`.
+- Engineering gates: `IMPLEMENTATION_CONTRACT.md` and `DEVELOPMENT_GOVERNANCE.md`.
 - Task-level plan: `TASKS.md`.
 - Scope crosswalk: `MEMO2_ALIGNMENT_MATRIX.md`.
 - Product gap evidence: `PRODUCT_GAP_REGISTRY.md`, `FEATURE_AUDIT.md`, `MEMO-PATCH1-AUDIT.md`.
