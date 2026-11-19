@@ -1,6 +1,6 @@
 # Memo 2 → Memo 1 scope alignment matrix
 
-This matrix keeps Memo 2's ambitious product scope intact while requiring Memo 1-specific implementation and evidence. It is a scope ledger, not a claim that the listed features already work.
+This is a historical Memo 2 → Memo 1 comparison matrix, not a product authority or an independent source of requirements. It records how earlier material was mapped for implementation comparison; current product scope is governed by the user's latest inputs, `docs/USER_INPUT_LEDGER.md` and `docs/MEMO_PRODUCT_CONTRACT.md`. Memo 2 examples and checklists must never be promoted into Memo requirements without user approval. This matrix is not a claim that listed features work.
 
 | Workstream | Blueprint reference | Memo 1 execution plan | Acceptance evidence required | Status at plan creation |
 |---|---|---|---|---|
