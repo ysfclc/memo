@@ -257,9 +257,9 @@ The following keeps Claude's task families and ordering while requiring Memo 1-s
 
 ### M3 — Orchestrator and live environment
 
-- [ ] **M3.A1** Local planner maps intent to a typed, bounded workflow dynamically; no hardcoded workflow per use case.
+- [~] **M3.A1** Local planner maps intent to a typed, bounded workflow dynamically; no hardcoded workflow per use case.
 - [ ] **M3.A2** Context retrieval across permitted Memo records/sources with relevance, provenance, privacy scope and source freshness.
-- [ ] **M3.A3** Connect chat and workflow state; show plans, artifacts, checkpoints and outcome evidence in the same product flow.
+- [~] **M3.A3** Connect chat and workflow state; show plans, artifacts, checkpoints and outcome evidence in the same product flow.
 - [ ] **M3.A4** Local tool-using agent engine with capability restrictions, tool schemas, bounded steps, iteration/time budgets and kill switch.
 - [ ] **M3.B1** Evidence-bearing artifact renderers and approval UX; user reviews the populated artifact, not only a vague plan.
 - [ ] **M3.B2** Live tab/session view; every action has state, timestamp, rationale, result and evidence.
@@ -633,3 +633,13 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - Removed the Talk composer checkbox that asked the user to choose a local-model workflow expansion before Memo had understood the request. Draft TaskSpec expansion remains available from Work for existing plans.
 - Updated source regression guards and the product-contract source-reality row. This is an entry-point correction, **not** completion of M3.A1 / M3.A3 or the generic orchestrator. Automatic capability assembly, browser handoff, unified plan/checkpoint presentation and end-to-end execution remain open.
 - Exact-head CI, signed APK and physical-device acceptance pending. PR #8 remains draft/unmerged; main untouched.
+
+## 19 November 2026 — Talk-driven dynamic workflow planning
+
+- Talk now treats the model response as the first step in intent understanding. After a successful reply is saved, the same explicitly selected model receives a bounded follow-up assessment and returns either `NO_WORKFLOW` or a typed `PROPOSE` graph. Ordinary conversation and one-shot answers remain conversation-only.
+- The decision output is parsed by `WorkflowIntentDecisionParser`; a proposed graph is passed through `WorkflowTaskProposalParser`, then recompiled against the exact current runtime registry by `ConversationWorkflowDraftFactory`.
+- Accepted proposals must use currently available runtimes and read-only capabilities only. The graph goal must match the exact original user message; the resulting Work record retains the originating conversation/message IDs, typed dependency order and checkpoint contracts.
+- The Work draft is saved as `DRAFT` with every checkpoint `PENDING`, and is displayed inline in that same Talk conversation. The planner's raw JSON is suppressed from the visible model-response stream. No task is started or external effect performed by this increment.
+- A remote follow-up uses only the same selected configured provider and the same explicit per-request remote-consent state as the original answer; there is no provider fallback. It receives bounded recent Talk context, not a second copy of unrelated workspace records.
+- M3.A1 and M3.A3 are now partial implementation, **not complete**. A durable generic DAG dispatcher, deterministic/browser/native runtime adapters, checkpoint execution/verification, inline editing/control of plans and end-to-end journeys remain open.
+- Regression tests and source guards were added. Exact-head Gradle tests, lint, APK/signing and physical-device acceptance remain pending until the new CI run completes.
