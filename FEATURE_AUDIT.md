@@ -1,5 +1,7 @@
 # Memo product feature audit
 
+**Authority note:** This is a historical implementation/source audit, not a product-definition source. The user's latest instructions and `docs/USER_INPUT_LEDGER.md` plus `docs/MEMO_PRODUCT_CONTRACT.md` govern product direction. Referenced archives and design blueprints are historical comparison material only.
+
 Audit date: 28 October 2026 (updated for exact-content approval and inbox slice)  
 Scope: every supplied build/archive reviewed for integration potential, plus the current `Memo-Android/` source tree.
 
@@ -92,7 +94,7 @@ Never infer runtime success from a button, screen, source file or a passing Pyth
 
 ## 2A. Product-contract cross-check against the architecture blueprint
 
-The separate design blueprint was read as a product contract, not counted as another app build. These invariants were cross-checked against the current source:
+Historical note: at the time of this audit, the separate design blueprint was used as a product-contract comparison. This is not current product authority and cannot add or override requirements in the user's current input ledger or Product Contract. The source-level invariants recorded at that time were cross-checked against the source:
 
 - **Conversation is not the database:** conversations and typed work entities both exist, but the encrypted Compose vault and native workflow vault remain separate. **Partial; P0 migration/transaction boundary remains open.**
 - **Local-first by default:** local workspace, local model path and bounded native steps exist; remote model/site use is explicitly surfaced and consented. **Partial; provider-denial/timeout tests on an Android device remain open.**
@@ -147,9 +149,10 @@ A new pure-core `ActionApprovalLedger` and browser-screen binding now establish 
 A top-level Stop active work control now requests cancellation of the current local AI generation, browser workflow, pending browser task and active native AccessibilityService run. Pending external proposals are rejected; approved or in-flight ones become `NEEDS_REVIEW`. Optional remote guest-runner cancellation is attempted only for a job whose last-known state is nonterminal; the user is told that final state must be verified. This is a cooperative first slice, not proof that a remote task or already-submitted website action was rolled back.
 
 
-## Sales Operations use-case pack — 10 November 2026
+## Optional Sales Operations scenario pack — 10 November 2026
 
-- **Status:** specified, not implemented. The six flows live in `docs/use-cases/sales-operations/`.
+- **Scope:** optional user-specific use-case material only; not Memo's product definition, core architecture or default roadmap priority. See `docs/USER_INPUT_LEDGER.md` and the current Product Contract.
+- **Status:** scenario documentation exists; implementation is not authorized unless the user explicitly selects this scenario. The six flows live in `docs/use-cases/sales-operations/`.
 - **Reusable source primitives:** `EntityRecord(type = "ORGANIZATION")`, `EntityRelationship`, `EvidenceRecord`, Work jobs/tasks and the existing capability/approval boundaries.
 - **First implementation slice:** M7.A1 / MEMO-SALES-001 — evidence-backed account research, transparent factor-level ICP score, duplicate-safe matching and operator accept/reject.
 - **Not included:** a second CRM, contact harvesting, cold-email/auto-DM, provider connectors or external contact actions.
