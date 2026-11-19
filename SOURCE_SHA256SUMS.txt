@@ -219,5 +219,5 @@ a1453a88e5bc19e7b20a521b56d36acbaec90fc742b79fb49fca11b7ddda73af  ./remote-runne
 386f629d7b2f820b0ed8017499a7aee3a956db24b636cb653586d9cac806dea0  ./scripts/vercel-build-apk.sh
 19280c23fb304e503d1037eb423b17d0a14dd2a6fbb3e916574f4c5be17dfebf  ./settings.gradle
 01d703c62ed41ba6ccd699b10d38ec8c56bf733b9061a1da1ac72d1825dbef75  ./TASKS.md
-07ae6333925e57ea22f71b42d09d74e9566ba8e5566d46d60ebdeb73869137c3  ./tools/verify_source.py
+0564d8a66c51e678bb1a69ab2938a9afed764abfe69ff064db27ec58eb1bf665  ./tools/verify_source.py
 7d4c0c5cce39e5353ea260f973ef19d0c48bf422f2e596a0062810336149bbeb  ./vercel.json
