@@ -164,7 +164,7 @@ object CapabilityCompiler {
             desired += if (plan.domain == IntentDomain.AUTOMATION) {
                 "runtime.android.accessibility" to "android.tap_exact_text"
             } else {
-                "runtime.browser" to "browser.prepare_prompt"
+                "runtime.browser" to "browser.submit_prompt"
             }
         }
         val chosen = desired.mapNotNull { (runtimeId, id) ->
@@ -176,7 +176,7 @@ object CapabilityCompiler {
                 capabilityId = capability.id,
                 label = capability.label,
                 requiresUserApproval = capability.requiresUserApproval ||
-                    (runtimeId to id) in setOf("runtime.browser" to "browser.prepare_prompt", "runtime.android.accessibility" to "android.tap_exact_text"),
+                    (runtimeId to id) in setOf("runtime.browser" to "browser.submit_prompt", "runtime.android.accessibility" to "android.tap_exact_text"),
                 externalSideEffect = capability.externalSideEffect,
                 runtimeStatus = runtime.status
             )
