@@ -302,3 +302,16 @@ The action inbox and first top-level stop control are present in source. Static/
 - Signed APK: package `app.memo.android.debug`, versionCode `802`, versionName `4.0.0-memo-debug`; artifact [Memo-Android-debug-APK #14298479094](https://github.com/ysfclc/memo/actions/runs/44016406556/artifacts/14298479094).
 - APK SHA-256: `69345f8b680feb0b7cbb59d83161561693e3f1d3f079fe1d52c288c82b224db3`.
 - This is automated/emulator/signing acceptance only. Physical-device and real provider-session acceptance remain pending.
+
+
+## 19 November 2026 — exact branch-head verification follow-up (run #929)
+
+- **Exact tested branch head:** `f62540cda08dc658309de16e037619201707f43a` on `stabilization/usable-stage-2026-11-10`; this is a documentation/handoff commit whose parent source commit is `7ad0eb0426f953a8946741c59247b081a258f94a`.
+- **GitHub Actions:** [run #929](https://github.com/ysfclc/memo/actions/runs/44599220097) completed successfully on that exact branch head. The repository-source verification/build job and isolated pinned-signing job both succeeded; the source-import-only commit job was correctly skipped.
+- **Checks:** source verifier PASS (434/434 static UI Text literals translated); remote-runner tests PASS; core JVM tests 188/188; Android app unit tests 44/44; lint 0 errors (42 warnings, 5 hints); debug and Android-test APK assembly PASS; APK identity/signature PASS.
+- **Upgrade safety:** API 35 signed install-over-existing instrumentation PASS. App-private data and both encrypted Memo stores were preserved; legacy recovery and corruption checks passed. No uninstall or clear-data operation was used.
+- **Signed artifact:** [artifact 14567058852](https://github.com/ysfclc/memo/actions/runs/44599220097/artifacts/14567058852); package `app.memo.android.debug`, versionCode `929`, versionName `4.0.0-memo-debug`; APK SHA-256 `9b60929f720ad8fade98dd23c03441dd0199b5c377994883d9cbe66e60635264`; artifact ZIP SHA-256 `8c166e2aae7576a5ee969fae5c7f3295c48aeb2a5a992bf5b411e827f20e77ad`.
+- **Signing:** pinned persistent certificate SHA-256 remains `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a`; the isolated signer passed.
+- **Build reports:** [artifact 14566969581](https://github.com/ysfclc/memo/actions/runs/44599220097/artifacts/14566969581).
+- **Acceptance boundary:** this is automated CI/emulator/signing evidence, not physical-device or real-provider acceptance. STAB-05, WF-05, WF-12 and the physical portion of WF-13 remain open. Do not uninstall Memo or clear app data.
+- **Repository boundary:** PR #8 remains draft/open and unmerged; `main` remains untouched. No production release, merge, signing change or destructive migration is authorized.

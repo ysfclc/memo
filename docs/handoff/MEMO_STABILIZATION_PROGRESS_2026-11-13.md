@@ -333,3 +333,12 @@ A follow-up review found the new persistence-verifier guard referenced `view_mod
 - **Not accepted:** physical-device UX/navigation and real signed-in provider-session walkthrough. The user's phone and stored data were not touched. WF-01–WF-13 and STAB-05/STAB-06 remain open until their separate acceptance requirements are met.
 - **Governance:** PR #8 remains draft/open; `main` untouched; no merge, release, signing change or destructive migration.
 - **Next:** user tests the signed APK as an in-place update on the existing phone; capture any regression without uninstalling or clearing data.
+
+
+## Update 8 — Exact branch-head validation and device handoff (19 November 2026)
+
+- **Exact tested head:** `f62540cda08dc658309de16e037619201707f43a`; run [#929](https://github.com/ysfclc/memo/actions/runs/44599220097) succeeded.
+- **Verification:** source verifier 434/434 UI strings; remote runner PASS; 188 core tests; 44 app tests; lint 0 errors (42 warnings, 5 hints); debug and test APK assembly; API 35 signed install-over-existing preserving app-private data and both encrypted stores; legacy recovery and corruption checks; isolated pinned signing.
+- **APK:** package `app.memo.android.debug`, versionCode 929; [artifact 14567058852](https://github.com/ysfclc/memo/actions/runs/44599220097/artifacts/14567058852); APK SHA-256 `9b60929f720ad8fade98dd23c03441dd0199b5c377994883d9cbe66e60635264`; ZIP SHA-256 `8c166e2aae7576a5ee969fae5c7f3295c48aeb2a5a992bf5b411e827f20e77ad`.
+- **Scope:** no code or product-scope change in this verification pass. Existing P0 workflow defects and feedback remain active.
+- **Remaining:** real phone upgrade/UX and provider-session walkthrough are not performed. Next is STAB-05 using the existing installation, no uninstall/clear-data. PR #8 remains draft; `main` unchanged.

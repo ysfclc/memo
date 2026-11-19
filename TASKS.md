@@ -665,3 +665,9 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - Ideas remain uncommitted until explicitly adopted. Bug reports and feedback remain active until evidence-backed closure or explicit user closure. New input must preserve original wording and receive a stable ID.
 - These governance changes do not close or defer UWF-01–UWF-08, WF-01–WF-13 or any other previously reported defect/task.
 - Android build/device status is not implied by these documentation changes; exact-head Android verification must be recorded separately. PR #8 remains draft/unmerged; `main` untouched.
+
+## 19 November 2026 — current verification handoff
+
+The exact current branch head `f62540cda08dc658309de16e037619201707f43a` passed run [#929](https://github.com/ysfclc/memo/actions/runs/44599220097). The run rebuilt and tested the committed repository source, passed source verification (434/434 static UI Text literals translated), remote-runner tests, 188 core JVM tests, 44 app unit tests, lint (0 errors; 42 warnings; 5 hints), APK/test-APK assembly, API 35 signed in-place encrypted-store upgrade, and isolated pinned signing. Signed versionCode 929 artifact: [14567058852](https://github.com/ysfclc/memo/actions/runs/44599220097/artifacts/14567058852); APK SHA-256 `9b60929f720ad8fade98dd23c03441dd0199b5c377994883d9cbe66e60635264`. This run changes no product scope and does not close physical acceptance.
+
+**Next authorized gate remains STAB-05:** install versionCode 929 over the existing phone installation without uninstalling or clearing data, then execute the device checklist. No further broad implementation slice is authorized by this sequencing record until the real-device evidence or a concrete regression is captured. PR #8 stays draft/open; `main` remains untouched.

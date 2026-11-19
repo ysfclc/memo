@@ -89,3 +89,8 @@
 This audit and its remediations are on `stabilization/usable-stage-2026-11-10` / PR #8 only. No merge, release, deployment, destructive migration, signing change or modification to `main` is authorized by this work.
 
 **Verification status:** governance edits are committed to the branch. Static content/marker presence has been manually checked through repository reads. The updated verifier has not yet been run in GitHub Actions on the final head. No Android build, signed artifact or physical-device acceptance is claimed for these newer commits.
+
+
+## Verification addendum — 19 November 2026 (after audit)
+
+The audit's “verification pending” statements above record the evidence available when the audit was written. They are superseded for the current stabilization branch by exact-head Actions [run #929](https://github.com/ysfclc/memo/actions/runs/44599220097) on commit `f62540cda08dc658309de16e037619201707f43a`. The governance/source-verifier changes and committed repository source passed source verification (434/434 UI Text translations), remote-runner tests, 188 core tests, 44 Android app tests, lint (0 errors), APK/test-APK assembly, API 35 signed in-place encrypted-store upgrade and isolated pinned signing. This resolves the audit's exact-head CI-pending status for this branch head; it does **not** establish physical-device or live-provider acceptance. STAB-05 and the physical portions of WF-05/WF-12/WF-13 remain open. PR #8 remains draft/unmerged and `main` untouched.

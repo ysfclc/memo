@@ -62,3 +62,12 @@ Fix only the five localization omissions, run the exact-head CI, inspect tests/b
 
 ## Next action
 The automated stabilization gates are green. Hand the signed APK to the user for an in-place update on the existing phone and collect actual UX/provider-session feedback before starting another implementation increment.
+
+
+## Post-checkpoint exact branch-head validation — run #929
+
+- The follow-up documentation commit `f62540cda08dc658309de16e037619201707f43a` was tested on the exact branch head by [Actions run #929](https://github.com/ysfclc/memo/actions/runs/44599220097); all required jobs succeeded.
+- Source verifier 434/434 translated UI strings; remote runner passed; core tests 188/188; app tests 44/44; lint 0 errors (42 warnings, 5 hints); debug/test APK assembly passed.
+- API 35 signed install-over-existing acceptance preserved app-private data and both encrypted Memo stores; legacy recovery/corruption checks passed. Isolated signing used the pinned certificate.
+- Signed APK versionCode 929: [artifact 14567058852](https://github.com/ysfclc/memo/actions/runs/44599220097/artifacts/14567058852), SHA-256 `9b60929f720ad8fade98dd23c03441dd0199b5c377994883d9cbe66e60635264`.
+- Physical-device acceptance remains not tested. The actual phone and its stored data have not been accessed. Next step is in-place update and device checklist; do not uninstall or clear data.

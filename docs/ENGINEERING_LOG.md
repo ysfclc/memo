@@ -24,3 +24,13 @@ Append-only session and implementation record. Do not rewrite historical entries
 - **Signing:** isolated job signed and verified using pinned persistent certificate SHA-256 `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a`; no ephemeral key fallback.
 - **Artifact:** [Memo-Android-debug-APK, ID 14565824727](https://github.com/ysfclc/memo/actions/runs/44596413135/artifacts/14565824727); package `app.memo.android.debug`, versionCode `928`, versionName `4.0.0-memo-debug`; APK SHA-256 `6323c78ad428d6e92bb58d7822c546e3031994e7d5bce7b09fee19a1cda72340`; artifact ZIP SHA-256 `749829d23c2c5e824903136263d0b975432083b8069e52d60a218f96ef34b6fe`; source fingerprint `47f5a33c243cc6cf08eeea17369fa25daf6b02a236b7506cf95526891eb4942b`.
 - **Open boundary:** lint warnings remain; physical-device install/UX/provider-session acceptance remains pending. PR #8 remains draft/open, `main` untouched, and no release/merge is authorized.
+
+
+## 2026-11-19 — Exact current branch-head validation (run #929)
+
+- **Current tested head:** `f62540cda08dc658309de16e037619201707f43a` (documentation-only commit after source commit `7ad0eb0426f953a8946741c59247b081a258f94a`).
+- **Actions:** [run #929](https://github.com/ysfclc/memo/actions/runs/44599220097) — all required build and isolated signing jobs succeeded on the exact branch head.
+- **Results:** source verification 434/434 UI strings; remote-runner PASS; core 188/188; app 44/44; lint 0 errors, 42 warnings, 5 hints; debug/test APK assembly PASS; API 35 signed in-place upgrade preserved app-private data and both encrypted Memo stores, with legacy recovery/corruption checks passing.
+- **Artifact:** versionCode 929, package `app.memo.android.debug`; [signed APK artifact 14567058852](https://github.com/ysfclc/memo/actions/runs/44599220097/artifacts/14567058852); APK SHA-256 `9b60929f720ad8fade98dd23c03441dd0199b5c377994883d9cbe66e60635264`; ZIP SHA-256 `8c166e2aae7576a5ee969fae5c7f3295c48aeb2a5a992bf5b411e827f20e77ad`. Certificate SHA-256 unchanged and pinned.
+- **Not tested:** actual user phone, physical-device UX and real signed-in provider journey. No phone data was accessed. STAB-05 remains the next gate; don't uninstall or clear Memo data.
+- **Governance:** PR #8 draft/open, `main` untouched; no merge/release/destructive change.
