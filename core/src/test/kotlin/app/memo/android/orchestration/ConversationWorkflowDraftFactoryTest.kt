@@ -103,6 +103,18 @@ class ConversationWorkflowDraftFactoryTest {
         }.isFailure)
     }
 
+    @Test fun rejectsLocalWorkspaceMutationCapabilitiesOutsideTheReadOnlyAllowlist() {
+        val mutation = graph.copy(nodes = graph.nodes.map { node ->
+            if (node.id == "scope") node.copy(requiredCapabilities = listOf("job.create")) else node
+        })
+        assertTrue(runCatching {
+            ConversationWorkflowDraftFactory.create(
+                AppSnapshot(conversations = listOf(conversation)), "conversation-1", "message-1",
+                mutation, runtimes, 123L
+            )
+        }.exceptionOrNull()?.message.orEmpty().contains("read-only allowlist"))
+    }
+
     @Test fun rejectsApprovalGatedAndExternalWriteNodes() {
         val unsafe = graph.copy(nodes = graph.nodes.map { node ->
             if (node.id == "research") node.copy(externalWrite = true) else node
