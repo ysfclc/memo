@@ -649,8 +649,8 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 
 ## 19 November 2026 — Unified Smart Router operating model (product decision)
 
-- User-facing mental model: **Capture → Observe → Plan → Execute**. Do not turn classification or verification into additional mandatory user-facing screens.
-- Mandatory internal cycle: **Capture → Observe → Classify → Plan → Route → Execute → Verify → Present**. Observation/classification/planning/routing/execution may loop and replan while preserving original intent, graph, completed work, evidence and state.
+- User-stated lifecycle: **Capture → Observe → Plan → Execute**. Do not turn classification or verification into additional mandatory user-facing screens.
+- The user raised **Classify** as a possible refinement; its exact position and whether it is a distinct internal stage remain open design questions. The expanded sequence **Capture → Observe → Classify → Plan → Route → Execute → Verify → Present** is a working implementation proposal, not a fixed sequence the user explicitly approved. Validate and revise it against multiple use cases. Observation/classification/planning/routing/execution may loop and replan while preserving original intent, graph, completed work, evidence and state.
 - AI and deterministic code are complementary. AI interprets, researches, reasons, plans, extracts, adapts and evaluates. Deterministic code owns typed schemas, capability and permission boundaries, consent, state, persistence, dispatch, budgets, checkpoints, idempotency, retries, policy and verification.
 - Smart routers form one coordinated orchestration system: intent/task, capability, model, strategy, execution, recovery and verification. They share task/context/policy/budget/state; do not build independent agents or user-selectable router pages.
 - Router picks compatible tools, models and runtimes dynamically. Deterministic constraints/policy always dominate AI choices; no silent fallback, unauthorized context disclosure or unverified success.
