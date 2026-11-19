@@ -1,3 +1,25 @@
+# Latest exact-head Android-verified increment — 19 November 2026
+
+**STATUS: RUN #928 ATTEMPT 2 PASSED ON THE EXACT BRANCH HEAD; DEBUG APK BUILT, VERIFIED, API 35 IN-PLACE DATA PRESERVATION PASSED, AND ISOLATED PINNED SIGNING PASSED. PHYSICAL-DEVICE ACCEPTANCE REMAINS OPEN.**
+
+- Exact tested source commit: `7ad0eb0426f953a8946741c59247b081a258f94a` on `stabilization/usable-stage-2026-11-10`; PR #8 remains draft/open and unmerged; `main` is untouched.
+- GitHub Actions [run #928, attempt 2](https://github.com/ysfclc/memo/actions/runs/44596413135): all jobs succeeded. The earlier attempt 1 failed only while downloading/unzipping the Android 35 Google APIs emulator image; rerunning the failed job succeeded.
+- Source verification: PASS, including **434/434** static UI Text literals translated (532 scanned; URLs/placeholders excluded), 78 required integration files, durable-input/approval guards and encrypted-store migration invariants.
+- Remote-runner tests: PASS. Gradle: **BUILD SUCCESSFUL**. Core JVM tests: **188/188 passed**. Android unit tests: **44/44 passed**. Android lint: **0 errors, 42 warnings, 5 hints**. Debug APK and Android-test APK assembly: PASS.
+- API 35 install-over-existing acceptance: PASS. A lower-version baseline was upgraded in place; the signed APK preserved app-private data and both real encrypted Memo stores. Legacy recovery and corruption tests passed. No uninstall or clear-data operation was used.
+- APK identity: package `app.memo.android.debug`, versionCode `928`, versionName `4.0.0-memo-debug`.
+- Final installable artifact: [`Memo-Android-debug-APK`, artifact ID `14565824727`](https://github.com/ysfclc/memo/actions/runs/44596413135/artifacts/14565824727). The ZIP contains `Memo-Android-debug.apk`, identity report, source fingerprint and SHA-256 manifest.
+- APK SHA-256: `6323c78ad428d6e92bb58d7822c546e3031994e7d5bce7b09fee19a1cda72340`.
+- Artifact ZIP SHA-256: `749829d23c2c5e824903136263d0b975432083b8069e52d60a218f96ef34b6fe`.
+- Persistent signing certificate SHA-256: `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a` (matches the pinned existing Memo certificate).
+- Source fingerprint: `47f5a33c243cc6cf08eeea17369fa25daf6b02a236b7506cf95526891eb4942b`.
+- Build reports: [artifact ID `14566587233`](https://github.com/ysfclc/memo/actions/runs/44596413135/artifacts/14566587233).
+- APK size: 114,841,689 bytes (about 110 MiB); the bundled LiteRTLM native runtime libraries account for much of the size.
+- **Still pending:** physical-device in-place upgrade, visual/touch/navigation acceptance and real signed-in provider walkthrough on the user's existing phone. Do not claim phone acceptance; do not uninstall Memo or clear app data.
+- No merge, production release/deployment, signing identity change or destructive migration is authorized. PR #8 remains draft; `main` remains untouched.
+
+---
+
 # Latest exact-head Android-verified increment — 18 November 2026
 
 **STATUS: UIX-05 EXACT-HEAD CI #821 PASSED; API 35 IN-PLACE DATA-PRESERVATION AND ISOLATED PINNED APK SIGNING PASSED. PHYSICAL-DEVICE UX ACCEPTANCE REMAINS PENDING.**

@@ -1,5 +1,15 @@
 # State Ledger
-_Last updated: 2026-11-19 — product-integrity audit and permanent user-input governance recorded. Run #821 is the latest confirmed Android build only for its exact source SHA; later branch commits remain unverified. Physical-device acceptance remains pending._
+_Last updated: 2026-11-19 — exact-head Actions run #928 (attempt 2) passed for commit `7ad0eb0426f953a8946741c59247b081a258f94a`; signed APK artifact `14565824727` produced; API 35 encrypted-store in-place upgrade passed. Physical-device acceptance remains pending._
+
+## 0. Latest exact-head build and data-preservation evidence — 19 November 2026
+
+- Exact branch head tested: `7ad0eb0426f953a8946741c59247b081a258f94a` on `stabilization/usable-stage-2026-11-10`; PR #8 remains draft/open and unmerged; `main` untouched.
+- GitHub Actions [run #928, attempt 2](https://github.com/ysfclc/memo/actions/runs/44596413135): all jobs succeeded, including the isolated pinned-certificate signing job.
+- Source verifier: PASS; static UI translation coverage 434/434 (532 literals scanned). Remote runner: PASS. Core tests 188/188; app tests 44/44; lint 0 errors, 42 warnings, 5 hints; debug and Android-test APK assembly: PASS.
+- API 35 signed install-over-existing: PASS. App-private data and both real encrypted Memo stores survived; legacy recovery and corruption checks passed. No uninstall or clear-data step occurred.
+- Signed APK: `app.memo.android.debug`, versionCode `928`, versionName `4.0.0-memo-debug`; artifact [Memo-Android-debug-APK, ID 14565824727](https://github.com/ysfclc/memo/actions/runs/44596413135/artifacts/14565824727). APK SHA-256: `6323c78ad428d6e92bb58d7822c546e3031994e7d5bce7b09fee19a1cda72340`. Artifact ZIP SHA-256: `749829d23c2c5e824903136263d0b975432083b8069e52d60a218f96ef34b6fe`. Pinned certificate SHA-256: `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a`.
+- Source fingerprint: `47f5a33c243cc6cf08eeea17369fa25daf6b02a236b7506cf95526891eb4942b`; build reports artifact [14566587233](https://github.com/ysfclc/memo/actions/runs/44596413135/artifacts/14566587233).
+- **Boundary:** automated CI/emulator/signing acceptance is complete for this exact head. The user's physical phone has not been touched or tested. Physical-device upgrade, visual/touch/navigation and real provider-session walkthrough remain open. Do not uninstall Memo, clear app data, merge PR #8, or release without explicit authorization.
 
 ## 1. Product snapshot
 

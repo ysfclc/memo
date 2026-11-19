@@ -321,3 +321,15 @@ A follow-up review found the new persistence-verifier guard referenced `view_mod
 - **Verification:** targeted source review completed; exact-head source verifier, JVM tests, lint, APK assembly, emulator upgrade and isolated signing are pending.
 - **Not claimed:** generic DAG scheduling, browser/native adapters, device acceptance, merge or release.
 - **Next:** add a second Memo-owned deterministic capability and its independent read-only postcondition observer through the same dispatcher, then generalize output/verification persistence without bypassing the durable attempt journal.
+
+
+## Update 7 — Exact-head stabilization build and signed APK passed (19 November 2026)
+
+- **Source commit:** `7ad0eb0426f953a8946741c59247b081a258f94a` on `stabilization/usable-stage-2026-11-10`.
+- **Actions:** [run #928, attempt 2](https://github.com/ysfclc/memo/actions/runs/44596413135) — all jobs succeeded.
+- **Repairs in this increment:** completed the missing PL/TR translations and regression coverage; aligned the Talk workflow draft read-only allowlist with the registered research evidence-capture capability; fixed the browser approval dialog's composable boundary.
+- **Passed:** source verifier (434/434 static UI Text literals), remote-runner tests, 188 core tests, 44 app tests, lint (0 errors; 42 warnings and 5 hints), debug/Android-test APK assembly, APK identity/signature, API 35 signed in-place upgrade preserving app-private data and both real encrypted stores, legacy recovery and corruption checks, isolated pinned signing.
+- **APK:** package `app.memo.android.debug`, versionCode `928`, versionName `4.0.0-memo-debug`; [artifact 14565824727](https://github.com/ysfclc/memo/actions/runs/44596413135/artifacts/14565824727). APK SHA-256 `6323c78ad428d6e92bb58d7822c546e3031994e7d5bce7b09fee19a1cda72340`; artifact ZIP SHA-256 `749829d23c2c5e824903136263d0b975432083b8069e52d60a218f96ef34b6fe`; pinned certificate SHA-256 `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a`.
+- **Not accepted:** physical-device UX/navigation and real signed-in provider-session walkthrough. The user's phone and stored data were not touched. WF-01–WF-13 and STAB-05/STAB-06 remain open until their separate acceptance requirements are met.
+- **Governance:** PR #8 remains draft/open; `main` untouched; no merge, release, signing change or destructive migration.
+- **Next:** user tests the signed APK as an in-place update on the existing phone; capture any regression without uninstalling or clearing data.
