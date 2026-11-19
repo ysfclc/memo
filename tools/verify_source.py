@@ -30,6 +30,10 @@ REQUIRED = [
     "core/src/main/kotlin/app/memo/android/data/LiveTimelineProjector.kt",
     "core/src/main/kotlin/app/memo/android/data/WorkArtifactFactory.kt",
     "core/src/main/kotlin/app/memo/android/orchestration/WorkflowProposalApplier.kt",
+    "core/src/main/kotlin/app/memo/android/orchestration/WorkflowIntentDecisionParser.kt",
+    "core/src/main/kotlin/app/memo/android/orchestration/ConversationWorkflowDraftFactory.kt",
+    "core/src/test/kotlin/app/memo/android/orchestration/WorkflowIntentDecisionParserTest.kt",
+    "core/src/test/kotlin/app/memo/android/orchestration/ConversationWorkflowDraftFactoryTest.kt",
     "core/src/main/kotlin/app/memo/android/data/OutcomeParser.kt",
     "core/src/main/kotlin/app/memo/android/runtime/RuntimeContracts.kt",
     "core/src/main/kotlin/app/memo/android/runtime/EntityProposalRuntimeAdapter.kt",
@@ -245,6 +249,33 @@ for marker in ("appliesValidatedDraftGraphWithoutExecutingNodes", "Depends on: s
     if marker not in proposal_applier_test:
         fail(f"Workflow proposal applier regression coverage is missing: {marker}")
 print("PASS: local TaskSpec expansion is validated against the current runtime registry and stays draft-only")
+
+intent_decision = (ROOT / "core/src/main/kotlin/app/memo/android/orchestration/WorkflowIntentDecisionParser.kt").read_text()
+intent_decision_test = (ROOT / "core/src/test/kotlin/app/memo/android/orchestration/WorkflowIntentDecisionParserTest.kt").read_text()
+talk_draft_factory = (ROOT / "core/src/main/kotlin/app/memo/android/orchestration/ConversationWorkflowDraftFactory.kt").read_text()
+talk_draft_factory_test = (ROOT / "core/src/test/kotlin/app/memo/android/orchestration/ConversationWorkflowDraftFactoryTest.kt").read_text()
+for marker in ("NO_WORKFLOW", "PROPOSE", "MAX_RAW_CHARS", "optJSONObject"):
+    if marker not in intent_decision:
+        fail(f"Talk workflow-intent decision parser is missing: {marker}")
+for marker in ("acceptsNoWorkflowForOrdinaryConversation", "unwrapsTypedWorkflowProposal", "rejectsUnknownDecisionAndMissingWorkflow", "rejectsMalformedAndOversizedOutput"):
+    if marker not in intent_decision_test:
+        fail(f"Talk workflow-intent parser regression coverage is missing: {marker}")
+for marker in ("sourceMessage.role", "proposed.goal.trim()", "compileForTasks", "registeredById", "WorkflowGraphValidator.topologicalOrder", 'status = "PENDING"', "No nodes were executed"):
+    if marker not in talk_draft_factory:
+        fail(f"Talk-linked dynamic draft safety contract is missing: {marker}")
+for marker in ("createsLinkedReadOnlyDraftWithoutStartingAnyStep", "rejectsMissingOrNonUserSourceMessage", "rejectsChangedGoalDuplicateSourceAndOptionalRuntime", "rejectsApprovalGatedAndExternalWriteNodes"):
+    if marker not in talk_draft_factory_test:
+        fail(f"Talk-linked dynamic draft regression coverage is missing: {marker}")
+if "createConversationWorkflowDraft(" not in view_model:
+    fail("Talk dynamic workflow draft is not persisted through MemoWorkspaceViewModel")
+for marker in ("WorkflowIntentDecisionParser.parse(", "WorkflowTaskProposalParser.parse(", "createConversationWorkflowDraft(", "showPartialOutput = false", "progressLabel =", "Work from this conversation"):
+    if marker not in work_source:
+        fail(f"Talk automatic workflow assessment or inline draft is missing: {marker}")
+ai_runtime = (ROOT / "app/src/main/java/app/memo/android/ai/AiRuntimeViewModel.kt").read_text()
+if "showPartialOutput: Boolean = true" not in ai_runtime or "liveResponse = if (showPartialOutput)" not in ai_runtime:
+    fail("AI runtime cannot suppress raw structured-planner output from the Talk response stream")
+print("PASS: Talk responses receive a same-model workflow triage; validated read-only TaskSpecs become source-linked drafts shown inline, never executed")
+
 # A local-model Work step must pass the persisted dependency/runtime gate before inference.
 run_start = work_source.index("onRunWithModel = { stepId, modelId ->")
 run_end = work_source.index("onOpenEvidence = onOpenEvidence", run_start)
