@@ -140,7 +140,7 @@ fun ChatsWorkspaceScreen(
     onOpenModels: () -> Unit,
     onOpenWork: () -> Unit,
     onOpenCouncil: () -> Unit,
-    onStartConversation: (String, Boolean) -> Boolean,
+    onStartConversation: (String) -> Boolean,
     onShowMessage: (String) -> Unit
 ) {
     val conversations = snapshot.conversations.sortedByDescending { it.updatedAt }
@@ -156,7 +156,6 @@ fun ChatsWorkspaceScreen(
     var promoteMessageTarget by remember { mutableStateOf<ChatMessageRecord?>(null) }
     var promoteIntent by remember { mutableStateOf("") }
     var draft by remember(selectedConversationId) { mutableStateOf("") }
-    var expandWithLocalModel by remember { mutableStateOf(false) }
     LaunchedEffect(selectedConversationId, initialPrompt) {
         if (selectedConversationId != null && initialPrompt.isNotBlank()) {
             draft = initialPrompt.take(6_000)
@@ -195,17 +194,6 @@ fun ChatsWorkspaceScreen(
     val contextForThisRequest = useWorkspaceContext && (selectedModelId != REMOTE_MODEL_ID || shareWorkspaceContextRemotely)
     val context = LocalContext.current
     val uiLanguage = LocalMemoLanguage.current
-    val canExpandCurrentDraft = remember(draft, uiLanguage) {
-        runCatching {
-            draft.isNotBlank() &&
-                IntentPlanner.shouldCreateWorkflow(draft) &&
-                !IntentPlanner.plan(draft, uiLanguage).requiresExternalApproval
-        }.getOrDefault(false)
-    }
-    LaunchedEffect(canExpandCurrentDraft) {
-        if (!canExpandCurrentDraft) expandWithLocalModel = false
-    }
-
     val speechResultLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             val spoken = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull().orEmpty().trim()
@@ -280,21 +268,12 @@ fun ChatsWorkspaceScreen(
                             minLines = 2, maxLines = 4, shape = RoundedCornerShape(MemoTokens.Radius.medium),
                             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
                         )
-                        if (runtimeState.installedModels.isNotEmpty() && canExpandCurrentDraft) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Checkbox(checked = expandWithLocalModel, onCheckedChange = { expandWithLocalModel = it }, enabled = !runtimeState.running)
-                                Column(Modifier.weight(1f)) {
-                                    Text("Expand the plan with a local model", style = MaterialTheme.typography.bodySmall)
-                                    Text("Creates a more detailed draft in Work. It will not run any steps.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                            }
-                        }
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
                             OutlinedButton(onClick = launchVoiceInput, modifier = Modifier.height(MemoTokens.Spacing.minimumTouch)) {
                                 Icon(Icons.Rounded.Mic, contentDescription = null); Spacer(Modifier.width(6.dp)); Text("Voice")
                             }
                             Button(
-                                onClick = { val intent = draft.trim(); if (intent.isNotBlank() && onStartConversation(intent, expandWithLocalModel)) draft = "" },
+                                onClick = { val intent = draft.trim(); if (intent.isNotBlank() && onStartConversation(intent)) draft = "" },
                                 enabled = draft.isNotBlank(), modifier = Modifier.weight(1f).height(MemoTokens.Spacing.minimumTouch)
                             ) {
                                 Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = null); Spacer(Modifier.width(7.dp)); Text("Start with Memo")
