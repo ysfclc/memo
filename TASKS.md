@@ -1,12 +1,14 @@
 # Memo 1 — Master execution runbook
 
 **Target repository:** `ysfclc/memo` (Product 1)  
-**Reference plan:** `ysfclc/memo-2/docs/TASKS.md` (Claude runbook), supported by `docs/BUILD_PLAN.md`, `docs/FEATURES.md`, and `docs/PROGRESS.md`  
+**Historical cross-reference only:** `ysfclc/memo-2/docs/TASKS.md`, `docs/BUILD_PLAN.md`, `docs/FEATURES.md`, and `docs/PROGRESS.md`. These can inform comparisons but cannot add requirements, override corrections or define Memo's product direction.  
 **Reference TASKS blob observed:** `666fb7a030b71294ba06fe44d2f37839f4ce4430`  
-**Rule:** this document is the execution contract for Memo 1. Memo 2 contributes the complete scope and lessons; Memo 1 remains its own product and codebase.
+**Rule:** this document is the engineering execution ledger for Memo 1. Accepted scope comes from the user's latest inputs in `docs/USER_INPUT_LEDGER.md` and the user-approved `docs/MEMO_PRODUCT_CONTRACT.md`; Memo 1 remains its own product and codebase.
 
 > **Important status rule:** upstream `[x]` marks from Memo 2 are not completion evidence for Memo 1. Every task below starts unverified in Memo 1 and must pass its own evidence gate before it may be marked `[x]`.
 
+**Agent instructions:** [AGENTS.md](AGENTS.md)  
+**User-input ledger:** [docs/USER_INPUT_LEDGER.md](docs/USER_INPUT_LEDGER.md)  
 **Delivery governance:** [DEVELOPMENT_GOVERNANCE.md](DEVELOPMENT_GOVERNANCE.md)  
 **Stable requirement IDs and acceptance crosswalk:** [docs/REQUIREMENT_TRACEABILITY.md](docs/REQUIREMENT_TRACEABILITY.md)  
 **Material decision history:** [docs/DECISION_LOG.md](docs/DECISION_LOG.md)  
@@ -497,15 +499,16 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - **Remaining:** confirm CI; complete physical install-over-existing on the user's phone; later design and test a single authoritative transaction/event boundary without deleting or silently merging either store.
 
 
-## M7 — Sales Operations domain (extends Memo Work)
+## M7 — Optional Sales Operations use-case pack (not Memo core architecture)
 
-**Product specification:** `docs/use-cases/sales-operations/`  
-**Architecture:** `docs/architecture/MEMO_SYSTEM_ARCHITECTURE.md`  
-**Rule:** do not create another CRM. Reuse Work entities, relationships, evidence, planner and approval services. One feature slice per branch/worktree.
+**Scope status:** Optional domain scenario only. It does not define Memo's core product, create a separate product direction or become an active build mandate merely because it is documented. Implement a slice only when the user explicitly selects it.  
+**Product scenario:** `docs/use-cases/sales-operations/`  
+**Architecture reference:** `docs/architecture/MEMO_SYSTEM_ARCHITECTURE.md`  
+**Rule:** do not create another CRM. Reuse general Work entities, relationships, evidence and approved capabilities. No outbound product, cold-contact automation or channel-send workflow is authorized by this scenario; the user must separately request that exact capability. One feature slice per branch/worktree.
 
 - [~] **M7.A1 — Account research foundation (MEMO-SALES-001):** reuse `EntityRecord(type = "ORGANIZATION")`, `EntityRelationship` and `EvidenceRecord`; add a versioned account projection and deterministic validator in `:core`; retain source URL, page title, retrieval time, evidence and claim confidence; implement transparent factor-level ICP scoring with unknowns; flag possible duplicates without destructive merging; support operator accept/reject. Read-only: no contact collection and no outbound action.
 - [ ] **M7.A2 — Qualification (MEMO-SALES-002):** discovery brief, confirmed-problem vs hypothesis distinction, editable qualification outcome and source-linked next action.
-- [ ] **M7.A3 — Permissioned channels (MEMO-SALES-003):** channel readiness, suppression and independent policy gates; public contact details never imply consent; exact payload/destination approval before any supported send.
+- [ ] **M7.A3 — Permissioned channels (MEMO-SALES-003; inactive / not authorized for current build):** preserve the scenario requirement and its safeguards, but do not implement external contact, channel sending or outbound automation unless the user separately requests that exact capability.
 - [ ] **M7.A4 — Inbound/listening (MEMO-SALES-004):** connected/provider-supported or permitted public-source events only; classify and draft; no scraping or bulk unsolicited DMs.
 - [ ] **M7.A5 — Proposal/engagement (MEMO-SALES-005):** prepare a scoped pilot from confirmed discovery; pricing, tax and contract terms remain human/adviser review.
 - [ ] **M7.A6 — Delivery/reporting (MEMO-SALES-006):** client-authorised data boundaries, deliverables, milestones, acceptance and measured outcomes.
@@ -651,5 +654,14 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - AI and deterministic code are complementary. AI interprets, researches, reasons, plans, extracts, adapts and evaluates. Deterministic code owns typed schemas, capability and permission boundaries, consent, state, persistence, dispatch, budgets, checkpoints, idempotency, retries, policy and verification.
 - Smart routers form one coordinated orchestration system: intent/task, capability, model, strategy, execution, recovery and verification. They share task/context/policy/budget/state; do not build independent agents or user-selectable router pages.
 - Router picks compatible tools, models and runtimes dynamically. Deterministic constraints/policy always dominate AI choices; no silent fallback, unauthorized context disclosure or unverified success.
-- Client-finding mission acceptance scenario: one Talk request automatically researches potential companies across accessible Google/Maps, LinkedIn, websites and other appropriate sources; detects and validates evidence-based opportunities; deduplicates and ranks; matches opportunities to actual skills and existing proof; and produces source-linked prospect records, contact routes only when public/verified, and personalized outreach drafts. No fake pain points, fabricated contact data, or sending messages without the required approval.
+- **Client discovery is one non-defining acceptance scenario only, not an outbound product or core architecture.** It tests whether the general orchestrator can research and evaluate relevant companies from an open-ended Talk request, preserve evidence and uncertainty, deduplicate, and present a source-linked shortlist. No outreach drafts, sending, cold-contact automation or domain-specific prospecting subsystem is implied or authorized.
 - Engineering status: this is a product-level architecture decision and acceptance scenario, not an implementation-complete claim. The current automatic Talk workflow triage/draft increment does not implement the full router fabric, mission-grade multi-source research, adaptive execution or verification. Add traceable implementation tasks and close them only with code + tests + CI/device evidence.
+
+## 19 November 2026 — Permanent user-input and product-scope correction
+
+- Added `AGENTS.md` as mandatory agent instructions and `docs/USER_INPUT_LEDGER.md` as the append-only record for user corrections, requirements, feedback, bug reports, ideas and use-case boundaries.
+- One authority hierarchy now governs the repository. Memo 2 and other historical archives are comparison references only; they cannot add product requirements or reinterpret user intent.
+- Client discovery is recorded as one acceptance scenario for general-purpose orchestration, not an outbound product, product pillar or default priority. Sales Operations remains an optional scenario pack; outbound/channel-send work is not authorized by the example.
+- Ideas remain uncommitted until explicitly adopted. Bug reports and feedback remain active until evidence-backed closure or explicit user closure. New input must preserve original wording and receive a stable ID.
+- These governance changes do not close or defer UWF-01–UWF-08, WF-01–WF-13 or any other previously reported defect/task.
+- Android build/device status is not implied by these documentation changes; exact-head Android verification must be recorded separately. PR #8 remains draft/unmerged; `main` untouched.
