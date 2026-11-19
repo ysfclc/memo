@@ -13,7 +13,8 @@ Before any substantial Memo task, read these in order:
 5. `docs/DECISION_LOG.md`
 6. `docs/REQUIREMENT_TRACEABILITY.md`
 7. `docs/STATE.md`, the latest dated checkpoint, and the relevant sections of `TASKS.md`
-8. The relevant domain specification, source files, tests and exact-head CI/device evidence
+8. `docs/PRODUCT_INTEGRITY_AUDIT_2026-11-19.md` for known drift vulnerabilities and safeguards (audit history only; current user input and Product Contract remain authoritative)
+9. The relevant domain specification, source files, tests and exact-head CI/device evidence
 
 Do not start from chat summaries, an old checkpoint, README prose, an implementation, or a different repository when these records are available.
 
