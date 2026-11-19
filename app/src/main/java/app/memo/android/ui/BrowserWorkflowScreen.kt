@@ -909,7 +909,6 @@ fun BrowserWorkflowScreen(
                 }
             }
         }
-    }
     val activeApprovalStepId = activeStepIds.getOrNull(providerStepOffset + workflowState.currentStep - 1).orEmpty()
     val pendingApproval = snapshot.actionApprovals.firstOrNull {
         it.jobId == activeJobId &&
