@@ -569,6 +569,10 @@ fun BrowserWorkflowScreen(
             starting = false
             viewModel.updateJobStatus(jobId, "FAILED", error)
             onShowMessage(error)
+        } else {
+            // The dedicated Browser screen is the only host for the Android WebView.
+            // Switch there immediately so navigation is visible and the user can sign in.
+            onOpenBrowser()
         }
     }
 
@@ -1026,6 +1030,9 @@ fun BrowserWorkflowScreen(
                                     currentExternalActionId = ""
                                     browser.stopBrowserWorkflow()
                                     onShowMessage("The browser changed before submission. The action was stopped and needs review; nothing was intentionally sent.")
+                                } else {
+                                    showPromptEditor = false
+                                    onOpenBrowser()
                                 }
                             }
                         }
