@@ -433,7 +433,7 @@ view_model = (ROOT / "app/src/main/java/app/memo/android/data/MemoWorkspaceViewM
 for marker in ('sourceConversationId: String = ""', 'sourceConversationId = sourceId'):
     if marker not in view_model:
         fail(f"Work-plan source conversation linkage is missing: {marker}")
-for marker in ("Start with Memo", "onInitialPromptConsumed", "onOpenCouncil", "onStartConversation", "onStartConversation: (String, Boolean) -> Boolean"):
+for marker in ("Start with Memo", "onInitialPromptConsumed", "onOpenCouncil", "onStartConversation: (String) -> Boolean"):
     if marker not in chat:
         fail(f"Talk entry/composer is missing: {marker}")
 live_route = home.split("AppTab.LIVE -> LiveWorkspaceScreen(", 1)[1].split("AppTab.STUDIO ->", 1)[0]
