@@ -56,7 +56,7 @@ This section preserves a prior domain-design example. It is optional, user-speci
 - **Permission/suppression/approval:** a separate policy record; a public email address, phone number or profile does not create marketing consent.
 - **Engagement/delivery:** links approved scope, client-authorised data boundary, tasks, deliverables, milestones and acceptance evidence.
 
-The first slice (M7.A1 / MEMO-SALES-001) is deliberately read-only: create/reuse an account, attach source evidence, calculate transparent factor-level ICP fit, detect possible duplicates without destructive merge, and ask the operator to accept/reject. It does not send email, DMs, connection requests or contact forms.
+A previously proposed first slice (M7.A1 / MEMO-SALES-001) was read-only: create/reuse an account, attach source evidence, calculate transparent factor-level fit, detect possible duplicates without destructive merge, and ask the operator to accept/reject. This proposal is inactive unless the user explicitly selects the scenario. No email, DMs, connection requests or contact forms are authorized by the general client-discovery example.
 
 ## Quality and release boundaries
 
