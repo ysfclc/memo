@@ -365,11 +365,27 @@ for marker in ("WorkflowRuntimeReceipt.DETAIL_MARKER", "receiptMarker == receipt
 
 approval_inbox = (ROOT / "app/src/main/java/app/memo/android/ui/ActionApprovalInboxScreen.kt").read_text()
 app_navigation = (ROOT / "app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt").read_text()
-for marker in ("Action queue", "Needs review", "History", "Exact outbound payload", "Open live approval", "Mark outcome for review"):
+for marker in ("Action queue", "Needs review", "History", "Exact outbound payload", "Review prompt & approve", "Mark outcome for review"):
     if marker not in approval_inbox:
         fail(f"approval inbox is missing required behavior: {marker}")
 if "ActionApprovalInboxScreen(" not in app_navigation or "browserState = browser.workflowState" not in app_navigation:
     fail("central approval inbox is not integrated with the live browser session")
+if 'onOpenBrowser = { tab = AppTab.BROWSER; toolSection = ToolSection.WORKFLOWS }' not in app_navigation:
+    fail("live approval inbox must reopen the workflow confirmation surface, not the ordinary browser")
+browser_screen = app_navigation.split("private fun BrowserScreen(", 1)[1].split("if (showNewConversationConfirm)", 1)[0]
+if 'if (browser.workflowState.awaitingPromptApproval)' not in browser_screen or 'Text("Review prompt & approve")' not in browser_screen:
+    fail("dedicated browser must expose a prominent route to the exact pending prompt")
+if "browser.activeExternalActionId" not in workflow_screen or "var currentExternalActionId" in workflow_screen:
+    fail("active approval identity must survive Browser/Workflow screen recreation")
+if "onOpenBrowser()" not in workflow_screen.split("val error = browser.startBrowserWorkflow(", 1)[1].split("fun startWorkflow()", 1)[0]:
+    fail("starting a browser workflow must open the dedicated visible browser")
+if "var consent by remember" in workflow_screen or "Nothing is sent until you approve the exact prompt for that provider." not in workflow_screen:
+    fail("browser workflow must use one exact per-provider approval, not a duplicate preflight consent")
+if "if (currentStepId != null && (state.awaitingPromptApproval || state.sentForCurrentStep || state.submissionUncertain))" not in workflow_screen:
+    fail("manual sign-in/page setup must not be mislabeled as an approval checkpoint")
+work_ui = (ROOT / "app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt").read_text()
+if 'label = if (job.status == "WAITING_FOR_USER") "Needs your input"' not in work_ui:
+    fail("paused work status must explain that user input is needed rather than showing a generic checkpoint")
 if "This proposal is not connected to the matching live prompt" not in approval_inbox:
     fail("approval inbox does not guard against approving a stale proposal from history")
 if 'if (accepted && matchesLivePrompt) browser.rejectCurrentPrompt()' not in app_navigation:
