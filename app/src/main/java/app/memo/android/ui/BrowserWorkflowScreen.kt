@@ -86,7 +86,6 @@ fun BrowserWorkflowScreen(
     var intent by remember { mutableStateOf("") }
     var selectedProviders by remember { mutableStateOf(setOf("chatgpt", "claude", "gemini")) }
     var mode by remember { mutableStateOf(BrowserWorkflowMode.CONSULT_AND_COMPARE) }
-    var consent by remember { mutableStateOf(false) }
     var useLocalOrchestrator by remember(runtimeState.installedModels.map { it.id }.joinToString("|")) {
         mutableStateOf(false)
     }
@@ -581,7 +580,6 @@ fun BrowserWorkflowScreen(
         if (title.isBlank()) { onShowMessage("Name the workflow before starting it."); return }
         if (intent.isBlank()) { onShowMessage("Describe what you want the frontier models to work on."); return }
         if (chosenProviders.size < 2) { onShowMessage("Choose at least two frontier chat websites."); return }
-        if (!consent) { onShowMessage("Approve sending this intent and prior outputs to the selected external AI websites before running the workflow."); return }
         if (useLocalOrchestrator && (localModelId.isBlank() || runtimeState.installedModels.none { "local:${it.id}" == localModelId })) {
             onShowMessage("Select an installed local model or turn off local orchestration."); return
         }
@@ -729,10 +727,11 @@ fun BrowserWorkflowScreen(
                         maxLines = 8,
                         enabled = !workflowState.isActive && !starting
                     )
-                    Row(verticalAlignment = Alignment.Top) {
-                        Checkbox(checked = consent, onCheckedChange = { consent = it }, enabled = !workflowState.isActive && !starting)
-                        Text("I approve sending this intent, the local brief, and where applicable earlier provider outputs to the selected external AI websites. Their account, privacy, retention and usage rules still apply.", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 9.dp))
-                    }
+                    Text(
+                        "Nothing is sent until you approve the exact prompt for that provider.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(
                             onClick = {
