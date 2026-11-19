@@ -623,3 +623,13 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - Work and Live labels/descriptions are localized in English, Polish and Turkish. Shared page headers and section headings now use the language-aware text component.
 - No existing capability, task, evidence record, approval, runtime, storage format, app ID or signing identity was removed or changed.
 - **Status:** exact-head Actions #821 passed source verification, localization tests, remote-runner tests, 178 core tests, 43 app tests, lint (zero errors), debug APK assembly, pinned persistent signing and API 35 in-place data-preservation checks for both encrypted stores. Final artifact: Memo-Android-debug-APK, ID 14387410285, package app.memo.android.debug, versionCode 821. Physical-device visual/touch/Back acceptance remains pending; PR #8 stays draft/unmerged and main untouched.
+
+
+## 19 November 2026 — AI-first intent entry correction
+
+- Confirmed the target was already specified by the product contract and M3.A1 / M3.A3: one intent entry, with Memo deciding the needed capabilities after understanding the request.
+- Removed the keyword-based split in `startTalkIntent` that created a Work plan immediately and navigated away from Talk for action-oriented prompts.
+- Every new intent now opens a Talk conversation with the original prompt prefilled. The user can send it to the selected AI model before deciding whether to promote an outcome into Work.
+- Removed the Talk composer checkbox that asked the user to choose a local-model workflow expansion before Memo had understood the request. Draft TaskSpec expansion remains available from Work for existing plans.
+- Updated source regression guards and the product-contract source-reality row. This is an entry-point correction, **not** completion of M3.A1 / M3.A3 or the generic orchestrator. Automatic capability assembly, browser handoff, unified plan/checkpoint presentation and end-to-end execution remain open.
+- Exact-head CI, signed APK and physical-device acceptance pending. PR #8 remains draft/unmerged; main untouched.
