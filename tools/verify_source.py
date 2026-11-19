@@ -445,6 +445,8 @@ for marker in ("onContinueWithMemo", "RecognizerIntent.ACTION_RECOGNIZE_SPEECH",
     if marker not in home:
         fail(f"Memo-first home is missing product marker: {marker}")
 intent_router = home.split("fun startTalkIntent(", 1)[1].split("\n    }", 1)[0]
+if "import app.memo.android.orchestration.IntentPlanner" in home:
+    fail("Talk entry shell must not depend on the legacy keyword planner")
 if "IntentPlanner.shouldCreateWorkflow" in intent_router or "tab = AppTab.WORK" in intent_router or "createIntentPlan(" in intent_router:
     fail("Talk entry must not route users into a separate workflow destination before understanding their intent")
 for marker in ("initialPrompt", "onInitialPromptConsumed", "draft = initialPrompt.take(6_000)"):
