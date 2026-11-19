@@ -22,6 +22,8 @@ REQUIRED = [
     "docs/DECISION_LOG.md",
     "docs/REQUIREMENT_TRACEABILITY.md",
     "docs/SESSION_CHECKPOINT_TEMPLATE.md",
+    "docs/STATE.md",
+    "docs/use-cases/sales-operations/README.md",
     "MEMO2_ALIGNMENT_MATRIX.md",
     "settings.gradle",
     "build.gradle",
@@ -875,6 +877,7 @@ governance_markers = {
         "IDEA (UNCOMMITTED)",
         "BUG_REPORT",
         "Memo 2 is a historical comparison/reference only",
+        "whether it is a distinct internal stage",
     ),
     "input_ledger": (
         "INPUT-2026-11-19-001",
@@ -898,6 +901,7 @@ governance_markers = {
         "Non-defining acceptance scenario: client discovery (not an outbound product)",
         "A public contact route is not consent",
         "not a fixed module map",
+        "not a fixed sequence attributed to the user",
     ),
     "decision_log": ("PROD-002", "Memo is not an outbound/cold-outreach product"),
     "traceability": ("optional, domain-specific scenario pack only", "not core Memo requirements"),
@@ -905,6 +909,7 @@ governance_markers = {
         "Optional Sales Operations use-case pack (not Memo core architecture)",
         "inactive / not authorized for current build",
         "Client discovery is one non-defining acceptance scenario only",
+        "working implementation proposal",
     ),
     "sales_use_case": (
         "Optional user-specific domain scenario pack / proposed workflows; not Memo's product definition",
@@ -932,6 +937,10 @@ for file_key, markers in governance_markers.items():
         if marker not in governance_files[file_key]:
             fail(f"product governance regression in {file_key}: missing {marker!r}")
 
+if "Classification and verification are mandatory internal stages" in governance_files["product_contract"]:
+    fail("assistant-proposed classification wording must not be represented as an approved user decision")
+if "Mandatory internal cycle:" in governance_files["tasks"]:
+    fail("assistant-proposed full lifecycle must not be represented as a user-locked architecture")
 if "Memo 2 is the product blueprint" in governance_files["implementation_contract"]:
     fail("historical Memo 2 blueprint wording must not outrank user-approved Memo product direction")
 if "### Example end-to-end mission: find clients" in governance_files["product_contract"]:
