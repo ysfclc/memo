@@ -1267,6 +1267,8 @@ fun WorkWorkspaceScreen(
                             onStartStep = { stepId -> viewModel.startJobStep(job.id, stepId).fold(onSuccess = { onShowMessage("Checkpoint started. Work on the real deliverable, then record the observed outcome.") }, onFailure = { onShowMessage(it.message ?: "Could not start checkpoint.") }) },
                             onRecordOutcome = { stepId, outcome -> viewModel.recordJobCheckpoint(job.id, stepId, outcome).fold(onSuccess = { onShowMessage("Checkpoint outcome saved.") }, onFailure = { onShowMessage(it.message ?: "Could not record checkpoint.") }) },
                             onRevisePlan = { title, intent -> viewModel.reviseIntentPlan(job.id, title, intent).fold(onSuccess = { onShowMessage("Draft plan revised. Review the regenerated checkpoints before starting.") }, onFailure = { onShowMessage(it.message ?: "Could not revise plan.") }) },
+                            // Legacy Work UI hint only: keyword classification is not policy enforcement or Memo's canonical intent router.
+                            // The draft proposal parser and registered-runtime validator below remain independent safety gates.
                             canExpandWithModel = runCatching { !IntentPlanner.plan(job.goal.substringBefore("\n\nMemo route:")).requiresExternalApproval }.getOrDefault(false),
                             onExpandWithModel = { modelId -> expandDraftWorkflowWithLocalModel(job.id, modelId, runtime, viewModel, onShowMessage) },
                             onOpenModels = onOpenModels,
