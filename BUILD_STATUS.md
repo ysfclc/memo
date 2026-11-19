@@ -1,6 +1,8 @@
-# Current verified increment — 18 November 2026
+# Latest exact-head Android-verified increment — 18 November 2026
 
 **STATUS: UIX-05 EXACT-HEAD CI #821 PASSED; API 35 IN-PLACE DATA-PRESERVATION AND ISOLATED PINNED APK SIGNING PASSED. PHYSICAL-DEVICE UX ACCEPTANCE REMAINS PENDING.**
+
+**19 November status note:** Later product-governance, documentation, legacy-router annotations and source-verifier changes have been committed after this tested source SHA. Run #821 below verifies only `028a5cda60ac0a4761fc23eb9f4537f879cbd6d0`; it does not verify the newer branch head. Consult `docs/STATE.md` for the exact current branch head and validation boundary. Do not treat this as a current-head build claim.
 
 - Exact tested source commit: `028a5cda60ac0a4761fc23eb9f4537f879cbd6d0` on `stabilization/usable-stage-2026-11-10`; PR #8 remains draft and unmerged; `main` is untouched.
 - GitHub Actions run **#821**, ID `44211136288`: [successful exact-source build and signing](https://github.com/ysfclc/memo/actions/runs/44211136288).
