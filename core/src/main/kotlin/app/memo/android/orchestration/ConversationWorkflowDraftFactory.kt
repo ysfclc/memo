@@ -47,6 +47,10 @@ object ConversationWorkflowDraftFactory {
             "Talk can only create a read-only planning draft. External actions require their dedicated approval flow."
         }
 
+        val registeredById = registeredRuntimes.associateBy { it.id }
+        require(proposed.nodes.all { registeredById[it.runtimeId]?.status == "AVAILABLE" }) {
+            "The workflow proposal targets a runtime that is not currently available."
+        }
         val manifest = CapabilityCompiler.compileForTasks(originalIntent, proposed.nodes, registeredRuntimes)
         require(manifest.unresolvedRequirements.isEmpty()) {
             "The workflow proposal requests unavailable capabilities: ${manifest.unresolvedRequirements.joinToString(", ")}."
