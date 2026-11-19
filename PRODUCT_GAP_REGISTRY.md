@@ -1,8 +1,8 @@
-# Product gap registry — prioritized, with acceptance criteria
+# Product gap registry — scope-traceable gaps and candidate enhancements
 
-Memo should feel like a capable, safe execution partner, not a collection of buttons. These are product gaps inferred by comparing every supplied build with the intended end state; the user does not need to discover each gap one by one.
+This is an engineering tracking document, not an independent product authority. Proactively identify implementation gaps **within the user's accepted Product Contract and recorded requirements**. A missing feature in source, a historical blueprint, an assistant suggestion or a use-case example does not by itself create a product requirement. Before treating an item as an accepted gap or scheduling it, trace it to the current Product Contract, an explicit user-input/decision ID or a user-selected domain specification. Otherwise keep it as a candidate idea, not an active P0/P1/P2 requirement. Never invent scope or priority from source archaeology alone.
 
-Priority meanings: **P0** release blockers; **P1** core product capability; **P2** expansion that depends on stable core execution.
+Priority meanings: **P0** release blockers within accepted scope; **P1** accepted core product capability; **P2** accepted expansion that depends on stable core execution. These labels are not permission to promote unaccepted ideas.
 
 ## P0 — make the current build trustworthy
 
@@ -51,9 +51,9 @@ Priority meanings: **P0** release blockers; **P1** core product capability; **P2
 - Future wake-word: implement only if on-device detection, OS-compliant foreground operation, visible mic state, configurable sensitivity and true battery/privacy tests are available. Android 12+ background foreground-service starts are restricted; newer versions also constrain microphone while-in-use access. Tap-to-talk is the reliable baseline.
 
 
-## Additional product features worth planning now
+## Candidate enhancements for later evaluation (not automatically accepted requirements)
 
-These additions are derived from the combined source inventory and the design blueprint. They are roadmap items, not claims about the current implementation.
+These entries were collected from source inventory and historical design comparison. Preserve them as candidate enhancements, but do not implement or prioritize them solely because they appear here. Before work starts, trace an item to the current Product Contract or an explicit user-approved input; otherwise keep it uncommitted and ask whether the user wants it adopted. They are not claims about current implementation.
 
 - [~] **Approval inbox and action queue — first slice added.** One screen now shows the browser-action ledger queue, needs-review records and history, including exact content, destination, payload hash, runtime, capability, evidence and recent audit events. It rejects a pending proposal and can mark an active/approved outcome for review. It only opens the live browser dialog for an exact matching active prompt; it cannot approve history. Still missing: native/guest/publication actions in the same queue, richer risk/permission summaries, global pause/stop and device validation.
 - [~] **Global pause / emergency stop — first top-level stop control added.** Header stop requests cancellation of local model generation, browser workflow/task and active AccessibilityService execution; pending proposals are rejected and approved/in-flight external actions move to `NEEDS_REVIEW`. The optional guest-runner cancel is best-effort and reports uncertainty. Still missing: a centralized cancellation token in a durable cross-runtime DAG, cancellation tests for each runtime, background/process-death delivery, and device verification.
