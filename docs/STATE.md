@@ -224,3 +224,10 @@ The user tested browser automation and reported that it is hardcoded around Fron
 
 - Browser visibility, approval re-entry, shared action identity and checkpoint-friction changes are complete in source. The integrity manifest and this state update are committed atomically so CI validates one consistent final revision.
 - Exact-head CI is pending. No signed APK, physical-device or real provider-session acceptance is claimed yet.
+
+
+## 19 November 2026 — Approval capability boundary correction
+
+- Safe browser prompt preparation and multi-chat orchestration no longer require blanket approvals. Only browser.submit_prompt is classified as an external side effect requiring exact approval. CapabilityCompiler now binds external browser approval to submission rather than preparation; unit tests and source invariants cover this.
+- General read-only BrowserTask capabilities remain site-independent for supported HTTPS targets. Universal DOM/action execution and dynamic target resolution remain open under BRW-14.
+- Exact-head CI remains pending after these latest changes; no APK or device acceptance is claimed.
