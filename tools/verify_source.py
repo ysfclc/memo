@@ -27,6 +27,8 @@ REQUIRED = [
     "ROADMAP.md",
     "PRODUCT_GAP_REGISTRY.md",
     "IMPLEMENTATION_LOG.md",
+    "docs/architecture/MEMO_SYSTEM_ARCHITECTURE.md",
+    "docs/MEMO_REORIENTATION_AND_FEEDBACK_BASELINE_2026-11-17.md",
     "MEMO2_ALIGNMENT_MATRIX.md",
     "core/src/main/kotlin/app/memo/android/orchestration/IntentPlanner.kt",
     "core/src/main/kotlin/app/memo/android/orchestration/CapabilityCompiler.kt",
@@ -897,6 +899,8 @@ governance_files = {
     "readme": (ROOT / "README.md").read_text(),
     "feature_audit": (ROOT / "FEATURE_AUDIT.md").read_text(),
     "implementation_log": (ROOT / "IMPLEMENTATION_LOG.md").read_text(),
+    "architecture": (ROOT / "docs/architecture/MEMO_SYSTEM_ARCHITECTURE.md").read_text(),
+    "feedback_baseline": (ROOT / "docs/MEMO_REORIENTATION_AND_FEEDBACK_BASELINE_2026-11-17.md").read_text(),
     "sales_use_case": (ROOT / "docs/use-cases/sales-operations/README.md").read_text(),
     "memo2_matrix": (ROOT / "MEMO2_ALIGNMENT_MATRIX.md").read_text(),
     "checkpoint": (ROOT / "docs/SESSION_CHECKPOINT_TEMPLATE.md").read_text(),
@@ -912,6 +916,7 @@ governance_markers = {
         "BUG_REPORT",
         "Memo 2 is a historical comparison/reference only",
         "whether it is a distinct internal stage",
+        "Any more detailed split of responsibilities",
     ),
     "input_ledger": (
         "INPUT-2026-11-19-001",
@@ -936,6 +941,9 @@ governance_markers = {
         "A public contact route is not consent",
         "not a fixed module map",
         "not a fixed sequence attributed to the user",
+        "One possible working design is to share",
+        "division is an engineering proposal to validate",
+        "the topology (single orchestrator, modular routers or cooperating agents) is an engineering choice to validate",
     ),
     "decision_log": ("PROD-002", "Memo is not an outbound/cold-outreach product"),
     "traceability": ("optional, domain-specific scenario pack only", "not core Memo requirements"),
@@ -944,6 +952,7 @@ governance_markers = {
         "inactive / not authorized for current build",
         "Client discovery is one non-defining acceptance scenario only",
         "working implementation proposal",
+        "A shared task/context/policy/budget/state model is one option to validate",
     ),
     "roadmap": (
         "Optional scenario pack — Sales Operations (not a core roadmap priority)",
@@ -964,6 +973,16 @@ governance_markers = {
     "implementation_log": (
         "Memo 2 references below are historical comparison notes",
         "cannot add product scope or override user corrections",
+    ),
+    "architecture": (
+        "not product authority or a current implementation-status report",
+        "Optional Sales Operations scenario pack (not Memo core architecture)",
+        "This proposal is inactive unless the user explicitly selects the scenario",
+    ),
+    "feedback_baseline": (
+        "Historical recovered-feedback baseline",
+        "docs/USER_INPUT_LEDGER.md preserves subsequent and future user inputs",
+        "Later explicit user corrections supersede assistant interpretations",
     ),
     "sales_use_case": (
         "Optional user-specific domain scenario pack / proposed workflows; not Memo's product definition",
@@ -988,6 +1007,8 @@ governance_markers = {
     "workspace_screens": (
         "keyword classification is not policy enforcement",
         "registered-runtime validator below remain independent safety gates",
+        "not Memo's general intent router or product authority",
+        "Do not infer a domain, business model, audience, workflow template or desired external action from examples elsewhere",
     ),
 }
 for file_key, markers in governance_markers.items():
@@ -1007,6 +1028,8 @@ if "## M7 — Sales Operations vertical slice" in governance_files["roadmap"]:
     fail("Sales Operations must not remain a scheduled core roadmap vertical slice")
 if "## P1 — Sales Operations extension" in governance_files["product_gaps"]:
     fail("optional Sales Operations must not remain a P1 core product gap")
+if "The first slice (M7.A1 / MEMO-SALES-001) is deliberately read-only" in governance_files["architecture"]:
+    fail("historical Sales Operations architecture must not imply an active first implementation slice")
 if "personal sales-operations co-pilot and controlled operator" in governance_files["sales_use_case"]:
     fail("optional Sales Operations scenario must not redefine Memo as a sales product")
 if "outreach drafts" in governance_files["product_contract"].split("## 3. Four connected product surfaces", 1)[0]:
