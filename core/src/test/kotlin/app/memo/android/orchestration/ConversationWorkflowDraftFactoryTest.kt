@@ -23,7 +23,7 @@ class ConversationWorkflowDraftFactoryTest {
             TaskSpec(
                 id = "scope", title = "Frame the report", kind = WorkflowNodeKind.SCOPE,
                 participant = WorkflowParticipant.DETERMINISTIC, runtimeId = "app.jobs",
-                requiredCapabilities = listOf("job.create"), dependsOn = emptyList(),
+                requiredCapabilities = emptyList(), dependsOn = emptyList(),
                 inputContract = "Original request", outputContract = "Defined research scope",
                 postcondition = "Scope is explicit", timeoutMs = 90_000, maxRetries = 0,
                 idempotencyKey = "a".repeat(64)
