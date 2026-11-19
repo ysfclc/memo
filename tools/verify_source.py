@@ -29,6 +29,7 @@ REQUIRED = [
     "IMPLEMENTATION_LOG.md",
     "docs/architecture/MEMO_SYSTEM_ARCHITECTURE.md",
     "docs/MEMO_REORIENTATION_AND_FEEDBACK_BASELINE_2026-11-17.md",
+    "docs/PRODUCT_INTEGRITY_AUDIT_2026-11-19.md",
     "MEMO2_ALIGNMENT_MATRIX.md",
     "core/src/main/kotlin/app/memo/android/orchestration/IntentPlanner.kt",
     "core/src/main/kotlin/app/memo/android/orchestration/CapabilityCompiler.kt",
@@ -901,6 +902,7 @@ governance_files = {
     "implementation_log": (ROOT / "IMPLEMENTATION_LOG.md").read_text(),
     "architecture": (ROOT / "docs/architecture/MEMO_SYSTEM_ARCHITECTURE.md").read_text(),
     "feedback_baseline": (ROOT / "docs/MEMO_REORIENTATION_AND_FEEDBACK_BASELINE_2026-11-17.md").read_text(),
+    "integrity_audit": (ROOT / "docs/PRODUCT_INTEGRITY_AUDIT_2026-11-19.md").read_text(),
     "sales_use_case": (ROOT / "docs/use-cases/sales-operations/README.md").read_text(),
     "memo2_matrix": (ROOT / "MEMO2_ALIGNMENT_MATRIX.md").read_text(),
     "checkpoint": (ROOT / "docs/SESSION_CHECKPOINT_TEMPLATE.md").read_text(),
@@ -983,6 +985,12 @@ governance_markers = {
         "Historical recovered-feedback baseline",
         "docs/USER_INPUT_LEDGER.md preserves subsequent and future user inputs",
         "Later explicit user corrections supersede assistant interpretations",
+    ),
+    "integrity_audit": (
+        "Memo Product-Integrity Audit — 19 November 2026",
+        "PI-01 — Competing sources of truth",
+        "PI-06 — AI-generated plans could import assumptions",
+        "Residual limitation",
     ),
     "sales_use_case": (
         "Optional user-specific domain scenario pack / proposed workflows; not Memo's product definition",
