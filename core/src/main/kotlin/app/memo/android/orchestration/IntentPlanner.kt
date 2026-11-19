@@ -3,7 +3,17 @@ package app.memo.android.orchestration
 import java.text.Normalizer
 import java.util.Locale
 
-/** A deterministic, explainable first-pass intent planner. It proposes work; it never executes side effects. */
+/**
+ * LEGACY / PROTOTYPE classifier and planner.
+ *
+ * This fixed keyword-to-domain table is not Memo's canonical intent classifier, smart router,
+ * product architecture, or an accepted list of product domains. Keep it isolated for existing
+ * compatibility paths and tests; do not expand it as the general intent-routing solution.
+ * The product direction is open-ended, general-purpose orchestration over registered capabilities,
+ * with AI and deterministic policy working together. Any replacement must follow the Product
+ * Contract and the current user-input ledger; examples must not become hardcoded product domains.
+ * This class proposes work only and never executes side effects.
+ */
 enum class IntentDomain(val id: String, val label: String) {
     GENERAL("general", "General work"), RESEARCH("research", "Research"), BUILD("build", "Build / engineering"),
     CAREER("career", "Career"), CONTENT("content", "Content"), CRM("crm", "People / CRM"),
