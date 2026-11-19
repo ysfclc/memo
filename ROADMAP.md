@@ -5,6 +5,8 @@
 **Product contract:** [docs/MEMO_PRODUCT_CONTRACT.md](docs/MEMO_PRODUCT_CONTRACT.md)  
 **Execution ledger:** [TASKS.md](TASKS.md)
 
+**Agent rules:** [AGENTS.md](AGENTS.md)  
+**User-input ledger:** [docs/USER_INPUT_LEDGER.md](docs/USER_INPUT_LEDGER.md)  
 **Workflow governance:** [DEVELOPMENT_GOVERNANCE.md](DEVELOPMENT_GOVERNANCE.md)  
 **Requirement traceability:** [docs/REQUIREMENT_TRACEABILITY.md](docs/REQUIREMENT_TRACEABILITY.md)  
 **Decision history:** [docs/DECISION_LOG.md](docs/DECISION_LOG.md)
@@ -15,7 +17,9 @@ Memo is a personal AI operating agent. One intent entry point connects Talk, Liv
 
 This is not a browser-first app, chatbot skin, static planner or disconnected dashboard.
 
-## Verified source/build baseline — 5 November 2026
+## Historical source/build baseline — 5 November 2026
+
+This is historical CI evidence, not the current source or product status. Consult `docs/STATE.md`, `TASKS.md` and exact-head CI records for the current branch. Product authority remains with the user's current inputs and the Product Contract.
 
 - Source snapshot: `382c65c1bf6dbc37d87fd766bf4796a2e76a400d`
 - Integrated branch head after CI handoff: `6d0e20dca47350d7b53ce8b82dca866bac1f45a9`
@@ -26,7 +30,7 @@ This is not a browser-first app, chatbot skin, static planner or disconnected da
 
 ## Product reality check
 
-The active shell is now Talk / Live / Work / Studio. Talk has one text/voice entry composer and Council entry points. Live summarizes browser state, active saved work, approvals and activity, with Browser and Apps reachable as secondary routes. Studio has its own destination. This is a first shell slice, not the finished agent: the Talk composer currently opens a draft, the planner remains keyword/template based, Council is still a separate route, runtime panes are not inline, and the cross-runtime DAG/event journal is not implemented. Studio remains mostly Self Model and local artifact generation. See the source-to-vision matrix in the product contract.
+The active shell is Talk / Live / Work / Studio. Talk accepts the user's intent as a conversation first; after a successful response, the same selected model may return `NO_WORKFLOW` or a structured proposal. Proposed graphs are parser-validated, recompiled against the current runtime registry and saved as source-linked read-only drafts inline; this is not generic DAG execution. `IntentPlanner` and its fixed keyword table remain legacy compatibility code, not Talk's canonical intent router. Live summarizes persisted browser state, active work, approvals and activity, while Browser and Apps remain secondary routes. Studio has its own destination. This is still a partial shell/orchestration increment: the full unified smart router, general runtime dispatcher, adaptive cross-runtime execution, complete checkpoint verification and end-to-end acceptance remain open.
 
 ## Ordered delivery plan
 
@@ -46,7 +50,7 @@ The active shell is now Talk / Live / Work / Studio. Talk has one text/voice ent
 - [ ] Keep model, capability, permission and diagnostics management in supporting settings, not primary navigation.
 
 ### P2 — Implement the real orchestrator
-- [~] Typed TaskSpec proposal contract, exact-runtime capability assembly and bounded dynamic DAG validation are in core with parser/tests; Talk still uses the deterministic domain-template planner and no DAG executor is wired.
+- [~] Typed TaskSpec proposal contract, exact-runtime capability validation and bounded dynamic DAG validation are in core with parser/tests. Talk now performs a same-model workflow assessment and can save a validated, read-only source-linked draft; no generic DAG executor is wired.
 - [ ] Dynamic capability assembly from a versioned registry; inspectable manifest, gaps, trust, runtime readiness and budgets.
 - [ ] Unified runtime routing for deterministic tools, local model, frontier website/app sessions, browser, native app and human checkpoints.
 - [ ] Shared durable run state/event journal with pause, resume, cancellation, process-death recovery and idempotency.
@@ -116,6 +120,6 @@ Detailed contract and acceptance scenarios: [docs/SOCIAL_PLATFORM_PRODUCT_SPEC.m
 A task closes only with a real implementation, named tests, green CI and device/security evidence where applicable. Documentation is the contract and ledger—not a substitute for the product.
 
 
-## M7 — Sales Operations vertical slice
+## Optional scenario pack — Sales Operations (not a core roadmap priority)
 
-Start with M7.A1: evidence-backed industrial account research inside Work, transparent ICP scoring with unknowns, duplicate-safe review and operator accept/reject. No outbound contact. Qualification, permissioned engagement, inbound/listening, proposal and delivery follow in the order defined by [the Sales Operations use cases](use-cases/sales-operations/README.md).
+The [Sales Operations use-case pack](use-cases/sales-operations/README.md) preserves an optional scenario for exercising Memo's general-purpose capabilities. It is not an active vertical slice, product definition or default next task. Do not select M7.A1–M7.A6 unless the user explicitly chooses this scenario. No outbound product, cold-contact automation or channel-send capability is authorized by the scenario.
