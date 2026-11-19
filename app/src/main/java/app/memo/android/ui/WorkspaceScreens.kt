@@ -653,11 +653,17 @@ fun ChatsWorkspaceScreen(
                                             .takeLast(10)
                                             .joinToString("\n\n") { "${it.role}: ${it.content}" }
                                             .take(10_000)
+                                        val safePlanningCapabilities = setOf(
+                                            "app.models" to "model.list",
+                                            "app.models" to "model.generate",
+                                            "runtime.browser" to "browser.navigate_https",
+                                            "runtime.browser" to "browser.inspect_page"
+                                        )
                                         val safeRuntimeCatalogue = RuntimeRegistry().listRuntimes()
-                                            .filter { it.status == "AVAILABLE" && it.id !in setOf("app.approvals", "app.settings") }
+                                            .filter { it.status == "AVAILABLE" && it.id in setOf("app.jobs", "app.models", "runtime.browser") }
                                             .joinToString("\n") { descriptor ->
                                                 val capabilities = descriptor.capabilities
-                                                    .filterNot { it.requiresUserApproval || it.externalSideEffect }
+                                                    .filter { (descriptor.id to it.id) in safePlanningCapabilities }
                                                     .joinToString("\n") { capability -> "  - ${capability.id}: ${capability.description}" }
                                                 "${descriptor.id} [${descriptor.status}]\n$capabilities"
                                             }
