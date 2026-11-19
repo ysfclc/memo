@@ -39,6 +39,7 @@ data class IntentPlan(
  * Any replacement must follow the Product Contract and current user-input ledger; examples must
  * not become hardcoded product domains. This planner proposes work only and never executes effects.
  */
+@Deprecated("Legacy Work-only keyword heuristic; not Memo's canonical intent router.")
 object IntentPlanner {
     private val riskyAction = Regex(
         "\\b(send|submit|publish|post|apply|delete|remove|buy|purchase|pay|transfer|invite|message|email|book|order|upload|share|zaplat|wyślij|wyslij|opublikuj|usuń|usun|kup|zastosuj|wyślij|gönder|gonder|yayınla|yayinla|sil|satın al|satin al|başvur|basvur|öde|ode)\\b",
