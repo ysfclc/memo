@@ -125,3 +125,10 @@ For each new material input, append a new entry:
 - The duplicate broad preflight consent was removed; each outbound prompt still requires a separate exact-content, destination-bound, one-use approval. Local intent structuring is opt-in by default.
 - Manual sign-in/page-setup waits no longer create a false NEEDS_REVIEW approval checkpoint; paused Work jobs are labelled "Needs your input".
 - This is implementation progress, not closure. Exact-head CI and physical-device/provider-session acceptance remain pending; general-purpose browser target resolution and the wider cross-runtime checkpoint audit remain open.
+
+
+### Approval-policy follow-up — 2026-11-19 (INPUT-2026-11-19-006)
+
+- Found and corrected a second source of redundant browser checkpoints: the capability registry had marked safe prompt preparation and the multi-chat orchestrator itself as approval-gated, while each actual send already has a separate exact-content approval.
+- browser.prepare_prompt and browser.run_multi_chat_workflow are now non-side-effect capabilities; browser.submit_prompt remains the approval-gated side effect. CapabilityCompiler now selects submit_prompt for external browser sends.
+- Added unit and source-verifier regression coverage. This does not close the wider cross-runtime checkpoint audit.
