@@ -94,6 +94,27 @@ for rel in REQUIRED:
     if not (ROOT / rel).is_file():
         fail(f"required file is missing: {rel}")
 print(f"PASS: {len(REQUIRED)} required integration files exist")
+
+# Preserve the historical user-input and decision records at the Git commit boundary.
+# The ledger may grow, but a commit must not edit or remove any prior record.
+git_root = subprocess.run(
+    ["git", "rev-parse", "--show-toplevel"],
+    cwd=ROOT, capture_output=True, text=True, check=False,
+)
+if git_root.returncode == 0 and Path(git_root.stdout.strip()).resolve() == ROOT.resolve():
+    for rel in ("docs/USER_INPUT_LEDGER.md", "docs/DECISION_LOG.md"):
+        previous = subprocess.run(
+            ["git", "show", f"HEAD^:{rel}"],
+            cwd=ROOT, capture_output=True, text=True, check=False,
+        )
+        if previous.returncode == 0:
+            current = (ROOT / rel).read_text()
+            if not current.startswith(previous.stdout):
+                fail(f"{rel} is append-only: a commit modified or removed historical entries")
+    print("PASS: prior user-input and decision records are immutable; new records can only be appended")
+else:
+    print("NOTE: append-only history check skipped because this source snapshot has no matching Git worktree")
+
 core_gradle = (ROOT / "core/build.gradle").read_text()
 app_gradle = (ROOT / "app/build.gradle").read_text()
 if "org.jetbrains.kotlin.jvm" not in core_gradle or "implementation project(':core')" not in app_gradle:
