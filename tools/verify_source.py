@@ -983,7 +983,7 @@ governance_markers = {
     ),
     "feedback_baseline": (
         "Historical recovered-feedback baseline",
-        "docs/USER_INPUT_LEDGER.md preserves subsequent and future user inputs",
+        "preserves subsequent and future user inputs",
         "Later explicit user corrections supersede assistant interpretations",
     ),
     "integrity_audit": (
