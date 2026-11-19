@@ -885,6 +885,11 @@ governance_files = {
     "decision_log": (ROOT / "docs/DECISION_LOG.md").read_text(),
     "traceability": (ROOT / "docs/REQUIREMENT_TRACEABILITY.md").read_text(),
     "tasks": (ROOT / "TASKS.md").read_text(),
+    "roadmap": (ROOT / "ROADMAP.md").read_text(),
+    "product_gaps": (ROOT / "PRODUCT_GAP_REGISTRY.md").read_text(),
+    "readme": (ROOT / "README.md").read_text(),
+    "feature_audit": (ROOT / "FEATURE_AUDIT.md").read_text(),
+    "implementation_log": (ROOT / "IMPLEMENTATION_LOG.md").read_text(),
     "sales_use_case": (ROOT / "docs/use-cases/sales-operations/README.md").read_text(),
     "memo2_matrix": (ROOT / "MEMO2_ALIGNMENT_MATRIX.md").read_text(),
     "checkpoint": (ROOT / "docs/SESSION_CHECKPOINT_TEMPLATE.md").read_text(),
@@ -932,6 +937,26 @@ governance_markers = {
         "Client discovery is one non-defining acceptance scenario only",
         "working implementation proposal",
     ),
+    "roadmap": (
+        "Optional scenario pack — Sales Operations (not a core roadmap priority)",
+        "not an active vertical slice",
+    ),
+    "product_gaps": (
+        "Optional scenario pack — Sales Operations (not a core P1 gap or roadmap priority)",
+        "not an active priority",
+    ),
+    "readme": (
+        "Optional Sales Operations use-case pack",
+        "not Memo's product definition or default implementation priority",
+    ),
+    "feature_audit": (
+        "Optional Sales Operations scenario pack",
+        "not Memo's product definition, core architecture or default roadmap priority",
+    ),
+    "implementation_log": (
+        "Memo 2 references below are historical comparison notes",
+        "cannot add product scope or override user corrections",
+    ),
     "sales_use_case": (
         "Optional user-specific domain scenario pack / proposed workflows; not Memo's product definition",
         "does not authorize building an outbound",
@@ -966,6 +991,10 @@ if "Memo 2 is the product blueprint" in governance_files["implementation_contrac
     fail("historical Memo 2 blueprint wording must not outrank user-approved Memo product direction")
 if "### Example end-to-end mission: find clients" in governance_files["product_contract"]:
     fail("client discovery must remain explicitly labelled a non-defining use case")
+if "## M7 — Sales Operations vertical slice" in governance_files["roadmap"]:
+    fail("Sales Operations must not remain a scheduled core roadmap vertical slice")
+if "## P1 — Sales Operations extension" in governance_files["product_gaps"]:
+    fail("optional Sales Operations must not remain a P1 core product gap")
 if "personal sales-operations co-pilot and controlled operator" in governance_files["sales_use_case"]:
     fail("optional Sales Operations scenario must not redefine Memo as a sales product")
 if "outreach drafts" in governance_files["product_contract"].split("## 3. Four connected product surfaces", 1)[0]:
