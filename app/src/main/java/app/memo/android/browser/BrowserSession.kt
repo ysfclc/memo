@@ -416,6 +416,36 @@ class BrowserSession(
         workflowCallbacks = null
     }
 
+    /**
+     * Manual recovery when provider DOM detection misses an answer. This captures the currently
+     * visible page as the response and records it explicitly as user-captured, not verified AI text.
+     */
+    fun captureVisiblePageAsWorkflowResponse(): Boolean {
+        if (workflowState.status != BrowserWorkflowStatus.WAITING_FOR_RESPONSE ||
+            !workflowState.sentForCurrentStep || workflowState.awaitingPromptApproval) {
+            browserMessage = "Manual capture is available after a prompt has been sent and Memo is waiting for the provider response."
+            return false
+        }
+        val provider = workflowProviders.getOrNull(workflowIndex)
+        if (provider == null || !providerMatches(provider, currentUrl)) {
+            pauseWorkflowForUser("The visible page is not the current provider. Return to ${provider?.label ?: "the provider"} before capturing.")
+            return false
+        }
+        val generation = workflowGeneration
+        publishWorkflowState(workflowState.copy(message = "Capturing the visible ${provider.label} page manually…"))
+        webView.evaluateJavascript(BrowserScripts.capturePage) { raw ->
+            if (disposed || generation != workflowGeneration || !workflowState.isActive) return@evaluateJavascript
+            val result = runCatching { JSONObject(decodeJsString(raw)) }.getOrNull()
+            val content = result?.optString("content").orEmpty().trim()
+            if (result?.optBoolean("ok") == true && content.length >= 40) {
+                completeWorkflowStep(generation, content.take(14_000), manualCapture = true)
+            } else {
+                pauseWorkflowForUser("The visible page did not contain enough readable text to capture. Scroll to the answer and try again.")
+            }
+        }
+        return true
+    }
+
     private fun beginWorkflowStep(generation: Long, retryCurrentPage: Boolean = false) {
         if (disposed || generation != workflowGeneration || workflowIndex !in workflowProviders.indices) return
         val provider = workflowProviders[workflowIndex]
@@ -559,7 +589,7 @@ class BrowserSession(
         }
     }
 
-    private fun completeWorkflowStep(generation: Long, responseText: String) {
+    private fun completeWorkflowStep(generation: Long, responseText: String, manualCapture: Boolean = false) {
         if (disposed || generation != workflowGeneration || workflowIndex !in workflowProviders.indices) return
         val provider = workflowProviders[workflowIndex]
         val prompt = workflowState.currentPrompt
@@ -570,7 +600,8 @@ class BrowserSession(
             response = responseText.trim().take(14_000),
             sourceUrl = currentUrl.take(2_048),
             startedAt = workflowStepStartedAt,
-            completedAt = System.currentTimeMillis()
+            completedAt = System.currentTimeMillis(),
+            captureMethod = if (manualCapture) "MANUAL_PAGE" else "AUTO_DETECTED"
         )
         val results = workflowState.responses + result
         workflowCallbacks?.onStepCompleted(workflowIndex, result)
@@ -619,6 +650,41 @@ class BrowserSession(
     private fun providerMatches(provider: BrowserModelProvider, url: String): Boolean {
         val host = Uri.parse(url).host.orEmpty().lowercase(Locale.ROOT).removePrefix("www.")
         return provider.hosts.any { host == it || host.endsWith(".$it") }
+    }
+
+    /** Capture the current visible page as evidence for user-defined research workflows. */
+    fun captureCurrentPageForResearch(onCaptured: (BrowserPageCapture?, String) -> Unit) {
+        if (currentUrl.isBlank()) {
+            onCaptured(null, "Open a page before capturing research.")
+            return
+        }
+        if (isLoading) {
+            onCaptured(null, "Wait for the page to finish loading before capturing research.")
+            return
+        }
+        webView.evaluateJavascript(BrowserScripts.capturePage) { raw ->
+            if (disposed) {
+                onCaptured(null, "The browser session was closed before capture completed.")
+                return@evaluateJavascript
+            }
+            val result = runCatching { JSONObject(decodeJsString(raw)) }.getOrNull()
+            val content = result?.optString("content").orEmpty().trim()
+            if (result?.optBoolean("ok") != true || content.length < 30) {
+                onCaptured(null, "The page did not expose enough readable text. Scroll or open the relevant results and capture again.")
+                return@evaluateJavascript
+            }
+            onCaptured(
+                BrowserPageCapture(
+                    title = result.optString("title", pageTitle).take(240).ifBlank { pageTitle },
+                    url = result.optString("url", currentUrl).take(2_048).ifBlank { currentUrl },
+                    content = content.take(15_000),
+                    summary = result.optString("summary", "Visible page text captured.").take(2_000),
+                    metadata = compactMetadata(result.optJSONObject("metadata")),
+                    capturedAt = System.currentTimeMillis()
+                ),
+                ""
+            )
+        }
     }
 
     fun runTask(task: TaskRecord, taskCallbacks: TaskCallbacks) {

@@ -7,6 +7,7 @@ class SalesAccountResearchTest {
     private val evidence = EvidenceRecord(
         id = "evidence-1", title = "Company capabilities page",
         sourceUrl = "https://www.example.com/capabilities",
+        kind = "WEB_RESEARCH",
         content = "CNC milling and turning services for industrial customers.",
         summary = "The company publicly describes CNC services.",
         capturedAt = 1_800_000_000_000L

@@ -113,3 +113,20 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - Integrated the fail-closed native action policy and Talk draft-preservation changes with the Signal & Graphite design foundation, unified experience/navigation rebuild, Today priority model, and evidence-backed industrial account intake.
 - Preserved the mainline product scope and existing execution history; did not replace the main task ledger with the shortened feature-branch copy.
 - Verification remains open: run authoritative Gradle unit tests, lint and Android APK pipeline against the integrated commit. No APK or device acceptance is claimed by this source merge.
+
+
+## 20 November 2026 — General browser research and consultation recovery
+
+- **User feedback:** Memo's browser workflow was too consultation-centric and could not express arbitrary research → records → follow-up tasks. The frontier consultation attempt also failed to visibly open/use provider browser sessions, did not expose a clear approval control, and produced no useful captured output.
+- **Source changes:** Added a separate Browser research mode with user goal, Google Maps query or arbitrary HTTPS target, visible page capture across user navigation/scroll, immediate evidence persistence, local-only structured extraction, proposed typed records and TASK follow-ups, duplicate skip, and resume from saved browser jobs. Added the workflow contract and explicit autonomous DAG/browser-agent backlog.
+- **Consultation reliability changes:** local intent structuring is skipped so provider navigation begins immediately; prompt approval has a visible in-workflow fallback and dismissible review; user can manually capture the visible page if automatic response detection fails; evidence identifies manual versus automatic capture.
+- **Localization:** added Polish/Turkish labels and a localization test for the new research/consultation controls; the static source verifier now scans the new screen.
+- **CI:** run #977 (commit `93f23741cbe15925c89632d56cb5b58118fbd63d`) failed in the source verifier before Android compilation because it expected `Continue in Talk`, while the current home UI says `Continue with Memo`. The verifier was corrected to check the real label in the home surface in commit `99ed5033228509fa8d3bc7d4718a6a5e981ba0a0`. A new run for that exact commit is not yet confirmed.
+- **Verification limitation:** no local Android/Gradle toolchain or checkout is available in this session. No compile, APK, install or device-acceptance claim. Google Maps result scrolling/capture is still user-driven; autonomous click/type/scroll/verify execution and a dynamic workflow DAG remain unfinished.
+
+
+### CI follow-up: source checks and compile blocker
+
+- Run #980: source verification failed because the localization scanner found missing PL/TR entries in existing Work UI labels after the new research screen was included in the scan. Added the 22 missing catalog entries; branch static scan now finds no missing or duplicate translation keys.
+- Run #981: source invariants and remote-runner checks passed; Kotlin test compilation stopped on `SalesAccountResearchTest.kt` missing required `EvidenceRecord.kind`. Corrected that fixture. Also fixed the newly introduced evidence-resume timestamp reference from `createdAt` to `capturedAt` (the actual `EvidenceRecord` field).
+- The next CI run is needed to reach app compilation and APK assembly. The earlier failure is not evidence that the new browser screen compiled.

@@ -469,3 +469,20 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 
 - [~] Domain model, evidence-backed ICP scoring, unknown-factor handling, duplicate warnings, vault-gated proposed ORGANIZATION creation and initial Work intake UI integrated.
 - [ ] Add evidence capture / factor review UI, run full Gradle and ViewModel integration tests, and verify the Android experience. This is one optional Work workflow; Memo's product scope remains broader.
+
+
+## 20 November 2026 — Browser workflow correction (source added; acceptance pending)
+
+**User feedback preserved:** Browser automation must not be hardcoded around frontier consultation/debate. It must support arbitrary user-directed work (for example, search Google Maps for businesses selling a requested product, save each business as a record, and create follow-up tasks). The frontier consultation was also tested: provider pages did not reliably open/submit, approval controls were not discoverable, automatic response capture failed, and the user saw no useful output.
+
+- [~] **General Browser research vertical slice:** new mode opens Google Maps from a query or an arbitrary HTTPS target; user can scroll/navigate and capture multiple pages; each page capture is saved immediately as evidence; local-only extraction proposes typed entities and TASK follow-ups with exact source excerpts; duplicate records are skipped; saved captures can be resumed. Source exists on branch; Android build, runtime persistence and physical-device acceptance are not yet verified.
+- [~] **Frontier consultation reliability:** local intent structuring no longer blocks opening provider websites; exact prompt approval has a visible in-workflow review fallback; the approval dialog can be dismissed without approving; user can manually capture a visible page when automatic answer detection misses it; evidence records distinguish manual capture from automatic detection. Source exists on branch; CI/device verification pending.
+- [ ] **True generic workflow engine:** user-authored editable/versioned DAG, dynamic capability/runtime routing, input/output schemas, dependency/condition/loop/retry budgets, shared run journal, pause/resume/process-death recovery, output mappings and verified postconditions.
+- [ ] **Browser agent:** bounded inspect/click/type/scroll/wait/capture/extract loop with page-aware selection, visible execution, checkpoint/takeover and test fixtures. Google Maps results traversal must be tested against real pages; current research slice requires manual scrolling/capture.
+- [ ] **Task integration:** validated TASK proposals must be convertible/linked into the actionable task queue without losing their originating organization, evidence or research run. Outbound contact remains approval-gated and is not performed by research extraction.
+- [ ] **Regression acceptance:** no prior Memo capability/backlog may be dropped; verify build, fresh APK/source commit, install-over-existing/data preservation, browser launch, prompt approval, auto/manual capture, saved research resume, extraction retry, evidence links and EN/PL/TR UI on device.
+
+See [docs/GENERIC_BROWSER_WORKFLOWS.md](docs/GENERIC_BROWSER_WORKFLOWS.md) for the workflow contract and Google Maps acceptance scenario. Do not mark this increment complete based on source edits alone.
+
+
+- [~] **CI blockers encountered while validating browser-workflow branch:** source verifier's existing stale Talk-label expectation corrected to actual home label; static localization gaps were filled; account research test fixture now supplies required `EvidenceRecord.kind`; research evidence restore now reads `capturedAt`. Follow-up CI must still compile app/test source and produce APK.

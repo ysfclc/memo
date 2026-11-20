@@ -71,3 +71,12 @@ These additions are derived from the combined source inventory and the design bl
 - [ ] **M7.A1 — Evidence-backed industrial account research.** Reuse Work organization entities and source evidence; score ICP fit transparently with factor rationales and explicit unknowns; detect possible duplicates without destructive merging; require operator accept/reject. No outbound contact in this slice.
 - [ ] **M7.A2–M7.A6 — Qualification, permissioned engagement, inbound/listening, proposals, delivery and reporting.** Deliver separately, one feature branch/worktree per slice, with legal/privacy/platform gates and evidence-backed acceptance.
 - [ ] Do not create a second CRM, scrape restricted sources, infer marketing consent from public contact data, or report unverified external outcomes as successful.
+
+
+## 20 November 2026 — Browser workflows are not yet general-purpose
+
+- **User feedback / gap:** Browser workflow was hardcoded around frontier consultation/brainstorming. It could not express arbitrary work such as Google Maps business discovery → individual organization records → follow-up tasks. The tested frontier run also failed to reliably open/send to provider pages, hid the approval control, and failed to capture a useful response/output.
+- **Source increment (branch only, not yet verified):** new Browser research mode supports Google Maps search or arbitrary HTTPS targets, manual scroll/navigation, multiple page captures saved as evidence, local-only extraction of source-grounded records and TASK proposals, duplicate skipping, and saved-run resume. Frontier consultation is changed to start provider navigation without waiting on local intent structuring; an inline approval-review fallback and manual visible-page capture are added.
+- **Still missing:** dynamic user-authored workflow DAG execution, actual autonomous browser actions (click/type/scroll/inspect/wait/verify), robust multi-page Google Maps result traversal, reliable universal approval UI, durable recovery through process death, and direct actionable-task integration. The research mode is a manual-capture vertical slice, not an autonomous browser agent.
+- **Verification:** source branch only. No Android compilation, CI acceptance, APK or device test is claimed until observed.
+- **Contract:** [docs/GENERIC_BROWSER_WORKFLOWS.md](docs/GENERIC_BROWSER_WORKFLOWS.md).

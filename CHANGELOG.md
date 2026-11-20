@@ -121,3 +121,10 @@ Retained from the integrated source branch: visible browser-based frontier consu
 
 - Notification delivery now checks Android 13+ `POST_NOTIFICATIONS` runtime permission immediately before posting and safely ignores a permission-revocation race. The existing user-initiated permission request flow remains unchanged.
 - This repairs the sole blocking lint error reported by CI run #74; the non-blocking warning/hint backlog remains open pending separate review.
+
+
+## 20 November 2026 — Browser workflow reliability and generic research source increment
+
+- Added a separate Browser research mode for user-directed Google Maps or arbitrary-site research, evidence-first multiple page captures, local-only extraction, proposed records/follow-up TASKs, duplicate skip and saved-run resume.
+- Frontier consultation now skips the blocking local intent-brief call so provider navigation starts immediately. Added visible approval review fallback and manual visible-page capture recovery; manual captures are explicitly labeled in evidence.
+- **Verification remains pending:** no Android build, CI acceptance, APK or physical-device behavior is claimed for this increment. General dynamic DAG execution and autonomous browser actions remain unfinished.
