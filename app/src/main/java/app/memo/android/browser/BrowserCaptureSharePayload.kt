@@ -8,10 +8,13 @@ object BrowserCaptureSharePayload {
 
     fun format(title: String, sourceUrl: String, summary: String, content: String): String? {
         val cleanTitle = title.trim().replace(Regex("\\s+"), " ").take(240)
-        val cleanUrl = sourceUrl.trim().take(2_048)
-        val uri = runCatching { java.net.URI(cleanUrl) }.getOrNull() ?: return null
+        val candidateUrl = sourceUrl.trim().take(2_048)
+        val uri = runCatching { java.net.URI(candidateUrl) }.getOrNull() ?: return null
         val scheme = uri.scheme?.lowercase()
         if (scheme !in setOf("http", "https") || uri.host.isNullOrBlank() || uri.rawUserInfo != null) return null
+        // Query strings and fragments can carry OAuth codes or temporary session credentials.
+        val cleanUrl = uri.toASCIIString().substringBefore('?').substringBefore('#')
+        if (cleanUrl.isBlank() || cleanUrl.length > 2_048) return null
 
         val cleanSummary = summary.trim().take(600)
         val cleanContent = content.trim().take(MAX_PAGE_TEXT)
