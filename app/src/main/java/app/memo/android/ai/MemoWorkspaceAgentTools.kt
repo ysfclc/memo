@@ -181,28 +181,26 @@ object MemoWorkspaceAgentTools {
             require(title.isNotBlank()) { "A record needs a title." }
 
             val inputProperties = arguments.optJSONObject("properties") ?: JSONObject()
-            require(inputProperties.length() <= 36) { "A record may contain at most 36 user-defined properties." }
+            require(inputProperties.length() <= 40) { "A record may contain at most 40 properties." }
             val propertyMap = linkedMapOf<String, String>()
             val keys = inputProperties.keys()
             while (keys.hasNext()) {
                 val key = keys.next().trim().take(80)
                 require(key.isNotBlank()) { "Record property names cannot be empty." }
-                require(key !in setOf("origin", "agentContentDigest", "agentRunId", "agentCallId")) {
-                    "The property '$key' is reserved by Memo."
-                }
                 val value = inputProperties.opt(key)
                 require(value is String && value.length <= 2_000) {
                     "Record property '$key' must be text no longer than 2,000 characters."
                 }
                 propertyMap[key] = value
             }
-            val stableProperties = propertyMap.toSortedMap().entries.joinToString("\n") { "${it.key}=${it.value}" }
-            val digest = sha256("$type\n$title\n$description\n$stableProperties")
             val existing = viewModel.snapshot.value.entities.firstOrNull { entity ->
                 entity.type == type &&
                     entity.title.equals(title, ignoreCase = true) &&
                     entity.reviewStatus !in setOf("REJECTED", "MERGED") &&
-                    entity.properties["agentContentDigest"] == digest
+                    entity.sourceConversationId == sourceConversationId &&
+                    entity.sourceMessageId == sourceMessageId &&
+                    entity.description == description &&
+                    entity.properties == propertyMap
             }
             if (existing != null) {
                 return AgentToolResult(
@@ -213,12 +211,7 @@ object MemoWorkspaceAgentTools {
                 )
             }
 
-            val persistedProperties = propertyMap + mapOf(
-                "origin" to "MEMO_AGENT",
-                "agentContentDigest" to digest,
-                "agentRunId" to invocation.runId,
-                "agentCallId" to invocation.callId
-            )
+            val persistedProperties = propertyMap
             val outcome = viewModel.createEntityDurably(
                 type = type,
                 title = title,
