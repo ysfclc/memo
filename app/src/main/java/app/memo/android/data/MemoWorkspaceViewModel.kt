@@ -1001,6 +1001,64 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         return accepted
     }
 
+    /**
+     * Exact-action transitions used by the Talk approval broker. Each transition is flushed to
+     * the encrypted vault and read back before the caller may progress to the next side effect.
+     */
+    suspend fun proposeExternalActionDurably(
+        jobId: String,
+        stepId: String,
+        runtimeId: String,
+        capabilityId: String,
+        destination: String,
+        title: String,
+        payload: String,
+        risk: String = "EXTERNAL_WRITE"
+    ): ActionApprovalRecord? {
+        val id = proposeExternalAction(jobId, stepId, runtimeId, capabilityId, destination, title, payload, risk)
+            ?: return null
+        return persistAndReadActionRecord(id, "PENDING")
+    }
+
+    suspend fun approveExternalActionDurably(actionId: String, displayedHash: String): Boolean =
+        approveExternalAction(actionId, displayedHash) &&
+            persistAndReadActionRecord(actionId, "APPROVED")?.approvalHash == displayedHash
+
+    suspend fun rejectExternalActionDurably(actionId: String, reason: String): Boolean =
+        rejectExternalAction(actionId, reason) &&
+            persistAndReadActionRecord(actionId, "REJECTED") != null
+
+    suspend fun beginExternalActionDurably(
+        actionId: String,
+        runtimeId: String,
+        capabilityId: String,
+        destination: String,
+        payload: String
+    ): Boolean =
+        beginExternalAction(actionId, runtimeId, capabilityId, destination, payload) &&
+            persistAndReadActionRecord(actionId, "IN_PROGRESS") != null
+
+    suspend fun completeExternalActionDurably(actionId: String, evidenceRef: String): Boolean =
+        completeExternalAction(actionId, evidenceRef) &&
+            persistAndReadActionRecord(actionId, "COMPLETED")?.evidenceRef == evidenceRef
+
+    suspend fun markExternalActionNeedsReviewDurably(actionId: String, reason: String): Boolean =
+        markExternalActionNeedsReview(actionId, reason) &&
+            persistAndReadActionRecord(actionId, "NEEDS_REVIEW") != null
+
+    private suspend fun persistAndReadActionRecord(actionId: String, expectedStatus: String): ActionApprovalRecord? {
+        if (!_vaultReady.value || _vaultError.value != null) return null
+        return try {
+            val persisted = withContext(Dispatchers.IO) { persistLatestSnapshotAndReadSafely() }
+            persisted?.actionApprovals?.firstOrNull { it.id == actionId && it.status == expectedStatus }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Throwable) {
+            _vaultError.value = safeError(error, "The action approval ledger could not be persisted and verified.")
+            null
+        }
+    }
+
     fun createTask(title: String, rawUrl: String, kind: TaskKind, query: String): String? {
         val validation = TaskRules.validate(title, rawUrl, kind, query)
         if (validation != null) return validation
