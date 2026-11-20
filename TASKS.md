@@ -483,3 +483,6 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - [ ] **Regression acceptance:** no prior Memo capability/backlog may be dropped; verify build, fresh APK/source commit, install-over-existing/data preservation, browser launch, prompt approval, auto/manual capture, saved research resume, extraction retry, evidence links and EN/PL/TR UI on device.
 
 See [docs/GENERIC_BROWSER_WORKFLOWS.md](docs/GENERIC_BROWSER_WORKFLOWS.md) for the workflow contract and Google Maps acceptance scenario. Do not mark this increment complete based on source edits alone.
+
+
+- [~] **CI blockers encountered while validating browser-workflow branch:** source verifier's existing stale Talk-label expectation corrected to actual home label; static localization gaps were filled; account research test fixture now supplies required `EvidenceRecord.kind`; research evidence restore now reads `capturedAt`. Follow-up CI must still compile app/test source and produce APK.
