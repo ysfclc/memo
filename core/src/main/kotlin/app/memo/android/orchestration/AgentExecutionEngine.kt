@@ -17,10 +17,12 @@ data class AgentToolDefinition(
     val description: String,
     val inputSchemaJson: String,
     val executionClass: AgentToolExecutionClass = AgentToolExecutionClass.READ_ONLY,
-    val requiresUserApproval: Boolean = false
+    val requiresUserApproval: Boolean = false,
+    val version: Int = 1
 ) {
     init {
         require(id.matches(Regex("[a-z][a-z0-9_.-]{1,79}"))) { "Invalid capability ID: $id" }
+        require(version in 1..10_000) { "Capability version must be a positive, bounded integer." }
         require(description.isNotBlank() && description.length <= 800) { "Capability description is invalid." }
         require(inputSchemaJson.length in 2..6_000) { "Capability input schema is missing or too large." }
         AgentToolSchemaValidator.validateSchema(inputSchemaJson)
@@ -59,6 +61,7 @@ data class AgentExecutionEvent(
     val toolId: String = "",
     val callId: String = "",
     val status: String = "",
+    val toolVersion: Int = 0,
     val evidenceReference: String = "",
     val at: Long = System.currentTimeMillis()
 )
@@ -127,6 +130,7 @@ class AgentExecutionEngine(
             toolId: String = "",
             callId: String = "",
             status: String = "",
+            toolVersion: Int = 0,
             evidenceReference: String = ""
         ) {
             onEvent(
@@ -137,6 +141,7 @@ class AgentExecutionEngine(
                     toolId = toolId,
                     callId = callId,
                     status = status,
+                    toolVersion = toolVersion,
                     evidenceReference = evidenceReference.take(500)
                 )
             )
@@ -216,7 +221,7 @@ class AgentExecutionEngine(
                         val callId = UUID.randomUUID().toString()
                         val invocation = AgentToolInvocation(runId, callId, "$runId:$callId")
                         toolCalls++
-                        event(AgentExecutionEventType.TOOL_STARTED, "Starting ${definition.id}.", toolId = definition.id, callId = callId, status = "RUNNING")
+                        event(AgentExecutionEventType.TOOL_STARTED, "Starting ${definition.id}.", toolId = definition.id, callId = callId, status = "RUNNING", toolVersion = definition.version)
 
                         val toolResult = try {
                             withTimeoutOrNull(config.toolTimeoutMs) { adapter.invoke(decision.arguments, invocation) }
@@ -273,6 +278,7 @@ class AgentExecutionEngine(
                             toolId = definition.id,
                             callId = callId,
                             status = toolResult.status.name,
+                            toolVersion = definition.version,
                             evidenceReference = toolResult.evidenceReference
                         )
                         if (toolResult.status == AgentToolStatus.NEEDS_REVIEW) {
@@ -318,7 +324,7 @@ class AgentExecutionEngine(
         append("\n\nACTUALLY CALLABLE CAPABILITIES\n")
         if (definitions.isEmpty()) append("None are currently available. Answer directly and explain any capability gap.")
         else definitions.forEach { definition ->
-            append("\n- ").append(definition.id).append(": ").append(definition.description)
+            append("\n- ").append(definition.id).append(" (version ").append(definition.version).append("): ").append(definition.description)
             append("\n  Input schema: ").append(definition.inputSchemaJson)
             append("\n  Execution class: ").append(definition.executionClass.name)
         }
