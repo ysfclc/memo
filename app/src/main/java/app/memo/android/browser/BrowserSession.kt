@@ -652,6 +652,41 @@ class BrowserSession(
         return provider.hosts.any { host == it || host.endsWith(".$it") }
     }
 
+    /** Capture the current visible page as evidence for user-defined research workflows. */
+    fun captureCurrentPageForResearch(onCaptured: (BrowserPageCapture?, String) -> Unit) {
+        if (currentUrl.isBlank()) {
+            onCaptured(null, "Open a page before capturing research.")
+            return
+        }
+        if (isLoading) {
+            onCaptured(null, "Wait for the page to finish loading before capturing research.")
+            return
+        }
+        webView.evaluateJavascript(BrowserScripts.capturePage) { raw ->
+            if (disposed) {
+                onCaptured(null, "The browser session was closed before capture completed.")
+                return@evaluateJavascript
+            }
+            val result = runCatching { JSONObject(decodeJsString(raw)) }.getOrNull()
+            val content = result?.optString("content").orEmpty().trim()
+            if (result?.optBoolean("ok") != true || content.length < 30) {
+                onCaptured(null, "The page did not expose enough readable text. Scroll or open the relevant results and capture again.")
+                return@evaluateJavascript
+            }
+            onCaptured(
+                BrowserPageCapture(
+                    title = result.optString("title", pageTitle).take(240).ifBlank { pageTitle },
+                    url = result.optString("url", currentUrl).take(2_048).ifBlank { currentUrl },
+                    content = content.take(15_000),
+                    summary = result.optString("summary", "Visible page text captured.").take(2_000),
+                    metadata = compactMetadata(result.optJSONObject("metadata")),
+                    capturedAt = System.currentTimeMillis()
+                ),
+                ""
+            )
+        }
+    }
+
     fun runTask(task: TaskRecord, taskCallbacks: TaskCallbacks) {
         if (pendingTask != null || isExecutingTask || isSendingPrompt) {
             taskCallbacks.onFailed(task.id, "Another browser task is already active. Finish or cancel it first.", true)
