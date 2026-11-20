@@ -162,6 +162,7 @@ fun BrowserWorkflowScreen(
                 "sourceUrl" to response.sourceUrl,
                 "prompt" to response.prompt.take(1_800),
                 "workflowMode" to mode.name,
+                "captureMethod" to response.captureMethod,
                 "capturedAt" to response.completedAt.toString(),
                 "jobId" to jobId
             ),
@@ -366,12 +367,17 @@ fun BrowserWorkflowScreen(
                     sourceUrl = response.sourceUrl,
                     kind = "FRONTIER_BROWSER_RESPONSE",
                     content = response.response,
-                    summary = "Captured from a visible frontier chat webpage. Submission and a new stable response were observed; the model's claims have not been independently verified.",
+                    summary = if (response.captureMethod == "MANUAL_PAGE") {
+                        "The user manually captured visible page text from the provider. Memo did not automatically verify that the text is the provider's answer; the content is retained for review."
+                    } else {
+                        "Captured from a visible frontier chat webpage. Submission and a new stable response were observed; the model's claims have not been independently verified."
+                    },
                     metadata = JSONObject().apply {
                         put("providerId", response.providerId)
                         put("startedAt", response.startedAt)
                         put("completedAt", response.completedAt)
                         put("workflowMode", mode.name)
+                        put("captureMethod", response.captureMethod)
                     }.toString()
                 )
                 viewModel.addEvidence(responseEvidence)
