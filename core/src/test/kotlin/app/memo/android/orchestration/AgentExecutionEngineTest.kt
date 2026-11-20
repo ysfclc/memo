@@ -108,6 +108,158 @@ class AgentExecutionEngineTest {
     }
 
     @Test
+    fun approvedExternalCapabilityRunsOnlyAfterExactApprovalGrant() = runBlocking {
+        val envelope = AgentApprovalEnvelope(
+            runtimeId = "runtime.browser",
+            capabilityId = "browser.submit_prompt",
+            destination = "https://chat.example.com/",
+            title = "Send reviewed prompt",
+            payload = "Summarize the current report.",
+            risk = "EXTERNAL_WRITE"
+        )
+        var approvedExecutionCount = 0
+        var ordinaryExecutionCount = 0
+        var approvalRequest: AgentApprovalRequest? = null
+        val adapter = object : AgentCapabilityAdapter {
+            override val definition = AgentToolDefinition(
+                id = "browser.submit_prompt",
+                description = "Send an exact reviewed prompt to the current page.",
+                inputSchemaJson = schema,
+                executionClass = AgentToolExecutionClass.EXTERNAL_WRITE,
+                requiresUserApproval = true,
+                runtimeId = "runtime.browser"
+            )
+            override fun isAvailable() = true
+            override fun approvalEnvelope(arguments: JSONObject) = envelope
+            override suspend fun invoke(arguments: JSONObject, invocation: AgentToolInvocation): AgentToolResult {
+                ordinaryExecutionCount++
+                return AgentToolResult(AgentToolStatus.FAILED, "The unapproved invoke path must not run.")
+            }
+            override suspend fun invokeApproved(
+                arguments: JSONObject,
+                invocation: AgentToolInvocation,
+                grant: AgentApprovalGrant
+            ): AgentToolResult {
+                assertEquals("action-1", grant.actionId)
+                assertEquals("sha256-exact-envelope", grant.contentHash)
+                assertEquals("send now", arguments.getString("query"))
+                approvedExecutionCount++
+                return AgentToolResult(AgentToolStatus.SUCCEEDED, "The visible conversation confirms the prompt.", evidenceReference = "evidence:prompt-1")
+            }
+        }
+        val events = mutableListOf<AgentExecutionEvent>()
+        val responses = ArrayDeque(
+            listOf(
+                """{"type":"tool_call","tool":"browser.submit_prompt","arguments":{"query":"send now"}}""",
+                """{"type":"final","content":"The prompt was submitted and verified."}"""
+            )
+        )
+        val engine = AgentExecutionEngine(AgentModelProvider { _, _ -> responses.removeFirst() }, listOf(adapter))
+        val result = engine.execute(
+            "Submit the approved prompt",
+            onApprovalRequired = { request ->
+                approvalRequest = request
+                AgentApprovalGrant("action-1", "sha256-exact-envelope")
+            },
+            onEvent = { events += it }
+        )
+
+        assertEquals(AgentRunStatus.FINISHED, result.status)
+        assertEquals(envelope, approvalRequest?.envelope)
+        assertEquals(1, approvedExecutionCount)
+        assertEquals(0, ordinaryExecutionCount)
+        assertEquals(1, result.toolCalls)
+        assertEquals(1, result.successfulToolCalls)
+        assertTrue(events.map { it.type }.containsAll(listOf(
+            AgentExecutionEventType.TOOL_APPROVAL_REQUESTED,
+            AgentExecutionEventType.TOOL_APPROVAL_GRANTED,
+            AgentExecutionEventType.TOOL_STARTED,
+            AgentExecutionEventType.TOOL_FINISHED
+        )))
+    }
+
+    @Test
+    fun rejectedExternalApprovalNeverInvokesCapability() = runBlocking {
+        var invoked = false
+        var asked = false
+        val adapter = object : AgentCapabilityAdapter {
+            override val definition = AgentToolDefinition(
+                id = "browser.submit_prompt",
+                description = "Send an exact reviewed prompt.",
+                inputSchemaJson = schema,
+                executionClass = AgentToolExecutionClass.EXTERNAL_WRITE,
+                requiresUserApproval = true,
+                runtimeId = "runtime.browser"
+            )
+            override fun isAvailable() = true
+            override fun approvalEnvelope(arguments: JSONObject) = AgentApprovalEnvelope(
+                "runtime.browser", "browser.submit_prompt", "https://chat.example.com/",
+                "Send reviewed prompt", arguments.getString("query")
+            )
+            override suspend fun invoke(arguments: JSONObject, invocation: AgentToolInvocation): AgentToolResult {
+                invoked = true
+                return AgentToolResult(AgentToolStatus.SUCCEEDED, "must not run")
+            }
+            override suspend fun invokeApproved(arguments: JSONObject, invocation: AgentToolInvocation, grant: AgentApprovalGrant): AgentToolResult {
+                invoked = true
+                return AgentToolResult(AgentToolStatus.SUCCEEDED, "must not run")
+            }
+        }
+        val model = AgentModelProvider { _, _ ->
+            """{"type":"tool_call","tool":"browser.submit_prompt","arguments":{"query":"send now"}}"""
+        }
+        val events = mutableListOf<AgentExecutionEvent>()
+        val result = AgentExecutionEngine(model, listOf(adapter)).execute(
+            "Submit the prompt",
+            onApprovalRequired = { asked = true; null },
+            onEvent = { events += it }
+        )
+
+        assertTrue(asked)
+        assertFalse(invoked)
+        assertEquals(AgentRunStatus.NEEDS_REVIEW, result.status)
+        assertEquals(0, result.toolCalls)
+        assertTrue(events.any { it.type == AgentExecutionEventType.TOOL_APPROVAL_REJECTED })
+    }
+
+    @Test
+    fun mismatchedApprovalEnvelopeCannotReachHumanApprovalHandler() = runBlocking {
+        var approvalUiOpened = false
+        var invoked = false
+        val adapter = object : AgentCapabilityAdapter {
+            override val definition = AgentToolDefinition(
+                id = "browser.submit_prompt",
+                description = "Send an exact reviewed prompt.",
+                inputSchemaJson = schema,
+                executionClass = AgentToolExecutionClass.EXTERNAL_WRITE,
+                requiresUserApproval = true,
+                runtimeId = "runtime.browser"
+            )
+            override fun isAvailable() = true
+            override fun approvalEnvelope(arguments: JSONObject) = AgentApprovalEnvelope(
+                "runtime.other", "browser.submit_prompt", "https://chat.example.com/",
+                "Send reviewed prompt", arguments.getString("query")
+            )
+            override suspend fun invoke(arguments: JSONObject, invocation: AgentToolInvocation): AgentToolResult {
+                invoked = true
+                return AgentToolResult(AgentToolStatus.SUCCEEDED, "must not run")
+            }
+        }
+        val model = AgentModelProvider { _, _ ->
+            """{"type":"tool_call","tool":"browser.submit_prompt","arguments":{"query":"send now"}}"""
+        }
+        val result = AgentExecutionEngine(model, listOf(adapter)).execute(
+            "Submit the prompt",
+            onApprovalRequired = { approvalUiOpened = true; AgentApprovalGrant("action-1", "hash") }
+        )
+
+        assertEquals(AgentRunStatus.NEEDS_REVIEW, result.status)
+        assertFalse(approvalUiOpened)
+        assertFalse(invoked)
+        assertEquals(0, result.toolCalls)
+    }
+
+    @Test
     fun localWriteExceptionPausesForReviewAndNeverBlindlyRetries() = runBlocking {
         var modelCalls = 0
         var toolCalls = 0
