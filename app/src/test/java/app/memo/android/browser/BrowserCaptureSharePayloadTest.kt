@@ -44,4 +44,19 @@ class BrowserCaptureSharePayloadTest {
         assertTrue(!payload.contains("document.cookie"))
         assertTrue(!payload.contains("localStorage"))
     }
+    @Test
+    fun stripsQueryAndFragmentThatCouldContainAuthenticationMaterial() {
+        val payload = BrowserCaptureSharePayload.format(
+            "Account page",
+            "https://example.com/profile?code=oauth-code&access_token=secret#session=private",
+            "Account details",
+            "Visible profile information that the user chose to share with another app."
+        )!!
+
+        assertTrue(payload.contains("Source URL: https://example.com/profile"))
+        assertTrue(!payload.contains("oauth-code"))
+        assertTrue(!payload.contains("access_token"))
+        assertTrue(!payload.contains("session=private"))
+    }
+
 }
