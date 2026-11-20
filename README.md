@@ -2,6 +2,8 @@
 
 Memo is a local-first personal execution environment. Conversation is the easiest way in; durable records, relationships, source evidence, tasks and verified work live behind it. Browser sessions, local models and optional Android automation are capabilities around Memo—not separate sources of truth. Other project archives contribute bounded primitives only; they do not define Memo’s product shell. This archive is a development build, not a production-readiness claim.
 
+**Binding architecture constraints:** [`AGENTS.md`](AGENTS.md) and [`docs/AI_EXECUTION_INVARIANTS.md`](docs/AI_EXECUTION_INVARIANTS.md). Every implementation must preserve one intent-driven execution path; examples are acceptance tests, not hardcoded workflows.
+
 **Development workflow:** [`DEVELOPMENT_GOVERNANCE.md`](DEVELOPMENT_GOVERNANCE.md) defines the Fresh Start, quality gates and handoff rules. Stable requirement IDs live in [`docs/REQUIREMENT_TRACEABILITY.md`](docs/REQUIREMENT_TRACEABILITY.md); material decisions in [`docs/DECISION_LOG.md`](docs/DECISION_LOG.md); session handoffs use [`docs/SESSION_CHECKPOINT_TEMPLATE.md`](docs/SESSION_CHECKPOINT_TEMPLATE.md).
 
 **Product direction:** [`docs/MEMO_PRODUCT_CONTRACT.md`](docs/MEMO_PRODUCT_CONTRACT.md) is the authoritative product contract. Memo's primary experience is Talk / Live / Work / Studio, connected by one orchestrator and one user-owned workspace. The source audit in that contract deliberately distinguishes current functionality from the intended product. The full social operating layer—accounts, feeds, inbox, engagement, relationships, listening, publishing, analytics and growth—is specified in [`docs/SOCIAL_PLATFORM_PRODUCT_SPEC.md`](docs/SOCIAL_PLATFORM_PRODUCT_SPEC.md), not just content publishing.
