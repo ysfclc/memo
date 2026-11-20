@@ -37,6 +37,23 @@ object BrowserUrlPolicy {
         }
     }
 
+    /**
+     * A page-derived link may be opened only when both source and target are public HTTPS
+     * destinations on the exact same origin. Subdomains remain separate trust boundaries.
+     */
+    fun isSameOriginHttpsLink(sourceUrl: String, targetUrl: String): Boolean {
+        val source = normalizeHttpsUrl(sourceUrl) ?: return false
+        val target = normalizeHttpsUrl(targetUrl) ?: return false
+        val sourceUri = runCatching { URI(source) }.getOrNull() ?: return false
+        val targetUri = runCatching { URI(target) }.getOrNull() ?: return false
+        val sourcePort = if (sourceUri.port == -1) 443 else sourceUri.port
+        val targetPort = if (targetUri.port == -1) 443 else targetUri.port
+        return sourceUri.scheme.equals("https", ignoreCase = true) &&
+            targetUri.scheme.equals("https", ignoreCase = true) &&
+            sourceUri.host.equals(targetUri.host, ignoreCase = true) &&
+            sourcePort == targetPort
+    }
+
     /** Return only absolute HTTPS URLs literally included in the user's request. */
     fun explicitlySuppliedUrls(userText: String): Set<String> =
         explicitHttpsUrl.findAll(userText)
