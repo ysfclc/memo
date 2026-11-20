@@ -44,6 +44,8 @@ class AgentExecutionEngineTest {
         assertEquals(1, result.successfulToolCalls)
         assertEquals(1, invocations)
         assertTrue(prompts.last().contains("Three records with source IDs."))
+        assertEquals("evidence:123", events.first { it.type == AgentExecutionEventType.TOOL_FINISHED }.evidenceReference)
+        assertEquals(1, events.first { it.type == AgentExecutionEventType.TOOL_FINISHED }.toolVersion)
         assertEquals(
             listOf(AgentExecutionEventType.RUN_STARTED, AgentExecutionEventType.TOOL_STARTED, AgentExecutionEventType.TOOL_FINISHED, AgentExecutionEventType.RUN_FINISHED),
             events.map { it.type }
@@ -101,6 +103,43 @@ class AgentExecutionEngineTest {
 
         assertEquals(AgentRunStatus.NEEDS_REVIEW, result.status)
         assertFalse(executed)
+        assertEquals(0, result.toolCalls)
+    }
+
+    @Test
+    fun localWriteExceptionPausesForReviewAndNeverBlindlyRetries() = runBlocking {
+        var modelCalls = 0
+        var toolCalls = 0
+        val model = AgentModelProvider { _, _ ->
+            modelCalls++
+            """{"type":"tool_call","tool":"workspace.save","arguments":{"query":"save"}}"""
+        }
+        val adapter = object : AgentCapabilityAdapter {
+            override val definition = AgentToolDefinition(
+                "workspace.save",
+                "Save a private workspace item.",
+                schema,
+                executionClass = AgentToolExecutionClass.LOCAL_WRITE
+            )
+            override fun isAvailable() = true
+            override suspend fun invoke(arguments: JSONObject, invocation: AgentToolInvocation): AgentToolResult {
+                toolCalls++
+                error("Vault write may have completed before the storage layer failed.")
+            }
+        }
+
+        val result = AgentExecutionEngine(model, listOf(adapter)).execute("Save this")
+        assertEquals(AgentRunStatus.NEEDS_REVIEW, result.status)
+        assertEquals(1, modelCalls)
+        assertEquals(1, toolCalls)
+    }
+
+    @Test
+    fun jsonWithoutProtocolTypeIsNotMistakenForAnAction() = runBlocking {
+        val model = AgentModelProvider { _, _ -> """{"answer":"ordinary text"}""" }
+        val result = AgentExecutionEngine(model, emptyList()).execute("Explain JSON")
+        assertEquals(AgentRunStatus.FINISHED, result.status)
+        assertEquals("""{"answer":"ordinary text"}""", result.finalMessage)
         assertEquals(0, result.toolCalls)
     }
 
