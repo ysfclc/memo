@@ -563,12 +563,13 @@ class AiRuntimeViewModel(application: Application) : AndroidViewModel(applicatio
             allowRemote = allowRemote,
             onComplete = { response, error ->
                 if (continuation.isActive) {
-                    val outcome = if (response != null) {
-                        Result.success(response)
+                    if (response != null) {
+                        continuation.resumeWith(Result.success(response))
+                    } else if (error.equals("Request cancelled.", ignoreCase = true)) {
+                        continuation.cancel(CancellationException("Model request cancelled by the user."))
                     } else {
-                        Result.failure(IllegalStateException(error ?: "Model generation failed."))
+                        continuation.resumeWith(Result.failure(IllegalStateException(error ?: "Model generation failed.")))
                     }
-                    continuation.resumeWith(outcome)
                 }
             }
         )
