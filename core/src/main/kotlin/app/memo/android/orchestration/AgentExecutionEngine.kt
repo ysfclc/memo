@@ -158,7 +158,7 @@ class AgentExecutionEngine(
                         return result(AgentRunStatus.FINISHED, answer)
                     }
                     is AgentDecision.Invalid -> {
-                        observations += "PROTOCOL ERROR: \${decision.reason} Return exactly one valid JSON object using the required protocol. No tool was executed."
+                        observations += "PROTOCOL ERROR: ${decision.reason} Return exactly one valid JSON object using the required protocol. No tool was executed."
                         event(AgentExecutionEventType.TOOL_FAILED, "The model returned an invalid action request; no capability was invoked.", status = "INVALID_MODEL_DECISION")
                     }
                     is AgentDecision.ToolCall -> {
@@ -169,7 +169,7 @@ class AgentExecutionEngine(
                         }
                         val adapter = toolsById[decision.toolId]
                         if (adapter == null || !runCatching { adapter.isAvailable() }.getOrDefault(false)) {
-                            val observation = "CAPABILITY UNAVAILABLE: '\${decision.toolId}' is not in Memo's currently callable capability set. Choose another available capability or explain the limitation."
+                            val observation = "CAPABILITY UNAVAILABLE: '${decision.toolId}' is not in Memo's currently callable capability set. Choose another available capability or explain the limitation."
                             observations += observation
                             event(AgentExecutionEventType.TOOL_FAILED, observation, toolId = decision.toolId, status = "UNAVAILABLE")
                             continue
@@ -178,9 +178,9 @@ class AgentExecutionEngine(
                         val definition = adapter.definition
                         val validationError = AgentToolSchemaValidator.validate(definition.inputSchemaJson, decision.arguments)
                         if (validationError != null) {
-                            val observation = "INVALID TOOL INPUT for '\${definition.id}': $validationError No action was executed. Correct the arguments or choose another capability."
+                            val observation = "INVALID TOOL INPUT for '${definition.id}': $validationError No action was executed. Correct the arguments or choose another capability."
                             observations += observation
-                            event(AgentExecutionEventType.TOOL_FAILED, "Memo rejected invalid input for \${definition.id}; no action was executed.", toolId = definition.id, status = "INVALID_INPUT")
+                            event(AgentExecutionEventType.TOOL_FAILED, "Memo rejected invalid input for ${definition.id}; no action was executed.", toolId = definition.id, status = "INVALID_INPUT")
                             continue
                         }
 
@@ -198,7 +198,7 @@ class AgentExecutionEngine(
                         val callId = UUID.randomUUID().toString()
                         val invocation = AgentToolInvocation(runId, callId, "$runId:$callId")
                         toolCalls++
-                        event(AgentExecutionEventType.TOOL_STARTED, "Starting \${definition.id}.", toolId = definition.id, callId = callId, status = "RUNNING")
+                        event(AgentExecutionEventType.TOOL_STARTED, "Starting ${definition.id}.", toolId = definition.id, callId = callId, status = "RUNNING")
 
                         val toolResult = try {
                             withTimeoutOrNull(config.toolTimeoutMs) { adapter.invoke(decision.arguments, invocation) }
@@ -228,9 +228,9 @@ class AgentExecutionEngine(
                         }
                         observations += observation
                         val eventType = if (toolResult.status == AgentToolStatus.SUCCEEDED) AgentExecutionEventType.TOOL_FINISHED else AgentExecutionEventType.TOOL_FAILED
-                        event(eventType, "\${definition.id}: \${toolResult.summary}", toolId = definition.id, callId = callId, status = toolResult.status.name)
+                        event(eventType, "${definition.id}: ${toolResult.summary}", toolId = definition.id, callId = callId, status = toolResult.status.name)
                         if (toolResult.status == AgentToolStatus.NEEDS_REVIEW) {
-                            val message = "A capability has an uncertain or approval-gated outcome. Review it before continuing: \${toolResult.summary}"
+                            val message = "A capability has an uncertain or approval-gated outcome. Review it before continuing: ${toolResult.summary}"
                             event(AgentExecutionEventType.RUN_NEEDS_REVIEW, message, toolId = definition.id, callId = callId, status = "NEEDS_REVIEW")
                             return result(AgentRunStatus.NEEDS_REVIEW, message)
                         }
