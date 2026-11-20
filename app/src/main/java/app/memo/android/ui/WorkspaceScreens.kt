@@ -635,10 +635,8 @@ fun ChatsWorkspaceScreen(
                                             onEvent = { event ->
                                                 agentStage = event.summary
                                                 val transcript = agentEventTranscriptMessage(
-                                                    type = event.type,
-                                                    toolId = event.toolId,
-                                                    language = uiLanguage,
-                                                    summary = event.summary
+                                                    event = event,
+                                                    language = uiLanguage
                                                 )
                                                 val journalError = viewModel.appendAgentEvent(
                                                     selectedConversation.id,
