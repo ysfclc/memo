@@ -349,7 +349,7 @@ browser_scripts = (ROOT / "app/src/main/java/app/memo/android/browser/BrowserScr
 for marker in ("fun verifyObservedLink(", "navigateToObservedLinkForAgent", "BrowserUrlPolicy.isSameOriginHttpsLink"):
     if marker not in browser_session and marker not in browser_scripts:
         fail(f"observed-link navigation is missing its live-origin or DOM verification: {marker}")
-for marker in ('id = "browser.open_observed_link"', "scope.observedLinks", "scope.capturedPageUrl", "latest page's same-origin link set"):
+for marker in ('id = "browser.open_observed_link"', "scope.observedLinks", "scope.capturedPageUrl", "latest captured page's same-origin link set"):
     if marker not in agent_tools:
         fail(f"Talk observed-link adapter is missing its source binding or availability guard: {marker}")
 for marker in ("observedLinksCannotEscapeCapturedOrigin", "isSameOriginHttpsLink"):
