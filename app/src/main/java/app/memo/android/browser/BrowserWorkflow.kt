@@ -47,6 +47,16 @@ data class BrowserModelResponse(
     val captureMethod: String = "AUTO_DETECTED"
 )
 
+/** A user-captured visible browser page retained as source material for general research workflows. */
+data class BrowserPageCapture(
+    val title: String,
+    val url: String,
+    val content: String,
+    val summary: String,
+    val metadata: String = "{}",
+    val capturedAt: Long = nowMillis()
+)
+
 data class BrowserWorkflowUiState(
     val status: BrowserWorkflowStatus = BrowserWorkflowStatus.IDLE,
     val title: String = "",
