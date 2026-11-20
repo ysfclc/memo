@@ -208,6 +208,19 @@ class AgentExecutionEngine(
                                     summary = "Capability timed out."
                                 )
                         } catch (cancelled: CancellationException) {
+                            if (definition.executionClass != AgentToolExecutionClass.READ_ONLY) {
+                                withContext(NonCancellable) {
+                                    runCatching {
+                                        event(
+                                            AgentExecutionEventType.TOOL_FAILED,
+                                            "An in-flight local write was interrupted. Inspect Memo's workspace before retrying because its final state may be uncertain.",
+                                            toolId = definition.id,
+                                            callId = callId,
+                                            status = "NEEDS_REVIEW"
+                                        )
+                                    }
+                                }
+                            }
                             throw cancelled
                         } catch (error: Throwable) {
                             AgentToolResult(
