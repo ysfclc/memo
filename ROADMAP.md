@@ -119,3 +119,11 @@ A task closes only with a real implementation, named tests, green CI and device/
 ## M7 — Sales Operations vertical slice
 
 Start with M7.A1: evidence-backed industrial account research inside Work, transparent ICP scoring with unknowns, duplicate-safe review and operator accept/reject. No outbound contact. Qualification, permissioned engagement, inbound/listening, proposal and delivery follow in the order defined by [the Sales Operations use cases](use-cases/sales-operations/README.md).
+
+
+### Browser workflows — generalize beyond consultation
+- [~] Added a separate Browser research source slice: Google Maps query or arbitrary HTTPS target, user-scrolled multi-page capture saved immediately, local source-grounded entity/TASK proposals and resume entry. Build/device acceptance is pending.
+- [~] Repair frontier consultation: provider navigation no longer waits on local intent structuring; visible exact-prompt review fallback; manual visible-page capture when DOM answer detection misses. Build/device acceptance pending.
+- [ ] Replace consultation-centric UI/runtime with user-defined workflow specs and a dynamic bounded DAG executor. Consultation remains one selectable template.
+- [ ] Implement page-aware browser agent primitives (inspect, navigate, click, type, scroll, wait, capture, extract, verify) and Google Maps result traversal; visible checkpoints and takeover required.
+- [ ] Persist/resume workflow runs and integrate source-grounded proposed TASKs into actionable tasks without automatic outreach.
