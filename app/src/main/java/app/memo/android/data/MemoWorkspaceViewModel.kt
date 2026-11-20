@@ -18,7 +18,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.util.Locale
 
@@ -1202,19 +1201,25 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
      * appeared while a queued candidate was being written, persist the newer value before release.
      */
     private suspend fun persistSnapshotSafely(candidate: AppSnapshot) {
-        vaultWriteMutex.withLock {
+        vaultWriteMutex.lock()
+        try {
             vault.write(candidate)
             val latest = _snapshot.value
             if (latest !== candidate) vault.write(latest)
+        } finally {
+            vaultWriteMutex.unlock()
         }
     }
 
     private suspend fun persistLatestSnapshotSafely() {
-        vaultWriteMutex.withLock {
+        vaultWriteMutex.lock()
+        try {
             val current = _snapshot.value
             vault.write(current)
             val latest = _snapshot.value
             if (latest !== current) vault.write(latest)
+        } finally {
+            vaultWriteMutex.unlock()
         }
     }
 
