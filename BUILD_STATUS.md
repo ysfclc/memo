@@ -205,3 +205,10 @@ The action inbox and first top-level stop control are present in source. Static/
 - **CI:** run #977 on earlier commit `93f23741cbe15925c89632d56cb5b58118fbd63d` stopped at source invariant verification because the verifier expected the stale label `Continue in Talk`; current UI uses `Continue with Memo`. The verifier was corrected in the latest commit. No Kotlin compilation or APK assembly has been verified yet.
 - **Source checks performed:** generic research and consultation-recovery markers; static UI translation-key coverage (no missing static strings); branch diff reviewed. These do not replace Gradle or device testing.
 - **Status:** implementation source is present on the draft PR; not merged, not APK-verified, and the autonomous browser-agent/DAG executor remains open work.
+
+
+### CI follow-up — 20 November 2026
+
+- Run #980 stopped at the source verifier's localization gate. The missing Polish/Turkish entries were added; static source scan now reports **0 missing static UI translations and 0 duplicate catalog keys**.
+- Run #981 passed the source invariants and remote-runner checks, then failed at `:core:compileTestKotlin`: `SalesAccountResearchTest.kt` constructed an `EvidenceRecord` without its now-required `kind`. The test is corrected, and the generic research evidence-resume code was also corrected to use `EvidenceRecord.capturedAt` rather than `createdAt`.
+- **Current head:** `f4abd0707e3849ce515b7a3ae767f347470d7815`. The follow-up Android compile has not yet been confirmed. No APK or device verification exists yet.
