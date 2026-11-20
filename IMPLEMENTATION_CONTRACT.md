@@ -4,6 +4,7 @@
 **Blueprint only:** `ysfclc/memo-2` — especially `docs/BUILD_PLAN.md`, `docs/TASKS.md`, `docs/FEATURES.md`, `docs/ARCHITECTURE.md`, and `docs/PROGRESS.md`.  
 **Canonical package name:** `Memo-Android-Repository.zip`  
 **Contract status:** active; no product milestone is declared complete by this document alone.
+**Binding architecture constraints:** [docs/AI_EXECUTION_INVARIANTS.md](docs/AI_EXECUTION_INVARIANTS.md) and [AGENTS.md](AGENTS.md).
 
 ## 1. The assignment
 
@@ -15,12 +16,13 @@ Memo is a personal execution environment: it captures intent, maintains durable 
 
 When documents disagree, apply this order and record the resolution in `IMPLEMENTATION_LOG.md`:
 
-1. The user's explicit product intent and safety constraints.
-2. This contract (`IMPLEMENTATION_CONTRACT.md`).
-3. `TASKS.md` — ordered task-level execution plan and acceptance gates.
-4. `MEMO2_ALIGNMENT_MATRIX.md` — scope crosswalk to the blueprint.
-5. `PRODUCT_GAP_REGISTRY.md`, `FEATURE_AUDIT.md`, and `MEMO-PATCH1-AUDIT.md` — Memo 1-specific baseline evidence and gap hypotheses.
-6. `README.md`, `BUILD_STATUS.md`, and old run summaries — supporting information, never proof that current code meets requirements.
+1. The user's latest explicit product intent and safety constraints.
+2. `docs/AI_EXECUTION_INVARIANTS.md` — binding architecture constraints.
+3. This contract (`IMPLEMENTATION_CONTRACT.md`).
+4. `TASKS.md` — ordered task-level execution plan and acceptance gates.
+5. `MEMO2_ALIGNMENT_MATRIX.md` — scope crosswalk to the blueprint.
+6. `PRODUCT_GAP_REGISTRY.md`, `FEATURE_AUDIT.md`, and `MEMO-PATCH1-AUDIT.md` — Memo 1-specific baseline evidence and gap hypotheses.
+7. `README.md`, `BUILD_STATUS.md`, and old run summaries — supporting information, never proof that current code meets requirements.
 
 Memo 2 checkboxes, test results, commits, and green builds are **not** evidence of Memo 1 completion.
 
@@ -37,6 +39,11 @@ Memo 2 checkboxes, test results, commits, and green builds are **not** evidence 
 - Keep one implementation per capability behind stable interfaces. No duplicate competing stores, runtimes, activities or services to work around architecture.
 - Keep user context evidence-based and editable. Never fabricate personal facts, infer consent, or silently send private context to external models.
 - Optimize for the user's real workflow: low-budget/local-first operation where feasible, practical project follow-through, clear state, low-friction capture, and no unnecessary manual orchestration. External inference and remote execution require explicit, understandable controls.
+- All tool-using requests from Talk use one provider-agnostic agent loop and shared capability dispatcher. Do not add a second planner/executor for research, Council, browser, code, files, media or Android actions.
+- Interpret requests as outcomes, not keyword-selected domains. Examples are acceptance tests, never specifications for fixed per-example workflows, screens or templates.
+- Keep intelligence providers (local and frontier models) independent from action capabilities. A model response is not an executed action; a graph, plan, parser or capability manifest is not an executor.
+- A capability may be advertised only when a real schema-validated adapter can execute it and return observable output/evidence. Stub, unavailable and unsupported capabilities must be reported honestly.
+- The shared engine must observe results, verify postconditions, re-plan when needed, and persist recoverable state. Deterministic code retains authority over policy, grants, approvals, budgets, cancellation, idempotency and audit.
 
 ## 4. Implementation order and hard gates
 
@@ -65,7 +72,7 @@ Deliver real model discovery/install/load/inference, streaming and cancellation;
 
 ### Gate G3 — Orchestration, context, artifacts and daily use (M3)
 
-Dynamically translate intent into typed bounded plans; retrieve only relevant, permitted context with provenance; render populated artifacts before approval; provide live state, CRUD, workflow editing, reminders, capture, sources/search/memory, language support, user preferences and everyday workflows. The UI must reflect real runtime state.
+Connect the Talk entry point to the single model-directed execution loop and shared capability dispatcher. Dynamically select actual registered tools from user outcomes; retrieve only relevant, permitted context; observe results, verify postconditions, re-plan and persist recoverable run state. Render actual artifacts and expose real runtime state. Domain-specific examples must pass through this same path; no per-example engine or screen can substitute for it.
 
 **Exit:** at least one end-to-end personal workflow is exercised with source evidence, durable state, real artifact, explicit approval where required, and recoverable execution.
 
