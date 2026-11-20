@@ -84,11 +84,12 @@ class AgentExecutionEngineTest {
         var executed = false
         val adapter = object : AgentCapabilityAdapter {
             override val definition = AgentToolDefinition(
-                "browser.submit",
+                "browser.submit_prompt",
                 "Submit an external form.",
                 schema,
                 executionClass = AgentToolExecutionClass.EXTERNAL_WRITE,
-                requiresUserApproval = true
+                requiresUserApproval = true,
+                runtimeId = "runtime.browser"
             )
             override fun isAvailable() = true
             override suspend fun invoke(arguments: JSONObject, invocation: AgentToolInvocation): AgentToolResult {
@@ -97,7 +98,7 @@ class AgentExecutionEngineTest {
             }
         }
         val model = AgentModelProvider { _, _ ->
-            """{"type":"tool_call","tool":"browser.submit","arguments":{"query":"send now"}}"""
+            """{"type":"tool_call","tool":"browser.submit_prompt","arguments":{"query":"send now"}}"""
         }
         val result = AgentExecutionEngine(model, listOf(adapter)).execute("Submit the form")
 
@@ -112,11 +113,11 @@ class AgentExecutionEngineTest {
         var toolCalls = 0
         val model = AgentModelProvider { _, _ ->
             modelCalls++
-            """{"type":"tool_call","tool":"workspace.save","arguments":{"query":"save"}}"""
+            """{"type":"tool_call","tool":"workspace.save_note","arguments":{"query":"save"}}"""
         }
         val adapter = object : AgentCapabilityAdapter {
             override val definition = AgentToolDefinition(
-                "workspace.save",
+                "workspace.save_note",
                 "Save a private workspace item.",
                 schema,
                 executionClass = AgentToolExecutionClass.LOCAL_WRITE
@@ -151,4 +152,57 @@ class AgentExecutionEngineTest {
         assertEquals(AgentRunStatus.FINISHED, result.status)
         assertEquals("Hello. What would you like to accomplish?", result.finalMessage)
     }
+
+    @Test
+    fun capabilitiesAreRediscoveredAfterEachSuccessfulStep() = runBlocking {
+        var pageReady = false
+        val systemPrompts = mutableListOf<String>()
+        val responses = ArrayDeque(
+            listOf(
+                """{"type":"tool_call","tool":"browser.navigate_https","arguments":{"url":"https://example.com/"}}""",
+                """{"type":"tool_call","tool":"browser.capture_evidence","arguments":{}}""",
+                """{"type":"final","content":"I opened the supplied page and saved its evidence."}"""
+            )
+        )
+        val navigate = object : AgentCapabilityAdapter {
+            override val definition = AgentToolDefinition(
+                id = "browser.navigate_https",
+                description = "Open the HTTPS URL supplied by the user.",
+                inputSchemaJson = """{"type":"object","properties":{"url":{"type":"string","minLength":8,"maxLength":2048}},"required":["url"],"additionalProperties":false}""",
+                runtimeId = "runtime.browser"
+            )
+            override fun isAvailable() = !pageReady
+            override suspend fun invoke(arguments: JSONObject, invocation: AgentToolInvocation): AgentToolResult {
+                assertEquals("https://example.com/", arguments.getString("url"))
+                pageReady = true
+                return AgentToolResult(AgentToolStatus.SUCCEEDED, "Visible page loaded.", "Opened example.com.")
+            }
+        }
+        val capture = object : AgentCapabilityAdapter {
+            override val definition = AgentToolDefinition(
+                id = "browser.capture_evidence",
+                description = "Capture the currently visible page into encrypted Memo evidence.",
+                inputSchemaJson = """{"type":"object","properties":{},"required":[],"additionalProperties":false}""",
+                executionClass = AgentToolExecutionClass.LOCAL_WRITE,
+                runtimeId = "runtime.browser"
+            )
+            override fun isAvailable() = pageReady
+            override suspend fun invoke(arguments: JSONObject, invocation: AgentToolInvocation): AgentToolResult =
+                AgentToolResult(AgentToolStatus.SUCCEEDED, "Page text and source URL saved.", "Evidence saved.", "evidence:web-1")
+        }
+        val model = AgentModelProvider { systemPrompt, _ ->
+            systemPrompts += systemPrompt
+            responses.removeFirst()
+        }
+
+        val result = AgentExecutionEngine(model, listOf(navigate, capture))
+            .execute("Open and inspect https://example.com/")
+
+        assertEquals(AgentRunStatus.FINISHED, result.status)
+        assertEquals(2, result.toolCalls)
+        assertFalse(systemPrompts.first().contains("browser.capture_evidence"))
+        assertTrue(systemPrompts[1].contains("browser.capture_evidence"))
+        assertTrue(systemPrompts[2].contains("browser.capture_evidence"))
+    }
+
 }

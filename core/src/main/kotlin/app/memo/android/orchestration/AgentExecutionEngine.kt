@@ -4,6 +4,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import app.memo.android.runtime.RuntimeRegistry
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.UUID
@@ -18,7 +19,8 @@ data class AgentToolDefinition(
     val inputSchemaJson: String,
     val executionClass: AgentToolExecutionClass = AgentToolExecutionClass.READ_ONLY,
     val requiresUserApproval: Boolean = false,
-    val version: Int = 1
+    val version: Int = 1,
+    val runtimeId: String = "app.workspace"
 ) {
     init {
         require(id.matches(Regex("[a-z][a-z0-9_.-]{1,79}"))) { "Invalid capability ID: $id" }
@@ -102,12 +104,7 @@ class AgentExecutionEngine(
     adapters: List<AgentCapabilityAdapter>,
     private val config: AgentExecutionConfig = AgentExecutionConfig()
 ) {
-    private val tools = adapters.filter { runCatching { it.isAvailable() }.getOrDefault(false) }
-    private val toolsById = tools.associateBy { it.definition.id }
-
-    init {
-        require(toolsById.size == tools.size) { "Capability IDs must be unique within an execution." }
-    }
+    private val capabilityRegistry = AgentCapabilityRegistry(RuntimeRegistry().listRuntimes(), adapters)
 
     suspend fun execute(
         goal: String,
@@ -153,13 +150,16 @@ class AgentExecutionEngine(
 
         try {
             event(AgentExecutionEventType.RUN_STARTED, "Memo started an agent execution.")
-            val systemPrompt = buildSystemPrompt(tools.map { it.definition })
             while (modelCalls < config.maxModelCalls) {
                 if (System.nanoTime() - startedNanos > config.maxDurationMs * 1_000_000L) {
                     val message = "The execution time budget was reached. Completed tool results are preserved; no unfinished action was replayed."
                     event(AgentExecutionEventType.RUN_LIMIT_REACHED, message)
                     return result(AgentRunStatus.ITERATION_LIMIT, message)
                 }
+                // Readiness can change after an earlier step (for example, capture after navigation).
+                // Recalculate the model-visible capability set before every decision turn.
+                val availableAdapters = capabilityRegistry.availableAdapters()
+                val systemPrompt = buildSystemPrompt(availableAdapters.map { it.definition })
                 val prompt = buildPrompt(cleanGoal, conversationContext, observations)
                 val generated = withTimeoutOrNull(config.modelTimeoutMs) { model.generate(systemPrompt, prompt) }
                 modelCalls++
@@ -190,7 +190,7 @@ class AgentExecutionEngine(
                             event(AgentExecutionEventType.RUN_LIMIT_REACHED, message)
                             return result(AgentRunStatus.ITERATION_LIMIT, message)
                         }
-                        val adapter = toolsById[decision.toolId]
+                        val adapter = capabilityRegistry.resolve(decision.toolId)
                         if (adapter == null || !runCatching { adapter.isAvailable() }.getOrDefault(false)) {
                             val observation = "CAPABILITY UNAVAILABLE: '${decision.toolId}' is not in Memo's currently callable capability set. Choose another available capability or explain the limitation."
                             observations += observation
