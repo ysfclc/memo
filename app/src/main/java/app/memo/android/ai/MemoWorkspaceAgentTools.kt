@@ -13,6 +13,7 @@ import app.memo.android.orchestration.AgentToolResult
 import app.memo.android.orchestration.AgentToolStatus
 import org.json.JSONObject
 import java.security.MessageDigest
+import java.util.Locale
 
 /**
  * Adapters over real Memo-owned operations.
@@ -173,7 +174,7 @@ object MemoWorkspaceAgentTools {
 
         override suspend fun invoke(arguments: JSONObject, invocation: AgentToolInvocation): AgentToolResult {
             check(isAvailable()) { "The source conversation or encrypted workspace is unavailable." }
-            val type = arguments.getString("type").trim().uppercase().replace(Regex("[^A-Z0-9_]+"), "_").trim('_')
+            val type = arguments.getString("type").trim().uppercase(Locale.ROOT).replace(Regex("[^A-Z0-9_]+"), "_").trim('_')
             val title = arguments.getString("title").trim().take(240)
             val description = arguments.getString("description").trim().take(12_000)
             require(type.matches(Regex("[A-Z][A-Z0-9_]{1,63}"))) { "Choose a valid record type." }
@@ -274,6 +275,7 @@ fun agentEventTranscriptMessage(
         if (event.runId.isNotBlank()) add("Run ID: ${event.runId}")
         if (event.callId.isNotBlank()) add("Call ID: ${event.callId}")
         if (event.status.isNotBlank()) add("Status: ${event.status}")
+        if (event.toolVersion > 0) add("Capability version: ${event.toolVersion}")
         if (event.evidenceReference.isNotBlank()) add("Evidence: ${event.evidenceReference}")
     }
     val lines = listOf(
