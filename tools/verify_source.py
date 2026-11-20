@@ -318,7 +318,7 @@ browser_url_tests = (ROOT / "core/src/test/kotlin/app/memo/android/runtime/Brows
 browser_session = (ROOT / "app/src/main/java/app/memo/android/browser/BrowserSession.kt").read_text()
 agent_tools = (ROOT / "app/src/main/java/app/memo/android/ai/MemoWorkspaceAgentTools.kt").read_text()
 agent_engine_tests = (ROOT / "core/src/test/kotlin/app/memo/android/orchestration/AgentExecutionEngineTest.kt").read_text()
-for marker in ('RuntimeDescriptor("app.workspace"', 'RuntimeCapability("workspace.search"', 'id = "runtime.browser"', 'RuntimeCapability("browser.navigate_https"', 'RuntimeCapability("browser.capture_evidence"'):
+for marker in ('RuntimeDescriptor("app.workspace"', 'RuntimeCapability("workspace.search"', 'id = "runtime.browser"', 'RuntimeCapability("browser.navigate_https"', 'RuntimeCapability("browser.capture_evidence"', 'RuntimeCapability("browser.open_observed_link"'):
     if marker not in runtime_registry:
         fail(f"Talk runtime capability contract is missing: {marker}")
 for marker in ("AgentCapabilityRegistry(RuntimeRegistry().listRuntimes(), adapters)", "capabilityRegistry.availableAdapters()", "capabilityRegistry.resolve(decision.toolId)", "val runtimeId: String ="):
@@ -345,6 +345,16 @@ for marker in ('id = "browser.navigate_https"', 'id = "browser.capture_evidence"
 for marker in ("capabilitiesAreRediscoveredAfterEachSuccessfulStep", "browser.navigate_https", "browser.capture_evidence"):
     if marker not in agent_engine_tests:
         fail(f"dynamic sequential browser capability test is missing: {marker}")
+browser_scripts = (ROOT / "app/src/main/java/app/memo/android/browser/BrowserScripts.kt").read_text()
+for marker in ("fun verifyObservedLink(", "navigateToObservedLinkForAgent", "BrowserUrlPolicy.isSameOriginHttpsLink"):
+    if marker not in browser_session and marker not in browser_scripts:
+        fail(f"observed-link navigation is missing its live-origin or DOM verification: {marker}")
+for marker in ('id = "browser.open_observed_link"', "scope.observedLinks", "scope.capturedPageUrl", "latest page's same-origin link set"):
+    if marker not in agent_tools:
+        fail(f"Talk observed-link adapter is missing its source binding or availability guard: {marker}")
+for marker in ("observedLinksCannotEscapeCapturedOrigin", "isSameOriginHttpsLink"):
+    if marker not in browser_url_tests:
+        fail(f"observed-link origin policy regression test is missing: {marker}")
 talk_ui = (ROOT / "app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt").read_text()
 for marker in ("shareBrowserPageRemotely", "includeBrowserPageContent", "AndroidView(", "browser.webView", "showAgentBrowserPane"):
     if marker not in talk_ui:
