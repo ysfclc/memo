@@ -307,7 +307,7 @@ class AgentExecutionEngine(
                                 output = "The capability timed out. Memo cannot infer whether a write completed; inspect the workspace before retrying.",
                                 summary = "Capability timed out."
                             )
-                        }                        } catch (cancelled: CancellationException) {
+                        } catch (cancelled: CancellationException) {
                             if (definition.executionClass != AgentToolExecutionClass.READ_ONLY) {
                                 withContext(NonCancellable) {
                                     runCatching {
