@@ -194,9 +194,11 @@ view_model = (ROOT / "app/src/main/java/app/memo/android/data/MemoWorkspaceViewM
 for marker in ('sourceConversationId: String = ""', 'sourceConversationId = sourceId'):
     if marker not in view_model:
         fail(f"Work-plan source conversation linkage is missing: {marker}")
-for marker in ("Start with Memo", "Continue in Talk", "onOpenCouncil", "onStartConversation"):
+for marker in ("Start with Memo", "onOpenCouncil", "onStartConversation"):
     if marker not in chat:
         fail(f"Talk entry/composer is missing: {marker}")
+if "Continue with Memo" not in home:
+    fail("home-to-Talk continuation action is missing")
 print("PASS: one Memo Activity, universal Talk intent router, linked source conversations, four product surfaces, and safe draft handoff")
 
 # Estimate coverage of the static string literals passed to the custom UI Text wrapper.
