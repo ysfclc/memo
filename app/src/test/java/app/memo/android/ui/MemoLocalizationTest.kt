@@ -81,7 +81,7 @@ class MemoLocalizationTest {
         assertEquals("Konsultacja z modelami frontier", MemoLocalization.translate("Frontier consultation", "PL"))
         assertEquals("Frontier danışma", MemoLocalization.translate("Frontier consultation", "TR"))
         assertEquals("Sprawdź i zatwierdź", MemoLocalization.translate("Review & approve", "PL"))
-        assertEquals("İncele ve onayla", MemoLocalization.translate("Review & approve", "TR))
+        assertEquals("İncele ve onayla", MemoLocalization.translate("Review & approve", "TR"))
         assertEquals("Zapisz widoczną stronę jako odpowiedź", MemoLocalization.translate("Capture visible page as response", "PL"))
         assertEquals("Görünür sayfayı yanıt olarak kaydet", MemoLocalization.translate("Capture visible page as response", "TR"))
     }
