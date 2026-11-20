@@ -16,6 +16,28 @@ object BrowserScripts {
         })();
     """.trimIndent()
 
+    /** Verify that an exact same-origin anchor is still present and visible in the live page. */
+    fun verifyObservedLink(targetUrl: String): String {
+        val quotedTarget = JSONObject.quote(targetUrl)
+        return """
+          (function(){
+            const target=$quotedTarget;
+            const visible = el => { const r=el.getBoundingClientRect(); const st=getComputedStyle(el); return r.width>0 && r.height>0 && st.visibility!=='hidden' && st.display!=='none'; };
+            let found=false;
+            try {
+              const wanted=new URL(target,location.href);
+              if(wanted.protocol==='https:' && wanted.origin===location.origin) {
+                found=Array.from(document.querySelectorAll('a[href]')).filter(visible).some(a=>{
+                  try { const href=new URL(a.href,location.href); return href.href===wanted.href && href.origin===location.origin; }
+                  catch(_) { return false; }
+                });
+              }
+            } catch(_) {}
+            return JSON.stringify({ok:true,found:found,url:location.href});
+          })();
+        """.trimIndent()
+    }
+
     val extractLinks: String = """
         (function(){
           const visible = el => { const r = el.getBoundingClientRect(); const st = getComputedStyle(el); return r.width > 0 && r.height > 0 && st.visibility !== 'hidden' && st.display !== 'none'; };
