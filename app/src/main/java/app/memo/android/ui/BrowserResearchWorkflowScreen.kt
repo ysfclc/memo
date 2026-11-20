@@ -78,6 +78,9 @@ fun BrowserResearchWorkflowScreen(
         }
     }
     val proposedEntities = snapshot.entities.filter { it.sourceJobId == researchJobId && it.reviewStatus == "PROPOSED" }
+    val recentResearchJobs = snapshot.jobs.filter { job ->
+        job.runtimeId == "runtime.browser" && snapshot.conversations.any { it.id == job.sourceConversationId && it.sourceType == "BROWSER_RESEARCH" }
+    }.sortedByDescending { it.updatedAt }.take(6)
     val currentJob = snapshot.jobs.firstOrNull { it.id == researchJobId }
 
     fun startResearch(): Boolean {
@@ -305,6 +308,25 @@ fun BrowserResearchWorkflowScreen(
         ) {
             Text("Browser research workflow", style = MaterialTheme.typography.titleLarge)
             Text("Unlike frontier consultation, this workflow uses your goal and real web pages as sources. Open Google Maps or another site, scroll manually, capture multiple pages, then use local AI to propose records and follow-up tasks. No contact or external action is performed.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (researchJobId.isBlank() && recentResearchJobs.isNotEmpty()) {
+                Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        androidx.compose.material3.Text("Resume saved browser research", style = MaterialTheme.typography.titleSmall)
+                        recentResearchJobs.forEach { job ->
+                            TextButton(onClick = {
+                                researchJobId = job.id
+                                researchConversationId = job.sourceConversationId
+                                title = job.title
+                                goal = job.goal
+                                runGoal = job.goal
+                                onShowMessage("Research restored. Saved page evidence and proposed records were reloaded from Work.")
+                            }, modifier = Modifier.fillMaxWidth()) {
+                                androidx.compose.material3.Text(job.title + " · " + job.status.replace('_', ' '), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            }
+                        }
+                    }
+                }
+            }
             Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(value = title, onValueChange = { title = it.take(160) }, label = { androidx.compose.material3.Text("Research workflow name") }, singleLine = true, enabled = researchJobId.isBlank(), modifier = Modifier.fillMaxWidth())
