@@ -5,6 +5,7 @@ import app.memo.android.context.WorkspaceContextRetriever
 import app.memo.android.data.EvidenceRecord
 import app.memo.android.data.MemoWorkspaceViewModel
 import app.memo.android.orchestration.AgentCapabilityAdapter
+import app.memo.android.orchestration.AgentExecutionEvent
 import app.memo.android.orchestration.AgentToolDefinition
 import app.memo.android.orchestration.AgentToolExecutionClass
 import app.memo.android.orchestration.AgentToolInvocation
@@ -152,22 +153,30 @@ object MemoWorkspaceAgentTools {
 
 /** Stable transcript representation: no tool arguments or private payloads are written to the chat. */
 fun agentEventTranscriptMessage(
-    type: app.memo.android.orchestration.AgentExecutionEventType,
-    toolId: String,
-    language: String,
-    summary: String = ""
+    event: AgentExecutionEvent,
+    language: String
 ): String {
-    val key = when (type) {
+    val key = when (event.type) {
         app.memo.android.orchestration.AgentExecutionEventType.RUN_STARTED -> "Memo started an execution."
-        app.memo.android.orchestration.AgentExecutionEventType.TOOL_STARTED -> "Using capability: $toolId"
-        app.memo.android.orchestration.AgentExecutionEventType.TOOL_FINISHED -> "Capability finished: $toolId"
-        app.memo.android.orchestration.AgentExecutionEventType.TOOL_FAILED -> "Capability did not succeed: $toolId"
+        app.memo.android.orchestration.AgentExecutionEventType.TOOL_STARTED -> "Using capability: ${event.toolId}"
+        app.memo.android.orchestration.AgentExecutionEventType.TOOL_FINISHED -> "Capability finished: ${event.toolId}"
+        app.memo.android.orchestration.AgentExecutionEventType.TOOL_FAILED -> "Capability did not succeed: ${event.toolId}"
         app.memo.android.orchestration.AgentExecutionEventType.RUN_FINISHED -> "Memo returned a final response."
         app.memo.android.orchestration.AgentExecutionEventType.RUN_LIMIT_REACHED -> "Execution limit reached."
         app.memo.android.orchestration.AgentExecutionEventType.RUN_NEEDS_REVIEW -> "Execution paused for review."
         app.memo.android.orchestration.AgentExecutionEventType.RUN_FAILED -> "Execution failed."
         app.memo.android.orchestration.AgentExecutionEventType.RUN_CANCELLED -> "Execution cancelled. Completed results were retained."
     }
-    val translated = app.memo.android.ui.MemoLocalization.translate(key, language)
-    return if (summary.isBlank()) translated else "$translated\n${summary.take(700)}"
+    val metadata = buildList {
+        if (event.runId.isNotBlank()) add("Run ID: ${event.runId}")
+        if (event.callId.isNotBlank()) add("Call ID: ${event.callId}")
+        if (event.status.isNotBlank()) add("Status: ${event.status}")
+        if (event.evidenceReference.isNotBlank()) add("Evidence: ${event.evidenceReference}")
+    }
+    val lines = listOf(
+        app.memo.android.ui.MemoLocalization.translate(key, language),
+        event.summary.takeIf { it.isNotBlank() },
+        metadata.takeIf { it.isNotEmpty() }?.joinToString(" · ")
+    ).filterNotNull()
+    return lines.joinToString("\n").take(1_600)
 }
