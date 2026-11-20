@@ -77,6 +77,50 @@ fun BrowserWorkflowScreen(
     onOpenBrowser: () -> Unit,
     onShowMessage: (String) -> Unit
 ) {
+    var researchMode by remember { mutableStateOf(false) }
+    Column(Modifier.fillMaxSize()) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(selected = !researchMode, onClick = { researchMode = false }, label = { Text("Frontier consultation") })
+            FilterChip(selected = researchMode, onClick = { researchMode = true }, label = { Text("Browser research") })
+        }
+        if (researchMode) {
+            BrowserResearchWorkflowScreen(
+                snapshot = snapshot,
+                browser = browser,
+                viewModel = viewModel,
+                runtime = runtime,
+                runtimeState = runtimeState,
+                onShowMessage = onShowMessage,
+                modifier = Modifier.weight(1f)
+            )
+        } else {
+            BrowserFrontierConsultationScreen(
+                snapshot = snapshot,
+                browser = browser,
+                viewModel = viewModel,
+                runtime = runtime,
+                runtimeState = runtimeState,
+                onOpenConversation = onOpenConversation,
+                onOpenBrowser = onOpenBrowser,
+                onShowMessage = onShowMessage,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun BrowserFrontierConsultationScreen(
+    snapshot: AppSnapshot,
+    browser: BrowserSession,
+    viewModel: MemoWorkspaceViewModel,
+    runtime: AiRuntimeViewModel,
+    runtimeState: ModelRuntimeUiState,
+    onOpenConversation: (String) -> Unit,
+    onOpenBrowser: () -> Unit,
+    onShowMessage: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
     val workflowState = browser.workflowState
     val providers = BrowserModelProviders.all
     val savedWorkflows = snapshot.entities.filter {
@@ -606,7 +650,7 @@ fun BrowserWorkflowScreen(
         runFrontierPhase("")
     }
 
-    Column(Modifier.fillMaxSize()) {
+    Column(modifier.fillMaxSize()) {
         Column(
             modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 14.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
