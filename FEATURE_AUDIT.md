@@ -153,3 +153,10 @@ A top-level Stop active work control now requests cancellation of the current lo
 - **First implementation slice:** M7.A1 / MEMO-SALES-001 — evidence-backed account research, transparent factor-level ICP score, duplicate-safe matching and operator accept/reject.
 - **Not included:** a second CRM, contact harvesting, cold-email/auto-DM, provider connectors or external contact actions.
 - **Evidence status:** no account-research implementation or Android acceptance is claimed in this source audit.
+
+
+## 20 November 2026 — browser workflow reliability and general research (branch source; unverified)
+
+- **Browser research:** new source mode accepts a user goal, Google Maps search phrase or arbitrary HTTPS target, multiple manually captured page sources, local-only structured extraction, proposed typed records/TASK follow-ups with exact evidence, duplicate skip, and saved evidence resume. It is not autonomous result traversal.
+- **Frontier consultation reliability:** local intent structuring is bypassed so provider navigation begins immediately; a visible approval fallback is added alongside the exact-content dialog; the dialog can be dismissed to the fallback; visible page can be manually captured when automatic DOM response detection misses.
+- **Verification status:** source branch only; Android build, CI and device behavior not verified. Do not label these features production-ready.
