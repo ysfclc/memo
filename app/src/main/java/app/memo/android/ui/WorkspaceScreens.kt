@@ -459,6 +459,13 @@ fun ChatsWorkspaceScreen(
                                 Column(Modifier.weight(1f)) {
                                     Text("Working on your request", style = MaterialTheme.typography.titleSmall)
                                     Text(agentStage.ifBlank { runtimeState.stage }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    if (agentConversationId.isNotBlank() && agentConversationId != selectedConversationId) {
+                                        Text(
+                                            "Memo is still executing in another conversation. Switch back there to see its activity and result.",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.tertiary
+                                        )
+                                    }
                                 }
                                 TextButton(onClick = {
                                     agentJob?.cancel()
@@ -738,7 +745,7 @@ fun ChatsWorkspaceScreen(
                             },
                             enabled = !agentRunning && !runtimeState.running && draft.isNotBlank() && modelOptions.isNotEmpty() && (selectedModelId != REMOTE_MODEL_ID || allowRemote),
                             modifier = Modifier.size(52.dp)
-                        ) { Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = "Send message", tint = if (draft.isNotBlank() && !runtimeState.running) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant) }
+                        ) { Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = "Send message", tint = if (draft.isNotBlank() && !runtimeState.running && !agentRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant) }
                     }
                 }
             }
