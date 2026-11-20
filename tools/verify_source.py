@@ -325,14 +325,14 @@ research_screen = (ROOT / "app/src/main/java/app/memo/android/ui/BrowserResearch
 research_contract = ROOT / "docs/GENERIC_BROWSER_WORKFLOWS.md"
 if not research_contract.is_file():
     fail("general browser workflow contract is missing")
-for marker in ("Search Google Maps", "captureCurrentPageForResearch", "BROWSER_RESEARCH_PAGE", "OutcomeParser.parse", "allowRemote = false", "reviewStatus = \\"PROPOSED\\"", "TASK", "Resume saved browser research"):
+for marker in ("Search Google Maps", "captureCurrentPageForResearch", "BROWSER_RESEARCH_PAGE", "OutcomeParser.parse", "allowRemote = false", 'reviewStatus = "PROPOSED"', "TASK", "Resume saved browser research"):
     if marker not in research_screen:
         fail(f"generic browser research is missing required behavior: {marker}")
 if "fun captureCurrentPageForResearch" not in browser_session or "BrowserPageCapture(" not in browser_session:
     fail("BrowserSession does not expose generic visible-page research capture")
 if "fun captureVisiblePageAsWorkflowResponse" not in browser_session or "manualCapture = true" not in browser_session:
     fail("frontier consultation lacks manual visible-page capture recovery")
-for marker in ("Review & approve", "Capture visible page as response", "approvalReviewOpen", "Local intent structuring was skipped", "runFrontierPhase(\\"\\" )"):
+for marker in ("Review & approve", "Capture visible page as response", "approvalReviewOpen", "Local intent structuring was skipped", 'runFrontierPhase("")'):
     if marker not in workflow_screen:
         fail(f"frontier consultation reliability recovery is missing: {marker}")
 print("PASS: generic browser research source capture, local record/task extraction, resume, visible approvals and manual response recovery are wired")
