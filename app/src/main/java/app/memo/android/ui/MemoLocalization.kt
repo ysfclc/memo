@@ -555,6 +555,7 @@ object MemoLocalization {
         "Save for research" to ("Zapisz do badań" to "Araştırma için kaydet"),
         "Today" to ("Dzisiaj" to "Bugün"),
         "Your active work, from the encrypted workspace." to ("Twoja aktywna praca z zaszyfrowanego obszaru roboczego." to "Şifrelenmiş çalışma alanınızdaki etkin işleriniz."),
+        "Steps run in order. Launch, wait and delay are available. Tap and Back are temporarily disabled until exact-action approval is ready; existing drafts containing them must be edited before saving." to ("Kroki są wykonywane po kolei. Dostępne są uruchamianie, oczekiwanie i opóźnienie. Dotknięcie i Wstecz są tymczasowo wyłączone do czasu wdrożenia zatwierdzania dokładnych działań; istniejące wersje robocze zawierające te kroki trzeba edytować przed zapisaniem." to "Adımlar sırayla çalışır. Başlatma, bekleme ve gecikme kullanılabilir. Tam eylem onayı hazır olana kadar Dokun ve Geri geçici olarak devre dışıdır; bunları içeren mevcut taslaklar kaydedilmeden önce düzenlenmelidir."),
     )
 
     fun translate(text: String, language: String): String {
