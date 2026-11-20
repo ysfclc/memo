@@ -105,6 +105,11 @@ fun BrowserWorkflowScreen(
     var originalIntent by remember { mutableStateOf("") }
     var localBrief by remember { mutableStateOf("") }
     var currentExternalActionId by remember { mutableStateOf("") }
+    var approvalReviewOpen by remember { mutableStateOf(false) }
+    val pendingApproval = snapshot.actionApprovals.firstOrNull {
+        it.status == "PENDING" && it.contentHash == workflowState.currentPromptHash &&
+            it.destination == workflowState.approvalDestination && it.capabilityId == "browser.submit_prompt"
+    }
 
     fun loadTemplate(entityId: String) {
         val entity = savedWorkflows.firstOrNull { it.id == entityId } ?: return
@@ -342,6 +347,8 @@ fun BrowserWorkflowScreen(
                 if (proposalId.isNullOrBlank() || proposal == null || proposal.contentHash != contentHash) {
                     onShowMessage("Memo could not persist and verify this provider prompt's approval record. The workflow has been stopped without sending it.")
                     browser.stopBrowserWorkflow()
+                } else {
+                    approvalReviewOpen = true
                 }
             },
             onStepStarted = { index, provider, prompt ->
@@ -587,27 +594,10 @@ fun BrowserWorkflowScreen(
         finalStepIndex = if (useLocalOrchestrator) (activeStepIds.lastIndex - 1).coerceAtLeast(0) else activeStepIds.lastIndex
         viewModel.updateJobStatus(jobId, "RUNNING", if (useLocalOrchestrator) "Structuring intent locally before independent frontier consultation and output mapping." else "Preparing the connected frontier consultation.")
         if (useLocalOrchestrator) {
-            activeStepIds.firstOrNull()?.let { viewModel.updateJobStep(jobId, it, "RUNNING", "The local model structures the request without solving the domain problem.") }
-            runtime.runPrompt(
-                rawPrompt = "ORIGINAL USER INTENT:\n$originalIntent\n\nConvert this intent into a compact brief for frontier consultants. Preserve what the user actually wants. Identify the objective, explicit constraints, key questions, required outputs and evidence standard. Distinguish known context from unanswered questions. Do not solve the problem, add invented facts, expand the scope, or silently change the user's intent. Return readable labeled sections, not JSON.",
-                systemInstruction = "You are Memo's local orchestrator, not the frontier expert. Structure intent and prompts; do not pretend to have frontier-level domain knowledge. The original user request remains authoritative. Be concise, precise and evidence-aware.",
-                selectedModelId = localModelId,
-                allowRemote = false
-            ) { brief, error ->
-                if (brief != null) {
-                    val stepId = activeStepIds.firstOrNull()
-                    if (stepId != null) viewModel.updateJobStep(jobId, stepId, "COMPLETED", "Intent was structured locally; the original wording remains authoritative.", brief.take(1_800))
-                    runFrontierPhase(brief)
-                } else {
-                    val stepId = activeStepIds.firstOrNull()
-                    if (stepId != null) viewModel.updateJobStep(jobId, stepId, "SKIPPED", "Local intent structuring failed; the original user wording will be used. ${error ?: "No further detail available."}")
-                    viewModel.appendChatMessage(conversationId, "TOOL", "Local prompt structuring failed: ${error ?: "unknown error"}. Continuing with the original user wording; no structured brief is claimed.", localModelId, "LOCAL_INTENT_BRIEF_ERROR")
-                    runFrontierPhase("")
-                }
-            }
-        } else {
-            runFrontierPhase("")
+            activeStepIds.firstOrNull()?.let { viewModel.updateJobStep(jobId, it, "SKIPPED", "Local intent structuring was skipped so provider navigation starts immediately. The original user wording remains authoritative; local synthesis runs after responses are captured.") }
+            viewModel.appendChatMessage(conversationId, "TOOL", "Browser navigation starts immediately with the original intent. Local AI will compare outputs and propose source-grounded follow-up records after responses are captured.", localModelId, "LOCAL_ORCHESTRATION_NONBLOCKING")
         }
+        runFrontierPhase("")
     }
 
     Column(Modifier.fillMaxSize()) {
@@ -663,8 +653,8 @@ fun BrowserWorkflowScreen(
                     Row(verticalAlignment = Alignment.Top) {
                         Checkbox(checked = useLocalOrchestrator, onCheckedChange = { useLocalOrchestrator = it }, enabled = !workflowState.isActive && !starting && runtimeState.installedModels.isNotEmpty())
                         Column(Modifier.weight(1f).padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                            Text("Use local AI for intent structure and output linking", style = MaterialTheme.typography.bodyMedium)
-                            Text("The local model prepares a concise brief and compares provider outputs. Frontier sites do the domain consultation; local output is a map, not an authority.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("Use local AI for output comparison and source-grounded follow-up proposals", style = MaterialTheme.typography.bodyMedium)
+                            Text("Local AI is used after the browser consultation to connect provider outputs and propose evidence-grounded records. It no longer delays opening the provider websites.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                     if (runtimeState.installedModels.isNotEmpty()) {
@@ -726,6 +716,31 @@ fun BrowserWorkflowScreen(
                         }
                     }
                     Text(workflowState.message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (workflowState.awaitingPromptApproval) {
+                        Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth()) {
+                            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text("External AI submission requires your approval", style = MaterialTheme.typography.titleSmall)
+                                Text(workflowState.approvalDestination, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                                Text(workflowState.currentPrompt.take(500), style = MaterialTheme.typography.bodySmall, maxLines = 6, overflow = TextOverflow.Ellipsis)
+                                if (pendingApproval == null) Text("The exact approval record is not visible in the workspace state. Memo will not send this prompt.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Button(onClick = { approvalReviewOpen = true }, enabled = pendingApproval != null, modifier = Modifier.weight(1f)) { Text("Review & approve") }
+                                    OutlinedButton(onClick = {
+                                        pendingApproval?.let { viewModel.rejectExternalAction(it.id, "User rejected the exact external prompt.") }
+                                        approvalReviewOpen = false
+                                        currentExternalActionId = ""
+                                        browser.rejectCurrentPrompt()
+                                        onShowMessage("Prompt rejected. Memo stopped the workflow before sending it.")
+                                    }, modifier = Modifier.weight(1f)) { Text("Reject & stop") }
+                                }
+                            }
+                        }
+                    }
+                    if (workflowState.status == BrowserWorkflowStatus.WAITING_FOR_RESPONSE && workflowState.sentForCurrentStep) {
+                        OutlinedButton(onClick = {
+                            if (!browser.captureVisiblePageAsWorkflowResponse()) onShowMessage(browser.browserMessage)
+                        }, modifier = Modifier.fillMaxWidth()) { Text("Capture visible page as response") }
+                    }
                     if (workflowState.totalSteps > 0) {
                         LinearProgressIndicator(
                             progress = { (workflowState.responses.size.toFloat() / workflowState.totalSteps.toFloat()).coerceIn(0f, 1f) },
@@ -743,6 +758,7 @@ fun BrowserWorkflowScreen(
                                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                     androidx.compose.material3.Icon(Icons.Rounded.CheckCircle, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                                     Text("${index + 1}. ${response.providerName}", style = MaterialTheme.typography.titleSmall)
+                                Text(if (response.captureMethod == "MANUAL_PAGE") "User-captured visible page · automatic response detection was bypassed" else "Automatically detected stable answer", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 Text(response.sourceUrl, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 Text(response.response.take(420), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 4, overflow = TextOverflow.Ellipsis)
@@ -787,14 +803,10 @@ fun BrowserWorkflowScreen(
             }
         }
     }
-    val pendingApproval = snapshot.actionApprovals.firstOrNull {
-        it.status == "PENDING" && it.contentHash == workflowState.currentPromptHash &&
-            it.destination == workflowState.approvalDestination && it.capabilityId == "browser.submit_prompt"
-    }
-    if (pendingApproval != null && workflowState.awaitingPromptApproval) {
+    if (pendingApproval != null && workflowState.awaitingPromptApproval && approvalReviewOpen) {
         val actionId = pendingApproval.id
         AlertDialog(
-            onDismissRequest = { /* Approval cannot be dismissed implicitly; choose Approve or Reject. */ },
+            onDismissRequest = { approvalReviewOpen = false },
             title = { Text("Approve exact external prompt?") },
             text = {
                 Column(
@@ -816,10 +828,12 @@ fun BrowserWorkflowScreen(
                     val destination = workflowState.approvalDestination
                     val proposal = viewModel.snapshot.value.actionApprovals.firstOrNull { it.id == actionId }
                     if (proposal == null || proposal.contentHash != hash || !viewModel.approveExternalAction(actionId, hash)) {
+                        approvalReviewOpen = false
                         onShowMessage("Approval could not be verified. No prompt was sent.")
                         browser.rejectCurrentPrompt()
                     } else if (!viewModel.beginExternalAction(actionId, proposal.runtimeId, proposal.capabilityId, destination, workflowState.currentPrompt)) {
                         viewModel.markExternalActionNeedsReview(actionId, "The exact-content approval could not pass the execution gate.")
+                        approvalReviewOpen = false
                         onShowMessage("The execution gate refused this prompt. Nothing was sent.")
                         browser.rejectCurrentPrompt()
                     } else {
@@ -829,6 +843,7 @@ fun BrowserWorkflowScreen(
                             viewModel.markExternalActionNeedsReview(actionId, "The browser destination or prompt changed before submission.")
                             currentExternalActionId = ""
                             browser.rejectCurrentPrompt()
+                            approvalReviewOpen = false
                             onShowMessage("The browser changed before submission. The action was stopped and needs review; nothing was intentionally sent.")
                         }
                     }
@@ -838,6 +853,7 @@ fun BrowserWorkflowScreen(
                 TextButton(onClick = {
                     viewModel.rejectExternalAction(actionId, "User rejected the exact external prompt.")
                     currentExternalActionId = ""
+                    approvalReviewOpen = false
                     browser.rejectCurrentPrompt()
                     onShowMessage("Prompt rejected. Memo stopped the workflow before sending it.")
                 }) { Text("Reject and stop") }
