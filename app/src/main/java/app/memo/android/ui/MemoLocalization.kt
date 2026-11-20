@@ -73,6 +73,7 @@ object MemoLocalization {
         "Chats" to ("Czaty" to "Sohbetler"),
         "Work" to ("Praca" to "İş"),
         "Browser" to ("Przeglądarka" to "Tarayıcı"),
+        "Share capture" to ("Udostępnij zrzut" to "Yakalamayı paylaş"),
         "More" to ("Więcej" to "Daha fazla"),
         "Apps" to ("Aplikacje" to "Uygulamalar"),
         "Council" to ("Rada" to "Konsey"),
