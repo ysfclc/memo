@@ -36,13 +36,16 @@ import java.util.Locale
 
 data class BrowserNavigationResult(val url: String, val title: String)
 
+data class BrowserPageLink(val label: String, val url: String)
+
 data class BrowserPageCapture(
     val url: String,
     val title: String,
     val content: String,
     val summary: String,
     val metadata: String,
-    val capturedAt: Long
+    val capturedAt: Long,
+    val links: List<BrowserPageLink> = emptyList()
 )
 
 class TaskCallbacks(
@@ -344,13 +347,64 @@ class BrowserSession(
                     val capturedAt = runCatching {
                         JSONObject(metadata).optLong("capturedAt", System.currentTimeMillis())
                     }.getOrDefault(System.currentTimeMillis())
-                    pending.complete(BrowserPageCapture(capturedUrl, title, content, summary, metadata, capturedAt))
+                    val rawLinks = result.optJSONObject("metadata")?.optJSONArray("links")
+                    var linkBudget = 0
+                    val links = (0 until minOf(rawLinks?.length() ?: 0, 200)).mapNotNull { index ->
+                        val entry = rawLinks?.optJSONObject(index) ?: return@mapNotNull null
+                        val target = BrowserUrlPolicy.normalizeHttpsUrl(entry.optString("url")) ?: return@mapNotNull null
+                        if (!BrowserUrlPolicy.isSameOriginHttpsLink(capturedUrl, target)) return@mapNotNull null
+                        val label = entry.optString("label").trim().take(160)
+                        val cost = label.length + target.length
+                        if (target.length > 1_024 || linkBudget + cost > 2_400) return@mapNotNull null
+                        linkBudget += cost
+                        BrowserPageLink(label, target)
+                    }.distinctBy { it.url }.take(24)
+                    pending.complete(BrowserPageCapture(capturedUrl, title, content, summary, metadata, capturedAt, links))
                 } catch (error: Throwable) {
                     pending.completeExceptionally(error)
                 }
             }
             withTimeout(20_000L) { pending.await() }
         }
+
+    /**
+     * Open a same-origin HTTPS anchor observed in the most recent captured page.
+     * The live DOM is rechecked immediately before navigation; no click handler or page control runs.
+     */
+    suspend fun navigateToObservedLinkForAgent(
+        rawUrl: String,
+        expectedSourceUrl: String
+    ): BrowserNavigationResult = withContext(Dispatchers.Main.immediate) {
+        val source = BrowserUrlPolicy.normalizeHttpsUrl(expectedSourceUrl)
+            ?: throw IllegalArgumentException("The captured source page is no longer a valid public HTTPS page.")
+        val target = BrowserUrlPolicy.normalizeHttpsUrl(rawUrl)
+            ?: throw IllegalArgumentException("Memo accepts only a valid public HTTPS link.")
+        require(BrowserUrlPolicy.isSameOriginHttpsLink(source, target)) {
+            "Page-derived navigation is restricted to the exact captured page origin. External destinations need a separate user-directed navigation."
+        }
+        check(canCaptureForAgent) { "The visible browser session is busy or unavailable." }
+        val activePage = currentUrl
+        check(sameAgentPageTarget(source, activePage) && sameAgentPageTarget(source, webView.url.orEmpty())) {
+            "The visible browser page changed after its links were captured. Capture the current page again before opening a link."
+        }
+        val verification = CompletableDeferred<Boolean>()
+        webView.evaluateJavascript(BrowserScripts.verifyObservedLink(target)) { raw ->
+            try {
+                check(!disposed) { "The browser session closed before link verification completed." }
+                check(sameAgentPageTarget(activePage, currentUrl) && sameAgentPageTarget(activePage, webView.url.orEmpty())) {
+                    "The visible page changed while Memo was checking the link. Nothing was opened."
+                }
+                val result = JSONObject(decodeJsString(raw))
+                verification.complete(result.optBoolean("ok") && result.optBoolean("found"))
+            } catch (error: Throwable) {
+                verification.completeExceptionally(error)
+            }
+        }
+        check(withTimeout(10_000L) { verification.await() }) {
+            "Memo could not find that exact visible link on the captured page. Nothing was opened."
+        }
+        navigateForAgent(target)
+    }
 
     fun openQuickLink(url: String) = navigate(url)
 
