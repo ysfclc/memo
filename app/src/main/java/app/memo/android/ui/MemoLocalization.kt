@@ -95,7 +95,7 @@ object MemoLocalization {
         "Save for research" to ("Zapisz do badań" to "Araştırma için kaydet"),
         "Steps run in order. Launch, wait and delay are available. Tap and Back are temporarily disabled until exact-action approval is ready; existing drafts containing them must be edited before saving." to ("Kroki są wykonywane po kolei. Dostępne są uruchomienie, oczekiwanie i opóźnienie. Dotknięcie i Wstecz są tymczasowo wyłączone do czasu przygotowania zatwierdzania dokładnych działań; istniejące szkice zawierające te kroki należy edytować przed zapisaniem." to "Adımlar sırayla çalışır. Başlatma, bekleme ve gecikme kullanılabilir. Tam eylem onayı hazır olana kadar Dokunma ve Geri geçici olarak devre dışıdır; bunları içeren mevcut taslaklar kaydedilmeden önce düzenlenmelidir."),
         "Today" to ("Dziś" to "Bugün"),
-        "Your active work, from the encrypted workspace." to ("Twoje aktywne zadania z zaszyfrowanego obszaru roboczego." to "Şifreli çalışma alanınızdaki etkin işleriniz.")
+        "Your active work, from the encrypted workspace." to ("Twoje aktywne zadania z zaszyfrowanego obszaru roboczego." to "Şifreli çalışma alanınızdaki etkin işleriniz."),
         "More" to ("Więcej" to "Daha fazla"),
         "Apps" to ("Aplikacje" to "Uygulamalar"),
         "Council" to ("Rada" to "Konsey"),
