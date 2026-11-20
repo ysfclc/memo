@@ -1348,7 +1348,7 @@ private fun BrowserScreen(
     onClearPrompt: () -> Unit,
     onShowMessage: (String) -> Unit
 ) {
-    var address by remember { mutableStateOf("")
+    var address by remember { mutableStateOf("") }
     var prompt by remember { mutableStateOf("") }
     var showNewConversationConfirm by remember { mutableStateOf(false) }
     var expandedBrowser by remember { mutableStateOf(false) }
