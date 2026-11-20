@@ -35,4 +35,5 @@ Do not build new feature-specific workflows to work around these gaps. The first
 - This checkpoint records documentation/governance changes only; no application source or schema was changed.
 - No Gradle build, CI run or device acceptance is claimed for this documentation-only work.
 - The existing draft browser research PR is not merged by this work.
+- Governance review is open as draft [PR #12](https://github.com/ysfclc/memo/pull/12); it is not merged.
 - Do not merge this branch to `main` without the user's explicit approval.
