@@ -91,6 +91,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.viewinterop.AndroidView
+import app.memo.android.browser.BrowserSession
 import androidx.core.content.ContextCompat
 import androidx.compose.ui.unit.dp
 import app.memo.android.ai.AiRuntimeViewModel
@@ -138,6 +140,7 @@ fun ChatsWorkspaceScreen(
     runtime: AiRuntimeViewModel,
     runtimeState: ModelRuntimeUiState,
     viewModel: MemoWorkspaceViewModel,
+    browser: BrowserSession,
     selectedConversationId: String?,
     onSelectConversation: (String?) -> Unit,
     initialPrompt: String = "",
@@ -145,6 +148,7 @@ fun ChatsWorkspaceScreen(
     onOpenModels: () -> Unit,
     onOpenWork: () -> Unit,
     onOpenCouncil: () -> Unit,
+    onOpenBrowser: () -> Unit,
     onStartConversation: (String) -> Boolean,
     onShowMessage: (String) -> Unit
 ) {
@@ -155,6 +159,9 @@ fun ChatsWorkspaceScreen(
     var agentStage by remember { mutableStateOf("") }
     var agentJob by remember { mutableStateOf<Job?>(null) }
     var agentConversationId by remember { mutableStateOf("") }
+    var showAgentBrowserPane by remember { mutableStateOf(false) }
+    var agentBrowserConversationId by remember { mutableStateOf("") }
+    var shareBrowserPageRemotely by remember(selectedConversationId) { mutableStateOf(false) }
     var search by remember { mutableStateOf("") }
     var showImport by remember { mutableStateOf(false) }
     var renameTarget by remember { mutableStateOf<ConversationRecord?>(null) }
@@ -373,15 +380,45 @@ fun ChatsWorkspaceScreen(
                         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.xs)) {
                             modelOptions.forEach { (id, label) -> FilterChip(
                                 selected = selectedModelId == id,
-                                onClick = { selectedModelId = id; if (id != REMOTE_MODEL_ID) allowRemote = false },
+                                onClick = {
+                                    selectedModelId = id
+                                    if (id != REMOTE_MODEL_ID) {
+                                        allowRemote = false
+                                        shareBrowserPageRemotely = false
+                                    }
+                                },
                                 label = { Text(label, maxLines = 1) },
                                 enabled = !agentRunning && !runtimeState.running
                             ) }
                         }
                         if (selectedModelId == REMOTE_MODEL_ID) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Checkbox(checked = allowRemote, onCheckedChange = { allowRemote = it }, enabled = !runtimeState.running)
+                                Checkbox(
+                                    checked = allowRemote,
+                                    onCheckedChange = {
+                                        allowRemote = it
+                                        if (!it) shareBrowserPageRemotely = false
+                                    },
+                                    enabled = !runtimeState.running && !agentRunning
+                                )
                                 Text("Allow this request to leave this device", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            if (allowRemote) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Checkbox(
+                                        checked = shareBrowserPageRemotely,
+                                        onCheckedChange = { shareBrowserPageRemotely = it },
+                                        enabled = !runtimeState.running && !agentRunning
+                                    )
+                                    Column(Modifier.weight(1f)) {
+                                        Text("Also share captured webpage content with the remote provider", style = MaterialTheme.typography.bodySmall)
+                                        Text(
+                                            "Off by default. Signed-in pages can contain private information. Memo shares page text only after you enable this separately.",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
                             }
                         }
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -423,6 +460,40 @@ fun ChatsWorkspaceScreen(
             ) {
                 if (selectedConversation.messages.isEmpty()) {
                     item { EmptyState("Start anywhere", "Ask a question, bring in some context, or ask Memo to extract source-grounded project outcomes from the conversation.") }
+                }
+                if (showAgentBrowserPane && agentBrowserConversationId == selectedConversation.id) {
+                    item(key = "talk-agent-browser-session") {
+                        MemoPanel {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Text("Memo's visible browser session", style = MaterialTheme.typography.titleSmall)
+                                    Text(
+                                        browser.currentUrl.ifBlank { "Opening the user-supplied page…" },
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                                OutlinedButton(onClick = onOpenBrowser, enabled = browser.currentUrl.isNotBlank()) {
+                                    Text("Open full browser")
+                                }
+                            }
+                            if (browser.agentNavigationActive || browser.isLoading) {
+                                LinearProgressIndicator(Modifier.fillMaxWidth())
+                            }
+                            AndroidView(
+                                factory = { browser.webView },
+                                modifier = Modifier.fillMaxWidth().height(220.dp),
+                                update = {}
+                            )
+                            Text(
+                                "This is the real, visible page session. Memo reads visible text only; page content is treated as untrusted source data.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
                 items(selectedConversation.messages, key = { it.id }) { message ->
                     val isUser = message.role == "USER"
@@ -611,6 +682,9 @@ fun ChatsWorkspaceScreen(
                                     WorkspaceContextRetriever.select(userText, contextCandidates, maxHits = 6, maxCharacters = 4_500).asPromptContext(4_500)
                                 } else "Workspace retrieval was not included in this request."
                                 val promptWithContext = (history + "\n\nMEMO WORKSPACE CONTEXT — provenance-labelled local record excerpts:\n" + selectedContext).take(19_000)
+                                val includeBrowserPageContentForRequest =
+                                    selectedModelId != REMOTE_MODEL_ID || shareBrowserPageRemotely
+                                shareBrowserPageRemotely = false
                                 agentScope.launch {
                                     if (agentRunning) return@launch
                                     agentRunning = true
@@ -657,7 +731,9 @@ fun ChatsWorkspaceScreen(
                                                 (selectedModelId != REMOTE_MODEL_ID || shareWorkspaceContextRemotely),
                                             sourceConversationId = selectedConversation.id,
                                             sourceMessageId = sourceMessageId,
-                                            sourceExcerpt = userText
+                                            sourceExcerpt = userText,
+                                            browser = browser,
+                                            includeBrowserPageContent = includeBrowserPageContentForRequest
                                         )
                                         val engine = AgentExecutionEngine(
                                             model = AgentModelProvider { systemPrompt, agentPrompt ->
@@ -675,6 +751,10 @@ fun ChatsWorkspaceScreen(
                                             conversationContext = promptWithContext,
                                             onEvent = { event ->
                                                 agentStage = event.summary
+                                                if (event.toolId.startsWith("browser.")) {
+                                                    showAgentBrowserPane = true
+                                                    agentBrowserConversationId = selectedConversation.id
+                                                }
                                                 val transcript = agentEventTranscriptMessage(
                                                     event = event,
                                                     language = uiLanguage

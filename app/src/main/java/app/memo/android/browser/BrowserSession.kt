@@ -24,9 +24,26 @@ import app.memo.android.data.ActionApprovalLedger
 import app.memo.android.data.EvidenceRecord
 import app.memo.android.data.TaskKind
 import app.memo.android.data.TaskRecord
+import app.memo.android.runtime.BrowserUrlPolicy
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import org.json.JSONObject
 import org.json.JSONTokener
 import java.util.Locale
+
+data class BrowserNavigationResult(val url: String, val title: String)
+
+data class BrowserPageCapture(
+    val url: String,
+    val title: String,
+    val content: String,
+    val summary: String,
+    val metadata: String,
+    val capturedAt: Long
+)
 
 class TaskCallbacks(
     val onStarted: (String) -> Unit,
@@ -93,6 +110,23 @@ class BrowserSession(
     val canPreparePrompt: Boolean
         get() = !isLoading && isAssistantSite(currentUrl)
 
+    /** Read-only navigation is available only when the shared visible session is idle. */
+    val canNavigateForAgent: Boolean
+        get() = !disposed && agentNavigationPending == null && !isLoading && pendingTask == null &&
+            !isExecutingTask && !isSendingPrompt && !workflowState.isActive &&
+            preparedPrompt.isBlank() && preparedTaskId.isBlank()
+
+    /** Capture requires a settled visible HTTPS page and an idle browser session. */
+    val canCaptureForAgent: Boolean
+        get() = !disposed && agentNavigationPending == null && !isLoading && pendingTask == null &&
+            !isExecutingTask && !isSendingPrompt && !workflowState.isActive &&
+            BrowserUrlPolicy.normalizeHttpsUrl(currentUrl) != null && sameAgentPageTarget(currentUrl, webView.url.orEmpty())
+
+    var agentNavigationActive by mutableStateOf(false)
+        private set
+    private var agentNavigationPending: CompletableDeferred<BrowserNavigationResult>? = null
+    private var agentNavigationExpectedUrl: String = ""
+
     private var callbacks: TaskCallbacks? = null
     private var preparedTaskId: String = ""
     private var preparedHost: String = ""
@@ -152,6 +186,16 @@ class BrowserSession(
                         this@BrowserSession.pageTitle = view?.title?.take(240)?.ifBlank { Uri.parse(finalUrl).host ?: "Website" } ?: "Website"
                         onVisited(finalUrl, this@BrowserSession.pageTitle)
                     }
+                    val pendingNavigation = agentNavigationPending
+                    if (pendingNavigation != null && !pendingNavigation.isCompleted) {
+                        if (sameAgentPageTarget(agentNavigationExpectedUrl, finalUrl)) {
+                            pendingNavigation.complete(BrowserNavigationResult(finalUrl, this@BrowserSession.pageTitle))
+                        } else {
+                            pendingNavigation.completeExceptionally(IllegalStateException(
+                                "The browser redirected away from the exact user-supplied page. Review the visible session before continuing."
+                            ))
+                        }
+                    }
                     if (pendingTask != null && !isExecutingTask) {
                         this@BrowserSession.canContinueTask = true
                         this@BrowserSession.browserMessage = "Page ready. Sign in if required, then continue the task when you are satisfied the correct account is open."
@@ -173,6 +217,7 @@ class BrowserSession(
                         "Blocked an external app or unsupported link scheme: ${scheme ?: "unknown"}."
                     }
                     onBrowserError(browserMessage)
+                    agentNavigationPending?.takeIf { !it.isCompleted }?.completeExceptionally(IllegalStateException(browserMessage))
                     return true
                 }
 
@@ -180,6 +225,7 @@ class BrowserSession(
                     handler?.cancel()
                     browserMessage = "Secure connection failed. Memo blocked this page rather than bypassing certificate validation."
                     onBrowserError(browserMessage)
+                    agentNavigationPending?.takeIf { !it.isCompleted }?.completeExceptionally(IllegalStateException(browserMessage))
                     if (workflowState.isActive) pauseWorkflowForUser("The provider's secure connection failed. Memo will not bypass certificate validation. Retry or choose another provider.")
                 }
 
@@ -187,6 +233,7 @@ class BrowserSession(
                     if (request?.isForMainFrame == true) {
                         browserMessage = "Page could not load: ${error?.description?.toString()?.take(160) ?: "network error"}"
                         onBrowserError(browserMessage)
+                        agentNavigationPending?.takeIf { !it.isCompleted }?.completeExceptionally(IllegalStateException(browserMessage))
                         if (workflowState.isActive) pauseWorkflowForUser("The provider page could not load. Check the connection or open the provider manually, then continue the workflow.")
                     }
                 }
@@ -233,6 +280,77 @@ class BrowserSession(
         browserMessage = "Opening ${uri.host}…"
         webView.loadUrl(uri.toString())
     }
+
+
+    /**
+     * Open exactly one public HTTPS address already present in the user's request.
+     * The shared WebView remains visible; this method never activates page controls.
+     */
+    suspend fun navigateForAgent(rawUrl: String): BrowserNavigationResult =
+        withContext(Dispatchers.Main.immediate) {
+            val target = BrowserUrlPolicy.normalizeHttpsUrl(rawUrl)
+                ?: throw IllegalArgumentException("Memo accepts only a valid public HTTPS address without credentials or local destinations.")
+            check(canNavigateForAgent) {
+                "The visible browser session is busy or has a prompt awaiting review. Finish or stop that work before navigating."
+            }
+            val pending = CompletableDeferred<BrowserNavigationResult>()
+            agentNavigationPending = pending
+            agentNavigationExpectedUrl = target
+            agentNavigationActive = true
+            try {
+                navigate(target)
+                withTimeout(50_000L) { pending.await() }
+            } finally {
+                withContext(NonCancellable) {
+                    if (agentNavigationPending === pending) {
+                        agentNavigationPending = null
+                        agentNavigationExpectedUrl = ""
+                        agentNavigationActive = false
+                        if (!pending.isCompleted) {
+                            pending.cancel()
+                            webView.stopLoading()
+                        }
+                    }
+                }
+            }
+        }
+
+    /** Read visible page text only. No controls, links, composers or forms are activated. */
+    suspend fun captureCurrentPageForAgent(expectedUrl: String): BrowserPageCapture =
+        withContext(Dispatchers.Main.immediate) {
+            check(canCaptureForAgent) { "The browser is not on a settled HTTPS page that Memo can inspect." }
+            val pageUrl = currentUrl
+            check(sameAgentPageTarget(expectedUrl, pageUrl) && sameAgentPageTarget(pageUrl, webView.url.orEmpty())) {
+                "The visible browser page changed before capture. Review the current page and ask Memo to inspect it again."
+            }
+            val pending = CompletableDeferred<BrowserPageCapture>()
+            webView.evaluateJavascript(BrowserScripts.capturePage) { raw ->
+                try {
+                    check(!disposed) { "The browser session closed before page capture completed." }
+                    check(sameAgentPageTarget(pageUrl, currentUrl) && sameAgentPageTarget(pageUrl, webView.url.orEmpty())) {
+                        "The browser page changed during capture. No evidence was saved."
+                    }
+                    val result = JSONObject(decodeJsString(raw))
+                    check(result.optBoolean("ok")) { "The visible page did not return readable content." }
+                    val capturedUrl = BrowserUrlPolicy.normalizeHttpsUrl(result.optString("url", pageUrl))
+                        ?: throw IllegalStateException("The page returned an unsupported source URL.")
+                    check(sameAgentPageTarget(pageUrl, capturedUrl)) { "The page source changed during capture." }
+                    val content = result.optString("content", "").take(15_000)
+                    check(content.isNotBlank()) { "The page contains no visible text to capture." }
+                    val metadata = compactMetadata(result.optJSONObject("metadata"))
+                    val title = result.optString("title", this@BrowserSession.pageTitle)
+                        .take(240).ifBlank { this@BrowserSession.pageTitle }
+                    val summary = result.optString("summary", "Visible page text captured.").take(2_000)
+                    val capturedAt = runCatching {
+                        JSONObject(metadata).optLong("capturedAt", System.currentTimeMillis())
+                    }.getOrDefault(System.currentTimeMillis())
+                    pending.complete(BrowserPageCapture(capturedUrl, title, content, summary, metadata, capturedAt))
+                } catch (error: Throwable) {
+                    pending.completeExceptionally(error)
+                }
+            }
+            withTimeout(20_000L) { pending.await() }
+        }
 
     fun openQuickLink(url: String) = navigate(url)
 
@@ -929,6 +1047,17 @@ class BrowserSession(
             targetUri.query == activeUri.query
     }
 
+    private fun sameAgentPageTarget(target: String, active: String): Boolean {
+        val targetUrl = BrowserUrlPolicy.normalizeHttpsUrl(target) ?: return false
+        val activeUrl = BrowserUrlPolicy.normalizeHttpsUrl(active) ?: return false
+        val expected = Uri.parse(targetUrl)
+        val actual = Uri.parse(activeUrl)
+        fun canonical(host: String?): String = host.orEmpty().lowercase(Locale.ROOT).removePrefix("www.")
+        return canonical(expected.host).isNotBlank() && canonical(expected.host) == canonical(actual.host) &&
+            expected.encodedPath.orEmpty() == actual.encodedPath.orEmpty() &&
+            expected.encodedQuery == actual.encodedQuery
+    }
+
     private fun hostsMatch(target: String, active: String): Boolean {
         fun canonical(host: String?): String = host.orEmpty().lowercase(Locale.ROOT).removePrefix("www.")
         val expected = canonical(Uri.parse(target).host)
@@ -938,6 +1067,10 @@ class BrowserSession(
 
     fun dispose() {
         disposed = true
+        agentNavigationPending?.cancel()
+        agentNavigationPending = null
+        agentNavigationExpectedUrl = ""
+        agentNavigationActive = false
         workflowGeneration++
         workflowNavigationCallback = null
         workflowCallbacks = null

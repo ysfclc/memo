@@ -557,6 +557,7 @@ fun MemoWorkspaceApp(
                         runtime = aiRuntime,
                         runtimeState = modelState,
                         viewModel = viewModel,
+                        browser = browser,
                         selectedConversationId = activeConversationId,
                         onSelectConversation = { activeConversationId = it },
                         initialPrompt = pendingChatPrompt,
@@ -564,6 +565,7 @@ fun MemoWorkspaceApp(
                         onOpenModels = { tab = AppTab.MODELS },
                         onOpenWork = { tab = AppTab.WORK },
                         onOpenCouncil = { tab = AppTab.COUNCIL },
+                        onOpenBrowser = { tab = AppTab.BROWSER; toolSection = ToolSection.BROWSER },
                         onStartConversation = ::startTalkIntent,
                         onShowMessage = ::snack
                     )

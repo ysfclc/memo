@@ -30,6 +30,11 @@ object MemoLocalization {
     private val translations: Map<String, Pair<String, String>> = mapOf(
 
         "MEMO ACTION" to ("DZIAŁANIE MEMO" to "MEMO İŞLEMİ"),
+        "Memo's visible browser session" to ("Widoczna sesja przeglądarki Memo" to "Memo'nun görünür tarayıcı oturumu"),
+        "Open full browser" to ("Otwórz pełną przeglądarkę" to "Tam tarayıcıyı aç"),
+        "Also share captured webpage content with the remote provider" to ("Udostępnij dostawcy zdalnemu również przechwyconą treść strony" to "Yakalanan web sayfası içeriğini uzak sağlayıcıyla da paylaş"),
+        "Off by default. Signed-in pages can contain private information. Memo shares page text only after you enable this separately." to ("Domyślnie wyłączone. Zalogowane strony mogą zawierać prywatne informacje. Memo udostępni tekst strony dopiero po osobnym włączeniu tej opcji." to "Varsayılan olarak kapalıdır. Oturum açılmış sayfalar özel bilgiler içerebilir. Memo sayfa metnini ancak bu seçeneği ayrıca açtığınızda paylaşır."),
+        "This is the real, visible page session. Memo reads visible text only; page content is treated as untrusted source data." to ("To rzeczywista, widoczna sesja strony. Memo odczytuje tylko widoczny tekst i traktuje go jako niezaufane dane źródłowe." to "Bu gerçek ve görünür sayfa oturumudur. Memo yalnızca görünür metni okur ve sayfa içeriğini güvenilmeyen kaynak verisi olarak ele alır."),
         "Memo started an execution." to ("Memo rozpoczęło wykonywanie zadania." to "Memo bir yürütme başlattı."),
         "Memo returned a final response." to ("Memo zwróciło odpowiedź końcową." to "Memo son yanıtını verdi."),
         "Execution limit reached." to ("Osiągnięto limit wykonywania." to "Yürütme sınırına ulaşıldı."),
