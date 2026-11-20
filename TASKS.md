@@ -31,6 +31,18 @@ The full product scope is retained:
 - English, Polish and Turkish as first-class experiences; accessible, polished, responsive UI with one coherent design system;
 - encrypted storage and backup, key/data migration safety, local-first defaults, release automation, measurable performance and real-device acceptance.
 
+## Architecture lock — 20 November 2026
+
+**Binding contract:** [AI Execution Invariants](docs/AI_EXECUTION_INVARIANTS.md), enforced by repository [AGENTS.md](AGENTS.md) and [DEVELOPMENT_GOVERNANCE.md](DEVELOPMENT_GOVERNANCE.md).
+
+The user gives Memo an outcome. Talk must route every tool-using request through one provider-agnostic, model-directed execution loop and one shared dispatcher. Local/frontier models are intelligence providers; browser, Android, code, files, PDF, image, video, workspace and future operations are callable capabilities. The engine discovers actual capability availability, validates proposed actions, executes, observes, verifies and continues/re-plans. Deterministic code owns permissions, approvals, audit, budgets, cancellation, idempotency and recovery.
+
+**Hard prohibitions:** no keyword/domain planner as the primary executor; no fixed workflow, screen, template, agent or engine for each example; no model-only text response presented as action; no registry entries without callable adapters; no treating a TaskSpec, DAG, manifest or green build as proof of execution; no duplicate stores, dispatchers, journals or approval systems.
+
+The examples in the invariants document are cross-cutting acceptance tests for the same engine. Do not prioritize isolated entity CRUD/page polish or specialist browser flows over the missing Talk-to-execution connection unless the user explicitly asks for that work.
+
+This is a constraint lock, not an implementation-complete marker. The agent execution loop, callable capability dispatch, durable run lifecycle and universal verification remain unimplemented until proven end-to-end.
+
 ## Current implementation increment — 2026-10-28
 
 The strict gates above remain in force. The current source pass adds the following actual behavior, while leaving wider milestones open until their acceptance evidence exists:
