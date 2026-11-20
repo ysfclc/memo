@@ -703,7 +703,6 @@ fun ChatsWorkspaceScreen(
                                     }
                                 }.also { agentJob = it }
                                 draft = ""
-                                }
                             },
                             enabled = !agentRunning && !runtimeState.running && draft.isNotBlank() && modelOptions.isNotEmpty() && (selectedModelId != REMOTE_MODEL_ID || allowRemote),
                             modifier = Modifier.size(52.dp)
