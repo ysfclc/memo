@@ -11,6 +11,7 @@ import app.memo.android.orchestration.IntentPlanner
 import app.memo.android.orchestration.CapabilityCompiler
 import app.memo.android.orchestration.WorkflowGraphCompiler
 import org.json.JSONObject
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -222,6 +223,8 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         return try {
             withContext(Dispatchers.IO) { persistLatestSnapshotSafely() }
             null
+        } catch (cancelled: CancellationException) {
+            throw cancelled
         } catch (error: Throwable) {
             val message = safeError(error, "The encrypted workspace could not save this message.")
             _vaultError.value = message
@@ -247,6 +250,8 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             } else {
                 Result.success(Unit)
             }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
         } catch (error: Throwable) {
             val message = safeError(error, "The encrypted workspace could not save the artifact.")
             _vaultError.value = message
