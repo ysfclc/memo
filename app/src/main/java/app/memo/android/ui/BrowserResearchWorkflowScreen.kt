@@ -25,6 +25,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import app.memo.android.ui.MemoText as Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -311,7 +312,7 @@ fun BrowserResearchWorkflowScreen(
             if (researchJobId.isBlank() && recentResearchJobs.isNotEmpty()) {
                 Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        androidx.compose.material3.Text("Resume saved browser research", style = MaterialTheme.typography.titleSmall)
+                        Text("Resume saved browser research", style = MaterialTheme.typography.titleSmall)
                         recentResearchJobs.forEach { job ->
                             TextButton(onClick = {
                                 researchJobId = job.id
@@ -321,7 +322,7 @@ fun BrowserResearchWorkflowScreen(
                                 runGoal = job.goal
                                 onShowMessage("Research restored. Saved page evidence and proposed records were reloaded from Work.")
                             }, modifier = Modifier.fillMaxWidth()) {
-                                androidx.compose.material3.Text(job.title + " · " + job.status.replace('_', ' '), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                Text(job.title + " · " + job.status.replace('_', ' '), maxLines = 2, overflow = TextOverflow.Ellipsis)
                             }
                         }
                     }
@@ -329,11 +330,11 @@ fun BrowserResearchWorkflowScreen(
             }
             Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = title, onValueChange = { title = it.take(160) }, label = { androidx.compose.material3.Text("Research workflow name") }, singleLine = true, enabled = researchJobId.isBlank(), modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(value = goal, onValueChange = { goal = it.take(8_000) }, label = { androidx.compose.material3.Text("What should Memo find and what records/tasks should it produce?") }, placeholder = { androidx.compose.material3.Text("Find companies selling industrial X in Kraków. Save each business as an organization and create follow-up tasks to verify fit and prepare outreach.") }, minLines = 3, maxLines = 7, enabled = researchJobId.isBlank(), modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(value = mapsQuery, onValueChange = { mapsQuery = it.take(500) }, label = { androidx.compose.material3.Text("Google Maps search phrase") }, placeholder = { androidx.compose.material3.Text("industrial supplier Kraków") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = title, onValueChange = { title = it.take(160) }, label = { Text("Research workflow name") }, singleLine = true, enabled = researchJobId.isBlank(), modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = goal, onValueChange = { goal = it.take(8_000) }, label = { Text("What should Memo find and what records/tasks should it produce?") }, placeholder = { Text("Find companies selling industrial X in Kraków. Save each business as an organization and create follow-up tasks to verify fit and prepare outreach.") }, minLines = 3, maxLines = 7, enabled = researchJobId.isBlank(), modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = mapsQuery, onValueChange = { mapsQuery = it.take(500) }, label = { Text("Google Maps search phrase") }, placeholder = { Text("industrial supplier Kraków") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                     Button(onClick = { openMapsSearch() }, enabled = !extracting && goal.isNotBlank() && mapsQuery.isNotBlank(), modifier = Modifier.fillMaxWidth()) { Text("Start research · Search Google Maps") }
-                    OutlinedTextField(value = targetUrl, onValueChange = { targetUrl = it.take(2_048) }, label = { androidx.compose.material3.Text("Other website or search URL") }, placeholder = { androidx.compose.material3.Text("https://…") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = targetUrl, onValueChange = { targetUrl = it.take(2_048) }, label = { Text("Other website or search URL") }, placeholder = { Text("https://…") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                     OutlinedButton(onClick = { openTarget() }, enabled = !extracting && goal.isNotBlank() && targetUrl.isNotBlank(), modifier = Modifier.fillMaxWidth()) { Text("Start research · Open website") }
                 }
             }
@@ -343,7 +344,8 @@ fun BrowserResearchWorkflowScreen(
                         Text("Active research job", style = MaterialTheme.typography.titleSmall)
                         Text(currentJob?.status?.replace('_', ' ') ?: "Starting", style = MaterialTheme.typography.labelMedium)
                         Text(currentJob?.resultSummary?.take(1_000).orEmpty(), style = MaterialTheme.typography.bodySmall)
-                        Text("${capturedPages.size} source page(s) captured and retained", style = MaterialTheme.typography.bodySmall)
+                        Text("Captured page sources", style = MaterialTheme.typography.bodySmall)
+                        Text(capturedPages.size.toString(), style = MaterialTheme.typography.bodySmall)
                         OutlinedButton(onClick = { captureCurrentPage() }, enabled = !extracting && !browser.isLoading && browser.currentUrl.isNotBlank(), modifier = Modifier.fillMaxWidth()) { Text("Capture current visible page") }
                         Text("Scroll the browser results or open another page, then capture again. Captures are saved as evidence immediately.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -352,7 +354,8 @@ fun BrowserResearchWorkflowScreen(
             if (capturedPages.isNotEmpty()) {
                 Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("Captured sources (${capturedPages.size})", style = MaterialTheme.typography.titleSmall)
+                        Text("Captured sources", style = MaterialTheme.typography.titleSmall)
+                        Text(capturedPages.size.toString(), style = MaterialTheme.typography.labelSmall)
                         capturedPages.forEachIndexed { index, page ->
                             Text("${index + 1}. ${page.title}", style = MaterialTheme.typography.bodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                             Text(page.url, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -360,13 +363,13 @@ fun BrowserResearchWorkflowScreen(
                         }
                         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             runtimeState.installedModels.forEach { model ->
-                                FilterChip(selected = localModelId == "local:${model.id}", onClick = { localModelId = "local:${model.id}" }, label = { androidx.compose.material3.Text(model.name, maxLines = 1, overflow = TextOverflow.Ellipsis) })
+                                FilterChip(selected = localModelId == "local:${model.id}", onClick = { localModelId = "local:${model.id}" }, label = { Text(model.name, maxLines = 1, overflow = TextOverflow.Ellipsis) })
                             }
                         }
                         Button(onClick = { extractRecords() }, enabled = !extracting && !runtimeState.running && localModelId.isNotBlank() && runtimeState.installedModels.any { "local:${it.id}" == localModelId }, modifier = Modifier.fillMaxWidth()) {
                             if (extracting) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
                             Spacer(Modifier.width(6.dp))
-                            androidx.compose.material3.Text("Extract records & follow-up tasks")
+                            Text("Extract records & follow-up tasks")
                         }
                         if (extracting) LinearProgressIndicator(Modifier.fillMaxWidth())
                     }
@@ -375,7 +378,8 @@ fun BrowserResearchWorkflowScreen(
             if (proposedEntities.isNotEmpty()) {
                 Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surfaceVariant, modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text("Proposed records to review in Work (${proposedEntities.size})", style = MaterialTheme.typography.titleSmall)
+                        Text("Proposed records to review in Work", style = MaterialTheme.typography.titleSmall)
+                        Text(proposedEntities.size.toString(), style = MaterialTheme.typography.labelSmall)
                         proposedEntities.forEach { entity ->
                             Text("${entity.type}: ${entity.title}", style = MaterialTheme.typography.bodyMedium)
                             Text(entity.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 3, overflow = TextOverflow.Ellipsis)
@@ -387,8 +391,8 @@ fun BrowserResearchWorkflowScreen(
         Column(Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Column(Modifier.weight(1f)) {
-                    androidx.compose.material3.Text(browser.pageTitle.ifBlank { "Browser research page" }, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    androidx.compose.material3.Text(browser.currentUrl.ifBlank { "No page open" }, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(browser.pageTitle.ifBlank { "Browser research page" }, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(browser.currentUrl.ifBlank { "No page open" }, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 if (browser.isLoading) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
             }
