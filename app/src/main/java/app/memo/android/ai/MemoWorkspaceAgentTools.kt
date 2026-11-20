@@ -22,8 +22,9 @@ import java.util.Locale
  * Adapters over real Memo-owned operations.
  *
  * This catalogue intentionally contains only operations with callable implementations.
- * Browser, Android, media generation and other descriptors must not be advertised here
- * until their real adapters are connected to this same dispatcher.
+ * Browser support here is limited to user-supplied HTTPS navigation and visible-page evidence capture.
+ * Browser writes/prompt submission, Android actions, code and media generation are not exposed
+ * until real adapters with matching runtime policy and approval paths are connected.
  */
 object MemoWorkspaceAgentTools {
     fun build(

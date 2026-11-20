@@ -310,6 +310,48 @@ for marker in ("parsesDynamicTaskSpecsAndCreatesFreshAppOwnedIdempotencyKeys", "
 print("PASS: typed TaskSpec proposals compile into bounded DAGs with exact-runtime capability resolution and fail-closed validation")
 
 
+agent_engine = (ROOT / "core/src/main/kotlin/app/memo/android/orchestration/AgentExecutionEngine.kt").read_text()
+agent_registry = (ROOT / "core/src/main/kotlin/app/memo/android/orchestration/AgentCapabilityRegistry.kt").read_text()
+agent_registry_tests = (ROOT / "core/src/test/kotlin/app/memo/android/orchestration/AgentCapabilityRegistryTest.kt").read_text()
+browser_url_policy = (ROOT / "core/src/main/kotlin/app/memo/android/runtime/BrowserUrlPolicy.kt").read_text()
+browser_url_tests = (ROOT / "core/src/test/kotlin/app/memo/android/runtime/BrowserUrlPolicyTest.kt").read_text()
+browser_session = (ROOT / "app/src/main/java/app/memo/android/browser/BrowserSession.kt").read_text()
+agent_tools = (ROOT / "app/src/main/java/app/memo/android/ai/MemoWorkspaceAgentTools.kt").read_text()
+agent_engine_tests = (ROOT / "core/src/test/kotlin/app/memo/android/orchestration/AgentExecutionEngineTest.kt").read_text()
+for marker in ('RuntimeDescriptor("app.workspace"', 'RuntimeCapability("workspace.search"', 'RuntimeDescriptor("runtime.browser"', 'RuntimeCapability("browser.navigate_https"', 'RuntimeCapability("browser.capture_evidence"'):
+    if marker not in runtime_registry:
+        fail(f"Talk runtime capability contract is missing: {marker}")
+for marker in ("AgentCapabilityRegistry(RuntimeRegistry().listRuntimes(), adapters)", "capabilityRegistry.availableAdapters()", "capabilityRegistry.resolve(decision.toolId)", "val runtimeId: String ="):
+    if marker not in agent_engine:
+        fail(f"Talk dynamic capability discovery is missing: {marker}")
+for marker in ("definition.runtimeId", "no matching policy entry", "policy.requiresUserApproval == definition.requiresUserApproval", "policy.externalSideEffect == hasExternalSideEffect", "fun availableAdapters()"):
+    if marker not in agent_registry:
+        fail(f"runtime capability policy enforcement is missing: {marker}")
+for marker in ("adaptersMustMatchARegisteredRuntimeCapability", "readinessIsRecheckedInsteadOfFrozenAtConstruction", "adapterCannotWeakenRegisteredApprovalPolicy"):
+    if marker not in agent_registry_tests:
+        fail(f"runtime capability registry regression coverage is missing: {marker}")
+for marker in ("https://", "uri.rawUserInfo != null", "uri.port !in setOf(-1, 443)", "explicitlySuppliedUrls", "wasExplicitlySupplied"):
+    if marker not in browser_url_policy:
+        fail(f"browser URL policy is missing a public HTTPS / user-supplied URL guard: {marker}")
+for marker in ("rejectsHttpCredentialsLocalIpAndNonstandardPortUrls", "modelMayNavigateOnlyToAnExactUrlInTheUsersMessage"):
+    if marker not in browser_url_tests:
+        fail(f"browser URL safety regression coverage is missing: {marker}")
+for marker in ("canNavigateForAgent", "canCaptureForAgent", "navigateForAgent", "captureCurrentPageForAgent", "sameAgentPageTarget", "agentNavigationPending", "onReceivedSslError"):
+    if marker not in browser_session:
+        fail(f"visible BrowserSession agent integration or fail-closed check is missing: {marker}")
+for marker in ('id = "browser.navigate_https"', 'id = "browser.capture_evidence"', "BrowserUrlPolicy.explicitlySuppliedUrls", "BROWSER_PAGE_CAPTURE", "saveWorkArtifactDurably", 'runtimeId = "runtime.browser"'):
+    if marker not in agent_tools:
+        fail(f"real Memo browser evidence adapter is incomplete: {marker}")
+for marker in ("capabilitiesAreRediscoveredAfterEachSuccessfulStep", "browser.navigate_https", "browser.capture_evidence"):
+    if marker not in agent_engine_tests:
+        fail(f"dynamic sequential browser capability test is missing: {marker}")
+talk_ui = (ROOT / "app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt").read_text()
+for marker in ("shareBrowserPageRemotely", "includeBrowserPageContent", "AndroidView(", "browser.webView", "showAgentBrowserPane"):
+    if marker not in talk_ui:
+        fail(f"Talk browser visibility or separate remote-page privacy control is missing: {marker}")
+print("PASS: runtime-backed per-turn capability discovery, approval-policy matching, user-supplied HTTPS browser navigation, encrypted page evidence and separate remote-page consent are enforced and tested")
+
+
 print("PASS: CI safely handles canonical ZIP imports and checked-out direct-source builds, verifies source integrity, and runs Android unit tests/lint/APK assembly")
 
 runner_tests = list((ROOT / "remote-runner/tests").glob("test_*.py"))
