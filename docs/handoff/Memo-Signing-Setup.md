@@ -33,4 +33,6 @@ Then apply the workflow changes from `Update-MemoReleaseSigning.ps1` or ask me t
 - `memo-upload-signing.jks` is a private signing credential. Keep a secure backup. If it is lost, future APKs cannot update installations signed with it.
 - The key is intentionally excluded from `memo.zip` and the public repository.
 - The first build using this stable key may require a one-time migration if the currently installed APK was signed by an old ephemeral CI key. Android cannot change an installed app's signing certificate in place. Export an encrypted Memo backup before that migration and restore it afterward.
+- The final GitHub installable artifact is `Memo-Android-debug-APK`, package `app.memo.android.debug`, signed by the pinned certificate SHA-256 `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a`. Download only that artifact. The one-day `INTERNAL-DO-NOT-INSTALL-Memo-Android-ci-signing-input` is an ephemeral-key intermediate and must never be installed.
+- The Vercel preview package is intentionally `app.memo.android.preview` and is a separate side-by-side app.
 - After the migration, future builds must keep `applicationId` = `app.memo.android.debug`, reuse this exact key, and increment `versionCode`. Routine updates must not require uninstalling or deleting app data.

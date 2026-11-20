@@ -1,6 +1,7 @@
 # Memo Sales Operations — Product Use Cases
 
-**Status:** Product-planning specification / proposed workflows  
+**Status:** Optional user-specific domain scenario pack / proposed workflows; not Memo's product definition  
+**Scope boundary:** This document preserves one optional scenario pack for testing Memo's general capabilities. It does not authorize building an outbound, cold-outreach, bulk-email or auto-DM product, and it must not determine Memo's core architecture or default roadmap.  
 **Owner context:** Yusuf's independent B2B sales-operations practice  
 **Target implementation:** Memo Android app + its existing Work orchestration, capability planning, browser/remote-runner and action-approval architecture  
 **Created:** 2026-11-10  
@@ -8,7 +9,7 @@
 
 ## 1. Product intent
 
-Memo should act as Yusuf's personal sales-operations co-pilot and controlled operator. It should help him find suitable companies, understand their business, identify plausible commercial problems, prepare compliant approaches, manage conversations, scope and deliver paid engagements, and learn from results.
+Within this optional scenario only, Memo may be evaluated as an assistant for researching suitable companies, understanding evidence about their business, distinguishing confirmed commercial problems from hypotheses, and supporting user-directed work. This does not change Memo's general-purpose product identity or authorize an outbound automation system.
 
 Memo is not intended to be:
 - A generic CRM clone.

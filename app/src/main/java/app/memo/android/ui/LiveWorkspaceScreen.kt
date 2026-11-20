@@ -1,6 +1,7 @@
 package app.memo.android.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,16 +13,20 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import app.memo.android.ui.MemoText as Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import app.memo.android.data.ActionApprovalRecord
 import app.memo.android.data.AppSnapshot
+import app.memo.android.data.LiveTimelineEntry
+import app.memo.android.data.LiveTimelineKind
+import app.memo.android.data.LiveTimelineProjector
 import app.memo.android.data.TaskRecord
 import app.memo.android.data.TaskStatus
 import app.memo.android.browser.BrowserWorkflowUiState
@@ -35,22 +40,16 @@ fun LiveWorkspaceScreen(
     snapshot: AppSnapshot,
     browserState: BrowserWorkflowUiState,
     onOpenBrowser: () -> Unit,
+    onOpenBrowserWorkflow: () -> Unit,
     onOpenApps: () -> Unit,
     onOpenApprovals: () -> Unit,
     onOpenWork: () -> Unit,
     onOpenTalk: (String) -> Unit,
     onResumeTask: (TaskRecord) -> Unit
 ) {
-    val activeJobs = snapshot.jobs
-        .filter { it.status in setOf("RUNNING", "WAITING_FOR_USER", "NEEDS_REVIEW", "FAILED", "BLOCKED") }
-        .sortedByDescending { it.updatedAt }
-    val attentionTasks = snapshot.tasks
-        .filter { it.status in setOf(TaskStatus.QUEUED, TaskStatus.RUNNING, TaskStatus.NEEDS_REVIEW, TaskStatus.FAILED, TaskStatus.BLOCKED) }
-        .sortedByDescending { it.updatedAt }
-    val reviewActions = snapshot.actionApprovals
-        .filter { it.status in setOf("PENDING", "APPROVED", "IN_PROGRESS", "NEEDS_REVIEW") }
-        .sortedByDescending { it.createdAt }
-    val recentActivity = snapshot.activity.sortedByDescending { it.at }.take(10)
+    val timeline = remember(snapshot) { LiveTimelineProjector.build(snapshot) }
+    val tasksById = remember(snapshot.tasks) { snapshot.tasks.associateBy { it.id } }
+    val jobsById = remember(snapshot.jobs) { snapshot.jobs.associateBy { it.id } }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -61,22 +60,23 @@ fun LiveWorkspaceScreen(
             MemoPageHeader(
                 title = "Live",
                 eyebrow = "MEMO / LIVE CONTROL",
-                description = "See active work, browser sessions, checkpoints and decisions in one place. Memo only reports completion when it has an observable result."
+                description = "One timeline of recorded work, checkpoints, actions and evidence. A recorded status is not proof of an external result."
             )
         }
         item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = onOpenBrowser, modifier = Modifier.weight(1f).height(MemoTokens.Spacing.minimumTouch)) { Text("Browser session") }
-                OutlinedButton(onClick = onOpenApps, modifier = Modifier.weight(1f).height(MemoTokens.Spacing.minimumTouch)) { Text("Phone apps") }
-            }
-            OutlinedButton(onClick = onOpenApprovals, modifier = Modifier.fillMaxWidth().height(MemoTokens.Spacing.minimumTouch)) {
-                if (reviewActions.isEmpty()) {
+            Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedButton(onClick = onOpenBrowser, modifier = Modifier.height(MemoTokens.Spacing.minimumTouch)) {
+                    Text("Browser session")
+                }
+                OutlinedButton(onClick = onOpenApps, modifier = Modifier.height(MemoTokens.Spacing.minimumTouch)) {
+                    Text("Phone apps")
+                }
+                OutlinedButton(onClick = onOpenApprovals, modifier = Modifier.height(MemoTokens.Spacing.minimumTouch)) {
                     Text("Approval inbox")
-                } else {
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("Review action(s)")
-                        Text(reviewActions.size.toString(), style = MaterialTheme.typography.labelLarge)
-                    }
                 }
             }
         }
@@ -101,127 +101,87 @@ fun LiveWorkspaceScreen(
                         }
                     }
                     Text(browserState.message, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    TextButton(onClick = onOpenBrowser) { Text("Inspect live browser") }
+                    OutlinedButton(
+                        onClick = onOpenBrowserWorkflow,
+                        modifier = Modifier.fillMaxWidth().height(MemoTokens.Spacing.minimumTouch)
+                    ) {
+                        Text(
+                            if (browserState.awaitingPromptApproval) "Review prompt and controls"
+                            else "Open workflow controls"
+                        )
+                    }
                 } else {
                     EmptyState(
                         title = "No active browser workflow",
-                        body = "When a website or frontier-AI workflow is running, its real session and approval checkpoint will appear here."
+                        body = "A visible browser session will appear here while it is active. Its saved outcomes are listed in the timeline below."
                     )
                 }
             }
         }
-        item { MemoSectionHeading("Work in motion", supporting = "Resumable plans and tasks that need attention") }
-        if (activeJobs.isEmpty() && attentionTasks.isEmpty()) {
+        item {
+            MemoSectionHeading(
+                "Workspace timeline",
+                supporting = "${timeline.size} recorded entries · newest first"
+            )
+        }
+        if (timeline.isEmpty()) {
             item {
                 EmptyState(
-                    title = "Nothing needs attention right now",
-                    body = "New work will appear here with its current state, next checkpoint and evidence."
+                    title = "No activity recorded yet",
+                    body = "Plans, checkpoints, tasks, action decisions and captured evidence will appear here as Memo records them."
                 )
             }
         } else {
-            items(activeJobs.take(6), key = { "job-${it.id}" }) { job ->
-                MemoPanel(modifier = Modifier.clickable(onClick = onOpenWork)) {
-                    Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(job.title, style = MaterialTheme.typography.titleMedium)
-                            Text(job.goal.substringBefore("\n\nMemo route:").take(180), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text(
-                                "${job.status.lowercase().replace('_', ' ')} · ${job.steps.count { it.status == "COMPLETED" }}/${job.steps.size} checkpoints",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.primary
-                            )
+            items(timeline, key = { it.id }) { entry ->
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    MemoPanel(modifier = Modifier.clickable {
+                        when (entry.kind) {
+                            LiveTimelineKind.ACTION -> onOpenApprovals()
+                            LiveTimelineKind.TASK -> {
+                                val task = tasksById[entry.relatedId]
+                                if (task != null && task.status in setOf(TaskStatus.QUEUED, TaskStatus.NEEDS_REVIEW, TaskStatus.FAILED, TaskStatus.BLOCKED)) {
+                                    onResumeTask(task)
+                                } else {
+                                    onOpenWork()
+                                }
+                            }
+                            else -> onOpenWork()
                         }
-                        TextButton(onClick = onOpenWork) { Text("Open") }
-                    }
-                    val activeStep = job.steps.firstOrNull { it.status in setOf("RUNNING", "NEEDS_REVIEW") }
-                    if (activeStep != null) {
-                        Text("Next checkpoint", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(activeStep.title, style = MaterialTheme.typography.bodySmall)
-                        if (activeStep.detail.isNotBlank()) Text(activeStep.detail, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    if (job.sourceConversationId.isNotBlank()) {
-                        TextButton(onClick = { onOpenTalk(job.sourceConversationId) }) { Text("Open originating conversation") }
-                    }
-                }
-            }
-            items(attentionTasks.take(6), key = { "task-${it.id}" }) { task ->
-                MemoPanel {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(task.title, style = MaterialTheme.typography.titleSmall)
-                            Text(task.lastMessage, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2)
+                    }) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(entry.kind.label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(formatLiveTime(entry.occurredAt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Spacer(Modifier.height(3.dp))
+                        Text(entry.title, style = MaterialTheme.typography.titleSmall)
+                        if (entry.detail.isNotBlank()) {
+                            Text(entry.detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         MemoStatusTag(
-                            label = task.status.name.replace('_', ' '),
-                            tone = when (task.status) {
-                                TaskStatus.NEEDS_REVIEW -> MemoStatusTone.WARNING
-                                TaskStatus.FAILED, TaskStatus.BLOCKED -> MemoStatusTone.ERROR
+                            label = entry.status.replace('_', ' '),
+                            tone = when (entry.status.uppercase()) {
+                                "COMPLETED", "SUCCEEDED", "CAPTURED" -> MemoStatusTone.SUCCESS
+                                "FAILED", "BLOCKED", "ERROR" -> MemoStatusTone.ERROR
+                                "NEEDS_REVIEW", "PENDING", "WAITING_FOR_USER", "WARN" -> MemoStatusTone.WARNING
                                 else -> MemoStatusTone.INFO
                             }
                         )
                     }
-                    if (task.status in setOf(TaskStatus.QUEUED, TaskStatus.NEEDS_REVIEW, TaskStatus.FAILED, TaskStatus.BLOCKED)) {
-                        OutlinedButton(onClick = { onResumeTask(task) }, modifier = Modifier.fillMaxWidth()) {
-                            Text(if (task.status == TaskStatus.NEEDS_REVIEW) "Inspect before resuming" else "Open task")
-                        }
-                    }
-                }
-            }
-        }
-        item {
-            MemoPanel {
-                MemoSectionHeading("Action decisions", supporting = "External actions stay blocked until you approve the exact proposal")
-                Spacer(Modifier.height(8.dp))
-                if (reviewActions.isEmpty()) {
-                    Text("No external action is waiting for a decision.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                } else {
-                    reviewActions.take(4).forEach { action -> ActionSummary(action, onOpenApprovals) }
-                    TextButton(onClick = onOpenApprovals) { Text("Open approval inbox") }
-                }
-            }
-        }
-        item { MemoSectionHeading("Recent activity", supporting = "Recorded events from this workspace") }
-        if (recentActivity.isEmpty()) {
-            item { EmptyState("No activity recorded yet", "Memo will record meaningful workflow, capture and review events here.") }
-        } else {
-            items(recentActivity, key = { it.id }) { event ->
-                MemoPanel {
-                    Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                        MemoStatusTag(
-                            label = event.level,
-                            tone = when (event.level) {
-                                "ERROR" -> MemoStatusTone.ERROR
-                                "WARN" -> MemoStatusTone.WARNING
-                                else -> MemoStatusTone.INFO
+                    if (entry.kind == LiveTimelineKind.JOB) {
+                        val job = jobsById[entry.relatedId]
+                        if (job?.sourceConversationId?.isNotBlank() == true) {
+                            TextButton(onClick = { onOpenTalk(job.sourceConversationId) }) {
+                                Text("Open originating conversation")
                             }
-                        )
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                            Text(event.message, style = MaterialTheme.typography.bodySmall)
-                            Text(formatLiveTime(event.at), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun ActionSummary(action: ActionApprovalRecord, onOpen: () -> Unit) {
-    Column(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-        Text(action.title, style = MaterialTheme.typography.titleSmall)
-        Text(action.destination, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
-        MemoStatusTag(
-            label = action.status.replace('_', ' '),
-            tone = when (action.status) {
-                "PENDING", "NEEDS_REVIEW" -> MemoStatusTone.WARNING
-                "FAILED", "BLOCKED" -> MemoStatusTone.ERROR
-                "COMPLETED", "SUCCEEDED" -> MemoStatusTone.SUCCESS
-                else -> MemoStatusTone.INFO
-            }
-        )
-        Text("${action.runtimeId} · ${action.capabilityId}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        TextButton(onClick = onOpen) { Text("Review exact action") }
     }
 }
 

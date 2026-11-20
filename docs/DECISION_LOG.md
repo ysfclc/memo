@@ -29,3 +29,43 @@ This log records material product and engineering decisions. Add dated entries; 
 - **Reason:** Memo is an execution agent over sensitive personal data and external accounts; reliability and user control are product features.
 - **Consequences:** Every work package includes dependencies, security/privacy, failure states, acceptance and rollback/recovery. Production deployment, signing and destructive data changes remain approval-gated.
 - **Status:** Active.
+
+## 2026-11-12 — ORCH-006: Runtime output receipts are not postcondition proof
+
+- **Decision:** A runtime output receipt must bind the exact workflow attempt, runtime/capability manifest, idempotency identity, timestamps, evidence ID and output hash. A receipt records only that output was returned and durably saved; it must retain an explicit `NOT_VERIFIED` postcondition state until an independent observer proves the task's declared condition.
+- **Reason:** Memo must distinguish a model response from an achieved outcome. A saved draft can be useful evidence without being treated as completion or permission to continue through consequential actions.
+- **Consequences:** The first local Work receipt is stored in existing evidence metadata and cross-checked against the per-node journal during workspace validation. Existing schema-7 records without receipt markers remain compatible. Browser/native adapters and independent postcondition observers remain separate follow-up work.
+- **Status:** Active.
+
+
+
+## 2026-11-15 — ORCH-007: shared runtime and postcondition contracts
+
+- **Decision:** Every runtime adapter receives an invocation bound to the saved TaskSpec, exact runtime/capabilities, compiled capability-manifest fingerprint, active attempt and idempotency identity. It returns typed candidate output only; it cannot persist workspace state, grant approvals or complete a checkpoint.
+- **Decision:** Workflow completion requires a separate registered, deterministic, read-only postcondition observer. Evidence must bind the exact attempt, TaskSpec fingerprint, declared postcondition, observer and separate persisted evidence record. Only `VERIFIED` can permit checkpoint completion; model/runtime success claims are not proof.
+- **Reason:** Memo's product contract requires observable outcomes, safe recovery and exact approval boundaries across local models, browser and Android runtimes.
+- **Consequences:** The shared contract and regression tests are implemented and passed exact-head CI #678. Concrete deterministic/browser/native adapters, cross-runtime budgets/cancellation and observer wiring remain open. The next increment is the deterministic app-runtime adapter.
+- **Scope authorization:** The user explicitly requested one coherent Memo increment at a time on 15 November. This supersedes the earlier feature freeze only for reversible development on the stabilization branch; it does not authorize merge, release, production deployment, signing identity changes or destructive migration.
+- **Status:** Active.
+
+
+## 2026-11-17 — PROD-001: Lock Memo's operating model and recovered automation requirements
+
+- **Decision:** Lock Memo as an Android-first personal AI operating agent with four connected surfaces: Talk, Live, Work and Studio. The operating model is local AI as coordinator/brain where supported, explicitly authorized browser and Android applications as interaction environments/hands, deterministic Memo code as the control plane, and the user as the authority for permissions and consequential actions.
+- **Decision:** Preserve the preferred frontier-AI route through the user's normal signed-in provider websites/apps where appropriate. Direct provider APIs remain optional, separately configured and explicitly disclosed; they are not an interchangeable or silent substitute for browser/app interaction.
+- **Decision:** Prompt feeding is a complete, inspectable lifecycle: original intent, retrieved context manifest, versioned enhancement, participant/runtime, exact approved payload and destination, captured raw response, editable working copy and separate synthesis. These objects must retain their own identity and provenance.
+- **Decision:** Workflows are dynamically composed from reusable, versioned capabilities. Workflow definitions, execution runs and standing automations are separate durable concepts. Browser and native Android automation use distinct runtime adapters under shared capability, policy, journal, recovery and postcondition contracts.
+- **Decision:** Preserve all recovered user feedback, including UWF-01 through UWF-08 and WF-01 through WF-13, along with the complete social operating-layer scope. This reorientation does not authorize scope reduction, merge to `main`, production release/deployment, signing identity changes or destructive data migration.
+- **Reason:** The user reported losing the product's overall direction. Review of the Product Contract, prompt/browser workflow audit, workflow recovery plan, feature audit and prior feedback showed that the intended product remains broader than the partial current implementation. The main gap is the incomplete connection from intention through orchestration and interface interaction to a captured, editable and verified outcome.
+- **Consequences:** `docs/MEMO_REORIENTATION_AND_FEEDBACK_BASELINE_2026-11-17.md` is the dated companion baseline for recovered feedback, product interpretation, current implementation reality, acceptance invariants and staged execution. It does not replace `docs/MEMO_PRODUCT_CONTRACT.md`, `docs/SOCIAL_PLATFORM_PRODUCT_SPEC.md`, `TASKS.md` or the Requirement Traceability Register. Future sessions must name the relevant feedback/requirement IDs, inspect exact source and evidence, and preserve all earlier requirements.
+- **Status:** Active / locked.
+
+## 2026-11-19 — PROD-002: Use cases cannot redefine Memo; preserve every user input
+
+- **User correction:** “But again, we are not building outbound. This is just a use case. Please keep track of whatever correction I add in memo. Permanent!”
+- **Decision:** Client finding is one illustrative acceptance scenario for Memo's general-purpose orchestration. Memo is not an outbound/cold-outreach product. Sales Operations material remains an optional domain scenario, not Memo's product definition or an automatic roadmap mandate.
+- **Decision:** Every material user correction, requirement, feedback item, bug report, idea and use-case boundary must be retained in append-only `docs/USER_INPUT_LEDGER.md` with original wording, classification, stable ID and trace links. Ideas remain uncommitted until the user adopts them. Bug reports remain active until evidence-backed closure or explicit user closure.
+- **Architecture clarification:** Smart routing and combined AI/deterministic execution are product goals. Router labels and decomposition are internal working vocabulary, not fixed module boundaries or independent agents unless the user approves that design.
+- **Reason:** Prevent assistant interpretations, examples, legacy code, optional domain specifications or historical blueprints from silently changing product identity, scope or priorities.
+- **Consequences:** `AGENTS.md`, `DEVELOPMENT_GOVERNANCE.md`, the Product Contract, TASKS, State Ledger, traceability register and source-verifier are aligned to one authority hierarchy and input-retention process.
+- **Status:** Active; latest user correction.

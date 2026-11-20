@@ -1,3 +1,96 @@
+# Latest exact-head Android-verified increment — 19 November 2026
+
+**STATUS: RUN #928 ATTEMPT 2 PASSED ON THE EXACT BRANCH HEAD; DEBUG APK BUILT, VERIFIED, API 35 IN-PLACE DATA PRESERVATION PASSED, AND ISOLATED PINNED SIGNING PASSED. PHYSICAL-DEVICE ACCEPTANCE REMAINS OPEN.**
+
+- Exact tested source commit: `7ad0eb0426f953a8946741c59247b081a258f94a` on `stabilization/usable-stage-2026-11-10`; PR #8 remains draft/open and unmerged; `main` is untouched.
+- GitHub Actions [run #928, attempt 2](https://github.com/ysfclc/memo/actions/runs/44596413135): all jobs succeeded. The earlier attempt 1 failed only while downloading/unzipping the Android 35 Google APIs emulator image; rerunning the failed job succeeded.
+- Source verification: PASS, including **434/434** static UI Text literals translated (532 scanned; URLs/placeholders excluded), 78 required integration files, durable-input/approval guards and encrypted-store migration invariants.
+- Remote-runner tests: PASS. Gradle: **BUILD SUCCESSFUL**. Core JVM tests: **188/188 passed**. Android unit tests: **44/44 passed**. Android lint: **0 errors, 42 warnings, 5 hints**. Debug APK and Android-test APK assembly: PASS.
+- API 35 install-over-existing acceptance: PASS. A lower-version baseline was upgraded in place; the signed APK preserved app-private data and both real encrypted Memo stores. Legacy recovery and corruption tests passed. No uninstall or clear-data operation was used.
+- APK identity: package `app.memo.android.debug`, versionCode `928`, versionName `4.0.0-memo-debug`.
+- Final installable artifact: [`Memo-Android-debug-APK`, artifact ID `14565824727`](https://github.com/ysfclc/memo/actions/runs/44596413135/artifacts/14565824727). The ZIP contains `Memo-Android-debug.apk`, identity report, source fingerprint and SHA-256 manifest.
+- APK SHA-256: `6323c78ad428d6e92bb58d7822c546e3031994e7d5bce7b09fee19a1cda72340`.
+- Artifact ZIP SHA-256: `749829d23c2c5e824903136263d0b975432083b8069e52d60a218f96ef34b6fe`.
+- Persistent signing certificate SHA-256: `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a` (matches the pinned existing Memo certificate).
+- Source fingerprint: `47f5a33c243cc6cf08eeea17369fa25daf6b02a236b7506cf95526891eb4942b`.
+- Build reports: [artifact ID `14566587233`](https://github.com/ysfclc/memo/actions/runs/44596413135/artifacts/14566587233).
+- APK size: 114,841,689 bytes (about 110 MiB); the bundled LiteRTLM native runtime libraries account for much of the size.
+- **Still pending:** physical-device in-place upgrade, visual/touch/navigation acceptance and real signed-in provider walkthrough on the user's existing phone. Do not claim phone acceptance; do not uninstall Memo or clear app data.
+- No merge, production release/deployment, signing identity change or destructive migration is authorized. PR #8 remains draft; `main` remains untouched.
+
+---
+
+# Latest exact-head Android-verified increment — 18 November 2026
+
+**STATUS: UIX-05 EXACT-HEAD CI #821 PASSED; API 35 IN-PLACE DATA-PRESERVATION AND ISOLATED PINNED APK SIGNING PASSED. PHYSICAL-DEVICE UX ACCEPTANCE REMAINS PENDING.**
+
+**19 November status note:** Later product-governance, documentation, legacy-router annotations and source-verifier changes have been committed after this tested source SHA. Run #821 below verifies only `028a5cda60ac0a4761fc23eb9f4537f879cbd6d0`; it does not verify the newer branch head. Consult `docs/STATE.md` for the exact current branch head and validation boundary. Do not treat this as a current-head build claim.
+
+- Exact tested source commit: `028a5cda60ac0a4761fc23eb9f4537f879cbd6d0` on `stabilization/usable-stage-2026-11-10`; PR #8 remains draft and unmerged; `main` is untouched.
+- GitHub Actions run **#821**, ID `44211136288`: [successful exact-source build and signing](https://github.com/ysfclc/memo/actions/runs/44211136288).
+- UIX-05 moves browser workflows, browser tasks and evidence into Work; Live remains the active browser/phone runtime and approval surface. Parent navigation, Android Back, primary selection and system-menu return context agree. Existing runtime/data handlers are reused.
+- Passed source verification, 432/432 static UI translation checks, remote-runner tests, **178 core tests**, **43 app unit tests**, Android lint (0 errors; 42 warnings and 5 hints), debug and Android-test APK assembly, package/version/signature verification.
+- API 35 in-place upgrade passed: lower-version baseline was upgraded with `adb install -r`; app-private data and both encrypted Memo stores reopened successfully; legacy recovery and corruption checks passed.
+- Final installable artifact: [`Memo-Android-debug-APK`, artifact ID `14387410285`](https://github.com/ysfclc/memo/actions/runs/44211136288/artifacts/14387410285). The archive contains `Memo-Android-debug.apk`, identity report and SHA-256 manifest.
+- APK identity: package `app.memo.android.debug`, versionCode `821`, versionName `4.0.0-memo-debug`.
+- APK SHA-256: `55c25716c5d7540e5bdf15b86183c78bd260bdc22b29d774832e1d45c0a02dfb`.
+- Artifact ZIP SHA-256: `3a21448731d10aae5fdbb3e2c16561f8185813c433ea110306f4e6d9e32a3ab2`.
+- Persistent signing certificate SHA-256: `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a` (matches the previously installable Memo certificate).
+- Source fingerprint: `47f5a33c243cc6cf08eeea17369fa25daf6b02a236b7506cf95526891eb4942b`.
+- Build reports: [artifact ID `14386322351`](https://github.com/ysfclc/memo/actions/runs/44211136288/artifacts/14386322351).
+- **Still pending:** physical-device visual, touch and Back-navigation acceptance on the user's existing phone. Do not claim phone acceptance; do not uninstall Memo or clear app data.
+- No merge, release, production deployment, signing identity change or destructive migration is authorized. PR #8 remains draft; `main` remains untouched.
+
+---
+
+# Current verified increment — 16 November 2026
+
+**STATUS: M3.8.A10 EXACT-HEAD CI PASSED. PHYSICAL-DEVICE ACCEPTANCE AND FINAL PINNED APK HANDOFF REMAIN PENDING.**
+
+- Exact tested source commit: `989ac28fb6b0da3e5fc66525b1f7b3aff36329df` on `stabilization/usable-stage-2026-11-10`; PR #8 remains draft/unmerged; `main` untouched.
+- GitHub Actions run **#767**, ID `43816799963`: [successful exact-head validation](https://github.com/ysfclc/memo/actions/runs/43816799963).
+- Passed: source checksum refresh and verifier; remote-runner tests; `:core:test`; `:app:testDebugUnitTest`; `:app:lintDebug`; `:app:assembleDebug`; `:app:assembleDebugAndroidTest`; APK package/version/signature checks.
+- API 35 emulator upgrade test passed: signed install-over-existing preserved app-private data and both real encrypted Memo stores; legacy recovery and corruption tests passed. No uninstall or clear-data step was used.
+- M3.8.A10 remains partial at product/device level: the deterministic app.entities/entity.propose path is implemented and automated gates pass, but physical-device Talk → Work review acceptance is not yet performed.
+- This was a pull-request validation event. Debug APK assembly and emulator checks passed, but pinned signing and final APK artifact handoff are intentionally skipped for PR events. Only the build-report artifact exists; no new signed installable APK is claimed.
+- No merge, release, production deployment, signing identity change or destructive migration is authorized. Do not uninstall Memo or clear app data.
+
+---
+
+# Current source increment — 16 November 2026
+
+**Status: SOURCE INTEGRATION COMMITTED; EXACT-HEAD CI PENDING. NO NEW APK OR DEVICE ACCEPTANCE CLAIMED.**
+
+- Increment: M3.8.A10, first deterministic Memo app-runtime capability for app.entities/entity.propose.
+- Talk outcome extraction now dispatches through the validated runtime request and durable checkpoint attempt. Exact source-message excerpts are required; records are saved as PROPOSED and remain subject to human review.
+- Runtime output is persisted with the existing content-bound receipt. A separate read-only Work observer checks persisted entities and source provenance before a separate WORKFLOW_VERIFICATION record can complete the checkpoint.
+- Regression tests cover the full adapter/observer path, missing source evidence, duplicate handling and missing persisted records. Static verifier guards the integration.
+- Source commit and exact-head Actions run are pending final repository synchronization. No APK artifact, checksum or signing result is attributed to this increment until a successful exact-head run is observed.
+- Physical-device update/product-flow acceptance remains pending. Do not uninstall Memo or clear app data. PR #8 remains draft/unmerged; main, signing identity and production deployment remain untouched.
+
+---
+
+# Current stabilization status — 15 November 2026
+
+**Status: EXACT-HEAD BUILD, TESTS, API 35 IN-PLACE UPGRADE AND PINNED APK SIGNING VERIFIED; PHYSICAL-DEVICE ACCEPTANCE PENDING.**
+
+- Exact tested source commit: `cef15adb9b6f7b4fd991ef7404e12f8b4bc9da34` on `stabilization/usable-stage-2026-11-10`; PR #8 remains draft and unmerged.
+- GitHub Actions run **#678**, ID `43666486553`: [successful exact-head build](https://github.com/ysfclc/memo/actions/runs/43666486553).
+- Passed: source invariants/checksum verification, remote-runner tests, `:core:test`, `:app:testDebugUnitTest`, `:app:lintDebug`, `:app:assembleDebug`, `:app:assembleDebugAndroidTest`, APK identity/signature checks, API 35 encrypted-store in-place upgrade instrumentation and isolated pinned signing.
+- Build identity: package `app.memo.android.debug`, versionCode `678`, versionName `4.0.0-memo-debug`.
+- Final artifact: [`Memo-Android-debug-APK`, artifact ID `14143185526`](https://github.com/ysfclc/memo/actions/runs/43666486553/artifacts/14143185526).
+- APK SHA-256: `026a9be7743e1e91cbc3b7807bed19504db6ea93b3d9249c91046ea15100f469`.
+- Artifact ZIP SHA-256: `cbc98602361f95d7383c2f7ccf6bdf92c62347c1fa1ce32435b96e9693ea8e6e`.
+- Pinned signing certificate SHA-256: `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a`.
+- API 35 upgrade test passed: baseline encrypted workspace/native stores were seeded, the new APK installed with `adb install -r`, both stores reopened, and legacy recovery/corruption checks passed. No uninstall or clear-data step was used.
+- **Still pending:** physical-device update and product-flow acceptance on the user's existing phone. The user installed the earlier #674 APK but has not checked it. Do not claim phone acceptance; do not uninstall Memo or clear app data.
+- This is a core runtime-contract increment, not a user-visible workflow feature. Concrete runtime adapters and postcondition observers remain next work.
+- No merge, release, production deployment, signing-key change or destructive data migration is authorized. PR #8 and `main` remain untouched.
+
+---
+
+---
+
 # Verified APK evidence — 8 November 2026
 
 - **Workflow:** [Memo Android build #223](https://github.com/ysfclc/memo/actions/runs/42530596381), run ID `42530596381`, completed successfully.
@@ -194,3 +287,31 @@ The action inbox and first top-level stop control are present in source. Static/
 - Required source, runner, JVM, lint and APK identity gates: PASS
 - Signing mode: pinned persistent upload keystore
 - Workflow run: https://github.com/ysfclc/memo/actions/runs/42530596381
+
+
+## Verified source build — 2026-11-17 (run #802)
+
+- Exact source commit: `090a2de99dacbc65cfcc0351be9333bbf00aa182` on `stabilization/usable-stage-2026-11-10`.
+- GitHub Actions: [run #802](https://github.com/ysfclc/memo/actions/runs/44016406556) — **success**.
+- Source verifier and localization coverage: PASS.
+- Remote-runner tests: PASS.
+- `:core:test`, `:app:testDebugUnitTest`, `:app:lintDebug`, `:app:assembleDebug` and Android-test APK assembly: PASS.
+- APK package/version/identity checks: PASS.
+- API 35 install-over-existing upgrade: PASS; app-private sentinel, both encrypted stores, legacy recovery and corruption tests passed.
+- Isolated pinned signing job: PASS; persistent certificate SHA-256 `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a`.
+- Signed APK: package `app.memo.android.debug`, versionCode `802`, versionName `4.0.0-memo-debug`; artifact [Memo-Android-debug-APK #14298479094](https://github.com/ysfclc/memo/actions/runs/44016406556/artifacts/14298479094).
+- APK SHA-256: `69345f8b680feb0b7cbb59d83161561693e3f1d3f079fe1d52c288c82b224db3`.
+- This is automated/emulator/signing acceptance only. Physical-device and real provider-session acceptance remain pending.
+
+
+## 19 November 2026 — exact branch-head verification follow-up (run #929)
+
+- **Exact tested branch head:** `f62540cda08dc658309de16e037619201707f43a` on `stabilization/usable-stage-2026-11-10`; this is a documentation/handoff commit whose parent source commit is `7ad0eb0426f953a8946741c59247b081a258f94a`.
+- **GitHub Actions:** [run #929](https://github.com/ysfclc/memo/actions/runs/44599220097) completed successfully on that exact branch head. The repository-source verification/build job and isolated pinned-signing job both succeeded; the source-import-only commit job was correctly skipped.
+- **Checks:** source verifier PASS (434/434 static UI Text literals translated); remote-runner tests PASS; core JVM tests 188/188; Android app unit tests 44/44; lint 0 errors (42 warnings, 5 hints); debug and Android-test APK assembly PASS; APK identity/signature PASS.
+- **Upgrade safety:** API 35 signed install-over-existing instrumentation PASS. App-private data and both encrypted Memo stores were preserved; legacy recovery and corruption checks passed. No uninstall or clear-data operation was used.
+- **Signed artifact:** [artifact 14567058852](https://github.com/ysfclc/memo/actions/runs/44599220097/artifacts/14567058852); package `app.memo.android.debug`, versionCode `929`, versionName `4.0.0-memo-debug`; APK SHA-256 `9b60929f720ad8fade98dd23c03441dd0199b5c377994883d9cbe66e60635264`; artifact ZIP SHA-256 `8c166e2aae7576a5ee969fae5c7f3295c48aeb2a5a992bf5b411e827f20e77ad`.
+- **Signing:** pinned persistent certificate SHA-256 remains `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a`; the isolated signer passed.
+- **Build reports:** [artifact 14566969581](https://github.com/ysfclc/memo/actions/runs/44599220097/artifacts/14566969581).
+- **Acceptance boundary:** this is automated CI/emulator/signing evidence, not physical-device or real-provider acceptance. STAB-05, WF-05, WF-12 and the physical portion of WF-13 remain open. Do not uninstall Memo or clear app data.
+- **Repository boundary:** PR #8 remains draft/open and unmerged; `main` remains untouched. No production release, merge, signing change or destructive migration is authorized.

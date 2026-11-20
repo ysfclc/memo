@@ -1,12 +1,19 @@
 package app.memo.android.orchestration
 
 import app.memo.android.runtime.RuntimeDescriptor
-import app.memo.android.runtime.RuntimeKind
 import java.security.MessageDigest
 
 /**
- * Compiles an intent plan into a deterministic, inspectable capability manifest.
- * It only selects registered capabilities; it never grants permissions or executes actions.
+ * Compiles a typed proposal into an inspectable capability manifest.
+ *
+ * LEGACY / PROTOTYPE NOTE: the domain-to-route table for [IntentPlan] is a compatibility
+ * mechanism, not Memo's canonical smart-router architecture or a complete capability router.
+ * Do not grow static per-domain keyword routes into the product's general orchestration model.
+ * Exact registered-runtime resolution in [compileForTasks] is a deterministic validation
+ * boundary; it does not itself classify arbitrary user intent or choose the final strategy.
+ * Changes must preserve the general-purpose product contract and all user-input ledger entries.
+ *
+ * This class only selects registered capabilities; it never grants permissions or executes actions.
  */
 data class CompiledCapability(
     val runtimeId: String,
@@ -32,16 +39,42 @@ data class CapabilityManifest(
 }
 
 object CapabilityCompiler {
-    private val common = listOf("job.create", "job.update_step", "job.verify", "entity.propose")
+    private val common = listOf(
+        "app.jobs" to "job.create",
+        "app.jobs" to "job.update_step",
+        "app.jobs" to "job.verify",
+        "app.entities" to "entity.propose"
+    )
     private val routes = mapOf(
-        IntentDomain.GENERAL to common + listOf("chat.create", "chat.append_message", "model.list", "model.generate"),
-        IntentDomain.RESEARCH to common + listOf("browser.navigate_https", "browser.inspect_page", "browser.capture_evidence", "model.generate"),
-        IntentDomain.BUILD to common + listOf("model.list", "model.generate", "browser.navigate_https", "browser.inspect_page"),
-        IntentDomain.CAREER to common + listOf("chat.create", "chat.append_message", "model.generate"),
-        IntentDomain.CONTENT to common + listOf("chat.create", "chat.append_message", "model.generate"),
-        IntentDomain.CRM to common + listOf("entity.create", "entity.link", "entity.propose", "chat.append_message"),
-        IntentDomain.CAPTURE to common + listOf("chat.create", "chat.append_message", "entity.propose"),
-        IntentDomain.AUTOMATION to common + listOf("android.launch_app", "android.observe_visible_labels", "android.verify_visible_text")
+        IntentDomain.GENERAL to common + listOf(
+            "app.chats" to "chat.create", "app.chats" to "chat.append_message",
+            "app.models" to "model.list", "app.models" to "model.generate"
+        ),
+        IntentDomain.RESEARCH to common + listOf(
+            "runtime.browser" to "browser.navigate_https", "runtime.browser" to "browser.inspect_page",
+            "runtime.browser" to "browser.capture_evidence", "app.models" to "model.generate"
+        ),
+        IntentDomain.BUILD to common + listOf(
+            "app.models" to "model.list", "app.models" to "model.generate",
+            "runtime.browser" to "browser.navigate_https", "runtime.browser" to "browser.inspect_page"
+        ),
+        IntentDomain.CAREER to common + listOf(
+            "app.chats" to "chat.create", "app.chats" to "chat.append_message", "app.models" to "model.generate"
+        ),
+        IntentDomain.CONTENT to common + listOf(
+            "app.chats" to "chat.create", "app.chats" to "chat.append_message", "app.models" to "model.generate"
+        ),
+        IntentDomain.CRM to common + listOf(
+            "app.entities" to "entity.create", "app.entities" to "entity.link", "app.chats" to "chat.append_message"
+        ),
+        IntentDomain.CAPTURE to common + listOf(
+            "app.chats" to "chat.create", "app.chats" to "chat.append_message"
+        ),
+        IntentDomain.AUTOMATION to common + listOf(
+            "runtime.android.accessibility" to "android.launch_app",
+            "runtime.android.accessibility" to "android.observe_visible_labels",
+            "runtime.android.accessibility" to "android.verify_visible_text"
+        )
     )
 
     /**
@@ -116,27 +149,41 @@ object CapabilityCompiler {
         registeredRuntimes: List<RuntimeDescriptor>,
         sourceIntent: String = plan.goal
     ): CapabilityManifest {
-        val byId = registeredRuntimes.flatMap { runtime ->
-            runtime.capabilities.map { capability -> Triple(runtime, capability, capability.id) }
-        }.associateBy { it.third }
+        require(registeredRuntimes.map { it.id }.distinct().size == registeredRuntimes.size) {
+            "The runtime registry contains duplicate runtime IDs."
+        }
+        registeredRuntimes.forEach { runtime ->
+            require(runtime.capabilities.map { it.id }.distinct().size == runtime.capabilities.size) {
+                "Runtime '${runtime.id}' contains duplicate capability IDs."
+            }
+        }
+        val runtimes = registeredRuntimes.associateBy { it.id }
         val desired = routes[plan.domain].orEmpty().distinct().toMutableList()
         if (plan.requiresExternalApproval) {
             // This is deliberately only a proposal/approval capability. It does not execute the write.
-            desired += if (plan.domain == IntentDomain.AUTOMATION) "android.tap_exact_text" else "browser.prepare_prompt"
+            desired += if (plan.domain == IntentDomain.AUTOMATION) {
+                "runtime.android.accessibility" to "android.tap_exact_text"
+            } else {
+                "runtime.browser" to "browser.submit_prompt"
+            }
         }
-        val chosen = desired.distinct().mapNotNull { id ->
-            val (runtime, capability) = byId[id]?.let { it.first to it.second } ?: return@mapNotNull null
+        val chosen = desired.mapNotNull { (runtimeId, id) ->
+            val runtime = runtimes[runtimeId] ?: return@mapNotNull null
+            val capability = runtime.capabilities.firstOrNull { it.id == id } ?: return@mapNotNull null
             CompiledCapability(
                 runtimeId = runtime.id,
                 runtimeName = runtime.name,
                 capabilityId = capability.id,
                 label = capability.label,
-                requiresUserApproval = capability.requiresUserApproval || id in setOf("browser.prepare_prompt", "android.tap_exact_text"),
+                requiresUserApproval = capability.requiresUserApproval ||
+                    (runtimeId to id) in setOf("runtime.browser" to "browser.submit_prompt", "runtime.android.accessibility" to "android.tap_exact_text"),
                 externalSideEffect = capability.externalSideEffect,
                 runtimeStatus = runtime.status
             )
         }.sortedWith(compareBy<CompiledCapability> { it.runtimeId }.thenBy { it.capabilityId })
-        val requiredMissing = desired.distinct().filterNot(byId::containsKey).sorted()
+        val requiredMissing = desired.filterNot { (runtimeId, id) ->
+            runtimes[runtimeId]?.capabilities?.any { it.id == id } == true
+        }.map { (runtimeId, id) -> "$runtimeId:$id" }.sorted()
         val approval = plan.requiresExternalApproval || chosen.any { it.requiresUserApproval }
         val sourceHash = sha256(sourceIntent.trim())
         val manifestPayload = buildString {

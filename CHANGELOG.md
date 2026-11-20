@@ -1,4 +1,70 @@
 # Changelog
+## 18 November 2026 — Work / Live boundary and signed APK
+
+- Work now exposes browser workflows, browser tasks and saved evidence as execution tools. Live retains the active browser session, phone apps and external-action approvals.
+- Browser session routes return to Live; workflows, browser tasks and evidence return to Work. Android Back, visible parent context, primary-tab selection and Models/Settings return context follow the same ownership rule.
+- New route headings and shared page/section headers use the language-aware text wrapper; English, Polish and Turkish regression coverage was added.
+- Exact-head GitHub Actions #821 passed source verification, remote-runner tests, 178 core tests, 43 app tests, lint (0 errors), debug APK assembly, APK identity verification and API 35 encrypted-store in-place upgrade acceptance.
+- The final APK was signed in the isolated signing job with the persistent Memo certificate; package `app.memo.android.debug`, versionCode `821`. Artifact ID `14387410285`.
+- Physical-device visual/touch/Back acceptance remains pending. PR #8 stays draft/unmerged; main, runtime data formats and signing identity remain unchanged.
+
+## 17 November 2026 — shared runtime dispatcher
+
+- Added a shared dispatcher over the existing manifest-bound runtime request and durable attempt.
+- Routed the deterministic app.entities/entity.propose capability through the dispatcher rather than invoking its adapter inline.
+- Enforced the remaining original attempt deadline in the Android host and rechecked cancellation/deadline plus candidate-output validity at the shared boundary.
+- Added regression coverage for exact adapter selection, expired attempts, post-execution cancellation and invalid output.
+- CI and signed APK validation pending; no generic DAG/browser/native executor or physical-device acceptance is claimed.
+
+## 16 November 2026 — deterministic Talk outcome proposals
+
+- Exact-head CI #767 passed source verification, remote-runner, core/app unit tests, lint, debug/Android-test APK assembly and APK identity/signature checks.
+- API 35 install-over-existing emulator acceptance passed: app-private data and both encrypted Memo stores survived; legacy recovery and corruption tests passed.
+- The exact validated proposal input is now persisted as encrypted WORKFLOW_INPUT evidence with job/step/source/hash binding and fail-closed restoration tests.
+- Physical-device Talk → Work acceptance remains pending. PR validation intentionally skipped pinned signing and final APK artifact handoff; no new signed APK is claimed.
+
+
+- Connected Talk's existing outcome extraction to the first deterministic Memo app-runtime capability, app.entities/entity.propose.
+- Candidate excerpts must match an individual original conversation message. Persisted records retain source conversation, message, extraction job and excerpt provenance.
+- Work proposals stay PROPOSED for explicit human review. A separate read-only postcondition observer verifies persisted records before the workflow checkpoint is completed.
+- Added regression tests and source-verifier guards for exact-runtime execution, source-evidence rejection, duplicate handling and missing-record verification.
+- Exact-head CI is pending; no new APK or physical-device acceptance is claimed.
+
+
+## 12 November 2026 — stabilization branch signed-build path
+
+- Enabled a source-only push build for stabilization/usable-stage-2026-11-10 using the existing GitHub Actions Android build and API 35 emulator acceptance pipeline.
+- The stabilization build now reaches the existing isolated signing job, which requires all four persistent Memo signing secrets and verifies the pinned certificate. No ephemeral-key fallback is accepted by that signer.
+- Kept the permanent import-note/status step and repository write-back job restricted to main; the stabilization build can publish its APK artifact without modifying main.
+- The workflow change is committed but has not passed a runner yet. The latest GitHub Actions run before this change failed before runner assignment; Vercel's 100/day deployment API quota is exhausted. No clean APK is claimed.
+
+## 12 November 2026 — Android build-gate and localization corrections
+
+- Ran the existing Vercel Android build path far enough to install checksum-verified JDK 17 and Android SDK 35 and execute the repository source verifier.
+- Corrected stale verifier assertions to follow the actual pure-core Work review coordinator, current Talk composer handoff and existing workflow-checkpoint regression test names.
+- Added Polish and Turkish translations for local Work retry-limit, regenerate-draft, active-generation, Stop-generation and partial-output safety states, with a focused localization regression test.
+- The static UI translation scan passed 421/421 strings on the build that included the translation changes. The latest verifier correction is committed at 3e11e4e, but has not yet been executed on the exact branch head.
+- Build remains blocked before Gradle: GitHub Actions jobs still fail before runner assignment, and Vercel deployment creation is rate-limited by the Hobby free daily API quota (HTTP 402, 100 deployments/day). No clean APK or Gradle/lint/signature result is claimed.
+
+## 12 November 2026 — CI preflight retry investigation
+
+- Inspected the source-only pull-request branch in `.github/workflows/build-apk.yml`; PR #8 targets `main` as required.
+- Re-ran the exact-head preflight job (run #525, attempt 2). Both attempts failed before any job steps or runner assignment; GitHub returned no job log (`BlobNotFound`), and all build/test/sign jobs were skipped.
+- No application or workflow code was changed in response because the workflow script did not execute. Android tests, lint and APK build remain unverified pending a functioning runner.
+
+## 12 November 2026 — Local inference timeout regression coverage
+
+- Corrected the timeout policy test to use the required duration-bearing exception constructor.
+- Added coroutine behavior coverage for deadline-to-error mapping, cancellation of in-flight work, successful completion and the distinction between parent/user cancellation and timeout.
+- These tests are committed but have not run yet; the active PR's GitHub Actions preflight has repeatedly failed before runner assignment. No Gradle or Android build result is claimed.
+
+## 12 November 2026 — Durable workflow attempt history
+
+- Added a schema-7 per-checkpoint execution journal bound to the saved job, step, runtime, capability manifest and stable idempotency identity. Schema 1–6 backups remain importable.
+- Local-model output, failure and process interruption are distinct persisted attempt states. Evidence is bound to the exact checkpoint and human-review requirement; user-reported outcomes are stored separately from runtime output.
+- Live now includes attempt events without copying model prompts or responses. Work checkpoint cards show the latest attempt number/status/runtime, let users generate another local draft while retaining earlier evidence, and stop offering retries after four attempts.
+- Manual retry is bounded; interrupted attempts are never automatically replayed. Browser/native/external actions remain outside the local-model dispatch path.
+- Regression tests cover attempt lifecycle, exact evidence binding, retry limits, recovery, schema migration and Live projection. Gradle/JVM tests, lint, APK and device acceptance remain unverified because GitHub Actions fails before runner steps.
 
 ## 8 November 2026 — Typed workflow proposal foundation
 
@@ -121,3 +187,16 @@ Retained from the integrated source branch: visible browser-based frontier consu
 
 - Notification delivery now checks Android 13+ `POST_NOTIFICATIONS` runtime permission immediately before posting and safely ignores a permission-revocation race. The existing user-initiated permission request flow remains unchanged.
 - This repairs the sole blocking lint error reported by CI run #74; the non-blocking warning/hint backlog remains open pending separate review.
+
+
+## 2026-11-12 — Local inference safety
+
+- Added a 180-second local inference deadline and a distinct timeout failure, with cancellation propagated to the LiteRT conversation. Partial output is not promoted to a completed response. Full Android verification and device cancellation timing remain pending.
+
+- Work now exposes a visible Stop generation control during active local checkpoint generation, with partial output retained only in the live surface and no false completed-artifact save.
+
+## 17 November 2026 — UI navigation clarity
+
+- Simplified the navigation model without removing product capabilities: Talk / Live / Work / Studio remain primary; Council and runtime tools now show their parent surface; Models and Settings live in the header menu.
+- Added a compact Live action row and made the emergency Stop affordance appear only when Memo reports active work.
+- Kept package identity, signing and encrypted storage paths unchanged.

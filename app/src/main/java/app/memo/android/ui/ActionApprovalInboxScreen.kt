@@ -167,7 +167,7 @@ private fun ActionApprovalCard(
             Text(if (expanded) "Exact content" else action.payload.take(260) + if (action.payload.length > 260) "…" else "", style = MaterialTheme.typography.bodySmall, maxLines = if (expanded) Int.MAX_VALUE else 5, overflow = TextOverflow.Ellipsis)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = onToggle) { Text(if (expanded) "Show less" else "Inspect payload and audit") }
-                if (liveApproval) Button(onClick = onOpenBrowser) { Text("Open live approval") }
+                if (liveApproval) Button(onClick = onOpenBrowser) { Text("Review prompt & approve") }
             }
             if (expanded) {
                 SelectionContainer {

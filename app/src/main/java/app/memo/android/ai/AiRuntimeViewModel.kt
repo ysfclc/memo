@@ -553,6 +553,8 @@ class AiRuntimeViewModel(application: Application) : AndroidViewModel(applicatio
         selectedModelId: String,
         allowRemote: Boolean,
         onProgress: (String) -> Unit = {},
+        showPartialOutput: Boolean = true,
+        progressLabel: String? = null,
         onComplete: (String?, String?) -> Unit
     ) {
         if (_uiState.value.running) { onComplete(null, "Another model operation is already running."); return }
@@ -569,7 +571,8 @@ class AiRuntimeViewModel(application: Application) : AndroidViewModel(applicatio
         if (!remote && local == null) { onComplete(null, "The selected local model is no longer installed. Refresh Models and choose an available model."); return }
 
         councilJob = viewModelScope.launch {
-            _uiState.update { it.copy(running = true, liveResponse = "", stage = if (remote) "Opening streaming connection to configured remote model" else "Generating on device · ${local!!.name}", lastError = null) }
+            val stageLabel = progressLabel?.trim()?.take(100)?.takeIf { it.isNotBlank() }
+            _uiState.update { it.copy(running = true, liveResponse = "", stage = stageLabel ?: if (remote) "Opening streaming connection to configured remote model" else "Generating on device · ${local!!.name}", lastError = null) }
             try {
                 fun reportPartial(chunk: String) {
                     if (_uiState.value.stage == "Cancellation requested") {
@@ -578,22 +581,27 @@ class AiRuntimeViewModel(application: Application) : AndroidViewModel(applicatio
                     if (chunk.isBlank()) return
                     val current = _uiState.value.liveResponse
                     val updated = (current + chunk).take(24_000)
-                    _uiState.update { it.copy(liveResponse = updated, stage = if (remote) "Receiving streamed response" else "Generating on device · ${local!!.name}") }
-                    onProgress(updated)
+                    _uiState.update { state ->
+                        state.copy(
+                            liveResponse = if (showPartialOutput) updated else "",
+                            stage = stageLabel ?: if (remote) "Receiving streamed response" else "Generating on device · ${local!!.name}"
+                        )
+                    }
+                    if (showPartialOutput) onProgress(updated)
                 }
                 val response = if (remote) {
                     withContext(Dispatchers.IO) { remoteClient.completeStreaming(providerConfig, system, prompt, ::reportPartial) }
                 } else {
                     localRunner.generate(checkNotNull(local).file, system, prompt, ::reportPartial)
                 }
-                _uiState.update { it.copy(running = false, stage = "Ready", liveResponse = response.take(24_000), lastError = null) }
+                _uiState.update { it.copy(running = false, stage = "Ready", liveResponse = if (showPartialOutput) response.take(24_000) else "", lastError = null) }
                 onComplete(response.take(24_000), null)
             } catch (cancelled: CancellationException) {
-                _uiState.update { it.copy(running = false, stage = "Request cancelled · partial output retained", lastError = null) }
+                _uiState.update { it.copy(running = false, stage = "Request cancelled · partial output retained", liveResponse = if (showPartialOutput) it.liveResponse else "", lastError = null) }
                 onComplete(null, "Request cancelled.")
             } catch (error: Throwable) {
                 val message = safeMessage(error)
-                _uiState.update { it.copy(running = false, stage = "Request failed", lastError = message) }
+                _uiState.update { it.copy(running = false, stage = "Request failed", liveResponse = if (showPartialOutput) it.liveResponse else "", lastError = message) }
                 onComplete(null, message)
             }
         }

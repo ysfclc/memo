@@ -32,7 +32,53 @@ enum class BrowserWorkflowMode(val label: String, val description: String) {
 
 enum class BrowserWorkflowStatus {
     IDLE, NAVIGATING, PREPARING_PROMPT, SENDING_PROMPT, WAITING_FOR_RESPONSE,
-    WAITING_FOR_USER, COMPLETED, FAILED, CANCELLED
+    SAVING_RESPONSE, WAITING_FOR_USER, COMPLETED, FAILED, CANCELLED
+}
+
+object BrowserWorkflowRecoveryPolicy {
+    const val MIN_MANUAL_RESPONSE_LENGTH = 8
+    const val MAX_PROVIDER_PROMPT_LENGTH = 7_900
+
+    fun canEditPreparedPrompt(
+        status: BrowserWorkflowStatus,
+        sentForCurrentStep: Boolean,
+        submissionUncertain: Boolean,
+        prompt: String
+    ): Boolean = status == BrowserWorkflowStatus.WAITING_FOR_USER &&
+        !sentForCurrentStep &&
+        !submissionUncertain &&
+        prompt.trim().isNotEmpty() &&
+        prompt.trim().length <= MAX_PROVIDER_PROMPT_LENGTH
+
+    fun canCaptureManually(
+        status: BrowserWorkflowStatus,
+        sentForCurrentStep: Boolean,
+        providerPageMatches: Boolean,
+        responseText: String
+    ): Boolean = status == BrowserWorkflowStatus.WAITING_FOR_USER &&
+        sentForCurrentStep &&
+        providerPageMatches &&
+        responseText.trim().length >= MIN_MANUAL_RESPONSE_LENGTH
+
+    fun canRetryResponseDetection(
+        status: BrowserWorkflowStatus,
+        sentForCurrentStep: Boolean
+    ): Boolean = status == BrowserWorkflowStatus.WAITING_FOR_USER && sentForCurrentStep
+
+    fun canSkipProvider(
+        status: BrowserWorkflowStatus,
+        sentForCurrentStep: Boolean,
+        submissionUncertain: Boolean
+    ): Boolean = status == BrowserWorkflowStatus.WAITING_FOR_USER &&
+        !sentForCurrentStep && !submissionUncertain
+
+    fun canStopCurrentProviderStep(
+        status: BrowserWorkflowStatus,
+        awaitingPromptApproval: Boolean,
+        sentForCurrentStep: Boolean,
+        submissionUncertain: Boolean
+    ): Boolean = status in setOf(BrowserWorkflowStatus.WAITING_FOR_USER, BrowserWorkflowStatus.WAITING_FOR_RESPONSE) &&
+        !awaitingPromptApproval && (sentForCurrentStep || submissionUncertain)
 }
 
 data class BrowserModelResponse(
@@ -42,7 +88,8 @@ data class BrowserModelResponse(
     val response: String,
     val sourceUrl: String,
     val startedAt: Long,
-    val completedAt: Long = nowMillis()
+    val completedAt: Long = nowMillis(),
+    val captureMethod: String = "AUTOMATIC_DOM"
 )
 
 data class BrowserWorkflowUiState(
@@ -59,6 +106,9 @@ data class BrowserWorkflowUiState(
     val approvalDestination: String = "",
     val awaitingPromptApproval: Boolean = false,
     val responses: List<BrowserModelResponse> = emptyList(),
+    val skippedProviderIds: List<String> = emptyList(),
+    val stoppedProviderIds: List<String> = emptyList(),
+    val submissionUncertain: Boolean = false,
     val startedAt: Long = 0L,
     val sentForCurrentStep: Boolean = false
 ) {
@@ -67,14 +117,20 @@ data class BrowserWorkflowUiState(
         BrowserWorkflowStatus.PREPARING_PROMPT,
         BrowserWorkflowStatus.SENDING_PROMPT,
         BrowserWorkflowStatus.WAITING_FOR_RESPONSE,
+        BrowserWorkflowStatus.SAVING_RESPONSE,
         BrowserWorkflowStatus.WAITING_FOR_USER
     )
 }
 
 class BrowserWorkflowCallbacks(
     val onApprovalRequired: (index: Int, provider: BrowserModelProvider, prompt: String, destination: String, contentHash: String) -> Unit = { _, _, _, _, _ -> },
+    /** Must reject the still-pending old payload before a revised prompt can be proposed. */
+    val onApprovalSuperseded: (oldContentHash: String, destination: String) -> Boolean = { _, _ -> false },
     val onStepStarted: (index: Int, provider: BrowserModelProvider, prompt: String) -> Unit = { _, _, _ -> },
-    val onStepCompleted: (index: Int, response: BrowserModelResponse) -> Unit = { _, _ -> },
+    val onStepCompleted: (index: Int, response: BrowserModelResponse, complete: (persisted: Boolean, message: String) -> Unit) -> Unit =
+        { _, _, complete -> complete(false, "No durable response-capture handler is connected.") },
+    val onStepSkipped: (index: Int, provider: BrowserModelProvider, reason: String) -> Unit = { _, _, _ -> },
+    val onStepStopped: (index: Int, provider: BrowserModelProvider, reason: String) -> Unit = { _, _, _ -> },
     val onStateChanged: (BrowserWorkflowUiState) -> Unit = {},
     val onFinished: (BrowserWorkflowUiState) -> Unit = {}
 )

@@ -4,6 +4,7 @@ name: Memo — Import source ZIP and build Android APK
   push:
     branches:
       - main
+      - stabilization/usable-stage-2026-11-10
     paths:
       - '.circleci/**'
       - 'incoming/memo.zip'
@@ -12,6 +13,10 @@ name: Memo — Import source ZIP and build Android APK
       - 'core/**'
       - 'gradle/**'
       - 'tools/**'
+      - 'AGENTS.md'
+      - 'DEVELOPMENT_GOVERNANCE.md'
+      - 'IMPLEMENTATION_CONTRACT.md'
+      - 'IMPLEMENTATION_LOG.md'
       - 'MEMO2_ALIGNMENT_MATRIX.md'
       - 'PRODUCT_GAP_REGISTRY.md'
       - 'FEATURE_AUDIT.md'
@@ -26,16 +31,25 @@ name: Memo — Import source ZIP and build Android APK
       - 'settings.gradle'
       - 'settings.gradle.kts'
   pull_request:
+    types:
+      - opened
+      - reopened
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      build_current_source:
+        description: "Build this branch's committed source directly (no ZIP); run isolated pinned signing after all tests pass."
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 concurrency:
-  group: memo-source-import-${{ github.ref }}
-  cancel-in-progress: false
+  group: memo-source-import-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   preflight:
@@ -57,6 +71,8 @@ jobs:
       - name: Resolve the upload commit and enforce the single-ZIP contract
         id: resolve
         shell: bash
+        env:
+          MEMO_BUILD_CURRENT_SOURCE: ${{ inputs.build_current_source }}
         run: |
           set -euo pipefail
           if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
@@ -75,13 +91,29 @@ jobs:
             echo 'Pull-request source validation: no import, signing or repository write will run.'
             exit 0
           fi
-          if [[ "$GITHUB_REF_TYPE" != "branch" || "$GITHUB_REF_NAME" != "main" ]]; then
-            echo "::error::Memo source imports are restricted to main. Current ref: $GITHUB_REF"
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" && "$MEMO_BUILD_CURRENT_SOURCE" == "true" ]]; then
+            if [[ "$GITHUB_REF_TYPE" != "branch" || "$GITHUB_REF_NAME" != "stabilization/usable-stage-2026-11-10" ]]; then
+              echo "::error::Manual source signing is restricted to stabilization/usable-stage-2026-11-10. Current ref: $GITHUB_REF"
+              exit 1
+            fi
+            ARCHIVE_SHA="$(git archive "$GITHUB_SHA" | sha256sum | awk '{print $1}')"
+            {
+              echo 'skip_no_upload=false'
+              echo 'already_imported=false'
+              echo "upload_commit=$GITHUB_SHA"
+              echo "archive_sha=$ARCHIVE_SHA"
+              echo 'source_only=true'
+            } >> "$GITHUB_OUTPUT"
+            echo 'Explicit manual source build requested; the exact branch commit will be tested and signed in the isolated signing job.'
+            exit 0
+          fi
+          if [[ "$GITHUB_REF_TYPE" != "branch" || ( "$GITHUB_REF_NAME" != "main" && "$GITHUB_REF_NAME" != "stabilization/usable-stage-2026-11-10" ) ]]; then
+            echo "::error::Memo source builds are restricted to main or the stabilization branch. Current ref: $GITHUB_REF"
             exit 1
           fi
 
           CHANGED_FILES="$(git diff --name-only "$GITHUB_SHA^1" "$GITHUB_SHA" 2>/dev/null || git diff-tree --root --no-commit-id --name-only -r "$GITHUB_SHA")"
-          DIRECT_SOURCE_CHANGE="$(printf '%s\n' "$CHANGED_FILES" | grep -Ec '^(.circleci/|.github/workflows/build-apk.yml|app/|core/|gradle/|tools/|docs/|README[.]md$|TASKS[.]md$|ROADMAP[.]md$|FEATURE_AUDIT[.]md$|PRODUCT_GAP_REGISTRY[.]md$|MEMO2_ALIGNMENT_MATRIX[.]md$|CHANGELOG[.]md$|.*[.]gradle([.]kts)?$|gradle[.]properties$|settings[.]gradle([.]kts)?$)' || true)"
+          DIRECT_SOURCE_CHANGE="$(printf '%s\n' "$CHANGED_FILES" | grep -Ec '^(.circleci/|.github/workflows/build-apk.yml|app/|core/|gradle/|tools/|AGENTS[.]md$|DEVELOPMENT_GOVERNANCE[.]md$|IMPLEMENTATION_CONTRACT[.]md$|IMPLEMENTATION_LOG[.]md$|docs/|README[.]md$|TASKS[.]md$|ROADMAP[.]md$|FEATURE_AUDIT[.]md$|PRODUCT_GAP_REGISTRY[.]md$|MEMO2_ALIGNMENT_MATRIX[.]md$|CHANGELOG[.]md$|.*[.]gradle([.]kts)?$|gradle[.]properties$|settings[.]gradle([.]kts)?$)' || true)"
           INCOMING_ARCHIVE_CHANGE="$(printf '%s\n' "$CHANGED_FILES" | grep -Ec '^incoming/memo[.]zip$' || true)"
           mapfile -t PRESENT_ZIPS < <(find incoming -maxdepth 1 -type f -iname '*.zip' -print 2>/dev/null | sort)
 
@@ -746,7 +778,7 @@ jobs:
           echo 'PASS: signed in-place upgrade preserved app-private data and both real encrypted Memo stores; legacy recovery and corruption tests passed.' | tee -a "$MEMO_BUILD_LOG"
 
       - name: Update build status and create a permanent import note
-        if: success() && github.event_name != 'pull_request'
+        if: success() && github.ref_name == 'main' && github.event_name != 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
@@ -863,13 +895,13 @@ jobs:
         if: always() && steps.delivery.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
-          name: Memo-Android-ci-debug-APK
+          name: INTERNAL-DO-NOT-INSTALL-Memo-Android-ci-signing-input
           path: |
             ${{ runner.temp }}/memo-delivery/Memo-Android-debug-ci-signed.apk
             ${{ runner.temp }}/memo-delivery/Memo-Source-Archive-SHA256.txt
           if-no-files-found: error
           compression-level: 0
-          retention-days: 14
+          retention-days: 1
 
       - name: Upload integrated repository artifact
         if: always() && steps.delivery.outcome == 'success'
@@ -914,7 +946,7 @@ jobs:
       - name: Download the CI-debug-signed APK artifact
         uses: actions/download-artifact@v4
         with:
-          name: Memo-Android-ci-debug-APK
+          name: INTERNAL-DO-NOT-INSTALL-Memo-Android-ci-signing-input
           path: ${{ runner.temp }}/memo-unsigned
 
       - name: Set up Android build tools
@@ -1005,7 +1037,7 @@ jobs:
   commit:
     name: Commit validated source in a separate write-only job
     needs: [preflight, build, sign]
-    if: github.event_name != 'pull_request' && needs.build.result == 'success' && needs.sign.result == 'success'
+    if: github.ref_name == 'main' && github.event_name != 'pull_request' && needs.build.result == 'success' && needs.sign.result == 'success'
     permissions:
       contents: write
     runs-on: ubuntu-latest

@@ -6,7 +6,7 @@ import org.junit.Test
 class SalesAccountResearchTest {
     private val evidence = EvidenceRecord(
         id = "evidence-1", title = "Company capabilities page",
-        sourceUrl = "https://www.example.com/capabilities",
+        sourceUrl = "https://www.example.com/capabilities", kind = "ACCOUNT_RESEARCH_SOURCE",
         content = "CNC milling and turning services for industrial customers.",
         summary = "The company publicly describes CNC services.",
         capturedAt = 1_800_000_000_000L

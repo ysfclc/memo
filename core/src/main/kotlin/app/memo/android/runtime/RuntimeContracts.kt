@@ -83,15 +83,15 @@ class RuntimeRegistry {
         id = "runtime.browser",
         name = "Browser runtime",
         kind = RuntimeKind.BROWSER,
-        description = "Visible website sessions, frontier-chat interaction, page inspection, prompt submission and bounded browser workflows. This remains separate from the native Memo app runtime.",
+        description = "Visible HTTPS website sessions, general page inspection and evidence capture, plus optional provider-specific chat interaction. This remains separate from the native Memo app runtime.",
         capabilities = listOf(
             RuntimeCapability("browser.navigate_https", "Navigate HTTPS", "Open a user-selected HTTPS page."),
             RuntimeCapability("browser.inspect_page", "Inspect visible page", "Read supported page content through browser-side scripts."),
             RuntimeCapability("browser.capture_evidence", "Capture evidence", "Save inspected content with source URL and timestamp."),
-            RuntimeCapability("browser.prepare_prompt", "Prepare prompt", "Fill a supported frontier-chat composer for review.", true),
+            RuntimeCapability("browser.prepare_prompt", "Prepare prompt", "Fill a supported chat composer for review without submitting it."),
             RuntimeCapability("browser.submit_prompt", "Submit prompt", "Send a user-approved prompt through the visible provider website; provider UI compatibility is checked first.", true, true),
             RuntimeCapability("browser.capture_response", "Capture response", "Capture a new, stable assistant answer from the current provider page."),
-            RuntimeCapability("browser.run_multi_chat_workflow", "Run multi-chat workflow", "Coordinate multiple frontier chat websites in a visible, sequential run with input/output linking and user takeover.", true, true)
+            RuntimeCapability("browser.run_multi_chat_workflow", "Run multi-chat workflow", "Coordinate visible provider sessions; each outbound submission is separately gated by browser.submit_prompt.")
         )
     )
 

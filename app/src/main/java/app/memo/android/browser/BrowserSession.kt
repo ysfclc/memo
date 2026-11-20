@@ -72,6 +72,9 @@ class BrowserSession(
         private set
     var workflowState by mutableStateOf(BrowserWorkflowUiState())
         private set
+    // Shared across Browser and Workflow screens: Compose may recreate either screen
+    // while a browser-backed action is awaiting review or collecting response evidence.
+    var activeExternalActionId by mutableStateOf("")
 
     private var workflowProviders: List<BrowserModelProvider> = emptyList()
     private var workflowGoal: String = ""
@@ -79,6 +82,7 @@ class BrowserSession(
     private var workflowMode: BrowserWorkflowMode = BrowserWorkflowMode.CONSULT_AND_COMPARE
     private var workflowIndex: Int = 0
     private var workflowPromptSent: Boolean = false
+    private var workflowCapturePending: Boolean = false
     private var workflowPromptPrepared: Boolean = false
     private var workflowApprovedHash: String = ""
     private var workflowApprovedDestination: String = ""
@@ -339,13 +343,118 @@ class BrowserSession(
         return null
     }
 
+    /** Re-run response detection against the current page. This action never submits a prompt. */
+    fun retryCurrentResponseDetection(): Boolean {
+        if (disposed || !BrowserWorkflowRecoveryPolicy.canRetryResponseDetection(
+                status = workflowState.status,
+                sentForCurrentStep = workflowState.sentForCurrentStep && workflowPromptSent
+            )
+        ) return false
+        val generation = workflowGeneration
+        publishWorkflowState(
+            workflowState.copy(
+                status = BrowserWorkflowStatus.WAITING_FOR_RESPONSE,
+                message = "Rechecking the current provider page for its answer. Memo will not send the prompt again."
+            )
+        )
+        pollWorkflowResponse(generation, System.currentTimeMillis() + 120_000L)
+        return true
+    }
+
+    /** Skip a provider only before its prompt has been submitted. */
+    fun skipCurrentProvider(): Boolean {
+        if (disposed || !BrowserWorkflowRecoveryPolicy.canSkipProvider(
+                status = workflowState.status,
+                sentForCurrentStep = workflowState.sentForCurrentStep || workflowPromptSent,
+                submissionUncertain = workflowState.submissionUncertain
+            )
+        ) return false
+        val provider = workflowProviders.getOrNull(workflowIndex) ?: return false
+        workflowCallbacks?.onStepSkipped(workflowIndex, provider, "Provider skipped by the user before submission. No prompt was sent.")
+        advancePastCurrentProvider(provider, skipped = true, stopped = false)
+        return true
+    }
+
+    /**
+     * Stop Memo's current provider step after submission and continue with the next provider.
+     * This cannot cancel generation on the provider's remote website.
+     */
+    fun stopCurrentProviderStep(): Boolean {
+        if (disposed || !BrowserWorkflowRecoveryPolicy.canStopCurrentProviderStep(
+                status = workflowState.status,
+                awaitingPromptApproval = workflowState.awaitingPromptApproval,
+                sentForCurrentStep = workflowState.sentForCurrentStep && workflowPromptSent,
+                submissionUncertain = workflowState.submissionUncertain
+            )
+        ) return false
+        val provider = workflowProviders.getOrNull(workflowIndex) ?: return false
+        workflowCallbacks?.onStepStopped(
+            workflowIndex,
+            provider,
+            "Provider step stopped by the user after submission. Memo will not resend; generation may continue on the provider's website."
+        )
+        advancePastCurrentProvider(provider, skipped = false, stopped = true)
+        return true
+    }
+
+    private fun advancePastCurrentProvider(
+        provider: BrowserModelProvider,
+        skipped: Boolean,
+        stopped: Boolean
+    ) {
+        workflowGeneration++
+        val generation = workflowGeneration
+        workflowNavigationCallback = null
+        workflowApprovedHash = ""
+        workflowApprovedDestination = ""
+        workflowPromptSent = false
+        workflowPromptPrepared = false
+        workflowIndex++
+        val skippedIds = if (skipped) workflowState.skippedProviderIds + provider.id else workflowState.skippedProviderIds
+        val stoppedIds = if (stopped) workflowState.stoppedProviderIds + provider.id else workflowState.stoppedProviderIds
+        val action = if (skipped) "Skipped" else "Stopped"
+        if (workflowIndex >= workflowProviders.size) {
+            val finished = workflowState.copy(
+                status = BrowserWorkflowStatus.COMPLETED,
+                skippedProviderIds = skippedIds,
+                stoppedProviderIds = stoppedIds,
+                currentStep = workflowProviders.size,
+                sentForCurrentStep = false,
+                awaitingPromptApproval = false,
+                submissionUncertain = false,
+                currentPrompt = "",
+                message = "Provider sequence ended: ${workflowState.responses.size} answer(s) captured, ${skippedIds.size} provider(s) skipped, ${stoppedIds.size} step(s) stopped. Captured answers remain available for review."
+            )
+            publishWorkflowState(finished)
+            workflowCallbacks?.onFinished(finished)
+            workflowCallbacks = null
+        } else {
+            val next = workflowProviders[workflowIndex]
+            publishWorkflowState(
+                workflowState.copy(
+                    status = BrowserWorkflowStatus.NAVIGATING,
+                    skippedProviderIds = skippedIds,
+                    stoppedProviderIds = stoppedIds,
+                    currentStep = workflowIndex + 1,
+                    currentProviderId = next.id,
+                    currentProviderName = next.label,
+                    sentForCurrentStep = false,
+                    awaitingPromptApproval = false,
+                    submissionUncertain = false,
+                    currentPrompt = "",
+                    message = "${provider.label} step $action by the user. Moving to ${next.label}; earlier captured answers are preserved."
+                )
+            )
+            beginWorkflowStep(generation)
+        }
+    }
+
     /** Resume after a login, challenge, unsupported composer, or delayed response has been handled manually. */
     fun continueBrowserWorkflow() {
         if (workflowState.status != BrowserWorkflowStatus.WAITING_FOR_USER || workflowState.awaitingPromptApproval) return
         val generation = workflowGeneration
         if (workflowPromptSent) {
-            publishWorkflowState(workflowState.copy(status = BrowserWorkflowStatus.WAITING_FOR_RESPONSE, message = "Checking the current conversation for the answer. Memo will not resubmit the prompt."))
-            pollWorkflowResponse(generation, System.currentTimeMillis() + 120_000L)
+            retryCurrentResponseDetection()
         } else if (!workflowPromptPrepared) {
             beginWorkflowStep(generation, retryCurrentPage = true)
         } else {
@@ -361,18 +470,113 @@ class BrowserSession(
                         publishWorkflowState(workflowState.copy(
                             status = BrowserWorkflowStatus.WAITING_FOR_RESPONSE,
                             sentForCurrentStep = true,
+                            submissionUncertain = false,
                             message = "The manually submitted prompt is visible in the conversation. Waiting for a new stable answer without resending it."
                         ))
                         pollWorkflowResponse(generation, System.currentTimeMillis() + 120_000L)
                     }
-                    checked?.optBoolean("contextPresent") != true -> pauseWorkflowForUser("Memo cannot prove whether this prompt was submitted because the page context changed. It will not resend automatically. Inspect the conversation; stop this run and start a new one only if you confirm the prompt was not sent.")
-                    checked?.optBoolean("composerCleared") == true -> pauseWorkflowForUser("The composer is empty, but Memo cannot yet verify the submitted message. It will not send a duplicate. Inspect the conversation, then continue checking when the message is visible.")
-                    else -> beginWorkflowStep(generation, retryCurrentPage = true)
+                    checked?.optBoolean("contextPresent") != true -> pauseWorkflowForUser("Memo cannot prove whether this prompt was submitted because the page context changed. It will not resend automatically. Inspect the conversation; stop this provider step and continue only if you accept that its send state remains unverified.", submissionUncertain = true)
+                    checked?.optBoolean("composerCleared") == true -> pauseWorkflowForUser("The composer is empty, but Memo cannot verify the submitted message. It will not send a duplicate. Inspect the conversation; stop this provider step if you want to continue elsewhere.", submissionUncertain = true)
+                    else -> pauseWorkflowForUser("Memo cannot confirm whether the prepared prompt was submitted. It will not prepare or send it again automatically. Inspect the provider conversation; stop this step to continue with the next provider.", submissionUncertain = true)
                 }
             }
         }
     }
 
+
+    /**
+     * Save an answer the user can see but automatic page detection could not read.
+     * This is a capture-only action: it never prepares or submits a provider prompt.
+     */
+    fun captureCurrentResponseManually(responseText: String): Boolean {
+        if (disposed) return false
+        val provider = workflowProviders.getOrNull(workflowIndex) ?: return false
+        val cleanResponse = responseText.trim().take(14_000)
+        val providerPageMatches = !isLoading &&
+            workflowState.currentProviderId == provider.id &&
+            workflowState.currentPrompt.isNotBlank() &&
+            providerMatches(provider, currentUrl)
+        if (!BrowserWorkflowRecoveryPolicy.canCaptureManually(
+                status = workflowState.status,
+                sentForCurrentStep = workflowState.sentForCurrentStep && workflowPromptSent,
+                providerPageMatches = providerPageMatches,
+                responseText = cleanResponse
+            )
+        ) return false
+
+        completeWorkflowStep(workflowGeneration, cleanResponse, captureMethod = "USER_PASTED")
+        return true
+    }
+
+    /**
+     * Replace the prepared provider prompt before submission. The previous pending approval is
+     * rejected in the durable ledger first; the new payload receives a fresh hash and approval.
+     * This method never writes to the provider page or triggers a send.
+     */
+    fun reviseCurrentPrompt(prompt: String): Boolean {
+        if (disposed) return false
+        val cleanPrompt = prompt.trim()
+        if (!BrowserWorkflowRecoveryPolicy.canEditPreparedPrompt(
+                status = workflowState.status,
+                sentForCurrentStep = workflowState.sentForCurrentStep || workflowPromptSent,
+                submissionUncertain = workflowState.submissionUncertain,
+                prompt = cleanPrompt
+            )
+        ) return false
+
+        val provider = workflowProviders.getOrNull(workflowIndex) ?: return false
+        val destination = approvalDestination(currentUrl) ?: return false
+        if (!providerMatches(provider, currentUrl) || workflowState.currentProviderId != provider.id) return false
+
+        val callbacks = workflowCallbacks ?: return false
+        if (workflowState.awaitingPromptApproval) {
+            val oldHash = workflowState.currentPromptHash
+            if (oldHash.isBlank() || workflowState.approvalDestination != destination) return false
+            val actualOldHash = ActionApprovalLedger.contentHash(
+                "runtime.browser", "browser.submit_prompt", destination, workflowState.currentPrompt
+            )
+            if (actualOldHash != oldHash || !callbacks.onApprovalSuperseded(oldHash, destination)) return false
+        }
+
+        workflowApprovedHash = ""
+        workflowApprovedDestination = ""
+        val revisedHash = ActionApprovalLedger.contentHash(
+            "runtime.browser", "browser.submit_prompt", destination, cleanPrompt
+        )
+        publishWorkflowState(workflowState.copy(
+            status = BrowserWorkflowStatus.WAITING_FOR_USER,
+            currentPrompt = cleanPrompt,
+            currentPromptHash = revisedHash,
+            approvalDestination = destination,
+            awaitingPromptApproval = true,
+            message = "Prompt revised. Review this exact version and approve it before Memo sends anything."
+        ))
+        callbacks.onApprovalRequired(workflowIndex, provider, cleanPrompt, destination, revisedHash)
+        return true
+    }
+
+    /**
+     * Reject the current pending prompt and return to editing. The consultation stays active;
+     * no provider submission is made and the user can revise or skip this provider.
+     */
+    fun rejectCurrentPrompt(): Boolean {
+        if (disposed || workflowState.status != BrowserWorkflowStatus.WAITING_FOR_USER ||
+            !workflowState.awaitingPromptApproval || workflowState.sentForCurrentStep || workflowState.submissionUncertain
+        ) return false
+        val destination = workflowState.approvalDestination
+        val hash = workflowState.currentPromptHash
+        val callbacks = workflowCallbacks ?: return false
+        if (destination.isBlank() || hash.isBlank() || !callbacks.onApprovalSuperseded(hash, destination)) return false
+        workflowApprovedHash = ""
+        workflowApprovedDestination = ""
+        publishWorkflowState(workflowState.copy(
+            currentPromptHash = "",
+            approvalDestination = "",
+            awaitingPromptApproval = false,
+            message = "Prompt rejected. Nothing was sent. Edit the prepared prompt or skip this provider."
+        ))
+        return true
+    }
 
     /** Continue only when the currently shown provider and exact prompt still match the approval. */
     fun approveCurrentPrompt(expectedHash: String, expectedDestination: String): Boolean {
@@ -393,11 +597,6 @@ class BrowserSession(
         return true
     }
 
-    /** Declining a prompt stops the sequence; no other provider receives the same authority. */
-    fun rejectCurrentPrompt() {
-        if (workflowState.awaitingPromptApproval) stopBrowserWorkflow()
-    }
-
     private fun approvalDestination(url: String): String? {
         val uri = Uri.parse(url)
         if (!uri.scheme.equals("https", ignoreCase = true) || uri.host.isNullOrBlank() || !uri.userInfo.isNullOrBlank()) return null
@@ -407,6 +606,7 @@ class BrowserSession(
     fun stopBrowserWorkflow() {
         if (!workflowState.isActive) return
         workflowGeneration++
+        workflowCapturePending = false
         workflowNavigationCallback = null
         workflowApprovedHash = ""
         workflowApprovedDestination = ""
@@ -525,11 +725,11 @@ class BrowserSession(
                 if (disposed || generation != workflowGeneration) return@evaluateJavascript
                 val sent = runCatching { JSONObject(decodeJsString(sendRaw)) }.getOrNull()
                 if (sent?.optBoolean("ok") != true || sent?.optBoolean("clicked") != true) {
-                    pauseWorkflowForUser("Memo could not verify whether ${provider.label} received the prompt. Do not retry blindly; inspect the provider conversation first.")
+                    pauseWorkflowForUser("Memo could not verify whether ${provider.label} received the prompt. Do not retry blindly; inspect the provider conversation first.", submissionUncertain = true)
                     return@evaluateJavascript
                 }
                 workflowPromptSent = true
-                publishWorkflowState(workflowState.copy(status = BrowserWorkflowStatus.WAITING_FOR_RESPONSE, sentForCurrentStep = true, awaitingPromptApproval = false, message = "Prompt submitted. Waiting for a new, stable answer from ${provider.label}…"))
+                publishWorkflowState(workflowState.copy(status = BrowserWorkflowStatus.WAITING_FOR_RESPONSE, sentForCurrentStep = true, awaitingPromptApproval = false, submissionUncertain = false, message = "Prompt submitted. Waiting for a new, stable answer from ${provider.label}…"))
                 pollWorkflowResponse(generation, System.currentTimeMillis() + 120_000L)
             }
         }
@@ -559,21 +759,64 @@ class BrowserSession(
         }
     }
 
-    private fun completeWorkflowStep(generation: Long, responseText: String) {
-        if (disposed || generation != workflowGeneration || workflowIndex !in workflowProviders.indices) return
+    private fun completeWorkflowStep(
+        generation: Long,
+        responseText: String,
+        captureMethod: String = "AUTOMATIC_DOM"
+    ) {
+        if (disposed || generation != workflowGeneration || workflowIndex !in workflowProviders.indices || workflowCapturePending) return
         val provider = workflowProviders[workflowIndex]
-        val prompt = workflowState.currentPrompt
         val result = BrowserModelResponse(
             providerId = provider.id,
             providerName = provider.label,
-            prompt = prompt,
+            prompt = workflowState.currentPrompt,
             response = responseText.trim().take(14_000),
             sourceUrl = currentUrl.take(2_048),
             startedAt = workflowStepStartedAt,
-            completedAt = System.currentTimeMillis()
+            completedAt = System.currentTimeMillis(),
+            captureMethod = captureMethod
         )
+        workflowCapturePending = true
+        publishWorkflowState(workflowState.copy(
+            status = BrowserWorkflowStatus.SAVING_RESPONSE,
+            sentForCurrentStep = true,
+            message = "Saving ${provider.label}'s response, transcript and evidence to the encrypted workspace. The next provider will not start until this save is confirmed."
+        ))
+        val captureHandler = workflowCallbacks?.onStepCompleted
+        if (captureHandler == null) {
+            finishCaptureAcknowledgement(generation, result, false, "The response was detected, but no durable capture handler is connected. It has not been marked complete.")
+            return
+        }
+        val acknowledge: (Boolean, String) -> Unit = { persisted, message ->
+            mainHandler.post { finishCaptureAcknowledgement(generation, result, persisted, message) }
+        }
+        runCatching { captureHandler(workflowIndex, result, acknowledge) }.onFailure { error ->
+            acknowledge(false, "The response was detected, but saving it failed: ${error.message?.take(180) ?: "unknown error"}. It was not marked complete.")
+        }
+    }
+
+    private fun finishCaptureAcknowledgement(
+        generation: Long,
+        result: BrowserModelResponse,
+        persisted: Boolean,
+        message: String
+    ) {
+        if (disposed || generation != workflowGeneration || !workflowCapturePending) return
+        workflowCapturePending = false
+        if (!persisted) {
+            // Preserve the confirmed-send state: recovery may read/capture again, never resend.
+            pauseWorkflowForUser(message.ifBlank {
+                "The response could not be confirmed in encrypted storage. Keep the provider page open and retry capture; Memo will not resend the prompt."
+            })
+            return
+        }
+        advanceWorkflowAfterCapture(generation, result)
+    }
+
+    private fun advanceWorkflowAfterCapture(generation: Long, result: BrowserModelResponse) {
+        if (disposed || generation != workflowGeneration || workflowIndex !in workflowProviders.indices) return
+        val provider = workflowProviders[workflowIndex]
         val results = workflowState.responses + result
-        workflowCallbacks?.onStepCompleted(workflowIndex, result)
         workflowPromptSent = false
         workflowPromptPrepared = false
         workflowIndex++
@@ -584,7 +827,11 @@ class BrowserSession(
                 currentStep = workflowProviders.size,
                 sentForCurrentStep = false,
                 awaitingPromptApproval = false,
-                message = "All ${results.size} frontier responses were captured from their browser pages. Review agreement and disagreement in the linked consultation chat.",
+                message = if (workflowState.skippedProviderIds.isEmpty() && workflowState.stoppedProviderIds.isEmpty()) {
+                    "All ${results.size} frontier responses were captured and durably saved. Review agreement and disagreement in the linked consultation chat."
+                } else {
+                    "Provider sequence ended: ${results.size} answer(s) captured and saved, ${workflowState.skippedProviderIds.size} provider(s) skipped, ${workflowState.stoppedProviderIds.size} step(s) stopped. Review the partial results in the linked consultation chat."
+                },
                 currentPrompt = ""
             )
             publishWorkflowState(finished)
@@ -598,16 +845,20 @@ class BrowserSession(
                 currentProviderName = workflowProviders[workflowIndex].label,
                 sentForCurrentStep = false,
                 awaitingPromptApproval = false,
-                message = "${provider.label} response captured. Moving to ${workflowProviders[workflowIndex].label} with the earlier response included in its prompt.",
+                message = "${provider.label} response saved. Moving to ${workflowProviders[workflowIndex].label} with the earlier response included in its prompt.",
                 currentPrompt = ""
             ))
             beginWorkflowStep(generation)
         }
     }
 
-    private fun pauseWorkflowForUser(message: String) {
+    private fun pauseWorkflowForUser(message: String, submissionUncertain: Boolean = false) {
         if (!workflowState.isActive) return
-        val paused = workflowState.copy(status = BrowserWorkflowStatus.WAITING_FOR_USER, message = message)
+        val paused = workflowState.copy(
+            status = BrowserWorkflowStatus.WAITING_FOR_USER,
+            submissionUncertain = workflowState.submissionUncertain || submissionUncertain,
+            message = message
+        )
         publishWorkflowState(paused)
     }
 

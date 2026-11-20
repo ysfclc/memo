@@ -1,8 +1,8 @@
-# Product gap registry — prioritized, with acceptance criteria
+# Product gap registry — scope-traceable gaps and candidate enhancements
 
-Memo should feel like a capable, safe execution partner, not a collection of buttons. These are product gaps inferred by comparing every supplied build with the intended end state; the user does not need to discover each gap one by one.
+This is an engineering tracking document, not an independent product authority. Proactively identify implementation gaps **within the user's accepted Product Contract and recorded requirements**. A missing feature in source, a historical blueprint, an assistant suggestion or a use-case example does not by itself create a product requirement. Before treating an item as an accepted gap or scheduling it, trace it to the current Product Contract, an explicit user-input/decision ID or a user-selected domain specification. Otherwise keep it as a candidate idea, not an active P0/P1/P2 requirement. Never invent scope or priority from source archaeology alone.
 
-Priority meanings: **P0** release blockers; **P1** core product capability; **P2** expansion that depends on stable core execution.
+Priority meanings: **P0** release blockers within accepted scope; **P1** accepted core product capability; **P2** accepted expansion that depends on stable core execution. These labels are not permission to promote unaccepted ideas.
 
 ## P0 — make the current build trustworthy
 
@@ -16,7 +16,8 @@ Priority meanings: **P0** release blockers; **P1** core product capability; **P2
 
 ## P1 — cohesive day-to-day product
 
-- [ ] **Unified workflow graph.** DAG with named steps, dependencies, typed inputs/outputs, retries/timeouts, checkpoints, cancellation, conditional branches, and durable state. A workflow can combine local AI → visible frontier website → native app → review → measurement.
+- [~] **Unified workflow graph — durable attempts and content-bound local runtime receipts added.** Core TaskSpec parsing and exact-runtime capability compilation power optional local-model expansion of untouched drafts. Work reserves a dependency-ready checkpoint before inference and persists a bounded per-node attempt record in schema 7, binding job/step, runtime, capability manifest and stable idempotency key. New local output receipts are stored inside the artifact metadata and bind the exact attempt ID/number, runtime, capability list, stable idempotency key, timestamps, evidence ID and SHA-256 of the saved output. The journal and artifact must both carry the receipt marker; workspace validation rejects missing, mismatched or content-mutated receipts. The receipt explicitly records `postconditionStatus=NOT_VERIFIED`: a saved model draft is not proof that the workflow goal was achieved. Earlier schema-7 output attempts without the new receipt marker remain readable. External actions remain blocked from this dispatch path. Still missing: browser/native/deterministic adapters, shared timeout/cancellation budgets, cross-runtime scheduling, pause/resume/takeover and independently observed postconditions. Gradle tests and device acceptance remain unverified.
+- [~] **Unified Live timeline — attempt history projected.** Live combines activity, job/checkpoint state, tasks, action-audit transitions, evidence and durable workflow attempts in one newest-first feed. Attempt cards expose status/timing/runtime references, not private model payloads. Cross-runtime runtime events, inline browser/native panes, pause/resume/takeover, cancellation and postcondition receipts remain open.
 - [~] **Capability compilation — deterministic first slice added.** A pure-core compiler selects known capability IDs for each intent domain, preserves runtime state and approval requirements, lists unresolved capabilities, and records a deterministic hashed manifest in draft-plan metadata. Still missing: editable/versioned capability, prompt, agent, tool and surface-schema registry; manifests pinned to executed runtime revisions; integration across every executor.
 - [ ] **Generic browser surface engine.** Per-site versioned DOM/semantic selectors, state signatures, page-change alert, action budget, evidence screenshot/text, postconditions and replay fixtures. Provider scripts remain adapters, not the whole automation model.
 - [ ] **Workflow gallery/editor.** Searchable reusable blueprints, inspect-before-run plan, permission summary, inputs, generated artifacts, per-step log, recovery/redo and revision diff; no buttons that pretend to work without a connected executor.
@@ -26,7 +27,7 @@ Priority meanings: **P0** release blockers; **P1** core product capability; **P2
 - [ ] **Model discovery and install.** One-tap catalogue for supported formats with exact compatibility, hash, size, storage/RAM checks, download resume/cancel/rollback and clear statement that installed third-party app models may not expose APIs Memo can call.
 - [ ] **Pocket-style source handling.** `ACTION_SEND_MULTIPLE`/URI imports, file size/type limits, review inbox, immutable original capture, derived working copy, source hash/URL/timestamp, per-mission/context selection and versioned backup.
 - [ ] **Capture that produces traceable records.** Quick text, share sheet, voice, image/screenshot and selected text; every capture has original source, extraction results, provenance and a review step before it changes the graph.
-- [ ] **Private draft → public-safe studio.** Drafts, claims/evidence check, media/carousel storyboard, generated asset provenance, channel-specific preview, destination-bound human approval, post receipts and later engagement measurements.
+- [~] **Private Studio drafts — first slice added.** Generic user-authored drafts can be created through a validated core factory, saved in the encrypted workspace, reopened, edited and exported; edits retain up to five prior revision snapshots. Still missing: autosave, revision compare/restore UI, richer artifact templates and media/storyboards, evidence/claim review for generated content, channel-specific preview, destination-bound approval, publication receipts and engagement measurements.
 - [ ] **Full social platform — first-class product domain, not content-only.** Provider audit; connected account identity/scopes; real unified feed/activity; unified supported inbox/DMs/comments/mentions; engagement and relationship linking; listening/discovery; channel-specific publishing; metrics/learning; personal-brand, customer-acquisition and monetization workflows; bounded automation. No feed/inbox mock data or unsupported API claims. See `docs/SOCIAL_PLATFORM_PRODUCT_SPEC.md` and M5.D in `TASKS.md`.
 
 ## P2 — the powerful “arms and hands” expansion
@@ -50,9 +51,9 @@ Priority meanings: **P0** release blockers; **P1** core product capability; **P2
 - Future wake-word: implement only if on-device detection, OS-compliant foreground operation, visible mic state, configurable sensitivity and true battery/privacy tests are available. Android 12+ background foreground-service starts are restricted; newer versions also constrain microphone while-in-use access. Tap-to-talk is the reliable baseline.
 
 
-## Additional product features worth planning now
+## Candidate enhancements for later evaluation (not automatically accepted requirements)
 
-These additions are derived from the combined source inventory and the design blueprint. They are roadmap items, not claims about the current implementation.
+These entries were collected from source inventory and historical design comparison. Preserve them as candidate enhancements, but do not implement or prioritize them solely because they appear here. Before work starts, trace an item to the current Product Contract or an explicit user-approved input; otherwise keep it uncommitted and ask whether the user wants it adopted. They are not claims about current implementation.
 
 - [~] **Approval inbox and action queue — first slice added.** One screen now shows the browser-action ledger queue, needs-review records and history, including exact content, destination, payload hash, runtime, capability, evidence and recent audit events. It rejects a pending proposal and can mark an active/approved outcome for review. It only opens the live browser dialog for an exact matching active prompt; it cannot approve history. Still missing: native/guest/publication actions in the same queue, richer risk/permission summaries, global pause/stop and device validation.
 - [~] **Global pause / emergency stop — first top-level stop control added.** Header stop requests cancellation of local model generation, browser workflow/task and active AccessibilityService execution; pending proposals are rejected and approved/in-flight external actions move to `NEEDS_REVIEW`. The optional guest-runner cancel is best-effort and reports uncertainty. Still missing: a centralized cancellation token in a durable cross-runtime DAG, cancellation tests for each runtime, background/process-death delivery, and device verification.
@@ -66,8 +67,10 @@ These additions are derived from the combined source inventory and the design bl
 - [ ] **Goal measurement contract.** For each measurable workflow, define the metric, source, sample period, threshold and stopping rule. Preserve the observed numbers and their source; present optimizations as proposals until accepted.
 
 
-## P1 — Sales Operations extension (specified 10 November 2026)
+## Optional scenario pack — Sales Operations (not a core P1 gap or roadmap priority)
 
-- [ ] **M7.A1 — Evidence-backed industrial account research.** Reuse Work organization entities and source evidence; score ICP fit transparently with factor rationales and explicit unknowns; detect possible duplicates without destructive merging; require operator accept/reject. No outbound contact in this slice.
-- [ ] **M7.A2–M7.A6 — Qualification, permissioned engagement, inbound/listening, proposals, delivery and reporting.** Deliver separately, one feature branch/worktree per slice, with legal/privacy/platform gates and evidence-backed acceptance.
-- [ ] Do not create a second CRM, scrape restricted sources, infer marketing consent from public contact data, or report unverified external outcomes as successful.
+The entries below preserve a previously documented optional scenario pack. They are not core Memo product gaps, not an active priority and not authorization to build an outbound product. Do not schedule or implement them unless the user explicitly selects this scenario.
+
+- [ ] **M7.A1 — Optional evidence-backed industrial account research.** Reuse Work organization entities and source evidence; score fit transparently with factor rationales and explicit unknowns; detect possible duplicates without destructive merging; require operator accept/reject. Read-only; no outbound contact.
+- [ ] **M7.A2–M7.A6 — Optional qualification, inbound/listening, proposals, delivery and reporting.** Retain the scenario record, but do not start these slices without explicit user selection. Any future channel action requires a separate explicit request and applicable approval; no inferred consent.
+- [ ] Preserve safety boundaries: no second CRM, no restricted-source scraping, no inference of consent from public contact data, and no unverified external-success claims.

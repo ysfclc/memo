@@ -147,7 +147,6 @@ import app.memo.android.data.ActivityRecord
 import app.memo.android.data.EvidenceRecord
 import app.memo.android.data.MemoWorkspaceViewModel
 import app.memo.android.notifications.MemoNotificationCenter
-import app.memo.android.orchestration.IntentPlanner
 import com.synthos.runtime.engine.AutomationAccessibilityService
 import com.synthos.runtime.remote.RemoteRunnerClient
 import app.memo.android.data.TaskKind
@@ -155,9 +154,7 @@ import app.memo.android.data.TaskRecord
 import app.memo.android.data.TaskStatus
 import app.memo.android.ui.components.DotLabel
 import app.memo.android.ui.components.EmptyState
-import app.memo.android.ui.components.SectionHeading
 import app.memo.android.ui.components.StatusPill
-import app.memo.android.ui.components.SurfaceCard
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -166,10 +163,10 @@ import java.util.Date
 import java.util.Locale
 
 private enum class AppTab(val label: String) {
-    HOME("Talk"), LIVE("Live"), WORK("Work"), STUDIO("Studio"), BROWSER("Browser"), MORE("More"), APPS("Apps"), APPROVALS("Approvals"), COUNCIL("Council"), MODELS("Models"), SETTINGS("Settings")
+    HOME("Talk"), LIVE("Live"), WORK("Work"), STUDIO("Studio"), BROWSER("Browser"), APPS("Apps"), APPROVALS("Approvals"), COUNCIL("Council"), MODELS("Models"), SETTINGS("Settings")
 }
 
-private enum class ToolSection(val label: String) { BROWSER("Browser"), WORKFLOWS("Workflows"), TASKS("Tasks"), EVIDENCE("Evidence") }
+private enum class ToolSection(val label: String) { BROWSER("Browser session"), WORKFLOWS("Workflows"), TASKS("Browser tasks"), EVIDENCE("Evidence") }
 
 private data class QuickSite(val label: String, val url: String)
 
@@ -215,10 +212,39 @@ fun MemoWorkspaceApp(
     var pendingChatPrompt by remember { mutableStateOf("") }
     var toolSection by remember { mutableStateOf(ToolSection.BROWSER) }
     var workSectionRequest by remember { mutableStateOf("TODAY") }
+    var systemReturnTab by remember { mutableStateOf(AppTab.HOME) }
+
+    fun openPrimary(destination: AppTab) {
+        systemReturnTab = destination
+        tab = destination
+    }
+
+    fun openSystem(destination: AppTab) {
+        systemReturnTab = when (tab) {
+            AppTab.HOME, AppTab.COUNCIL -> AppTab.HOME
+            AppTab.LIVE, AppTab.APPS, AppTab.APPROVALS -> AppTab.LIVE
+            AppTab.BROWSER -> if (toolSection == ToolSection.BROWSER) AppTab.LIVE else AppTab.WORK
+            AppTab.WORK -> AppTab.WORK
+            AppTab.STUDIO -> AppTab.STUDIO
+            else -> systemReturnTab
+        }
+        tab = destination
+    }
+
+    fun isPrimarySelected(destination: AppTab): Boolean {
+        if (tab == AppTab.MODELS || tab == AppTab.SETTINGS) return systemReturnTab == destination
+        return when (destination) {
+            AppTab.HOME -> tab in setOf(AppTab.HOME, AppTab.COUNCIL)
+            AppTab.LIVE -> tab in setOf(AppTab.LIVE, AppTab.APPS, AppTab.APPROVALS) || (tab == AppTab.BROWSER && toolSection == ToolSection.BROWSER)
+            AppTab.WORK -> tab == AppTab.WORK || (tab == AppTab.BROWSER && toolSection != ToolSection.BROWSER)
+            AppTab.STUDIO -> tab == AppTab.STUDIO
+            else -> false
+        }
+    }
     LaunchedEffect(initialWorkspace) {
         val destination = initialWorkspace?.trim()?.uppercase().orEmpty()
         if (destination.isNotBlank()) {
-            tab = when (destination) {
+            val requestedTab = when (destination) {
                 "CHATS" -> AppTab.HOME
                 "TALK", "HOME" -> AppTab.HOME
                 "LIVE" -> AppTab.LIVE
@@ -232,10 +258,16 @@ fun MemoWorkspaceApp(
                 "LIBRARY", "EVIDENCE" -> { toolSection = ToolSection.EVIDENCE; AppTab.BROWSER }
                 "COUNCIL" -> AppTab.COUNCIL
                 "MODELS" -> AppTab.MODELS
-                "SETTINGS" -> AppTab.SETTINGS
-                "MORE" -> AppTab.MORE
+                "SETTINGS", "MORE" -> AppTab.SETTINGS
                 else -> AppTab.HOME
             }
+            systemReturnTab = when (requestedTab) {
+                AppTab.LIVE, AppTab.APPS, AppTab.APPROVALS -> AppTab.LIVE
+                AppTab.BROWSER -> if (toolSection == ToolSection.BROWSER) AppTab.LIVE else AppTab.WORK
+                AppTab.COUNCIL, AppTab.MODELS, AppTab.SETTINGS -> AppTab.HOME
+                else -> requestedTab
+            }
+            tab = requestedTab
             onInitialWorkspaceConsumed()
         }
     }
@@ -392,7 +424,10 @@ fun MemoWorkspaceApp(
         when {
             evidenceDetail != null -> evidenceDetail = null
             tab == AppTab.HOME && activeConversationId != null -> activeConversationId = null
-            tab in setOf(AppTab.BROWSER, AppTab.APPS, AppTab.APPROVALS) -> tab = AppTab.LIVE
+            tab == AppTab.BROWSER -> tab = if (toolSection == ToolSection.BROWSER) AppTab.LIVE else AppTab.WORK
+            tab in setOf(AppTab.APPS, AppTab.APPROVALS) -> tab = AppTab.LIVE
+            tab == AppTab.COUNCIL -> tab = AppTab.HOME
+            tab == AppTab.MODELS || tab == AppTab.SETTINGS -> openPrimary(systemReturnTab)
             tab != AppTab.HOME -> { activeConversationId = null; tab = AppTab.HOME }
         }
     }
@@ -401,37 +436,14 @@ fun MemoWorkspaceApp(
         val clean = rawIntent.trim().take(6_000)
         if (clean.isBlank()) return false
         val title = clean.lineSequence().firstOrNull().orEmpty().take(64).ifBlank { "New conversation" }
-        if (IntentPlanner.shouldCreateWorkflow(clean)) {
-            val sourceId = viewModel.createConversation(title = title)
-            if (sourceId.isBlank()) {
-                snack("Memo reached its conversation limit. Export a backup before removing older records.")
-                return false
-            }
-            val captureError = viewModel.appendChatMessage(sourceId, "USER", clean)
-            if (captureError != null) {
-                snack("Your draft was not saved: $captureError")
-                return false
-            }
-            viewModel.createIntentPlan(clean, uiLanguage, sourceConversationId = sourceId).fold(
-                onSuccess = { jobId ->
-                    workSectionRequest = "JOBS"
-                    tab = AppTab.WORK
-                    val checkpoints = viewModel.snapshot.value.jobs.firstOrNull { it.id == jobId }?.steps?.size ?: 0
-                    snack("Draft plan created with $checkpoints checkpoints and linked to its source conversation. Review it before starting; no external action has run.")
-                },
-                onFailure = { error ->
-                    activeConversationId = sourceId
-                    tab = AppTab.HOME
-                    snack("The request is saved in Talk, but its plan could not be created: ${error.message ?: "unknown error"}")
-                }
-            )
-            return true
-        }
         val id = viewModel.createConversation(title = title)
         if (id.isBlank()) {
             snack("Memo reached its conversation limit. Export a backup before removing older records.")
             return false
         }
+        // Every intent starts as a conversation. Memo must understand the request
+        // before deciding whether it needs a Work plan, browser, local capability,
+        // or a human checkpoint. The user never chooses "chat vs workflow" here.
         pendingChatPrompt = clean
         activeConversationId = id
         tab = AppTab.HOME
@@ -440,9 +452,27 @@ fun MemoWorkspaceApp(
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val expandedLayout = maxWidth >= 840.dp
+        val routeContext = when (tab) {
+            AppTab.COUNCIL -> WorkspaceRouteContext(AppTab.HOME, "Council", listOf("Models" to AppTab.MODELS))
+            AppTab.BROWSER -> if (toolSection == ToolSection.BROWSER) {
+                WorkspaceRouteContext(AppTab.LIVE, "Browser session", listOf("Phone apps" to AppTab.APPS, "Approval inbox" to AppTab.APPROVALS))
+            } else {
+                WorkspaceRouteContext(AppTab.WORK, toolSection.label, emptyList())
+            }
+            AppTab.APPS -> WorkspaceRouteContext(AppTab.LIVE, "Phone apps", listOf("Browser session" to AppTab.BROWSER, "Approval inbox" to AppTab.APPROVALS))
+            AppTab.APPROVALS -> WorkspaceRouteContext(AppTab.LIVE, "Approval inbox", listOf("Browser session" to AppTab.BROWSER, "Phone apps" to AppTab.APPS))
+            AppTab.MODELS -> WorkspaceRouteContext(systemReturnTab, "Models", listOf("Settings" to AppTab.SETTINGS))
+            AppTab.SETTINGS -> WorkspaceRouteContext(systemReturnTab, "Settings", listOf("Models" to AppTab.MODELS))
+            else -> null
+        }
+        val hasActiveWork = modelState.running ||
+            browser.workflowState.isActive ||
+            AutomationAccessibilityService.isExecuting() ||
+            snapshot.jobs.any { it.status == "RUNNING" } ||
+            snapshot.tasks.any { it.status == TaskStatus.RUNNING }
         Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = { AppHeader(onLock = lockWorkspace, onStop = ::stopActiveWork, onMore = { tab = AppTab.MORE }) },
+        topBar = { AppHeader(onLock = lockWorkspace, onStop = ::stopActiveWork, showStop = hasActiveWork, onOpenModels = { openSystem(AppTab.MODELS) }, onOpenSettings = { openSystem(AppTab.SETTINGS) }) },
         snackbarHost = { SnackbarHost(snackbarHost) },
         bottomBar = {
             if (!expandedLayout) {
@@ -460,16 +490,10 @@ fun MemoWorkspaceApp(
                         Triple(AppTab.STUDIO, Icons.Rounded.Article, "Studio")
                     )
                     items.forEach { (dest, icon, label) ->
-                        val selected = when (dest) {
-                            AppTab.HOME -> tab in setOf(AppTab.HOME, AppTab.COUNCIL)
-                            AppTab.LIVE -> tab in setOf(AppTab.LIVE, AppTab.BROWSER, AppTab.APPS, AppTab.APPROVALS)
-                            AppTab.WORK -> tab == AppTab.WORK
-                            AppTab.STUDIO -> tab == AppTab.STUDIO
-                            else -> false
-                        }
+                        val selected = isPrimarySelected(dest)
                         NavigationBarItem(
                             selected = selected,
-                            onClick = { tab = dest },
+                            onClick = { openPrimary(dest) },
                             icon = { Icon(icon, contentDescription = label, modifier = Modifier.size(22.dp)) },
                             label = {
                                 Text(
@@ -509,16 +533,10 @@ fun MemoWorkspaceApp(
                         Triple(AppTab.STUDIO, Icons.Rounded.Article, "Studio")
                     )
                     destinations.forEach { (dest, icon, label) ->
-                        val selected = when (dest) {
-                            AppTab.HOME -> tab in setOf(AppTab.HOME, AppTab.COUNCIL)
-                            AppTab.LIVE -> tab in setOf(AppTab.LIVE, AppTab.BROWSER, AppTab.APPS, AppTab.APPROVALS)
-                            AppTab.WORK -> tab == AppTab.WORK
-                            AppTab.STUDIO -> tab == AppTab.STUDIO
-                            else -> false
-                        }
+                        val selected = isPrimarySelected(dest)
                         NavigationRailItem(
                             selected = selected,
-                            onClick = { tab = dest },
+                            onClick = { openPrimary(dest) },
                             icon = { Icon(icon, contentDescription = label, modifier = Modifier.size(22.dp)) },
                             label = { Text(label, style = MaterialTheme.typography.labelSmall) },
                             alwaysShowLabel = true,
@@ -535,6 +553,21 @@ fun MemoWorkspaceApp(
                 Box(Modifier.width(1.dp).fillMaxSize().background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.72f)))
             }
             Column(Modifier.weight(1f).fillMaxSize()) {
+            routeContext?.let { context ->
+                WorkspaceRouteStrip(
+                    parentLabel = context.parent.label,
+                    currentLabel = context.current,
+                    shortcuts = context.shortcuts,
+                    onBack = { openPrimary(context.parent) },
+                    onNavigate = { destination ->
+                        when (destination) {
+                            AppTab.MODELS, AppTab.SETTINGS -> openSystem(destination)
+                            AppTab.BROWSER -> { toolSection = ToolSection.BROWSER; tab = destination }
+                            else -> tab = destination
+                        }
+                    }
+                )
+            }
             if (vaultError != null) {
                 VaultWarning(
                     message = vaultError!!,
@@ -561,7 +594,7 @@ fun MemoWorkspaceApp(
                         onSelectConversation = { activeConversationId = it },
                         initialPrompt = pendingChatPrompt,
                         onInitialPromptConsumed = { pendingChatPrompt = "" },
-                        onOpenModels = { tab = AppTab.MODELS },
+                        onOpenModels = { openSystem(AppTab.MODELS) },
                         onOpenWork = { tab = AppTab.WORK },
                         onOpenCouncil = { tab = AppTab.COUNCIL },
                         onStartConversation = ::startTalkIntent,
@@ -571,6 +604,7 @@ fun MemoWorkspaceApp(
                         snapshot = snapshot,
                         browserState = browser.workflowState,
                         onOpenBrowser = { tab = AppTab.BROWSER; toolSection = ToolSection.BROWSER },
+                        onOpenBrowserWorkflow = { tab = AppTab.BROWSER; toolSection = ToolSection.WORKFLOWS },
                         onOpenApps = { tab = AppTab.APPS },
                         onOpenApprovals = { tab = AppTab.APPROVALS },
                         onOpenWork = { tab = AppTab.WORK },
@@ -583,7 +617,7 @@ fun MemoWorkspaceApp(
                         runtime = aiRuntime,
                         runtimeState = modelState,
                         onOpenEvidence = { id -> evidenceDetail = viewModel.snapshot.value.evidence.firstOrNull { it.id == id } },
-                        onOpenModels = { tab = AppTab.MODELS },
+                        onOpenModels = { openSystem(AppTab.MODELS) },
                         onShowMessage = ::snack
                     )
                     AppTab.WORK -> WorkWorkspaceScreen(
@@ -596,13 +630,16 @@ fun MemoWorkspaceApp(
                         onOpenConversation = { id -> activeConversationId = id; tab = AppTab.HOME },
                         onOpenApprovals = { tab = AppTab.APPROVALS },
                         onOpenEvidence = { id -> evidenceDetail = viewModel.snapshot.value.evidence.firstOrNull { it.id == id } },
-                        onOpenModels = { tab = AppTab.MODELS },
+                        onOpenModels = { openSystem(AppTab.MODELS) },
+                        onOpenBrowserWorkflows = { toolSection = ToolSection.WORKFLOWS; tab = AppTab.BROWSER },
+                        onOpenBrowserTasks = { toolSection = ToolSection.TASKS; tab = AppTab.BROWSER },
+                        onOpenEvidenceLibrary = { toolSection = ToolSection.EVIDENCE; tab = AppTab.BROWSER },
                         onShowMessage = ::snack
                     )
                     AppTab.COUNCIL -> CouncilScreen(
                         snapshot = snapshot,
                         runtime = aiRuntime,
-                        onOpenModels = { tab = AppTab.MODELS },
+                        onOpenModels = { openSystem(AppTab.MODELS) },
                         onRunSaved = viewModel::addCouncilRun,
                         onDecisionSaved = viewModel::updateCouncilDecision,
                         onShowMessage = ::snack
@@ -644,7 +681,7 @@ fun MemoWorkspaceApp(
                     AppTab.APPROVALS -> ActionApprovalInboxScreen(
                         snapshot = snapshot,
                         browserState = browser.workflowState,
-                        onOpenBrowser = { tab = AppTab.BROWSER; toolSection = ToolSection.BROWSER },
+                        onOpenBrowser = { tab = AppTab.BROWSER; toolSection = ToolSection.WORKFLOWS },
                         onReject = { id ->
                             val pending = viewModel.snapshot.value.actionApprovals.firstOrNull { it.id == id }
                             val matchesLivePrompt = pending != null && browser.workflowState.awaitingPromptApproval &&
@@ -669,13 +706,7 @@ fun MemoWorkspaceApp(
                         onLock = lockWorkspace,
                         onShowMessage = ::snack
                     )
-                    AppTab.MORE -> MoreWorkspaceScreen(
-                        onOpenCouncil = { tab = AppTab.COUNCIL },
-                        onOpenModels = { tab = AppTab.MODELS },
-                        onOpenSettings = { tab = AppTab.SETTINGS },
-                        onOpenApps = { tab = AppTab.APPS },
-                        onOpenApprovals = { tab = AppTab.APPROVALS }
-                    )
+
                 }
             }
             }
@@ -863,16 +894,30 @@ private fun ToolsHubScreen(
     onDeleteEvidence: (EvidenceRecord) -> Unit,
     onExportEvidence: () -> Unit
 ) {
+    val heading = when (section) {
+        ToolSection.BROWSER -> "Browser session"
+        ToolSection.WORKFLOWS -> "Workflows"
+        ToolSection.TASKS -> "Browser tasks"
+        ToolSection.EVIDENCE -> "Evidence"
+    }
+    val supporting = when (section) {
+        ToolSection.BROWSER -> "A separate website session for navigation and visible provider work. Saved outcomes return to Work."
+        ToolSection.WORKFLOWS -> "Review provider workflows, checkpoints and recovery controls."
+        ToolSection.TASKS -> "Create, resume and inspect bounded browser tasks."
+        ToolSection.EVIDENCE -> "Inspect captured source material and saved workflow results."
+    }
     Column(Modifier.fillMaxSize()) {
-        Column(Modifier.padding(horizontal = MemoTokens.Spacing.md, vertical = MemoTokens.Spacing.xs), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text("Browser runtime", style = MaterialTheme.typography.titleLarge)
-            Text("A separate website session with its own navigation, page state, bounded browser tasks and captured evidence. This is not the native app runtime.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Row(
-                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                ToolSection.entries.forEach { candidate ->
-                    FilterChip(selected = section == candidate, onClick = { onSectionChange(candidate) }, label = { Text(candidate.label) })
+        Column(Modifier.padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.md), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
+            Text(heading, style = MaterialTheme.typography.titleLarge)
+            Text(supporting, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (section != ToolSection.BROWSER) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    ToolSection.entries.filter { it != ToolSection.BROWSER }.forEach { candidate ->
+                        FilterChip(selected = section == candidate, onClick = { onSectionChange(candidate) }, label = { Text(candidate.label) })
+                    }
                 }
             }
         }
@@ -882,7 +927,10 @@ private fun ToolsHubScreen(
                     browser = browser,
                     onQuickTask = onQuickTask,
                     onCancelTask = onCancelTask,
-                    onClearPrompt = onClearPrompt
+                    onClearPrompt = onClearPrompt,
+                    onReturnToWorkflow = if (browser.workflowState.status != app.memo.android.browser.BrowserWorkflowStatus.IDLE) {
+                        { onSectionChange(ToolSection.WORKFLOWS) }
+                    } else null
                 )
                 ToolSection.WORKFLOWS -> BrowserWorkflowScreen(
                     snapshot = snapshot,
@@ -914,9 +962,47 @@ private fun ToolsHubScreen(
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
+private data class WorkspaceRouteContext(val parent: AppTab, val current: String, val shortcuts: List<Pair<String, AppTab>>)
+
 @Composable
-private fun AppHeader(onLock: () -> Unit, onStop: () -> Unit, onMore: () -> Unit) {
+private fun WorkspaceRouteStrip(
+    parentLabel: String,
+    currentLabel: String,
+    shortcuts: List<Pair<String, AppTab>>,
+    onBack: () -> Unit,
+    onNavigate: (AppTab) -> Unit
+) {
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
+                .padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.xxs),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.xs)
+        ) {
+            TextButton(onClick = onBack, contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)) {
+                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = null, modifier = Modifier.size(17.dp))
+                Spacer(Modifier.width(3.dp))
+                Text(parentLabel, maxLines = 1)
+            }
+            Text(currentLabel, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary, maxLines = 1)
+            shortcuts.forEach { (label, destination) ->
+                FilterChip(selected = false, onClick = { onNavigate(destination) }, label = { Text(label, maxLines = 1) })
+            }
+        }
+        Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.72f))
+    }
+}
+
+@Composable
+private fun AppHeader(
+    onLock: () -> Unit,
+    onStop: () -> Unit,
+    showStop: Boolean,
+    onOpenModels: () -> Unit,
+    onOpenSettings: () -> Unit
+) {
     val language = LocalMemoLanguage.current
+    var menuExpanded by remember { mutableStateOf(false) }
     Surface(color = MaterialTheme.colorScheme.background, tonalElevation = 0.dp) {
         Row(
             modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.sm),
@@ -931,13 +1017,21 @@ private fun AppHeader(onLock: () -> Unit, onStop: () -> Unit, onMore: () -> Unit
             Spacer(Modifier.width(MemoTokens.Spacing.sm))
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
                 Text("MEMO", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onBackground, letterSpacing = 1.3.sp)
-                Text("INTENT / WORK / EVIDENCE", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("TALK / LIVE / WORK / STUDIO", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            IconButton(onClick = onMore, modifier = Modifier.size(MemoTokens.Spacing.minimumTouch)) {
-                Icon(Icons.Rounded.MoreHoriz, contentDescription = MemoLocalization.translate("More", language), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Box {
+                IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(MemoTokens.Spacing.minimumTouch)) {
+                    Icon(Icons.Rounded.MoreHoriz, contentDescription = MemoLocalization.translate("More", language), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                    DropdownMenuItem(text = { Text("Models") }, leadingIcon = { Icon(Icons.Rounded.Tune, contentDescription = null) }, onClick = { menuExpanded = false; onOpenModels() })
+                    DropdownMenuItem(text = { Text("Settings") }, leadingIcon = { Icon(Icons.Rounded.Settings, contentDescription = null) }, onClick = { menuExpanded = false; onOpenSettings() })
+                }
             }
-            IconButton(onClick = onStop, modifier = Modifier.size(MemoTokens.Spacing.minimumTouch)) {
-                Icon(Icons.Rounded.StopCircle, contentDescription = MemoLocalization.translate("Stop active work", language), tint = MaterialTheme.colorScheme.error)
+            if (showStop) {
+                IconButton(onClick = onStop, modifier = Modifier.size(MemoTokens.Spacing.minimumTouch)) {
+                    Icon(Icons.Rounded.StopCircle, contentDescription = MemoLocalization.translate("Stop active work", language), tint = MaterialTheme.colorScheme.error)
+                }
             }
             IconButton(onClick = onLock, modifier = Modifier.size(MemoTokens.Spacing.minimumTouch)) {
                 Icon(Icons.Rounded.Lock, contentDescription = MemoLocalization.translate("Lock workspace", language), tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -945,7 +1039,6 @@ private fun AppHeader(onLock: () -> Unit, onStop: () -> Unit, onMore: () -> Unit
         }
     }
 }
-
 @Composable
 private fun VaultWarning(
     message: String,
@@ -953,7 +1046,7 @@ private fun VaultWarning(
     onImport: () -> Unit,
     onImportEncrypted: () -> Unit
 ) {
-    SurfaceCard(modifier = Modifier.padding(horizontal = MemoTokens.Spacing.md, vertical = MemoTokens.Spacing.xs)) {
+    MemoPanel(modifier = Modifier.padding(horizontal = MemoTokens.Spacing.md, vertical = MemoTokens.Spacing.xs)) {
         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
             Icon(Icons.Rounded.Fingerprint, contentDescription = null, tint = MaterialTheme.colorScheme.error)
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -1064,7 +1157,7 @@ private fun HomeScreen(
                     val entities = snapshot.entities.filter { item -> item.reviewStatus !in setOf("REJECTED", "MERGED") && (item.title.contains(query, true) || item.type.contains(query, true) || item.description.contains(query, true) || item.properties.values.any { it.contains(query, true) }) }.take(3)
                     val jobs = snapshot.jobs.filter { item -> item.title.contains(query, true) || item.goal.contains(query, true) || item.steps.any { it.title.contains(query, true) || it.detail.contains(query, true) } }.take(3)
                     val evidence = snapshot.evidence.filter { item -> item.title.contains(query, true) || item.summary.contains(query, true) || item.content.contains(query, true) || item.sourceUrl.contains(query, true) }.take(3)
-                    SurfaceCard {
+                    MemoPanel {
                         Text("Local search · ${conversations.size + entities.size + jobs.size + evidence.size} result(s)", style = MaterialTheme.typography.titleSmall)
                         if (conversations.isEmpty() && entities.isEmpty() && jobs.isEmpty() && evidence.isEmpty()) {
                             Text("No matching records. Memo searches only information already saved to this workspace; it does not search the web from this field.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -1106,7 +1199,7 @@ private fun HomeScreen(
             }
         }
         item {
-            SurfaceCard {
+            MemoPanel {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Box(
                         modifier = Modifier.size(42.dp).clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.primaryContainer),
@@ -1175,7 +1268,7 @@ private fun HomeScreen(
                 }
             }
         }
-        item { SectionHeading("Your world, in one place", "Durable records and evidence—not just chat history") }
+        item { MemoSectionHeading("Your world, in one place", supporting = "Durable records and evidence—not just chat history") }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.xs), modifier = Modifier.fillMaxWidth()) {
                 MetricCard("Conversations", snapshot.conversations.size.toString(), "ideas and decisions", Modifier.weight(1f))
@@ -1184,7 +1277,7 @@ private fun HomeScreen(
             }
         }
         item {
-            SurfaceCard {
+            MemoPanel {
                 Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
                     Icon(
                         if (reviewCount > 0) Icons.Rounded.Tune else Icons.Rounded.CheckCircle,
@@ -1210,9 +1303,9 @@ private fun HomeScreen(
             }
         }
         if (latestConversation != null) {
-            item { SectionHeading("Pick up where you left off", "Your latest conversation keeps its history and source labels") }
+            item { MemoSectionHeading("Pick up where you left off", supporting = "Your latest conversation keeps its history and source labels") }
             item {
-                SurfaceCard(modifier = Modifier.clickable { onOpenConversation(latestConversation.id) }) {
+                MemoPanel(modifier = Modifier.clickable { onOpenConversation(latestConversation.id) }) {
                     Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
                         Icon(Icons.Rounded.ChatBubbleOutline, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 2.dp))
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -1232,12 +1325,12 @@ private fun HomeScreen(
             }
         }
         if (attentionTasks.isNotEmpty()) {
-            item { SectionHeading("Work in motion", "Resume, inspect or review before continuing") }
+            item { MemoSectionHeading("Work in motion", supporting = "Resume, inspect or review before continuing") }
             items(attentionTasks, key = { it.id }) { task -> TaskCompactCard(task = task, onRun = { onResumeTask(task) }) }
         }
-        item { SectionHeading("Tools around your work", "Specialist capabilities support the workspace; they are not separate sources of truth") }
+        item { MemoSectionHeading("Tools around your work", supporting = "Specialist capabilities support the workspace; they are not separate sources of truth") }
         item {
-            SurfaceCard(modifier = Modifier.clickable(onClick = onTools)) {
+            MemoPanel(modifier = Modifier.clickable(onClick = onTools)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
                     Icon(Icons.Rounded.Public, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -1249,7 +1342,7 @@ private fun HomeScreen(
             }
         }
         item {
-            SurfaceCard {
+            MemoPanel {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
                     Icon(Icons.Rounded.Fingerprint, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -1269,7 +1362,7 @@ private fun HomeScreen(
                 }
             }
         }
-        item { SectionHeading("Recent activity", "A local trail of what happened") }
+        item { MemoSectionHeading("Recent activity", supporting = "A local trail of what happened") }
         if (activity.isEmpty()) item { EmptyState("Nothing recorded yet", "As Memo captures sources and completes work, the activity trail will show observable events—not invented progress.") }
         else items(activity, key = { it.id }) { event -> ActivityLine(event) }
         item { Spacer(Modifier.height(4.dp)) }
@@ -1284,7 +1377,7 @@ private fun ActivityLine(event: ActivityRecord) {
         "SUCCESS" -> MaterialTheme.colorScheme.tertiary
         else -> MaterialTheme.colorScheme.primary
     }
-    SurfaceCard {
+    MemoPanel {
         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
             Icon(
                 imageVector = if (event.level.equals("ERROR", true)) Icons.Rounded.StopCircle else Icons.Rounded.CheckCircle,
@@ -1302,7 +1395,7 @@ private fun ActivityLine(event: ActivityRecord) {
 
 @Composable
 private fun MetricCard(title: String, value: String, hint: String, modifier: Modifier = Modifier) {
-    SurfaceCard(modifier) {
+    MemoPanel(modifier) {
         Text(value, style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
         Spacer(Modifier.height(2.dp))
         Text(title, style = MaterialTheme.typography.titleSmall)
@@ -1312,7 +1405,7 @@ private fun MetricCard(title: String, value: String, hint: String, modifier: Mod
 
 @Composable
 private fun QuickSiteCard(site: QuickSite, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    SurfaceCard(modifier = modifier.clickable(onClick = onClick)) {
+    MemoPanel(modifier = modifier.clickable(onClick = onClick)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.xs)) {
             Icon(Icons.Rounded.Public, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
             Text(site.label, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -1324,7 +1417,7 @@ private fun QuickSiteCard(site: QuickSite, modifier: Modifier = Modifier, onClic
 
 @Composable
 private fun TaskCompactCard(task: TaskRecord, onRun: () -> Unit) {
-    SurfaceCard {
+    MemoPanel {
         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
             Icon(Icons.Rounded.TaskAlt, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = 2.dp))
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -1344,7 +1437,8 @@ private fun BrowserScreen(
     browser: BrowserSession,
     onQuickTask: (TaskKind, String) -> Unit,
     onCancelTask: () -> Unit,
-    onClearPrompt: () -> Unit
+    onClearPrompt: () -> Unit,
+    onReturnToWorkflow: (() -> Unit)?
 ) {
     var address by remember { mutableStateOf("") }
     var prompt by remember { mutableStateOf("") }
@@ -1352,6 +1446,29 @@ private fun BrowserScreen(
     var expandedBrowser by remember { mutableStateOf(false) }
     LaunchedEffect(browser.currentUrl) { address = browser.currentUrl }
     Column(modifier = Modifier.fillMaxSize().imePadding().padding(horizontal = MemoTokens.Spacing.sm, vertical = MemoTokens.Spacing.xs), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.xs)) {
+        if (onReturnToWorkflow != null) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text("Workflow browser", style = MaterialTheme.typography.labelLarge)
+                    Text(
+                        browser.workflowState.message,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                if (browser.workflowState.awaitingPromptApproval) {
+                    Button(onClick = onReturnToWorkflow) { Text("Review prompt & approve") }
+                } else {
+                    TextButton(onClick = onReturnToWorkflow) { Text("Back to workflow") }
+                }
+            }
+        }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             OutlinedTextField(
                 value = address,
@@ -1408,7 +1525,7 @@ private fun BrowserScreen(
             OutlinedButton(onClick = { onQuickTask(TaskKind.EXTRACT_LINKS, "") }, enabled = browser.currentUrl.isNotBlank() && !browser.isLoading, modifier = Modifier.weight(1f).height(MemoTokens.Spacing.minimumTouch), contentPadding = PaddingValues(horizontal = 8.dp)) { Icon(Icons.Rounded.Link, contentDescription = null); Spacer(Modifier.width(4.dp)); Text("Links") }
         }
         if (browser.pendingTask != null) {
-            SurfaceCard {
+            MemoPanel {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
                     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         Text("Task ready", style = MaterialTheme.typography.titleSmall)
@@ -1423,7 +1540,7 @@ private fun BrowserScreen(
             }
         }
         if (browser.preparedPrompt.isNotBlank()) {
-            SurfaceCard {
+            MemoPanel {
                 Text("Prompt prepared · not sent", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
                 Text("The prompt is in the website composer. Review it before sending.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (browser.sendMessage.isNotBlank()) Text(browser.sendMessage, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -1511,7 +1628,7 @@ private fun TasksScreen(
     }
     Column(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.md), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
-            SectionHeading("Browser tasks", "Small, inspectable actions that you can resume")
+            MemoSectionHeading("Browser tasks", supporting = "Small, inspectable actions that you can resume")
             Button(onClick = { showCreate = true }, modifier = Modifier.fillMaxWidth().height(MemoTokens.Spacing.minimumTouch)) {
                 Icon(Icons.Rounded.Add, contentDescription = null); Spacer(Modifier.width(8.dp)); Text("Create task")
             }
@@ -1552,7 +1669,7 @@ private fun TasksScreen(
 
 @Composable
 private fun TaskCard(task: TaskRecord, active: Boolean, onRun: () -> Unit, onDelete: () -> Unit) {
-    SurfaceCard {
+    MemoPanel {
         Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
             Box(modifier = Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
                 Icon(Icons.Rounded.TaskAlt, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
@@ -1636,7 +1753,7 @@ private fun EvidenceScreen(evidence: List<EvidenceRecord>, onSelect: (EvidenceRe
     }
     Column(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.md), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
-            SectionHeading("Evidence ledger", "Captured content keeps its source and collection context")
+            MemoSectionHeading("Evidence ledger", supporting = "Captured content keeps its source and collection context")
             Row(horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.xs), verticalAlignment = Alignment.CenterVertically) {
                 OutlinedTextField(
                     value = search, onValueChange = { search = it }, modifier = Modifier.weight(1f), singleLine = true,
@@ -1657,7 +1774,7 @@ private fun EvidenceScreen(evidence: List<EvidenceRecord>, onSelect: (EvidenceRe
 
 @Composable
 private fun EvidenceCard(item: EvidenceRecord, onSelect: () -> Unit, onDelete: () -> Unit) {
-    SurfaceCard {
+    MemoPanel {
         Column(modifier = Modifier.fillMaxWidth().clickable(onClick = onSelect), verticalArrangement = Arrangement.spacedBy(7.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Surface(color = MaterialTheme.colorScheme.tertiaryContainer, shape = RoundedCornerShape(8.dp)) {
@@ -1813,9 +1930,9 @@ private fun SettingsScreen(
         }
     }
     LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(MemoTokens.Spacing.pageMargin), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.md)) {
-        item { SectionHeading("Settings", "Privacy, appearance and your local workspace") }
+        item { MemoSectionHeading("Settings", supporting = "Privacy, appearance and your local workspace") }
         item {
-            SurfaceCard {
+            MemoPanel {
                 Text("Language", style = MaterialTheme.typography.titleLarge)
                 Text("Choose the language for Memo's interface.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(MemoTokens.Spacing.sm))
@@ -1831,7 +1948,7 @@ private fun SettingsScreen(
             }
         }
         item {
-            SurfaceCard {
+            MemoPanel {
                 Text("Notifications & reminders", style = MaterialTheme.typography.titleLarge)
                 Text("Optional local notifications. Reminder text stays generic on the lock screen; Memo does not need a push-notification server.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(MemoTokens.Spacing.sm))
@@ -1878,7 +1995,7 @@ private fun SettingsScreen(
             }
         }
         item {
-            SurfaceCard {
+            MemoPanel {
                 Text("Appearance", style = MaterialTheme.typography.titleLarge)
                 Text("Choose how Memo should look. System follows Android settings.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(MemoTokens.Spacing.sm))
@@ -1894,7 +2011,7 @@ private fun SettingsScreen(
             }
         }
         item {
-            SurfaceCard {
+            MemoPanel {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Rounded.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(26.dp))
                     Spacer(Modifier.width(MemoTokens.Spacing.sm))
@@ -1908,7 +2025,7 @@ private fun SettingsScreen(
             }
         }
         item {
-            SurfaceCard {
+            MemoPanel {
                 Text("Backup and restore", style = MaterialTheme.typography.titleLarge)
                 Text("Plain JSON is readable by anyone with the file. Prefer a passphrase-encrypted backup for moving personal workspace data between devices. Restore replaces this device's workspace after confirmation.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(MemoTokens.Spacing.sm))
@@ -1922,7 +2039,7 @@ private fun SettingsScreen(
             }
         }
         item {
-            SurfaceCard {
+            MemoPanel {
                 Text("Automation boundaries", style = MaterialTheme.typography.titleLarge)
                 Text("Council roles organize model work; they do not grant independent authority. Outputs remain inspectable, disagreements are preserved, and you own the final decision. Browser actions remain bounded to user-visible HTTPS pages and do not bypass sign-in, certificate errors or access controls.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(MemoTokens.Spacing.sm))

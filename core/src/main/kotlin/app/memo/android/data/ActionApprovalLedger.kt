@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream
 import java.io.DataOutputStream
 import java.net.URI
 import java.security.MessageDigest
+import org.json.JSONObject
 
 /** The action's exact outbound envelope. A material change must invalidate the approval. */
 data class ActionApprovalRecord(
@@ -58,6 +59,9 @@ object ActionApprovalLedger {
     const val MAX_PAYLOAD_CHARS = 24_000
     private const val GENESIS = "GENESIS"
 
+    private fun jobStepBindingPrefix(jobId: String, stepId: String): String =
+        "ACTION_BINDING_V1|${jobId.length}:$jobId|${stepId.length}:$stepId|"
+
     /** Length-prefixing prevents separator collisions between destination, capability and payload fields. */
     fun contentHash(runtimeId: String, capabilityId: String, destination: String, payload: String): String {
         val output = ByteArrayOutputStream()
@@ -83,6 +87,19 @@ object ActionApprovalLedger {
         risk: String = "EXTERNAL_WRITE",
         now: Long = nowMillis()
     ): ActionLedgerTransition {
+        val cleanJobId = jobId.trim()
+        val cleanStepId = stepId.trim()
+        if (cleanJobId.isBlank() || cleanStepId.isBlank()) {
+            return ActionLedgerTransition(snapshot, null, false, "External actions must be bound to a saved job and step.")
+        }
+        if (cleanJobId.length > 128 || cleanStepId.length > 128) {
+            return ActionLedgerTransition(snapshot, null, false, "The linked job or step identity is too long.")
+        }
+        val linkedJob = snapshot.jobs.firstOrNull { it.id == cleanJobId }
+            ?: return ActionLedgerTransition(snapshot, null, false, "The linked job no longer exists in this workspace.")
+        if (linkedJob.steps.none { it.id == cleanStepId }) {
+            return ActionLedgerTransition(snapshot, null, false, "The linked step does not belong to the selected job.")
+        }
         val validation = validateEnvelope(runtimeId, capabilityId, destination, title, payload)
         if (validation != null) return ActionLedgerTransition(snapshot, null, false, validation)
         if (snapshot.actionApprovals.size >= MAX_ACTIONS) return ActionLedgerTransition(snapshot, null, false, "Action approval limit reached. Export the workspace before clearing old action history.")
@@ -90,13 +107,14 @@ object ActionApprovalLedger {
         if (!verifyLedger(snapshot)) return ActionLedgerTransition(snapshot, null, false, "The action ledger or audit chain failed verification. External execution is blocked.")
         val contentHash = contentHash(runtimeId, capabilityId, destination, payload)
         val record = ActionApprovalRecord(
-            jobId = jobId.take(128), stepId = stepId.take(128), runtimeId = runtimeId,
+            jobId = cleanJobId, stepId = cleanStepId, runtimeId = runtimeId,
             capabilityId = capabilityId, destination = destination, title = title.trim().take(240),
             payload = payload, contentHash = contentHash, risk = risk.take(40), createdAt = now,
             expiresAt = now + 10 * 60 * 1000L
         )
         val withRecord = snapshot.copy(actionApprovals = (listOf(record) + snapshot.actionApprovals).take(MAX_ACTIONS))
-        return ActionLedgerTransition(appendEvent(withRecord, record, "ACTION_PROPOSED", "SYSTEM", "Exact outbound payload staged for review.", now), record, true, "Exact action proposal saved for review.")
+        val bindingDetails = jobStepBindingPrefix(record.jobId, record.stepId) + "Exact outbound payload staged for review."
+        return ActionLedgerTransition(appendEvent(withRecord, record, "ACTION_PROPOSED", "SYSTEM", bindingDetails, now), record, true, "Exact action proposal saved for review.")
     }
 
     fun approve(snapshot: AppSnapshot, actionId: String, displayedHash: String, now: Long = nowMillis()): ActionLedgerTransition {
@@ -174,11 +192,19 @@ object ActionApprovalLedger {
         if (!constantTimeEquals(storedEnvelopeHash, record.contentHash)) {
             return ActionLedgerTransition(snapshot, record, false, "The stored action payload failed integrity verification. External execution is blocked.")
         }
+        val linkedJob = snapshot.jobs.firstOrNull { it.id == record.jobId }
+        if (record.jobId.isBlank() || record.stepId.isBlank() || linkedJob == null || linkedJob.steps.none { it.id == record.stepId }) {
+            return markNeedsReview(snapshot, actionId, "The action is not bound to an existing saved job step; its outcome cannot be verified.", now)
+        }
         val reference = evidenceRef.trim()
         val evidenceId = reference.removePrefix("evidence:")
         val evidence = snapshot.evidence.firstOrNull { it.id == evidenceId }
-        if (!reference.startsWith("evidence:") || evidenceId.isBlank() || evidence == null || evidence.taskId != record.jobId) {
-            return markNeedsReview(snapshot, actionId, "No matching saved evidence record for this job proves the postcondition.", now)
+        val evidenceStepId = evidence?.let {
+            runCatching { JSONObject(it.metadata).optString("stepId") }.getOrDefault("")
+        }.orEmpty()
+        if (!reference.startsWith("evidence:") || evidenceId.isBlank() || evidence == null ||
+            evidence.taskId != record.jobId || evidenceStepId != record.stepId) {
+            return markNeedsReview(snapshot, actionId, "No matching saved evidence record for this job step proves the postcondition.", now)
         }
         val completed = record.copy(status = "COMPLETED", completedAt = now, evidenceRef = reference.take(2_048), resolution = "Verified postcondition recorded.")
         val updated = snapshot.copy(actionApprovals = snapshot.actionApprovals.map { if (it.id == actionId) completed else it })
@@ -254,6 +280,8 @@ object ActionApprovalLedger {
             if (!constantTimeEquals(action.contentHash, contentHash(action.runtimeId, action.capabilityId, action.destination, action.payload))) return false
             val events = snapshot.actionAuditEvents.filter { it.actionId == action.id }
             if (events.isEmpty() || events.first().eventType != "ACTION_PROPOSED") return false
+            val bindingPrefix = jobStepBindingPrefix(action.jobId, action.stepId)
+            if (events.first().details.startsWith("ACTION_BINDING_V1|") && !events.first().details.startsWith(bindingPrefix)) return false
             if (events.any { it.runtimeId != action.runtimeId || it.destination != action.destination || it.contentHash != action.contentHash }) return false
             val last = events.last()
             if (last.status != action.status || last.runtimeId != action.runtimeId || last.destination != action.destination || last.contentHash != action.contentHash) return false

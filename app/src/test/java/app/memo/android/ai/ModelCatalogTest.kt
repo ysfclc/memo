@@ -1,5 +1,6 @@
 package app.memo.android.ai
 
+import kotlinx.coroutines.launch
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -33,4 +34,48 @@ class ModelCatalogTest {
         assertTrue(ModelCatalog.entries.any { it.id == "gemma4-e2b" })
         assertEquals("qwen3-0.6b", ModelCatalog.entries.minBy { it.expectedBytes }.id)
     }
+
+    @Test fun localInferenceTimeoutCancelsWorkAndReportsTimeout() = kotlinx.coroutines.runBlocking {
+        var cancelled = false
+        try {
+            withLocalInferenceTimeout(20L) {
+                try {
+                    kotlinx.coroutines.delay(5_000L)
+                    "unexpected completion"
+                } finally {
+                    cancelled = true
+                }
+            }
+            org.junit.Assert.fail("Expected a local inference timeout.")
+        } catch (error: LocalInferenceTimeoutException) {
+            assertEquals("Local model inference timed out after 20 ms. The partial response was not saved as a completed result.", error.message)
+        }
+        assertEquals(true, cancelled)
+    }
+
+
+    @Test fun userCancellationIsNotReclassifiedAsAnInferenceTimeout() = kotlinx.coroutines.runBlocking {
+        var cancelled = false
+        val job = launch {
+            try {
+                withLocalInferenceTimeout(5_000L) {
+                    kotlinx.coroutines.awaitCancellation()
+                }
+            } finally {
+                cancelled = true
+            }
+        }
+        kotlinx.coroutines.delay(10L)
+        job.cancel()
+        job.join()
+        assertEquals(true, cancelled)
+    }
+
+    @Test fun localInferenceTimeoutWrapperReturnsSuccessfulResult() = kotlinx.coroutines.runBlocking {
+        assertEquals("complete", withLocalInferenceTimeout(1_000L) {
+            kotlinx.coroutines.delay(1L)
+            "complete"
+        })
+    }
+
 }

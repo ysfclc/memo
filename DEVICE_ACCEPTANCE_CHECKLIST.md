@@ -53,3 +53,10 @@ Record device model, Android version, APK SHA-256, GitHub Actions run URL, test 
 - [ ] Verify the reminder re-schedules after reboot/timezone/time change; test with battery saver and record any OEM delay rather than assuming exact timing.
 - [ ] Complete and fail a bounded native workflow; confirm one generic workflow notification per terminal transition and no duplicate notification on ordinary refreshes.
 - [ ] Tap a Memo notification while locked. Confirm Memo still requires its normal workspace unlock before private content is accessible.
+
+## Stabilization additions — current candidate acceptance
+
+- [ ] Verify GPU fallback policy on the exact candidate: force a GPU failure before first output and confirm CPU fallback; force failure after partial output and confirm no replay/duplicate appended answer.
+- [ ] Verify local inference Stop on-device: record request-to-stop latency, confirm native generation actually ceases, and confirm partial output is not saved as a completed artifact.
+- [ ] Install the exact candidate over the existing Memo installation using the pinned signing certificate; verify existing chats, encrypted workspace and native workflow records survive. Do not clear app data.
+- [ ] Record source commit SHA, APK SHA-256, signing certificate SHA-256, device model, Android version, test date, logs and any failures.

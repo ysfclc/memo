@@ -35,7 +35,8 @@ class CapabilityCompilerTest {
         val plan = IntentPlanner.plan("Publish this post to LinkedIn")
         val manifest = CapabilityCompiler.compile(plan, registry.listRuntimes())
         assertTrue(manifest.requiresUserApproval)
-        assertTrue(manifest.capabilities.any { it.capabilityId == "browser.prepare_prompt" && it.requiresUserApproval })
+        assertTrue(manifest.capabilities.any { it.capabilityId == "browser.submit_prompt" && it.requiresUserApproval })
+        assertFalse(manifest.capabilities.any { it.capabilityId == "browser.prepare_prompt" })
     }
 
     @Test fun sourceIntentHashChangesWhenIntentChanges() {

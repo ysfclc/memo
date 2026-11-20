@@ -1,28 +1,28 @@
 # Memo 1 — Product implementation contract
 
 **Canonical implementation target:** `ysfclc/memo` (Memo 1)  
-**Blueprint only:** `ysfclc/memo-2` — especially `docs/BUILD_PLAN.md`, `docs/TASKS.md`, `docs/FEATURES.md`, `docs/ARCHITECTURE.md`, and `docs/PROGRESS.md`.  
+**Historical cross-reference only:** `ysfclc/memo-2` — especially `docs/BUILD_PLAN.md`, `docs/TASKS.md`, `docs/FEATURES.md`, `docs/ARCHITECTURE.md`, and `docs/PROGRESS.md`. Memo 2 is not product authority and cannot add or override Memo requirements.  
 **Canonical package name:** `Memo-Android-Repository.zip`  
 **Contract status:** active; no product milestone is declared complete by this document alone.
 
 ## 1. The assignment
 
-Implement the same ambitious product defined by Memo 2 in the Memo 1 codebase, using improved knowledge of Yusuf's projects, preferences, constraints, and working context to make the product more useful. Memo 2 is the product blueprint; Memo 1 remains the sole implementation target. This is an implementation and reconciliation job, not a request to copy Memo 2's repository, downgrade scope, or make a demo that merely builds.
+Implement Memo according to the user's current instructions and corrections in `docs/USER_INPUT_LEDGER.md`, the user-approved `docs/MEMO_PRODUCT_CONTRACT.md`, and explicitly approved domain requirements. Memo 2 is a historical reference that may help compare implementation ideas, but it is not the product blueprint, does not create requirements, and must not be used to reinterpret or expand user intent. Memo 1 remains the sole implementation target. This is an implementation and reconciliation job, not a request to copy another repository, invent scope, silently downgrade the product, or make a demo that merely builds.
 
 Memo is a personal execution environment: it captures intent, maintains durable and source-grounded context, composes the capabilities needed for a task, executes work through controlled tools, presents real artifacts and live state, requests approval for consequential actions, and records evidence so work can safely resume.
 
 ## 2. Source-of-truth hierarchy
 
-When documents disagree, apply this order and record the resolution in `IMPLEMENTATION_LOG.md`:
+When project records disagree, follow the single hierarchy in `DEVELOPMENT_GOVERNANCE.md` and `AGENTS.md`:
 
-1. The user's explicit product intent and safety constraints.
-2. This contract (`IMPLEMENTATION_CONTRACT.md`).
-3. `TASKS.md` — ordered task-level execution plan and acceptance gates.
-4. `MEMO2_ALIGNMENT_MATRIX.md` — scope crosswalk to the blueprint.
-5. `PRODUCT_GAP_REGISTRY.md`, `FEATURE_AUDIT.md`, and `MEMO-PATCH1-AUDIT.md` — Memo 1-specific baseline evidence and gap hypotheses.
-6. `README.md`, `BUILD_STATUS.md`, and old run summaries — supporting information, never proof that current code meets requirements.
+1. The user's latest explicit input, correction or approval in `docs/USER_INPUT_LEDGER.md` (material decisions are also indexed in `docs/DECISION_LOG.md`).
+2. The user-approved `docs/MEMO_PRODUCT_CONTRACT.md` and domain specifications only within their explicitly approved scope.
+3. `docs/REQUIREMENT_TRACEABILITY.md`.
+4. `TASKS.md` and `ROADMAP.md`.
+5. Source, tests, CI, runtime and device evidence for implementation truth only.
+6. State/checkpoint/README/history documents and `MEMO2_ALIGNMENT_MATRIX.md` as subordinate handoff or historical references.
 
-Memo 2 checkboxes, test results, commits, and green builds are **not** evidence of Memo 1 completion.
+This implementation contract describes engineering gates; it cannot override user intent or the Product Contract. Memo 2 checkboxes, tests, commits and green builds are never evidence of Memo 1 completion or authorization to add Memo requirements.
 
 ## 3. Non-negotiable operating rules
 
@@ -98,7 +98,7 @@ Close data recovery, encrypted backup/restore, app lock, permission centre, diag
 For each task in `TASKS.md`:
 
 1. State task ID, requirement, dependencies, files owned and acceptance criteria before editing.
-2. Read the relevant Memo 1 implementation and blueprint section.
+2. Read the relevant user-approved Product Contract, ledger entries, accepted requirement and Memo 1 implementation. A historical blueprint may be consulted only as comparison material; it cannot add scope or acceptance criteria.
 3. Make the smallest coherent implementation; add regression tests and fixtures.
 4. Run targeted tests, core tests, Android unit tests, lint and build checks appropriate to the change.
 5. Review the full diff, especially data loss, policy bypass, privacy, concurrency, cancellation, audit and error handling.

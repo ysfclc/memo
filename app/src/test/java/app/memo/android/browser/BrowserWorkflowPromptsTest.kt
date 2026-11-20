@@ -78,6 +78,167 @@ class BrowserWorkflowPromptsTest {
     }
 
     @Test
+    fun skipAndStopPoliciesKeepDifferentScopes() {
+        assertTrue(BrowserWorkflowRecoveryPolicy.canSkipProvider(BrowserWorkflowStatus.WAITING_FOR_USER, false, false))
+        assertFalse(BrowserWorkflowRecoveryPolicy.canSkipProvider(BrowserWorkflowStatus.WAITING_FOR_USER, true, false))
+        assertFalse(BrowserWorkflowRecoveryPolicy.canSkipProvider(BrowserWorkflowStatus.WAITING_FOR_USER, false, true))
+        assertTrue(BrowserWorkflowRecoveryPolicy.canStopCurrentProviderStep(BrowserWorkflowStatus.WAITING_FOR_USER, false, true, false))
+        assertTrue(BrowserWorkflowRecoveryPolicy.canStopCurrentProviderStep(BrowserWorkflowStatus.WAITING_FOR_RESPONSE, false, true, false))
+        assertTrue(BrowserWorkflowRecoveryPolicy.canStopCurrentProviderStep(BrowserWorkflowStatus.WAITING_FOR_USER, false, false, true))
+        assertFalse(BrowserWorkflowRecoveryPolicy.canStopCurrentProviderStep(BrowserWorkflowStatus.WAITING_FOR_USER, true, true, false))
+        assertFalse(BrowserWorkflowRecoveryPolicy.canStopCurrentProviderStep(BrowserWorkflowStatus.WAITING_FOR_RESPONSE, false, false, false))
+    }
+
+    @Test
+    fun responseDetectionRetryIsAvailableOnlyForASentStepWaitingForRecovery() {
+        assertTrue(
+            BrowserWorkflowRecoveryPolicy.canRetryResponseDetection(
+                BrowserWorkflowStatus.WAITING_FOR_USER,
+                sentForCurrentStep = true
+            )
+        )
+        assertFalse(
+            BrowserWorkflowRecoveryPolicy.canRetryResponseDetection(
+                BrowserWorkflowStatus.WAITING_FOR_USER,
+                sentForCurrentStep = false
+            )
+        )
+        assertFalse(
+            BrowserWorkflowRecoveryPolicy.canRetryResponseDetection(
+                BrowserWorkflowStatus.WAITING_FOR_RESPONSE,
+                sentForCurrentStep = true
+            )
+        )
+    }
+
+    @Test
+    fun manualCaptureRequiresSentPromptWaitingStateMatchingProviderAndUsefulText() {
+        assertTrue(
+            BrowserWorkflowRecoveryPolicy.canCaptureManually(
+                BrowserWorkflowStatus.WAITING_FOR_USER,
+                sentForCurrentStep = true,
+                providerPageMatches = true,
+                responseText = "A sufficiently detailed provider answer."
+            )
+        )
+    }
+
+    @Test
+    fun manualCaptureRejectsProviderMismatchEvenWhenAResponseWasSent() {
+        assertFalse(
+            BrowserWorkflowRecoveryPolicy.canCaptureManually(
+                BrowserWorkflowStatus.WAITING_FOR_USER,
+                sentForCurrentStep = true,
+                providerPageMatches = false,
+                responseText = "A sufficiently detailed provider answer."
+            )
+        )
+    }
+
+    @Test
+    fun manualCaptureRejectsUncertainSendWrongPageAndInvalidText() {
+        assertFalse(
+            BrowserWorkflowRecoveryPolicy.canCaptureManually(
+                BrowserWorkflowStatus.WAITING_FOR_USER,
+                sentForCurrentStep = false,
+                providerPageMatches = true,
+                responseText = "A sufficiently detailed provider answer."
+            )
+        )
+        assertFalse(
+            BrowserWorkflowRecoveryPolicy.canCaptureManually(
+                BrowserWorkflowStatus.WAITING_FOR_USER,
+                sentForCurrentStep = true,
+                providerPageMatches = false,
+                responseText = "A sufficiently detailed provider answer."
+            )
+        )
+        assertFalse(
+            BrowserWorkflowRecoveryPolicy.canCaptureManually(
+                BrowserWorkflowStatus.WAITING_FOR_RESPONSE,
+                sentForCurrentStep = true,
+                providerPageMatches = true,
+                responseText = "A sufficiently detailed provider answer."
+            )
+        )
+        assertFalse(
+            BrowserWorkflowRecoveryPolicy.canCaptureManually(
+                BrowserWorkflowStatus.WAITING_FOR_USER,
+                sentForCurrentStep = true,
+                providerPageMatches = true,
+                responseText = "short"
+            )
+        )
+    }
+
+    @Test
+    fun preparedPromptCanBeEditedOnlyBeforeSubmissionAndWithoutUncertainty() {
+        assertTrue(
+            BrowserWorkflowRecoveryPolicy.canEditPreparedPrompt(
+                BrowserWorkflowStatus.WAITING_FOR_USER,
+                sentForCurrentStep = false,
+                submissionUncertain = false,
+                prompt = "A revised provider prompt with enough content."
+            )
+        )
+        assertFalse(
+            BrowserWorkflowRecoveryPolicy.canEditPreparedPrompt(
+                BrowserWorkflowStatus.WAITING_FOR_RESPONSE,
+                sentForCurrentStep = true,
+                submissionUncertain = false,
+                prompt = "A revised provider prompt."
+            )
+        )
+        assertFalse(
+            BrowserWorkflowRecoveryPolicy.canEditPreparedPrompt(
+                BrowserWorkflowStatus.WAITING_FOR_USER,
+                sentForCurrentStep = true,
+                submissionUncertain = false,
+                prompt = "A revised provider prompt."
+            )
+        )
+        assertFalse(
+            BrowserWorkflowRecoveryPolicy.canEditPreparedPrompt(
+                BrowserWorkflowStatus.WAITING_FOR_USER,
+                sentForCurrentStep = false,
+                submissionUncertain = true,
+                prompt = "A revised provider prompt."
+            )
+        )
+    }
+
+    @Test
+    fun preparedPromptEditRejectsBlankAndOversizedContent() {
+        assertFalse(
+            BrowserWorkflowRecoveryPolicy.canEditPreparedPrompt(
+                BrowserWorkflowStatus.WAITING_FOR_USER,
+                sentForCurrentStep = false,
+                submissionUncertain = false,
+                prompt = "   "
+            )
+        )
+        assertFalse(
+            BrowserWorkflowRecoveryPolicy.canEditPreparedPrompt(
+                BrowserWorkflowStatus.WAITING_FOR_USER,
+                sentForCurrentStep = false,
+                submissionUncertain = false,
+                prompt = "x".repeat(BrowserWorkflowRecoveryPolicy.MAX_PROVIDER_PROMPT_LENGTH + 1)
+            )
+        )
+    }
+
+    @Test
+    fun responseCaptureWaitStateRemainsAnActiveWorkflowState() {
+        val saving = BrowserWorkflowUiState(status = BrowserWorkflowStatus.SAVING_RESPONSE)
+        val waiting = BrowserWorkflowUiState(status = BrowserWorkflowStatus.WAITING_FOR_USER)
+        val idle = BrowserWorkflowUiState(status = BrowserWorkflowStatus.IDLE)
+
+        assertTrue(saving.isActive)
+        assertTrue(waiting.isActive)
+        assertFalse(idle.isActive)
+    }
+
+    @Test
     fun critiqueChainAssignsReviewerRoleToSecondStep() {
         val prompt = BrowserWorkflowPrompts.build(
             goal = "Review this product architecture.",

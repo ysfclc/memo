@@ -3,14 +3,16 @@ package app.memo.android.ui
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material3.Text
+import app.memo.android.ui.MemoText as Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -78,7 +80,7 @@ fun MemoSectionHeading(
         horizontalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)
     ) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+            Text(title, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
             if (!supporting.isNullOrBlank()) {
                 Text(supporting, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
@@ -91,7 +93,7 @@ fun MemoSectionHeading(
 @Composable
 fun MemoPanel(
     modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
+    content: @Composable ColumnScope.() -> Unit
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),

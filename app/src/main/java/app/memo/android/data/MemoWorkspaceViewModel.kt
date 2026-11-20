@@ -7,22 +7,45 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.memo.android.automation.TaskRules
 import app.memo.android.runtime.RuntimeRegistry
+import app.memo.android.runtime.EntityProposalRuntimeAdapter
+import app.memo.android.runtime.WorkflowCancellationSignal
+import app.memo.android.runtime.WorkflowRuntimeDispatcher
+import app.memo.android.runtime.WorkflowRuntimeDeadlineExceededException
+import app.memo.android.runtime.WorkflowRuntimeCancelledException
+import app.memo.android.runtime.WorkflowRuntimeResult
 import app.memo.android.orchestration.IntentPlanner
 import app.memo.android.orchestration.CapabilityCompiler
 import app.memo.android.orchestration.WorkflowGraphCompiler
+import app.memo.android.orchestration.WorkflowGraph
+import app.memo.android.orchestration.WorkflowProposalApplier
+import app.memo.android.orchestration.ConversationWorkflowDraftFactory
 import org.json.JSONObject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withContext
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicLong
+
+private data class SnapshotPersistenceRequest(val revision: Long, val snapshot: AppSnapshot)
 
 class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(application) {
     private val vault = EncryptedVault(application)
-    private val persistenceQueue = Channel<AppSnapshot>(Channel.CONFLATED)
+    private val persistenceQueue = Channel<SnapshotPersistenceRequest>(Channel.CONFLATED)
+    private val persistenceMutex = Mutex()
+    private val persistenceRevision = AtomicLong(0L)
+    private val persistedRevision = AtomicLong(0L)
     private val preferences = application.getSharedPreferences("synthos_preferences", Application.MODE_PRIVATE)
     private val runtimeRegistry = RuntimeRegistry()
 
@@ -47,11 +70,21 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
     init {
         viewModelScope.launch {
             for (candidate in persistenceQueue) {
-                try {
-                    withContext(Dispatchers.IO) { vault.write(candidate) }
-                    _vaultError.value = null
-                } catch (error: Throwable) {
-                    _vaultError.value = safeError(error, "Could not save the encrypted workspace. Export your data before continuing.")
+                persistenceMutex.withLock {
+                    // A conflated queue may still yield an older snapshot. Never let it overwrite
+                    // a newer in-memory transaction or a snapshot already confirmed on disk.
+                    if (candidate.revision != persistenceRevision.get() ||
+                        candidate.revision <= persistedRevision.get()
+                    ) return@withLock
+                    try {
+                        withContext(Dispatchers.IO) { vault.write(candidate.snapshot) }
+                        persistedRevision.updateAndGet { maxOf(it, candidate.revision) }
+                        if (candidate.revision == persistenceRevision.get()) _vaultError.value = null
+                    } catch (error: Throwable) {
+                        if (candidate.revision == persistenceRevision.get()) {
+                            _vaultError.value = safeError(error, "Could not save the encrypted workspace. Export your data before continuing.")
+                        }
+                    }
                 }
             }
         }
@@ -643,6 +676,56 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         return if (saved) Result.success(job.id) else Result.failure(IllegalStateException("The plan could not be persisted. Check workspace status."))
     }
 
+    /**
+     * Persist a validated dynamic workflow as a Work draft linked to the exact Talk user message.
+     * Snapshot equality prevents a stale planning callback from overwriting newer workspace state.
+     */
+    fun createConversationWorkflowDraft(
+        sourceConversationId: String,
+        sourceMessageId: String,
+        proposal: WorkflowGraph
+    ): Result<String> {
+        if (!_vaultReady.value) return Result.failure(IllegalStateException("Unlock the workspace before creating work."))
+        if (_vaultError.value != null) return Result.failure(IllegalStateException("Workspace persistence is unavailable. Resolve the workspace issue before creating work."))
+        val before = _snapshot.value
+        val job = runCatching {
+            ConversationWorkflowDraftFactory.create(
+                before, sourceConversationId, sourceMessageId, proposal, runtimeRegistry.listRuntimes(), nowMillis()
+            )
+        }.getOrElse { return Result.failure(it) }
+        updateSnapshot { current ->
+            if (current != before) current
+            else current.copy(jobs = (listOf(job) + current.jobs).take(240))
+                .withActivity("Dynamic workflow draft prepared from Talk: ${job.title}", job.id)
+        }
+        val committed = _snapshot.value.jobs.firstOrNull { it.id == job.id }
+        return if (committed?.workflowGraphJson == job.workflowGraphJson) Result.success(job.id)
+        else Result.failure(IllegalStateException("The workspace changed while Memo was preparing this draft. The conversation was kept; no work was started."))
+    }
+
+    /**
+     * Replace an untouched template plan with a validated non-external TaskSpec proposal.
+     * The model proposal is recompiled against the current runtime registry and never executed.
+     */
+    fun applyValidatedWorkflowProposal(jobId: String, proposal: WorkflowGraph): Result<Unit> {
+        if (!_vaultReady.value) return Result.failure(IllegalStateException("Unlock the workspace before expanding a plan."))
+        if (_vaultError.value != null) return Result.failure(IllegalStateException("Workspace persistence is unavailable. Resolve the workspace issue before expanding a plan."))
+        val expectedGraphJson = runCatching { proposal.toJson() }
+            .getOrElse { return Result.failure(it) }
+        var applyError: Throwable? = null
+        updateSnapshot { current ->
+            runCatching {
+                WorkflowProposalApplier.apply(current, jobId, proposal, runtimeRegistry.listRuntimes(), nowMillis())
+            }.onFailure { applyError = it }.getOrDefault(current)
+        }
+        if (applyError != null) return Result.failure(applyError!!)
+        val committed = _snapshot.value.jobs.any {
+            it.id == jobId && it.status == "DRAFT" && it.workflowGraphJson == expectedGraphJson
+        }
+        return if (committed) Result.success(Unit)
+        else Result.failure(IllegalStateException("The expanded proposal was not committed. The original plan remains unchanged."))
+    }
+
     /** Revise an untouched draft plan and regenerate its deterministic checkpoints. This never performs side effects. */
     fun reviseIntentPlan(jobId: String, title: String, rawIntent: String): Result<Unit> {
         if (!_vaultReady.value || _vaultError.value != null) return Result.failure(IllegalStateException("Workspace persistence is unavailable."))
@@ -691,65 +774,339 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         else Result.failure(IllegalStateException("The plan changed while you were editing it. Reopen the plan and try again."))
     }
 
-    /** Start only the next sequential checkpoint. An external-write checkpoint cannot be started through this generic workbench. */
-    fun startJobStep(jobId: String, stepId: String): Result<Unit> {
-        if (!_vaultReady.value || _vaultError.value != null) return Result.failure(IllegalStateException("Workspace persistence is unavailable."))
-        val current = _snapshot.value
-        val job = current.jobs.firstOrNull { it.id == jobId } ?: return Result.failure(IllegalArgumentException("Job no longer exists."))
-        val index = job.steps.indexOfFirst { it.id == stepId }
-        if (index < 0) return Result.failure(IllegalArgumentException("Checkpoint no longer exists."))
-        val step = job.steps[index]
-        if (step.requiresApproval || step.checkpointKind == "EXTERNAL_ACTION") {
-            return Result.failure(IllegalStateException("This checkpoint requires the dedicated exact-content action approval flow. The work planner cannot execute external actions."))
-        }
-        if (job.steps.take(index).any { it.status != "COMPLETED" }) return Result.failure(IllegalStateException("Complete earlier checkpoints in order first."))
-        if (job.steps.any { it.status == "RUNNING" }) return Result.failure(IllegalStateException("Finish or review the active checkpoint before starting another."))
-        if (step.status !in setOf("PENDING", "NEEDS_REVIEW")) return Result.failure(IllegalStateException("This checkpoint is not startable from ${step.status}."))
-        updateSnapshot { snapshot ->
-            snapshot.copy(jobs = snapshot.jobs.map { candidate ->
-                if (candidate.id != jobId) candidate else candidate.copy(
-                    status = "RUNNING",
-                    steps = candidate.steps.map { candidateStep -> if (candidateStep.id == stepId) candidateStep.copy(status = "RUNNING", detail = candidateStep.detail.take(1_700) + "\n\nStarted by the user at ${nowMillis()}.", updatedAt = nowMillis()) else candidateStep },
-                    resultSummary = "A checkpoint is active. Memo is not acting outside this screen; record a real outcome before moving on.",
-                    updatedAt = nowMillis()
+    /**
+     * Save source-checked Talk outcomes through the deterministic app.entities runtime.
+     * Proposal rows are persisted as PROPOSED; a separate app.jobs observer must verify them
+     * before the workflow checkpoint is completed. No entity is auto-approved.
+     */
+    fun saveOutcomeProposalsThroughRuntime(
+        sourceJobId: String,
+        sourceConversationId: String,
+        proposals: List<OutcomeProposal>,
+        onComplete: (Result<EntityProposalWorkflowSummary>) -> Unit
+    ) {
+        viewModelScope.launch {
+            if (!_vaultReady.value || _vaultError.value != null) {
+                onComplete(Result.failure(IllegalStateException("Unlock the encrypted workspace before saving proposals.")))
+                return@launch
+            }
+            val registeredRuntimes = runtimeRegistry.listRuntimes()
+            val before = _snapshot.value
+            val preparedResult = EntityProposalWorkflowCoordinator.prepare(
+                before, sourceJobId, sourceConversationId, proposals, registeredRuntimes
+            )
+            if (preparedResult.isFailure) {
+                val error = preparedResult.exceptionOrNull() ?: IllegalStateException("The proposal workflow could not be prepared.")
+                recordOutcomeProposalProgress(sourceJobId, "", 0, 0, error.message ?: "Proposal validation failed.", verified = false)
+                onComplete(Result.failure(error))
+                return@launch
+            }
+            val prepared = preparedResult.getOrThrow()
+            if (_snapshot.value != before) {
+                val error = IllegalStateException("The workspace changed while the proposal workflow was being prepared. Reopen Talk and retry.")
+                recordOutcomeProposalProgress(sourceJobId, "", 0, 0, error.message.orEmpty(), verified = false)
+                onComplete(Result.failure(error))
+                return@launch
+            }
+            _snapshot.value = prepared.snapshot
+            val preparedSave = persistAndAwait()
+            if (preparedSave.isFailure) {
+                val error = IllegalStateException(
+                    "Memo could not durably save the proposal workflow: " +
+                        (preparedSave.exceptionOrNull()?.message ?: "encrypted storage failed")
                 )
-            }).withActivity("Started checkpoint: ${step.title}", jobId)
+                onComplete(Result.failure(error))
+                return@launch
+            }
+
+            val started = app.memo.android.orchestration.WorkflowCheckpointCoordinator.start(
+                _snapshot.value, prepared.jobId, prepared.taskId, registeredRuntimes, nowMillis()
+            )
+            if (started.isFailure) {
+                val error = started.exceptionOrNull() ?: IllegalStateException("The proposal checkpoint could not be started.")
+                recordOutcomeProposalProgress(sourceJobId, prepared.jobId, 0, 0, error.message.orEmpty(), verified = false)
+                onComplete(Result.failure(error))
+                return@launch
+            }
+            _snapshot.value = started.getOrThrow()
+            val attemptSave = persistAndAwait()
+            if (attemptSave.isFailure) {
+                val error = IllegalStateException(
+                    "Memo could not confirm the active proposal attempt on encrypted storage: " +
+                        (attemptSave.exceptionOrNull()?.message ?: "encrypted storage failed")
+                )
+                onComplete(Result.failure(error))
+                return@launch
+            }
+
+            val parentContext = currentCoroutineContext()
+            val request = try {
+                EntityProposalWorkflowCoordinator.buildRequest(
+                    _snapshot.value,
+                    prepared,
+                    registeredRuntimes,
+                    WorkflowCancellationSignal { !parentContext.isActive }
+                )
+            } catch (error: Throwable) {
+                markEntityProposalAttemptNeedsReview(prepared, error.message ?: "The runtime request could not be created.")
+                recordOutcomeProposalProgress(sourceJobId, prepared.jobId, 0, 0, error.message.orEmpty(), verified = false)
+                onComplete(Result.failure(error))
+                return@launch
+            }
+            val runtimeResult = try {
+                val remainingTimeoutMs = request.remainingTimeMs(nowMillis())
+                withTimeout(remainingTimeoutMs) {
+                    WorkflowRuntimeDispatcher.dispatch(
+                        request,
+                        registeredRuntimes,
+                        listOf(EntityProposalRuntimeAdapter(registeredRuntimes)),
+                        now = ::nowMillis
+                    )
+                }
+            } catch (timeout: TimeoutCancellationException) {
+                WorkflowRuntimeResult.Failed(
+                    "DEADLINE_EXCEEDED",
+                    "The deterministic proposal runtime exceeded its persisted attempt deadline.",
+                    request.deadlineAt
+                )
+            } catch (cancelled: WorkflowRuntimeCancelledException) {
+                WorkflowRuntimeResult.Cancelled(
+                    nowMillis().coerceIn(request.attempt.startedAt, request.deadlineAt)
+                )
+            } catch (deadline: WorkflowRuntimeDeadlineExceededException) {
+                WorkflowRuntimeResult.Failed(
+                    "DEADLINE_EXCEEDED",
+                    deadline.message ?: "The deterministic proposal runtime exceeded its persisted attempt deadline.",
+                    request.deadlineAt
+                )
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Throwable) {
+                markEntityProposalAttemptNeedsReview(prepared, error.message ?: "The app runtime failed.")
+                recordOutcomeProposalProgress(sourceJobId, prepared.jobId, 0, 0, error.message.orEmpty(), verified = false)
+                onComplete(Result.failure(error))
+                return@launch
+            }
+            if (runtimeResult !is WorkflowRuntimeResult.Output) {
+                val detail = when (runtimeResult) {
+                    is WorkflowRuntimeResult.Failed -> runtimeResult.code + ": " + runtimeResult.detail
+                    is WorkflowRuntimeResult.NeedsReview -> runtimeResult.reason
+                    is WorkflowRuntimeResult.Cancelled -> "The user or Memo cancelled the deterministic proposal runtime."
+                    is WorkflowRuntimeResult.Output -> "The runtime produced an output."
+                }
+                markEntityProposalAttemptNeedsReview(prepared, detail)
+                recordOutcomeProposalProgress(sourceJobId, prepared.jobId, 0, 0, detail, verified = false)
+                onComplete(Result.failure(IllegalStateException(detail)))
+                return@launch
+            }
+
+            val savedResult = EntityProposalWorkflowCoordinator.saveOutput(
+                _snapshot.value, request, runtimeResult.value, runtimeResult.completedAt
+            )
+            if (savedResult.isFailure) {
+                val error = savedResult.exceptionOrNull() ?: IllegalStateException("The proposal output could not be saved.")
+                markEntityProposalAttemptNeedsReview(prepared, error.message ?: "The proposal output could not be saved.")
+                recordOutcomeProposalProgress(sourceJobId, prepared.jobId, 0, 0, error.message.orEmpty(), verified = false)
+                onComplete(Result.failure(error))
+                return@launch
+            }
+            val saved = savedResult.getOrThrow()
+            _snapshot.value = saved.snapshot
+            val outputSave = persistAndAwait()
+            if (outputSave.isFailure) {
+                val error = IllegalStateException(
+                    "Memo could not confirm the proposal output on encrypted storage. The checkpoint remains unverified: " +
+                        (outputSave.exceptionOrNull()?.message ?: "encrypted storage failed")
+                )
+                onComplete(Result.failure(error))
+                return@launch
+            }
+
+            val postconditionRequest = try {
+                EntityProposalWorkflowCoordinator.createPostconditionRequest(
+                    _snapshot.value, saved, request, registeredRuntimes
+                )
+            } catch (error: Throwable) {
+                recordOutcomeProposalProgress(sourceJobId, prepared.jobId, saved.savedCount, saved.duplicateCount,
+                    error.message ?: "The saved proposal output needs review.", verified = false)
+                onComplete(Result.failure(error))
+                return@launch
+            }
+            val postcondition = try {
+                EntityProposalPostconditionObserver(_snapshot.value).observe(postconditionRequest)
+            } catch (error: Throwable) {
+                recordOutcomeProposalProgress(sourceJobId, prepared.jobId, saved.savedCount, saved.duplicateCount,
+                    error.message ?: "The independent proposal check needs review.", verified = false)
+                onComplete(Result.failure(error))
+                return@launch
+            }
+            postcondition.validateAgainst(postconditionRequest)
+            if (!postcondition.permitsCheckpointCompletion) {
+                val detail = postcondition.detail
+                recordOutcomeProposalProgress(sourceJobId, prepared.jobId, saved.savedCount, saved.duplicateCount,
+                    detail, verified = false)
+                onComplete(Result.failure(IllegalStateException(detail)))
+                return@launch
+            }
+
+            val completion = EntityProposalWorkflowCoordinator.complete(
+                _snapshot.value, postconditionRequest, postcondition, nowMillis()
+            )
+            if (completion.isFailure) {
+                val error = completion.exceptionOrNull() ?: IllegalStateException("The verified proposal result could not be committed.")
+                recordOutcomeProposalProgress(sourceJobId, prepared.jobId, saved.savedCount, saved.duplicateCount,
+                    error.message ?: "The postcondition needs review.", verified = false)
+                onComplete(Result.failure(error))
+                return@launch
+            }
+            _snapshot.value = completion.getOrThrow()
+            val completionSave = persistAndAwait()
+            if (completionSave.isFailure) {
+                val error = IllegalStateException(
+                    "The result was verified in memory but Memo could not confirm the completion record on encrypted storage: " +
+                        (completionSave.exceptionOrNull()?.message ?: "encrypted storage failed")
+                )
+                onComplete(Result.failure(error))
+                return@launch
+            }
+
+            val summary = EntityProposalWorkflowSummary(
+                jobId = prepared.jobId,
+                savedCount = saved.savedCount,
+                duplicateCount = saved.duplicateCount,
+                outputEvidenceId = saved.outputEvidenceId,
+                verificationEvidenceId = postcondition.evidenceId
+            )
+            val detail = "Verified " + summary.savedCount + " source-linked proposal(s); skipped " +
+                summary.duplicateCount + " existing duplicate(s). All proposals remain PROPOSED for your review."
+            val parentSave = recordOutcomeProposalProgress(
+                sourceJobId, prepared.jobId, summary.savedCount, summary.duplicateCount, detail, verified = true
+            )
+            if (parentSave.isFailure) {
+                val error = IllegalStateException(
+                    "The proposal records are saved and verified, but the source extraction history could not be updated: " +
+                        (parentSave.exceptionOrNull()?.message ?: "encrypted storage failed")
+                )
+                onComplete(Result.failure(error))
+                return@launch
+            }
+            onComplete(Result.success(summary))
         }
-        return Result.success(Unit)
     }
 
-    /** Save a user-reported result for a local checkpoint. External-write steps require the real approval/runtime flow and are never completed by this shortcut. */
-    fun recordJobCheckpoint(jobId: String, stepId: String, outcome: String): Result<Unit> {
-        if (!_vaultReady.value || _vaultError.value != null) return Result.failure(IllegalStateException("Workspace persistence is unavailable."))
-        val clean = outcome.trim().take(2_000)
-        if (clean.length < 6) return Result.failure(IllegalArgumentException("Record a concrete outcome of at least six characters."))
+    private suspend fun markEntityProposalAttemptNeedsReview(
+        prepared: PreparedEntityProposalWorkflow,
+        detail: String
+    ) {
+        val transition = LocalWorkArtifactCoordinator.markNeedsReview(
+            _snapshot.value,
+            prepared.jobId,
+            prepared.taskId,
+            detail.take(2_000),
+            "The deterministic app-runtime checkpoint did not produce a verified result. Review before retrying.",
+            nowMillis()
+        )
+        if (transition.isSuccess) {
+            _snapshot.value = transition.getOrThrow()
+            persistAndAwait()
+        }
+    }
+
+    private suspend fun recordOutcomeProposalProgress(
+        sourceJobId: String,
+        runtimeJobId: String,
+        savedCount: Int,
+        duplicateCount: Int,
+        detail: String,
+        verified: Boolean
+    ): Result<Unit> {
+        if (!_vaultReady.value || _vaultError.value != null) {
+            return Result.failure(IllegalStateException("Workspace persistence is unavailable."))
+        }
         val current = _snapshot.value
-        val job = current.jobs.firstOrNull { it.id == jobId } ?: return Result.failure(IllegalArgumentException("Job no longer exists."))
-        val step = job.steps.firstOrNull { it.id == stepId } ?: return Result.failure(IllegalArgumentException("Checkpoint no longer exists."))
-        if (step.requiresApproval || step.checkpointKind == "EXTERNAL_ACTION") {
-            return Result.failure(IllegalStateException("External actions cannot be marked complete from a note. Use the destination runtime and its exact-content approval gate, then retain verifiable outcome evidence."))
+        val parent = current.jobs.singleOrNull { it.id == sourceJobId }
+            ?: return Result.failure(IllegalStateException("The source extraction job no longer exists."))
+        if (parent.steps.size < 4) {
+            return Result.failure(IllegalStateException("The source extraction job has no proposal-review checkpoint."))
         }
-        if (step.status !in setOf("RUNNING", "NEEDS_REVIEW")) return Result.failure(IllegalStateException("Start this checkpoint or open its review before recording an outcome."))
-        val updatedSteps = job.steps.map { candidate ->
-            if (candidate.id == stepId) candidate.copy(
-                status = "COMPLETED",
-                evidence = "USER_REPORTED: $clean".take(2_000),
-                detail = candidate.detail.take(1_200) + "\n\nOutcome recorded by user; not independently verified.",
-                updatedAt = nowMillis()
-            ) else candidate
-        }
-        val allComplete = updatedSteps.isNotEmpty() && updatedSteps.all { it.status == "COMPLETED" }
-        updateSnapshot { snapshot ->
-            snapshot.copy(jobs = snapshot.jobs.map { candidate ->
-                if (candidate.id != jobId) candidate else candidate.copy(
-                    status = if (allComplete) "SUCCEEDED" else "RUNNING",
-                    steps = updatedSteps,
-                    resultSummary = if (allComplete) "All local checkpoints were marked complete by the user. External side effects, if any, were not independently verified by this plan." else "Checkpoint outcome recorded by user. Continue to the next step in sequence.",
+        val safeDetail = detail.trim().take(2_000)
+        val updatedSteps = parent.steps.mapIndexed { index, step ->
+            when (index) {
+                2 -> step.copy(
+                    status = if (verified) "COMPLETED" else "NEEDS_REVIEW",
+                    detail = safeDetail,
+                    evidence = if (verified) {
+                        "workflow:$runtimeJobId;proposals:$savedCount;duplicates:$duplicateCount"
+                    } else {
+                        "workflow:$runtimeJobId"
+                    },
                     updatedAt = nowMillis()
                 )
-            }).withActivity("User recorded checkpoint outcome: ${step.title}", jobId, if (allComplete) "INFO" else "INFO")
+                3 -> step.copy(
+                    status = if (verified) "NEEDS_REVIEW" else "PENDING",
+                    detail = if (verified) {
+                        "Review, edit, approve or reject each proposed entity in Work. No proposal was auto-approved."
+                    } else {
+                        "Resolve the proposal-runtime issue before treating this extraction as complete."
+                    },
+                    evidence = if (verified) "proposal-count:$savedCount" else "",
+                    updatedAt = nowMillis()
+                )
+                else -> step
+            }
         }
-        return Result.success(Unit)
+        val next = current.copy(
+            jobs = current.jobs.map { job ->
+                if (job.id == sourceJobId) job.copy(
+                    status = "WAITING_FOR_USER",
+                    steps = updatedSteps,
+                    resultSummary = safeDetail,
+                    updatedAt = nowMillis()
+                ) else job
+            },
+            activity = (listOf(ActivityRecord(
+                at = nowMillis(),
+                level = if (verified) "INFO" else "WARN",
+                message = if (verified) {
+                    "Talk outcome proposals independently verified and saved for review."
+                } else {
+                    "Talk outcome proposal workflow needs review: " + safeDetail.take(220)
+                },
+                taskId = sourceJobId
+            )) + current.activity).take(500)
+        )
+        _snapshot.value = next
+        return persistAndAwait()
+    }
+
+    /** Start one dependency-ready, non-external workflow checkpoint and persist its state. */
+    fun startJobStep(jobId: String, stepId: String): Result<Unit> {
+        if (!_vaultReady.value || _vaultError.value != null) return Result.failure(IllegalStateException("Workspace persistence is unavailable."))
+        val before = _snapshot.value
+        val transition = app.memo.android.orchestration.WorkflowCheckpointCoordinator.start(
+            before, jobId, stepId, runtimeRegistry.listRuntimes(), nowMillis()
+        )
+        if (transition.isFailure) return Result.failure(transition.exceptionOrNull() ?: IllegalStateException("The checkpoint could not be started."))
+        val next = transition.getOrThrow()
+        updateSnapshot { current -> if (current == before) next else current }
+        val committed = _snapshot.value.jobs.firstOrNull { it.id == jobId }
+        return if (committed?.steps?.any { it.id == stepId && it.status == "RUNNING" } == true) Result.success(Unit)
+        else Result.failure(IllegalStateException("The workspace changed before the checkpoint could be started. Reopen Work and try again."))
+    }
+
+    /** Record a user-reported outcome. It is never presented as runtime-verified evidence. */
+    fun recordJobCheckpoint(jobId: String, stepId: String, outcome: String): Result<Unit> {
+        if (!_vaultReady.value || _vaultError.value != null) return Result.failure(IllegalStateException("Workspace persistence is unavailable."))
+        val before = _snapshot.value
+        val transition = app.memo.android.orchestration.WorkflowCheckpointCoordinator.recordUserOutcome(
+            before, jobId, stepId, outcome, nowMillis()
+        )
+        if (transition.isFailure) return Result.failure(transition.exceptionOrNull() ?: IllegalStateException("The checkpoint outcome could not be recorded."))
+        val next = transition.getOrThrow()
+        updateSnapshot { current -> if (current == before) next else current }
+        val committed = _snapshot.value.jobs.firstOrNull { it.id == jobId }
+        return if (committed?.steps?.any { it.id == stepId && it.status == "COMPLETED" && it.evidence.startsWith("USER_REPORTED:") } == true) Result.success(Unit)
+        else Result.failure(IllegalStateException("The workspace changed before the outcome could be saved. Reopen Work and review the checkpoint."))
     }
 
     fun createJob(title: String, goal: String, runtimeId: String, sourceConversationId: String = "", stepTitles: List<String>): String? {
@@ -936,6 +1293,91 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         }
     }
 
+    /**
+     * Commit a frontier response as one workspace transaction and wait for an encrypted disk write.
+     * The browser workflow must not advance to another provider until this method confirms the save.
+     */
+    suspend fun commitFrontierResponseCapture(
+        request: FrontierResponseCaptureRequest
+    ): FrontierResponseCaptureResult {
+        if (!_vaultReady.value) {
+            return FrontierResponseCaptureResult(
+                FrontierResponseCaptureStatus.FAILED,
+                "Unlock the encrypted workspace before saving this provider response."
+            )
+        }
+        if (_vaultError.value != null) {
+            val reason = "Encrypted workspace persistence is unavailable: " + _vaultError.value + ". The provider step remains for review."
+            val fallback = FrontierResponseCaptureCoordinator.markNeedsReview(_snapshot.value, request, reason)
+            _snapshot.value = fallback
+            val fallbackSave = persistAndAwait()
+            return FrontierResponseCaptureResult(
+                FrontierResponseCaptureStatus.FAILED,
+                if (fallbackSave.isSuccess) reason else reason + " The review state could not be confirmed on disk."
+            )
+        }
+
+        val transition = FrontierResponseCaptureCoordinator.commit(_snapshot.value, request)
+        if (transition.status == FrontierResponseCaptureStatus.FAILED) {
+            val fallback = FrontierResponseCaptureCoordinator.markNeedsReview(_snapshot.value, request, transition.message)
+            _snapshot.value = fallback
+            val fallbackSave = persistAndAwait()
+            return FrontierResponseCaptureResult(
+                FrontierResponseCaptureStatus.FAILED,
+                if (fallbackSave.isSuccess) transition.message else transition.message + " The review state could not be confirmed on disk."
+            )
+        }
+
+        _snapshot.value = transition.snapshot
+        val saved = persistAndAwait()
+        if (saved.isFailure) {
+            val saveError = saved.exceptionOrNull()?.message.orEmpty().take(180)
+            val reason = "Memo could not confirm the provider response on encrypted storage: " + saveError + ". The workflow will not continue or resend the prompt."
+            val fallback = FrontierResponseCaptureCoordinator.markNeedsReview(_snapshot.value, request, reason)
+            _snapshot.value = fallback
+            val fallbackSave = persistAndAwait()
+            return if (fallbackSave.isSuccess) {
+                FrontierResponseCaptureResult(
+                    FrontierResponseCaptureStatus.NEEDS_REVIEW,
+                    "The response records were retained, but the step was left for review because the first durable save failed. Retry or inspect the saved evidence before continuing.",
+                    transition.evidenceId,
+                    transition.entityId
+                )
+            } else {
+                FrontierResponseCaptureResult(
+                    FrontierResponseCaptureStatus.FAILED,
+                    reason + " The review state also could not be confirmed on disk. Keep the visible provider answer open and do not close the workspace."
+                )
+            }
+        }
+
+        return FrontierResponseCaptureResult(
+            transition.status,
+            transition.message,
+            transition.evidenceId,
+            transition.entityId
+        )
+    }
+
+    /**
+     * Keep the durable response transaction alive in the ViewModel scope even if the browser
+     * composable is temporarily removed from the navigation back stack.
+     */
+    fun commitFrontierResponseCaptureAsync(
+        request: FrontierResponseCaptureRequest,
+        onComplete: (FrontierResponseCaptureResult) -> Unit
+    ) {
+        viewModelScope.launch {
+            val result = runCatching { commitFrontierResponseCapture(request) }.getOrElse { error ->
+                FrontierResponseCaptureResult(
+                    FrontierResponseCaptureStatus.FAILED,
+                    "The response could not be committed: ${safeError(error, "encrypted workspace save failed")}"
+                )
+            }
+            onComplete(result)
+        }
+    }
+
     fun addEvidence(evidence: EvidenceRecord) {
         updateSnapshot { current ->
             if (current.evidence.size >= 150) {
@@ -996,6 +1438,29 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         }
         return if (_snapshot.value.evidence.any { it.id == evidence.id }) Result.success(Unit)
         else Result.failure(IllegalStateException("The artifact could not be committed to the workspace."))
+    }
+
+    /** Persist a local-model artifact and its review transition as one workspace snapshot. */
+    fun saveWorkArtifactForReview(jobId: String, stepId: String, evidence: EvidenceRecord): Result<Unit> {
+        if (!_vaultReady.value || _vaultError.value != null) return Result.failure(IllegalStateException("Workspace persistence is unavailable."))
+        val before = _snapshot.value
+        val transition = LocalWorkArtifactCoordinator.saveForReview(before, jobId, stepId, evidence, nowMillis())
+        if (transition.isFailure) return Result.failure(transition.exceptionOrNull() ?: IllegalStateException("The draft could not be committed."))
+        val next = transition.getOrThrow()
+        updateSnapshot { current -> if (current == before) next else current }
+        return if (_snapshot.value == next) Result.success(Unit)
+        else Result.failure(IllegalStateException("The workspace changed before the draft and review state could be committed together."))
+    }
+
+    /** Atomically return a failed local-model checkpoint to explicit user review. */
+    fun markJobStepNeedsReview(jobId: String, stepId: String, detail: String, resultSummary: String): Boolean {
+        if (!_vaultReady.value || _vaultError.value != null) return false
+        val before = _snapshot.value
+        val transition = LocalWorkArtifactCoordinator.markNeedsReview(before, jobId, stepId, detail, resultSummary, nowMillis())
+        if (transition.isFailure) return false
+        val next = transition.getOrThrow()
+        updateSnapshot { current -> if (current == before) next else current }
+        return _snapshot.value == next
     }
 
     fun addCouncilRun(run: CouncilRunRecord) {
@@ -1152,7 +1617,30 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
     }
 
     private fun persist(snapshot: AppSnapshot) {
-        persistenceQueue.trySend(snapshot)
+        val revision = persistenceRevision.incrementAndGet()
+        val queued = persistenceQueue.trySend(SnapshotPersistenceRequest(revision, snapshot))
+        if (queued.isFailure) {
+            _vaultError.value = "The encrypted workspace persistence queue is unavailable. Export your data before continuing."
+        }
+    }
+
+    /** Wait for the latest in-memory snapshot to reach the encrypted vault. */
+    private suspend fun persistAndAwait(): Result<Unit> {
+        val revision = persistenceRevision.incrementAndGet()
+        return try {
+            persistenceMutex.withLock {
+                if (persistedRevision.get() < revision) {
+                    val latestSnapshot = _snapshot.value
+                    withContext(Dispatchers.IO + NonCancellable) { vault.write(latestSnapshot) }
+                    persistedRevision.updateAndGet { maxOf(it, revision) }
+                }
+            }
+            if (revision >= persistenceRevision.get()) _vaultError.value = null
+            Result.success(Unit)
+        } catch (error: Throwable) {
+            _vaultError.value = safeError(error, "Could not save the encrypted workspace. Export your data before continuing.")
+            Result.failure(error)
+        }
     }
 
     private fun AppSnapshot.withActivity(message: String, taskId: String = "", level: String = "INFO"): AppSnapshot =

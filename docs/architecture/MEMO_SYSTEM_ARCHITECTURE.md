@@ -1,6 +1,6 @@
 # Memo System Architecture
 
-**Status:** source-based architecture map for the mainline consolidation, 10 November 2026. This documents inspected boundaries and known limitations; it does not claim every end-state capability is complete.
+**Status:** historical source-based implementation map, 10 November 2026; not product authority or a current implementation-status report. It records inspected boundaries and known limitations at that snapshot. The user's latest directions in [USER_INPUT_LEDGER.md](../USER_INPUT_LEDGER.md), [AGENTS.md](../../AGENTS.md) and [MEMO_PRODUCT_CONTRACT.md](../MEMO_PRODUCT_CONTRACT.md) govern product scope; current implementation truth is tracked in [STATE.md](../STATE.md), [TASKS.md](../../TASKS.md) and exact-head CI evidence. Optional domain designs below do not define Memo's core product or authorize their implementation.
 
 ## Product shape
 
@@ -13,7 +13,7 @@ Memo is one Android application and one user-owned workspace. Talk is the intent
 | Android composition root | `app/src/main/java/app/memo/android/MainActivity.kt`, `ui/MemoWorkspaceApp.kt` | App lifecycle, Compose navigation, permissions and UI | Android-only; domain rules should not live only in composables |
 | Platform-independent core | `:core` | Canonical records, validators, outcome parsing, context retrieval, workflow graph, capability compiler, runtime descriptors and approval ledger | Kotlin/JVM; no Android framework imports |
 | Android application services | `app/.../data`, `ai`, `notifications` | Encrypted vault adapter, ViewModel, model/provider adapters, notifications | Android framework and OS APIs live here |
-| Browser runtime | `app/.../browser/BrowserSession.kt`, `BrowserWorkflow.kt`, `BrowserScripts.kt` | Visible WebView sessions, supported page inspection, prompt preparation/submission and captured response evidence | User-visible, sequential and provider-specific; no hidden browser or assumed API parity |
+| Browser runtime | `app/.../browser/BrowserSession.kt`, `BrowserWorkflow.kt`, `BrowserScripts.kt` | Visible WebView sessions, generic HTTPS navigation/page inspection/evidence capture, plus optional provider-specific prompt preparation/submission and response evidence | User-visible; generic read tasks are site-independent, while chat interaction remains a provider-specific adapter; no hidden browser or assumed API parity |
 | Native app runtime | `app/src/main/java/com/synthos/runtime/engine` | Foreground/unlocked Accessibility workflows and visible-label postconditions | Optional Android permission; actions remain bounded and fail closed when policy/approval is missing |
 | Remote guest runner | `remote-runner/server.py`, `app/.../RemoteRunnerClient.kt` | Separately paired HTTPS worker for a bounded workflow definition | Receives only the approved workflow payload, not the full workspace or model context |
 | Build and supply chain | `.github/workflows/build-apk.yml`, `tools/verify_source.py` | Source validation, tests/lint, APK assembly and isolated signing | Build/test receives no signing secrets; signing receives the APK artifact only; write-only handoff does not execute project code |
@@ -31,10 +31,12 @@ The existing `:core` records are the product data model:
 
 The Android `EncryptedVault` persists the main workspace snapshot using Android Keystore-backed encryption. The native workflow registry/run history currently uses a separate `SynthStore` file and key/storage path. This is known migration debt: do not silently combine or rename either store. A future unified-store change needs an explicit backward-compatible migration and install-over-existing tests.
 
-## Control and execution flow
+## Control and execution flow (implementation model)
+
+This sequence is a design/implementation model from the dated source snapshot, not a user-approved fixed architecture or proof that a complete orchestrator exists.
 
 1. Talk captures the user's intent or source material; capture is not permission to act.
-2. The planner proposes a bounded task/plan. The capability compiler selects only registered capabilities whose requirements and permissions are satisfied.
+2. A bounded planning/proposal path may propose work. The capability compiler selects only registered capabilities whose requirements and permissions are satisfied. Current Talk can save a validated read-only workflow draft; a generic cross-runtime DAG executor is not yet complete.
 3. Work persists the job/steps and source links. Runtime adapters advertise what they can really do; a platform name or UI button is not evidence of an integration.
 4. Before a consequential external side effect, the executor must use the shared exact-scope approval contract: destination/account, capability, exact payload and hash. Any material payload change invalidates approval.
 5. The selected runtime executes visibly and within its bounds. A timeout or interrupted in-flight side effect is `NEEDS_REVIEW`, not an automatic retry.
@@ -43,9 +45,9 @@ The Android `EncryptedVault` persists the main workspace snapshot using Android 
 
 The browser action ledger is an implemented source slice, not proof that every runtime uses a universal gate. Native high-risk actions remain constrained by `WorkflowPolicy`; the separate native-approval workstream remains under review and is not promoted as verified behavior here.
 
-## Sales Operations extension
+## Optional Sales Operations scenario pack (not Memo core architecture)
 
-Sales Operations belongs inside Work, using the existing record and evidence contracts:
+This section preserves a prior domain-design example. It is optional, user-specific scenario material, not Memo's product definition, default architecture or active build priority. It does not authorize outbound/cold-contact automation. Select it for implementation only when the user separately asks for this domain capability. It can reuse the existing record and evidence contracts:
 
 - **Account:** typed projection over `EntityRecord(type = "ORGANIZATION")`; do not add a second CRM database.
 - **Contact:** a `PERSON` entity only when personal business data is necessary and lawfully sourced. The first account-research slice does not require contact records.
@@ -54,7 +56,7 @@ Sales Operations belongs inside Work, using the existing record and evidence con
 - **Permission/suppression/approval:** a separate policy record; a public email address, phone number or profile does not create marketing consent.
 - **Engagement/delivery:** links approved scope, client-authorised data boundary, tasks, deliverables, milestones and acceptance evidence.
 
-The first slice (M7.A1 / MEMO-SALES-001) is deliberately read-only: create/reuse an account, attach source evidence, calculate transparent factor-level ICP fit, detect possible duplicates without destructive merge, and ask the operator to accept/reject. It does not send email, DMs, connection requests or contact forms.
+A previously proposed first slice (M7.A1 / MEMO-SALES-001) was read-only: create/reuse an account, attach source evidence, calculate transparent factor-level fit, detect possible duplicates without destructive merge, and ask the operator to accept/reject. This proposal is inactive unless the user explicitly selects the scenario. No email, DMs, connection requests or contact forms are authorized by the general client-discovery example.
 
 ## Quality and release boundaries
 

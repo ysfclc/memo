@@ -1,12 +1,12 @@
 # Memo — Product Contract
 
 **Version:** 1.0  
-**Reconciled:** 5 November 2026  
+**Reconciled:** 19 November 2026  
 **Product:** Memo for Android  
 **Integration branch:** `main`  
-**Authority:** This document records the user's product decisions and is the product-level source of truth for future implementation. `TASKS.md` is the engineering execution ledger. Older architecture drafts and inherited app implementations are subordinate where they conflict with this contract. The full social platform requirements are specified in [SOCIAL_PLATFORM_PRODUCT_SPEC.md](SOCIAL_PLATFORM_PRODUCT_SPEC.md) and are equally in scope; they must not be reduced to content publishing.
+**Authority:** This document records the user's accepted product decisions and is the product-level source of truth. The append-only [USER_INPUT_LEDGER.md](USER_INPUT_LEDGER.md) preserves each user correction, requirement, bug report, feedback item, idea and use-case boundary; the latest explicit user correction takes precedence over an assistant interpretation recorded here. `TASKS.md` is the engineering execution ledger. Domain specifications apply only within their explicitly approved scope and do not redefine Memo. The full social platform requirements are specified in [SOCIAL_PLATFORM_PRODUCT_SPEC.md](SOCIAL_PLATFORM_PRODUCT_SPEC.md) and remain a domain of Memo, not a replacement product.
 
-**Delivery governance:** [../DEVELOPMENT_GOVERNANCE.md](../DEVELOPMENT_GOVERNANCE.md) defines how this contract is protected and verified. Stable capability IDs are tracked in [REQUIREMENT_TRACEABILITY.md](REQUIREMENT_TRACEABILITY.md); material decisions are recorded in [DECISION_LOG.md](DECISION_LOG.md).
+**Delivery governance:** [../AGENTS.md](../AGENTS.md) and [../DEVELOPMENT_GOVERNANCE.md](../DEVELOPMENT_GOVERNANCE.md) define mandatory agent and change-control rules. Stable capability IDs are tracked in [REQUIREMENT_TRACEABILITY.md](REQUIREMENT_TRACEABILITY.md); material decisions are recorded in [DECISION_LOG.md](DECISION_LOG.md).
 
 ## 1. The product in one sentence
 
@@ -20,7 +20,7 @@ Conversation is the easiest interface. It is not the database. Browser sessions,
 
 Memo exists to turn thoughts into real progress, not to give the user another system to maintain. It should understand active goals and obligations, remember unfinished work, surface concrete next actions, and help the user decide what matters today.
 
-The daily execution view should classify work as **MUST / SHOULD / COULD / NOT TODAY**. Tasks need a concrete outcome and a clear done condition, not vague entries such as "work on project." Memo should protect time for urgent commitments, paid work, job opportunities and customer acquisition before optional creation or endless configuration. It should support a practical shutdown and weekly review without turning those rituals into another administrative burden.
+The daily execution view should classify work as **MUST / SHOULD / COULD / NOT TODAY**. Tasks need a concrete outcome and a clear done condition, not vague entries such as "work on project." Memo should protect time for urgent commitments, paid work, active opportunities and other user-defined priorities before optional creation or endless configuration. It should support a practical shutdown and weekly review without turning those rituals into another administrative burden.
 
 ## 2. The user's intended experience
 
@@ -39,6 +39,39 @@ One intent entry point should lead into one continuous flow:
 9. Save the deliverable, source provenance, decisions, events and follow-up work into the same workspace. Resume safely after interruption without replaying uncertain side effects.
 
 No fake progress, silent network fallback, hidden listening, or opaque agent behavior.
+
+## 2A. User-stated lifecycle and candidate internal operating model
+
+The lifecycle stated by the user is: **Capture → Observe → Plan → Execute**. The user also raised “Classify” as a possible refinement. Whether classification is a distinct internal stage, and exactly where it belongs, remains a design question rather than a locked user decision or an extra required screen. For implementation discussion, one candidate internal loop is **Capture → Observe → Classify → Plan → Route → Execute → Verify → Present**. This is a working model to validate and revise, not a fixed sequence attributed to the user. Verification is independently required by Memo's existing safety contract before claiming outcomes. Observation, classification, planning, routing and execution may loop dynamically; the plan is living state, not a one-time static checklist.
+
+The descriptions below are candidate implementation responsibilities for evaluating the expanded model; they do not require separate modules, agents or user-facing screens.
+
+- **Capture:** preserve the user's original intent and receive text, voice, URLs, screenshots, files, shared content and relevant context.
+- **Observe:** inspect permission-eligible workspace context, sources, websites, apps and available environment state; gather evidence before assuming.
+- **Classify:** determine task type, outcome, complexity, constraints, ambiguity, risk, required capabilities, and done conditions. Do not expose classification as a mandatory user selection.
+- **Plan:** compose a bounded, typed, inspectable DAG/workflow dynamically. Resolve dependencies, sequence, parallelizable work, budgets, checkpoints and verification criteria.
+- **Route:** apply smart routing to select compatible model(s), deterministic functions, capability/runtime adapters and strategy. One coordinated orchestrator is a possible design, but the topology (single orchestrator, modular routers or cooperating agents) is an engineering choice to validate against real requirements. Routes can combine AI and deterministic code; AI reasoning never overrides policy or capability boundaries.
+- **Execute:** deterministic orchestration owns state, permission enforcement, dispatch, persistence, idempotency, timeouts, budgets, checkpoints, retries and side-effect controls. AI can reason, extract, assess, propose, and replan within its assigned scope.
+- **Verify:** inspect observable outputs/evidence and postconditions. Distinguish proposed, attempted, completed, verified, failed and uncertain states; model-generated claims are not execution evidence.
+- **Present:** return the deliverable, evidence/provenance, outcome, unresolved blockers and next useful action. Keep the user informed without requiring supervision.
+
+### Smart routing (working architecture vocabulary)
+
+The user's requirement is smart routing across suitable AI and deterministic capabilities. Labels such as intent/task, capability, model, execution, strategy, recovery and verification describe useful internal responsibilities. They are not a fixed module map, a mandate to create separate agents/services/screens, or a user-approved architectural decomposition. Treat this breakdown as working design vocabulary that may evolve; do not attribute each named router or module boundary to the user unless explicitly approved.
+
+One possible working design is to share a typed task, context manifest, policy, budget, graph and state across routing decisions. This is a design proposal to validate, not a user-locked architecture. A suitable system may apply deterministic constraints first, use AI judgment where ambiguity or strategic choice warrants it, and re-evaluate as observations or execution results change. A fallback route must be explicit, compatible, permission-eligible and observable; never silently switch provider or disclose context beyond consent.
+
+### AI + deterministic engineering contract (working responsibility split)
+
+The user's requirement is to combine AI and deterministic code. The following division is an engineering proposal to validate per task and capability, not a fixed user-approved module boundary. AI can supply flexible understanding, research, reasoning, planning, extraction, analysis, adaptation and evaluation. Deterministic code can supply typed interfaces, capability registry, policy/consent checks, schemas, state transitions, storage, routing constraints, execution, idempotency, bounded retries, verification and audit evidence. Known operations should use reliable deterministic paths; AI is not required for every step. Use both where the task benefits. No workflow may claim execution or success without verified runtime evidence.
+
+### Non-defining acceptance scenario: client discovery (not an outbound product)
+
+**Scope boundary:** This is one example for testing Memo's general-purpose orchestration. It is not a product pillar, domain-specific architecture, outbound product requirement or roadmap priority. It does not authorize cold outreach, bulk messaging, auto-DMs or a dedicated prospecting subsystem. Do not treat this example as more authoritative than other materially different use cases.
+
+A request such as “Find potential clients for my automation/software skills; use Maps, Google, LinkedIn or other useful sources” can test whether Memo starts from one Talk intent and independently selects appropriate available capabilities. Memo may discover relevant companies, observe actual websites/listings/public signals, classify evidence and fit, investigate and deduplicate candidates, distinguish confirmed facts from hypotheses, and present a source-linked shortlist with verified findings, confidence, unknowns and public contact routes where available.
+
+The scenario is not complete merely because search results were collected. Candidate existence, evidence quality, relevance and provenance must be checked. No invented contacts, pain points or false personalization. A public contact route is not consent. Contacting, messaging, submitting or otherwise acting externally is outside this scenario and requires a separate explicit user request plus the applicable approval boundary. This scenario validates the general capture/observe/classify/plan/route/execute/verify/present system; it must not dictate that system's architecture.
 
 ## 3. Four connected product surfaces
 
@@ -152,26 +185,26 @@ Connect the user's permitted social accounts → inspect actual provider capabil
 - Not an unrestricted background agent that hides actions or bypasses Android controls.
 - Not a SaaS requiring account signup or cloud storage to hold the user's own knowledge.
 
-## 9. Current source reality — 5 November 2026
+## 9. Source reality snapshot — 15 November 2026 (historical)
 
-This is a source audit, not a device-acceptance claim.
+This is a historical source audit, not a current-branch status or device-acceptance claim. Use `docs/STATE.md` and exact-head CI evidence for current implementation and verification status; this snapshot must not be treated as the latest build result.
 
 | Intended capability | Current Memo 1 source reality |
 |---|---|
-| Four primary surfaces | The active bottom navigation is now Talk / Live / Work / Studio. Live provides an initial activity/work/approval view; Browser and Apps are secondary runtime routes. Studio has its own route but is still primarily Self Model and local artifact generation. The old Home composable remains legacy source, not a primary destination. |
-| One intent entry point | Talk now has one text/voice “Start with Memo” composer that opens a conversation draft. It does not yet interpret the intent into a dynamic workflow, attach files/images, or execute the full intent-to-outcome loop. The old split planner/chat Home implementation is no longer the primary entry. |
-| Dynamic workflow engine | Work jobs persist schema-v1 typed DAG proposals. Core now also exposes TaskSpec-based dynamic fan-out/join compilation and a strict untrusted-JSON proposal parser that resolves capabilities against exact runtime IDs, applies bounded budgets and generates app-owned idempotency keys. The active Talk path still uses deterministic domain templates; model-generated TaskSpec proposals are not wired into Talk and no DAG executor/durable node journal exists yet. |
-| Live control | The first Live surface shows the current browser workflow state, active saved jobs/tasks, approval decisions and recent workspace activity; it links to Browser, Apps and Approvals. It is not yet a unified cross-runtime event journal with inline runtime panes, pause/resume/takeover or complete postcondition evidence. |
+| Four primary surfaces | The active bottom navigation is Talk / Live / Work / Studio. Talk combines a text/voice intent composer, conversation history and active chat. Live has a persisted chronological timeline plus the active browser-session panel; Browser and Apps remain contextual runtime routes. Studio supports private user-authored drafts alongside Self Model and local generation. The old Home composable remains legacy source, not a primary destination. |
+| One intent entry point | Every text/voice “Start with Memo” intent opens Talk first. After a successful model reply is saved, the same selected model performs a bounded follow-up triage and returns either NO_WORKFLOW or a typed TaskSpec graph. A proposed graph is parsed, recompiled against exact registered capabilities, and accepted only when every runtime is currently available and every capability belongs to the strict planning allowlist (local model list/generation or browser HTTPS navigation/page inspection; no local workspace-write capabilities). The graph must preserve the exact original user request and is stored as a DRAFT linked to its source conversation/message; its checkpoints are shown inline in Talk. The raw planner JSON is hidden from the conversation response. This is planning only: no generic DAG dispatcher, checkpoint runner, browser/native execution adapter or postcondition observer is wired. Manual response promotion remains as a fallback. The old keyword split no longer routes a new request away from Talk before understanding it. |
+| Dynamic workflow engine | Work jobs persist schema-v1 typed DAG proposals. Core compiles bounded fan-out/join graphs and strictly parses untrusted proposals. Schema-7 per-node attempts and content-bound runtime output receipts exist. The shared runtime adapter and deterministic postcondition evidence contracts are CI-verified, but no generic DAG dispatcher or concrete deterministic/browser/native adapters are wired. |
+| Live control | Live renders a newest-first projection of persisted activity, jobs/checkpoints, tasks, action-audit transitions, evidence and attempt/receipt state. Receipts explicitly remain NOT_VERIFIED. Cross-runtime panes, runtime-backed pause/resume/takeover and independent postcondition observers remain incomplete. |
 | Frontier Council | Talk now exposes Council from the conversation list and conversation header, but Council still opens a separate route and does not yet share the Talk conversation's context and unified Live timeline end to end. |
-| Browser/app runtime | A provider-specific WebView browser workflow exists. Native Accessibility automation is bounded and permission-gated, with separate legacy persistence. Neither is a universal DOM/native capability system. |
-| Work graph | Conversations, entities, jobs, tasks and evidence exist. Full project/contact/opportunity/application CRUD and cross-runtime provenance are incomplete. |
-| Studio | Studio now has a primary destination, but the screen is still primarily Self Model fact extraction and local-model CV-style artifact generation. General artifact editing/versioning/export and publishing/metrics remain incomplete. |
+| Browser/app runtime | Generic browser tasks support validated HTTPS navigation, page capture, link extraction, text search and scroll capture. A provider-specific visible WebView multi-chat workflow adds exact-content approval, capture/retry controls and durable response-save acknowledgement. A universal DOM/action executor and general DAG runtime adapter remain incomplete; live provider/device acceptance remains open. Native Accessibility automation is bounded and permission-gated. |
+| Work graph | Conversations, entities, jobs, tasks, evidence, schema-7 attempts and typed runtime receipts exist. Full project/contact/opportunity/application CRUD and cross-runtime provenance remain incomplete. |
+| Studio | Studio supports user-authored private drafts stored in the encrypted workspace, plus Self Model fact extraction and local-model CV-style generation. Existing artifact editing/export and revision snapshots are reused; revision comparison/restore UI, autosave, broad templates, rich export formats and publishing/metrics remain incomplete. |
 | Social platform | The current contract/backlog only describe a narrow content-to-publishing/metrics journey and generic ChannelAccount/ProviderAdapter data concepts. No complete feed, inbox, engagement, listening, account management or social analytics implementation is evidenced. Treat the entire social platform spec as unimplemented until source paths and provider-backed acceptance tests prove otherwise. |
 | Voice | Chat tap-to-talk delegates to Android speech recognition. Full local ASR/TTS, always-on voice and dependable lock-screen command execution are not implemented. |
 | Model platform | Curated LiteRT-LM catalogue and optional API-compatible provider exist. GGUF/llama.cpp and device-wide model discovery are not integrated. |
-| Data layer | Primary Compose vault and native workflow `SynthStore` remain separate. This violates the target single-store boundary and requires a safe migration. |
+| Data layer | Encrypted workspace and native workflow stores remain separate. API 35 emulator in-place upgrade tests pass for both stores; single-store migration and physical-device acceptance remain open. |
 
-The current build passing CI does not mean the product is complete. The source baseline is buildable; the product gaps above remain open and must be addressed in implementation.
+Exact-head GitHub Actions run #678 passed source verification, remote-runner tests, core/app unit tests, lint, APK assembly/identity, API 35 in-place upgrade instrumentation and isolated pinned signing. This does not mean the product is complete or that a physical phone has been accepted.
 
 ## 10. Build order and acceptance
 
@@ -198,11 +231,11 @@ The current build passing CI does not mean the product is complete. The source b
 No feature is complete because a screen or button exists. Require source changes, named tests, green CI, and physical-device evidence for Android-specific behavior.
 
 
-## UC-7 — Sales Operations and industrial account research
+## UC-7 — Optional domain scenario: Sales Operations and industrial account research
 
-Memo can support a one-person, evidence-backed B2B sales-operations practice through the existing Talk / Work / Live / Studio product. The domain sequence is Discover → Research → Qualify → Permissioned route → Approved interaction → Proposal → Delivery → Report. The six detailed use cases, operator constraints, service hypothesis, compliance gates and acceptance criteria live in [docs/use-cases/sales-operations/README.md](use-cases/sales-operations/README.md).
+This is an optional, user-specific scenario pack that can exercise Memo's general Talk / Work / Live / Studio capabilities. It does not define Memo's core identity, architecture, priority order or required build sequence. The detailed scenarios and their constraints live in [docs/use-cases/sales-operations/README.md](use-cases/sales-operations/README.md).
 
-This does not create a separate CRM or authorise scraping, cold-message automation, fabricated company facts, inferred consent, unapproved external actions or legal/tax decisions. The first implementation milestone is account research using existing Work entities and source evidence; outbound actions are explicitly outside that first slice.
+This scenario does not authorize building an outbound product or a cold-contact automation system. The initial account-research slice is read-only and evidence-backed; any channel engagement or external contact action is outside current scope unless the user separately requests it. Preserve the scenario and its history without promoting it into the general platform architecture.
 
 
 ## 10 November 2026 — Unified experience implementation
