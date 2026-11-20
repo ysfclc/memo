@@ -75,7 +75,7 @@ fun BrowserResearchWorkflowScreen(
             if (researchJobId.isNotBlank()) snapshot.evidence
                 .filter { it.taskId == researchJobId && it.kind == "BROWSER_RESEARCH_PAGE" }
                 .forEach { evidence ->
-                    add(BrowserPageCapture(evidence.title, evidence.sourceUrl, evidence.content, evidence.summary, evidence.metadata, evidence.createdAt))
+                    add(BrowserPageCapture(evidence.title, evidence.sourceUrl, evidence.content, evidence.summary, evidence.metadata, evidence.capturedAt))
                 }
         }
     }
