@@ -151,9 +151,10 @@ fun ChatsWorkspaceScreen(
     val conversations = snapshot.conversations.sortedByDescending { it.updatedAt }
     val selectedConversation = conversations.firstOrNull { it.id == selectedConversationId }
     val agentScope = rememberCoroutineScope()
-    var agentRunning by remember(selectedConversationId) { mutableStateOf(false) }
-    var agentStage by remember(selectedConversationId) { mutableStateOf("") }
-    var agentJob by remember(selectedConversationId) { mutableStateOf<Job?>(null) }
+    var agentRunning by remember { mutableStateOf(false) }
+    var agentStage by remember { mutableStateOf("") }
+    var agentJob by remember { mutableStateOf<Job?>(null) }
+    var agentConversationId by remember { mutableStateOf("") }
     var search by remember { mutableStateOf("") }
     var showImport by remember { mutableStateOf(false) }
     var renameTarget by remember { mutableStateOf<ConversationRecord?>(null) }
@@ -603,6 +604,7 @@ fun ChatsWorkspaceScreen(
                                 agentScope.launch {
                                     if (agentRunning) return@launch
                                     agentRunning = true
+                                    agentConversationId = selectedConversation.id
                                     agentStage = "Starting Memo execution"
                                     try {
                                         val appendError = viewModel.appendChatMessageDurably(
@@ -728,6 +730,7 @@ fun ChatsWorkspaceScreen(
                                     } finally {
                                         agentRunning = false
                                         agentStage = ""
+                                        agentConversationId = ""
                                         agentJob = null
                                     }
                                 }.also { agentJob = it }
