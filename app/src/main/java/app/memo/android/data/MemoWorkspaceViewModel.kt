@@ -299,8 +299,14 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             reviewStatus = "PROPOSED"
         )
         if (createError != null) return Result.failure(IllegalStateException(createError))
-        val created = _snapshot.value.entities.firstOrNull { it.id !in priorIds && it.sourceConversationId == sourceConversationId }
-            ?: return Result.failure(IllegalStateException("The proposed record was not added to the workspace snapshot."))
+        val normalizedType = type.trim().uppercase(Locale.ROOT).replace(Regex("[^A-Z0-9_]+"), "_").trim('_')
+        val normalizedTitle = title.trim()
+        val created = _snapshot.value.entities.firstOrNull {
+            it.id !in priorIds &&
+                it.sourceConversationId == sourceConversationId &&
+                it.type == normalizedType &&
+                it.title.equals(normalizedTitle, ignoreCase = true)
+        } ?: return Result.failure(IllegalStateException("The proposed record was not added to the workspace snapshot."))
         return try {
             val persisted = withContext(Dispatchers.IO) { persistLatestSnapshotAndReadSafely() }
             val verified = persisted?.entities?.firstOrNull { it.id == created.id }
