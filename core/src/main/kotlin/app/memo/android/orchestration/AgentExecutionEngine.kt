@@ -59,6 +59,7 @@ data class AgentExecutionEvent(
     val toolId: String = "",
     val callId: String = "",
     val status: String = "",
+    val evidenceReference: String = "",
     val at: Long = System.currentTimeMillis()
 )
 
@@ -120,8 +121,25 @@ class AgentExecutionEngine(
         var toolCalls = 0
         var successfulToolCalls = 0
 
-        suspend fun event(type: AgentExecutionEventType, summary: String, toolId: String = "", callId: String = "", status: String = "") {
-            onEvent(AgentExecutionEvent(runId, type, summary.take(800), toolId, callId, status))
+        suspend fun event(
+            type: AgentExecutionEventType,
+            summary: String,
+            toolId: String = "",
+            callId: String = "",
+            status: String = "",
+            evidenceReference: String = ""
+        ) {
+            onEvent(
+                AgentExecutionEvent(
+                    runId = runId,
+                    type = type,
+                    summary = summary.take(800),
+                    toolId = toolId,
+                    callId = callId,
+                    status = status,
+                    evidenceReference = evidenceReference.take(500)
+                )
+            )
         }
         fun result(status: AgentRunStatus, message: String) = AgentExecutionResult(
             runId, status, message.take(24_000), modelCalls, toolCalls, successfulToolCalls,
@@ -241,7 +259,14 @@ class AgentExecutionEngine(
                         }
                         observations += observation
                         val eventType = if (toolResult.status == AgentToolStatus.SUCCEEDED) AgentExecutionEventType.TOOL_FINISHED else AgentExecutionEventType.TOOL_FAILED
-                        event(eventType, "${definition.id}: ${toolResult.summary}", toolId = definition.id, callId = callId, status = toolResult.status.name)
+                        event(
+                            eventType,
+                            "${definition.id}: ${toolResult.summary}",
+                            toolId = definition.id,
+                            callId = callId,
+                            status = toolResult.status.name,
+                            evidenceReference = toolResult.evidenceReference
+                        )
                         if (toolResult.status == AgentToolStatus.NEEDS_REVIEW) {
                             val message = "A capability has an uncertain or approval-gated outcome. Review it before continuing: ${toolResult.summary}"
                             event(AgentExecutionEventType.RUN_NEEDS_REVIEW, message, toolId = definition.id, callId = callId, status = "NEEDS_REVIEW")
@@ -332,7 +357,9 @@ private object AgentDecisionParser {
             return if (trimmed.startsWith("{")) AgentDecision.Invalid("The model's JSON response could not be parsed.")
             else AgentDecision.Final(trimmed.take(24_000))
         }
-        return when (root.optString("type")) {
+        val responseType = root.optString("type")
+        if (responseType.isBlank()) return AgentDecision.Final(trimmed.take(24_000))
+        return when (responseType) {
             "final" -> {
                 val content = root.optString("content", "").trim()
                 if (content.isBlank()) AgentDecision.Invalid("A final response needs non-empty content.")
@@ -355,8 +382,33 @@ object AgentToolSchemaValidator {
         require(rawSchema.length <= 6_000) { "Input schema exceeds its size limit." }
         val schema = JSONObject(rawSchema)
         require(schema.optString("type") == "object") { "Capability input schemas must describe an object." }
-        require(schema.optJSONObject("properties") != null) { "Capability input schemas need a properties object." }
-        require(schema.optJSONArray("required") != null) { "Capability input schemas need an explicit required array." }
+        val properties = schema.optJSONObject("properties")
+            ?: throw IllegalArgumentException("Capability input schemas need a properties object.")
+        val required = schema.optJSONArray("required")
+            ?: throw IllegalArgumentException("Capability input schemas need an explicit required array.")
+        require(properties.length() <= 32 && required.length() <= 32) { "Capability input schemas have too many fields." }
+        val supportedTypes = setOf("string", "integer", "number", "boolean", "object", "array")
+        val propertyKeys = properties.keys()
+        while (propertyKeys.hasNext()) {
+            val key = propertyKeys.next()
+            require(key.isNotBlank() && key.length <= 80) { "Capability input schema contains an invalid field name." }
+            val rule = properties.optJSONObject(key)
+                ?: throw IllegalArgumentException("Capability field '$key' needs an object rule.")
+            require(rule.optString("type") in supportedTypes) { "Capability field '$key' has an unsupported type." }
+            if (rule.has("maxLength")) {
+                require(rule.optInt("maxLength", -1) in 1..24_000) { "Capability field '$key' has an invalid maximum length." }
+            }
+            if (rule.has("minLength")) {
+                require(rule.optInt("minLength", -1) >= 0) { "Capability field '$key' has an invalid minimum length." }
+            }
+            if (rule.has("maximum") && rule.has("minimum")) {
+                require(rule.optDouble("minimum") <= rule.optDouble("maximum")) { "Capability field '$key' has invalid numeric bounds." }
+            }
+        }
+        for (index in 0 until required.length()) {
+            val key = required.optString(index)
+            require(key.isNotBlank() && properties.has(key)) { "Required field '$key' is not declared in properties." }
+        }
     }
 
     fun validate(rawSchema: String, arguments: JSONObject): String? = runCatching {
