@@ -453,16 +453,19 @@ fun ChatsWorkspaceScreen(
                 }
                 if (runtimeState.running || agentRunning) {
                     item {
+                        val executionBelongsToThisConversation =
+                            !agentRunning || agentConversationId == selectedConversationId
                         MemoPanel {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                 CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                                 Column(Modifier.weight(1f)) {
-                                    Text("Working on your request", style = MaterialTheme.typography.titleSmall)
-                                    Text(agentStage.ifBlank { runtimeState.stage }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    if (agentConversationId.isNotBlank() && agentConversationId != selectedConversationId) {
+                                    if (executionBelongsToThisConversation) {
+                                        Text("Working on your request", style = MaterialTheme.typography.titleSmall)
+                                        Text(agentStage.ifBlank { runtimeState.stage }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    } else {
                                         Text(
                                             "Memo is still executing in another conversation. Switch back there to see its activity and result.",
-                                            style = MaterialTheme.typography.bodySmall,
+                                            style = MaterialTheme.typography.titleSmall,
                                             color = MaterialTheme.colorScheme.tertiary
                                         )
                                     }
@@ -473,7 +476,7 @@ fun ChatsWorkspaceScreen(
                                 }) { Text("Stop") }
                             }
                             Spacer(Modifier.height(8.dp)); LinearProgressIndicator(Modifier.fillMaxWidth())
-                            if (runtimeState.running && runtimeState.liveResponse.isNotBlank()) {
+                            if (executionBelongsToThisConversation && runtimeState.running && runtimeState.liveResponse.isNotBlank()) {
                                 Spacer(Modifier.height(8.dp))
                                 Text("Current model turn", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                                 SelectionContainer { Text(runtimeState.liveResponse, style = MaterialTheme.typography.bodyMedium) }
