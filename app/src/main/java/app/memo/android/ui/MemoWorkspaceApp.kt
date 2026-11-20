@@ -882,7 +882,8 @@ private fun ToolsHubScreen(
                     browser = browser,
                     onQuickTask = onQuickTask,
                     onCancelTask = onCancelTask,
-                    onClearPrompt = onClearPrompt
+                    onClearPrompt = onClearPrompt,
+                    onShowMessage = onShowMessage
                 )
                 ToolSection.WORKFLOWS -> BrowserWorkflowScreen(
                     snapshot = snapshot,
@@ -1344,9 +1345,10 @@ private fun BrowserScreen(
     browser: BrowserSession,
     onQuickTask: (TaskKind, String) -> Unit,
     onCancelTask: () -> Unit,
-    onClearPrompt: () -> Unit
+    onClearPrompt: () -> Unit,
+    onShowMessage: (String) -> Unit
 ) {
-    var address by remember { mutableStateOf("") }
+    var address by remember { mutableStateOf("")
     var prompt by remember { mutableStateOf("") }
     var showNewConversationConfirm by remember { mutableStateOf(false) }
     var expandedBrowser by remember { mutableStateOf(false) }
@@ -1440,6 +1442,10 @@ private fun BrowserScreen(
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (browser.isLoading) CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
             Text(browser.pageTitle.ifBlank { "No page open" }, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+            TextButton(
+                onClick = { browser.shareCurrentPageCapture { _, message -> onShowMessage(message) } },
+                enabled = !browser.isLoading && browser.currentUrl.startsWith("https://", ignoreCase = true)
+            ) { Text("Share capture") }
             Text("${browser.progress}%", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Box(
