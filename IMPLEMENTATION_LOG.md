@@ -113,3 +113,17 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - Integrated the fail-closed native action policy and Talk draft-preservation changes with the Signal & Graphite design foundation, unified experience/navigation rebuild, Today priority model, and evidence-backed industrial account intake.
 - Preserved the mainline product scope and existing execution history; did not replace the main task ledger with the shortened feature-branch copy.
 - Verification remains open: run authoritative Gradle unit tests, lint and Android APK pipeline against the integrated commit. No APK or device acceptance is claimed by this source merge.
+
+
+### 2026-11-20 — GOV-ARCH-001 — Lock the intent-driven execution architecture before further feature work
+
+- **Requirement:** MEMO-AGENT-001, MEMO-CAP-001, MEMO-ARTIFACT-001; existing MEMO-ORCH-001 and MEMO-AI-001.
+- **Baseline:** `ysfclc/memo` main at `c307f94f5d296622e9e3b2fa92b02fe9c58361f2`; changes isolated on `governance/agent-execution-invariants-2026-11-20`.
+- **Files changed:** Added `AGENTS.md` and `docs/AI_EXECUTION_INVARIANTS.md`; updated DEVELOPMENT_GOVERNANCE, IMPLEMENTATION_CONTRACT, Product Contract, TASKS, REQUIREMENT_TRACEABILITY, DECISION_LOG and this log.
+- **Implementation summary:** Established binding rules for one Talk-to-outcome path, separation of intelligence providers from callable action capabilities, real adapter contracts, shared dispatch and observe/verify/replan loop, durable execution, deterministic policy and regression acceptance. Explicitly prohibited per-example workflows/domains/screens, phantom capabilities, model-only claims of action, and parallel orchestrators.
+- **Product status:** Documentation/constraints only. No agent loop, dispatcher or capability implementation is claimed by this entry. Current source gaps remain open.
+- **Validation:** Repository source and existing docs inspected before writing. Final branch/file verification pending; no build or device test is applicable to this documentation-only change.
+- **Known gaps:** Talk `runPrompt()` still generates text directly; `IntentPlanner` remains keyword/template based; `WorkflowGraph` and `WorkflowTaskProposalParser` remain proposal/validation foundations; universal callable dispatch, observe/replan loop and durable cross-runtime execution remain open.
+- **Next gate:** Any feature implementation must first show how it uses these invariants; the first engineering work package must connect Talk to the shared executor, not add another specialist workflow.
+- **Status:** specified / governance locked; product implementation remains open.
+
