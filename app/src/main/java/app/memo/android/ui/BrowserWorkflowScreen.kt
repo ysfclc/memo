@@ -775,6 +775,12 @@ fun BrowserWorkflowScreen(
                     Text(browser.pageTitle.ifBlank { "Frontier provider browser" }, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(browser.currentUrl.ifBlank { "No provider open yet" }, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
+                TextButton(
+                    onClick = {
+                        browser.shareCurrentPageCapture { _, message -> onShowMessage(message) }
+                    },
+                    enabled = !browser.isLoading && browser.currentUrl.startsWith("https://", ignoreCase = true)
+                ) { Text("Share capture") }
                 TextButton(onClick = onOpenBrowser) { Text("Full browser") }
                 if (browser.isLoading) CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
             }

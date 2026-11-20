@@ -1,6 +1,7 @@
 package app.memo.android.browser
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
 import android.content.Intent
@@ -275,6 +276,72 @@ class BrowserSession(
         }.onFailure {
             browserMessage = "Could not open the external browser: ${it.message?.take(120) ?: "no compatible browser found"}"
             onBrowserError(browserMessage)
+        }
+    }
+
+    /**
+     * Captures only rendered page text and opens Android's share sheet.
+     * No cookies, storage, password fields, hidden inputs or authentication tokens are read.
+     */
+    fun shareCurrentPageCapture(onResult: (Boolean, String) -> Unit = { _, _ -> }) {
+        if (disposed) {
+            onResult(false, "The browser session is no longer available.")
+            return
+        }
+        if (isLoading) {
+            browserMessage = "Wait for the page to finish loading before sharing a capture."
+            onResult(false, browserMessage)
+            return
+        }
+        val expectedUrl = webView.url?.takeIf { it.isNotBlank() } ?: currentUrl
+        val expectedUri = Uri.parse(expectedUrl)
+        if (!expectedUri.scheme.equals("https", ignoreCase = true) || expectedUri.host.isNullOrBlank() || !expectedUri.userInfo.isNullOrBlank()) {
+            browserMessage = "Open a secure HTTPS page before capturing it for another app."
+            onResult(false, browserMessage)
+            return
+        }
+
+        browserMessage = "Reading the visible page for sharing…"
+        webView.evaluateJavascript(BrowserScripts.capturePage) { raw ->
+            if (disposed) {
+                onResult(false, "The browser session closed before the page capture completed.")
+                return@evaluateJavascript
+            }
+            val result = runCatching { JSONObject(decodeJsString(raw)) }.getOrNull()
+            val title = result?.optString("title", pageTitle)?.take(240).orEmpty().ifBlank { pageTitle }
+            val sourceUrl = result?.optString("url", expectedUrl)?.take(2_048).orEmpty().ifBlank { expectedUrl }
+            val content = result?.optString("content").orEmpty().trim()
+            val summary = result?.optString("summary").orEmpty().take(600)
+            val payload = if (result?.optBoolean("ok") == true) {
+                BrowserCaptureSharePayload.format(title, sourceUrl, summary, content)
+            } else null
+
+            when {
+                payload == null -> {
+                    browserMessage = "This page did not expose enough readable text to share. Scroll to the relevant information and try again."
+                    onResult(false, browserMessage)
+                }
+                webView.url != expectedUrl -> {
+                    browserMessage = "The page changed during capture. Wait for it to settle and try again."
+                    onResult(false, browserMessage)
+                }
+                else -> runCatching {
+                    val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_SUBJECT, title)
+                        putExtra(Intent.EXTRA_TEXT, payload)
+                    }
+                    val chooser = Intent.createChooser(sendIntent, "Share captured page")
+                    if (webView.context !is Activity) chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    webView.context.startActivity(chooser)
+                }.onSuccess {
+                    browserMessage = "Visible page text and its source URL were sent to Android's share sheet. Choose Trader to save it. Login credentials and browser cookies are not included."
+                    onResult(true, browserMessage)
+                }.onFailure {
+                    browserMessage = "Could not open the Android share sheet: ${it.message?.take(120) ?: "unknown error"}"
+                    onResult(false, browserMessage)
+                }
+            }
         }
     }
 
