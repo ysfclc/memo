@@ -125,7 +125,9 @@ import app.memo.android.ui.components.EmptyState
 import app.memo.android.ui.components.SurfaceCard
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -675,13 +677,15 @@ fun ChatsWorkspaceScreen(
                                         }
                                     } catch (cancelled: CancellationException) {
                                         val cancellationMessage = "Execution stopped by you. Completed capability results remain in this conversation. Any interrupted local write is marked for review before retrying."
-                                        val persistError = viewModel.appendChatMessageDurably(
-                                            selectedConversation.id,
-                                            "SYSTEM",
-                                            cancellationMessage,
-                                            modelId = selectedModelId,
-                                            sourceType = "AGENT_CANCELLED"
-                                        )
+                                        val persistError = withContext(NonCancellable) {
+                                            viewModel.appendChatMessageDurably(
+                                                selectedConversation.id,
+                                                "SYSTEM",
+                                                cancellationMessage,
+                                                modelId = selectedModelId,
+                                                sourceType = "AGENT_CANCELLED"
+                                            )
+                                        }
                                         if (persistError != null) onShowMessage("Execution stopped, but the cancellation notice could not be saved: $persistError")
                                     } catch (error: Throwable) {
                                         val detail = (error.message?.takeIf { it.isNotBlank() } ?: "The execution failed.").take(600)
