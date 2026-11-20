@@ -209,6 +209,10 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
      * Append a conversation message and wait until the latest encrypted snapshot is written.
      * Agent decisions use this for their transcript journal before starting any capability.
      */
+    /**
+     * Append a conversation message and verify it by reopening the encrypted vault.
+     * Agent decisions use this before starting a capability, not just for UI display.
+     */
     suspend fun appendChatMessageDurably(
         conversationId: String,
         role: String,
@@ -218,11 +222,19 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
     ): String? {
         if (!_vaultReady.value) return "Unlock the workspace before continuing."
         _vaultError.value?.let { return "Encrypted workspace persistence is unavailable: $it" }
+        val beforeIds = _snapshot.value.conversations.firstOrNull { it.id == conversationId }
+            ?.messages?.mapTo(mutableSetOf()) { it.id }
+            ?: return "Conversation no longer exists."
         val appendError = appendChatMessage(conversationId, role, content, modelId, sourceType)
         if (appendError != null) return appendError
+        val newMessageId = _snapshot.value.conversations.firstOrNull { it.id == conversationId }
+            ?.messages?.lastOrNull { it.id !in beforeIds }?.id
+            ?: return "The message was not added to the conversation."
         return try {
-            withContext(Dispatchers.IO) { persistLatestSnapshotSafely() }
-            null
+            val persisted = withContext(Dispatchers.IO) { persistLatestSnapshotAndReadSafely() }
+            val found = persisted?.conversations?.firstOrNull { it.id == conversationId }
+                ?.messages?.any { it.id == newMessageId } == true
+            if (found) null else "The encrypted vault write completed, but the exact message could not be read back."
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Throwable) {
@@ -236,24 +248,68 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
     suspend fun appendAgentEvent(conversationId: String, content: String, modelId: String = ""): String? =
         appendChatMessageDurably(conversationId, "TOOL", content, modelId, "AGENT_EVENT")
 
-    /** Save a Memo-generated local draft and wait for its encrypted write and read-after-write check. */
+    /** Save a private draft note and verify its exact identity by reopening the encrypted vault. */
     suspend fun saveWorkArtifactDurably(evidence: EvidenceRecord): Result<Unit> {
         if (!_vaultReady.value) return Result.failure(IllegalStateException("Unlock the workspace before saving an artifact."))
         _vaultError.value?.let { return Result.failure(IllegalStateException("Encrypted workspace persistence is unavailable: $it")) }
         val saveResult = saveWorkArtifact(evidence)
         if (saveResult.isFailure) return saveResult
         return try {
-            withContext(Dispatchers.IO) { persistLatestSnapshotSafely() }
-            val persisted = _snapshot.value.evidence.firstOrNull { it.id == evidence.id }
-            if (persisted == null) {
-                Result.failure(IllegalStateException("The note was not present after the encrypted workspace write."))
-            } else {
+            val persisted = withContext(Dispatchers.IO) { persistLatestSnapshotAndReadSafely() }
+            if (persisted?.evidence?.any { it.id == evidence.id } == true) {
                 Result.success(Unit)
+            } else {
+                Result.failure(IllegalStateException("The encrypted vault write completed, but the exact artifact could not be read back."))
             }
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (error: Throwable) {
             val message = safeError(error, "The encrypted workspace could not save the artifact.")
+            _vaultError.value = message
+            Result.failure(IllegalStateException(message, error))
+        }
+    }
+
+    /** Create a source-linked proposed record. It is not approved or merged into an existing entity. */
+    suspend fun createEntityDurably(
+        type: String,
+        title: String,
+        description: String,
+        properties: Map<String, String>,
+        sourceConversationId: String,
+        sourceMessageId: String,
+        sourceExcerpt: String
+    ): Result<EntityRecord> {
+        if (!_vaultReady.value) return Result.failure(IllegalStateException("Unlock the workspace before creating a record."))
+        _vaultError.value?.let { return Result.failure(IllegalStateException("Encrypted workspace persistence is unavailable: $it")) }
+        val source = _snapshot.value.conversations.firstOrNull { it.id == sourceConversationId }
+            ?: return Result.failure(IllegalStateException("The source conversation no longer exists."))
+        if (source.messages.none { it.id == sourceMessageId }) {
+            return Result.failure(IllegalStateException("The source message no longer exists in that conversation."))
+        }
+        val priorIds = _snapshot.value.entities.mapTo(mutableSetOf()) { it.id }
+        val createError = createEntity(
+            type = type,
+            title = title,
+            description = description,
+            properties = properties,
+            sourceConversationId = sourceConversationId,
+            sourceMessageId = sourceMessageId,
+            sourceExcerpt = sourceExcerpt,
+            reviewStatus = "PROPOSED"
+        )
+        if (createError != null) return Result.failure(IllegalStateException(createError))
+        val created = _snapshot.value.entities.firstOrNull { it.id !in priorIds && it.sourceConversationId == sourceConversationId }
+            ?: return Result.failure(IllegalStateException("The proposed record was not added to the workspace snapshot."))
+        return try {
+            val persisted = withContext(Dispatchers.IO) { persistLatestSnapshotAndReadSafely() }
+            val verified = persisted?.entities?.firstOrNull { it.id == created.id }
+                ?: return Result.failure(IllegalStateException("The encrypted vault write completed, but the proposed record could not be read back."))
+            Result.success(verified)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Throwable) {
+            val message = safeError(error, "The encrypted workspace could not save the proposed record.")
             _vaultError.value = message
             Result.failure(IllegalStateException(message, error))
         }
@@ -1211,6 +1267,20 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             vault.write(candidate)
             val latest = _snapshot.value
             if (latest !== candidate) vault.write(latest)
+        } finally {
+            vaultWriteMutex.unlock()
+        }
+    }
+
+    /** Write the newest snapshot, then authenticate/decrypt the AtomicFile for read-after-write verification. */
+    private suspend fun persistLatestSnapshotAndReadSafely(): AppSnapshot? {
+        vaultWriteMutex.lock()
+        try {
+            val current = _snapshot.value
+            vault.write(current)
+            val latest = _snapshot.value
+            if (latest !== current) vault.write(latest)
+            return vault.read()
         } finally {
             vaultWriteMutex.unlock()
         }
