@@ -29,6 +29,14 @@ object MemoLocalization {
 
     private val translations: Map<String, Pair<String, String>> = mapOf(
 
+        "MEMO ACTION" to ("DZIAŁANIE MEMO" to "MEMO İŞLEMİ"),
+        "Memo started an execution." to ("Memo rozpoczęło wykonywanie zadania." to "Memo bir yürütme başlattı."),
+        "Memo returned a final response." to ("Memo zwróciło odpowiedź końcową." to "Memo son yanıtını verdi."),
+        "Execution limit reached." to ("Osiągnięto limit wykonywania." to "Yürütme sınırına ulaşıldı."),
+        "Execution paused for review." to ("Wykonywanie wstrzymano do sprawdzenia." to "Yürütme inceleme için duraklatıldı."),
+        "Execution failed." to ("Wykonywanie nie powiodło się." to "Yürütme başarısız oldu."),
+        "Execution cancelled. Completed results were retained." to ("Wykonywanie anulowano. Zachowano ukończone wyniki." to "Yürütme iptal edildi. Tamamlanan sonuçlar korundu."),
+        "Execution stopped by you. Completed capability results remain in this conversation. Any interrupted local write is marked for review before retrying." to ("Zatrzymano na Twoje polecenie. Ukończone wyniki działań pozostały w tej rozmowie. Przerwane lokalne zapisy należy sprawdzić przed ponowieniem." to "İsteğin üzerine durduruldu. Tamamlanan işlem sonuçları bu sohbette tutuldu. Kesintiye uğrayan yerel yazma işlemleri yeniden denenmeden önce incelenmelidir."),
         "See active work, browser sessions, checkpoints and decisions in one place. Memo only reports completion when it has an observable result." to ("Zobacz aktywne zadania, sesje przeglądarki, punkty kontrolne i decyzje w jednym miejscu. Memo zgłasza ukończenie tylko wtedy, gdy ma obserwowalny wynik." to "Etkin işleri, tarayıcı oturumlarını, kontrol noktalarını ve kararları tek yerde gör. Memo yalnızca gözlemlenebilir bir sonuç olduğunda tamamlandı der."),
         "Current participant" to ("Bieżący uczestnik" to "Geçerli katılımcı"),
         "Browser workflow" to ("Przepływ przeglądarki" to "Tarayıcı iş akışı"),
@@ -529,6 +537,15 @@ object MemoLocalization {
     fun translate(text: String, language: String): String {
         val normalized = language.uppercase()
         if (normalized == "EN") return text
+        val agentPrefixes = listOf(
+            "Using capability: " to ("Korzystanie z funkcji: " to "Yetenek kullanılıyor: "),
+            "Capability finished: " to ("Funkcja zakończona: " to "Yetenek tamamlandı: "),
+            "Capability did not succeed: " to ("Funkcja nie powiodła się: " to "Yetenek başarılı olmadı: ")
+        )
+        agentPrefixes.firstOrNull { text.startsWith(it.first) }?.let { (prefix, labels) ->
+            val suffix = text.removePrefix(prefix)
+            return when (normalized) { "PL" -> labels.first + suffix; "TR" -> labels.second + suffix; else -> text }
+        }
         // Translate a known interface prefix while leaving the user-provided source title intact.
         if (text.startsWith("Open source conversation · ")) {
             val title = text.removePrefix("Open source conversation · ")
