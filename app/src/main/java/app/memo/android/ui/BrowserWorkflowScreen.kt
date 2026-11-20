@@ -622,7 +622,7 @@ private fun BrowserFrontierConsultationScreen(
         activeConversationId = conversationId
         viewModel.appendChatMessage(conversationId, "USER", originalIntent, sourceType = "USER_INTENT")
         val titles = buildList {
-            if (useLocalOrchestrator) add("Structure intent with local AI")
+            if (useLocalOrchestrator) add("Optional local intent brief (non-blocking)")
             chosenProviders.forEach { add("Consult ${it.label} in browser") }
             if (useLocalOrchestrator) {
                 add("Connect model outputs with local AI")
@@ -642,7 +642,7 @@ private fun BrowserFrontierConsultationScreen(
         activeStepIds = viewModel.snapshot.value.jobs.firstOrNull { it.id == jobId }?.steps?.map { it.id }.orEmpty()
         providerStepOffset = if (useLocalOrchestrator) 1 else 0
         finalStepIndex = if (useLocalOrchestrator) (activeStepIds.lastIndex - 1).coerceAtLeast(0) else activeStepIds.lastIndex
-        viewModel.updateJobStatus(jobId, "RUNNING", if (useLocalOrchestrator) "Structuring intent locally before independent frontier consultation and output mapping." else "Preparing the connected frontier consultation.")
+        viewModel.updateJobStatus(jobId, "RUNNING", "Opening the selected frontier websites immediately; local output synthesis is deferred until captured responses are available.")
         if (useLocalOrchestrator) {
             activeStepIds.firstOrNull()?.let { viewModel.updateJobStep(jobId, it, "SKIPPED", "Local intent structuring was skipped so provider navigation starts immediately. The original user wording remains authoritative; local synthesis runs after responses are captured.") }
             viewModel.appendChatMessage(conversationId, "TOOL", "Browser navigation starts immediately with the original intent. Local AI will compare outputs and propose source-grounded follow-up records after responses are captured.", localModelId, "LOCAL_ORCHESTRATION_NONBLOCKING")
@@ -655,7 +655,7 @@ private fun BrowserFrontierConsultationScreen(
             modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 14.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            SectionHeading("Frontier workflows", "Local AI structures the intent; frontier models consult, challenge and contribute through their actual websites.")
+            SectionHeading("Frontier workflows", "Frontier models consult through their actual websites; local AI can compare captured outputs afterward.")
             SurfaceCard {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text("Saved workflows", style = MaterialTheme.typography.titleSmall)
