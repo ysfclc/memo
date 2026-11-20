@@ -29,3 +29,14 @@ This log records material product and engineering decisions. Add dated entries; 
 - **Reason:** Memo is an execution agent over sensitive personal data and external accounts; reliability and user control are product features.
 - **Consequences:** Every work package includes dependencies, security/privacy, failure states, acceptance and rollback/recovery. Production deployment, signing and destructive data changes remain approval-gated.
 - **Status:** Active.
+
+
+## 2026-11-20 — ARCH-001: One intent-driven execution engine across providers and capabilities
+
+- **Decision:** Memo has one outcome-first Talk entry path and one shared, bounded execution lifecycle/dispatcher for all tool-using requests. Local and frontier models are interchangeable intelligence providers subject to explicit data permissions. Browser, Android, code, files, image, PDF, video, workspace and future operations are separate real callable capabilities. The engine selects capabilities dynamically, validates policy, invokes them, observes results, verifies postconditions, and continues/re-plans or stops.
+- **Hard constraints:** Examples are acceptance tests, not hardcoded domains or dedicated workflows. A capability is advertised only when a real adapter can execute it. Plans, TaskSpec graphs, manifests and model-generated text are not execution. Deterministic code owns permission, risk, approval, audit, budgets, cancellation, idempotency and recovery. Actual results must be observable and durable.
+- **Reason:** Current Talk generates text directly, while the keyword planner creates static draft plans; typed graph/parser/compiler foundations are not connected to a shared executor. This does not deliver the user's stated operating-agent experience.
+- **Consequences:** `docs/AI_EXECUTION_INVARIANTS.md` is binding; root `AGENTS.md`, `DEVELOPMENT_GOVERNANCE.md`, `IMPLEMENTATION_CONTRACT.md`, Product Contract, TASKS and requirement traceability enforce it. No new domain-specific engine, workflow or screen may be used to avoid the common architecture. Existing bounded implementations must be migrated behind adapters with regression coverage.
+- **Scope:** This decision does not require every task to use an LLM, does not require multi-agent orchestration by default, does not grant arbitrary tool access, and does not claim all modalities/providers already exist.
+- **Status:** Active; changes to these invariants require the user's explicit product decision.
+
