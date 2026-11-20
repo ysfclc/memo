@@ -589,7 +589,7 @@ class BrowserSession(
         }
     }
 
-    private fun completeWorkflowStep(generation: Long, responseText: String) {
+    private fun completeWorkflowStep(generation: Long, responseText: String, manualCapture: Boolean = false) {
         if (disposed || generation != workflowGeneration || workflowIndex !in workflowProviders.indices) return
         val provider = workflowProviders[workflowIndex]
         val prompt = workflowState.currentPrompt
@@ -600,7 +600,8 @@ class BrowserSession(
             response = responseText.trim().take(14_000),
             sourceUrl = currentUrl.take(2_048),
             startedAt = workflowStepStartedAt,
-            completedAt = System.currentTimeMillis()
+            completedAt = System.currentTimeMillis(),
+            captureMethod = if (manualCapture) "MANUAL_PAGE" else "AUTO_DETECTED"
         )
         val results = workflowState.responses + result
         workflowCallbacks?.onStepCompleted(workflowIndex, result)
