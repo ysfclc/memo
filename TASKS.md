@@ -221,8 +221,10 @@ The following keeps Claude's task families and ordering while requiring Memo 1-s
 
 - [ ] **M3.A1** Local planner maps intent to a typed, bounded workflow dynamically; no hardcoded workflow per use case.
 - [ ] **M3.A2** Context retrieval across permitted Memo records/sources with relevance, provenance, privacy scope and source freshness.
-- [ ] **M3.A3** Connect chat and workflow state; show plans, artifacts, checkpoints and outcome evidence in the same product flow.
-- [ ] **M3.A4** Local tool-using agent engine with capability restrictions, tool schemas, bounded steps, iteration/time budgets and kill switch.
+- [~] **M3.A3** Connect chat and workflow state; show plans, artifacts, checkpoints and outcome evidence in the same product flow. Initial Talk path now stores the user request, agent lifecycle/tool events and final response in the existing encrypted conversation; full Work/Studio/Live projection and process-restart resume remain open.
+- [~] **M3.A4** Local tool-using agent engine with capability restrictions, tool schemas, bounded steps, iteration/time budgets and kill switch. Initial bounded model-directed Talk loop is implemented with versioned tool contracts, validated dispatch, durable event journaling and three real workspace adapters; universal registry/runtime adapters, resume/recovery and device acceptance remain open.
+
+**2026-11-20 implementation slice:** `AgentExecutionEngine.kt` is connected to Talk via `AiRuntimeViewModel.generateAgentTurn()`. Callable adapters: `workspace.search` (permission-scoped local retrieval), `workspace.save_note` (private draft with encrypted-vault read-after-write verification) and `workspace.propose_record` (source-linked, PROPOSED record; never auto-approved). Tests cover tool selection/observation/final response, unknown-tool rejection, schema validation, external-action approval blocking, uncertain local writes and plain-text responses. This is **in progress**, not a completed milestone: browser/Android/media/code tools, cross-runtime registry, process-death recovery and end-to-end device acceptance are not implemented or verified.
 - [ ] **M3.B1** Evidence-bearing artifact renderers and approval UX; user reviews the populated artifact, not only a vague plan.
 - [ ] **M3.B2** Live tab/session view; every action has state, timestamp, rationale, result and evidence.
 - [ ] **M3.B3** Glance widget with truthful status and safe user control.
