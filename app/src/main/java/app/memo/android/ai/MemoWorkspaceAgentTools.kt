@@ -25,10 +25,14 @@ object MemoWorkspaceAgentTools {
     fun build(
         viewModel: MemoWorkspaceViewModel,
         contextCandidates: List<ContextCandidate>,
-        includeWorkspaceSearch: Boolean
+        includeWorkspaceSearch: Boolean,
+        sourceConversationId: String,
+        sourceMessageId: String,
+        sourceExcerpt: String
     ): List<AgentCapabilityAdapter> = buildList {
         if (includeWorkspaceSearch) add(WorkspaceSearchAdapter(viewModel, contextCandidates))
         add(SaveNoteAdapter(viewModel))
+        add(ProposeRecordAdapter(viewModel, sourceConversationId, sourceMessageId, sourceExcerpt))
     }
 
     private class WorkspaceSearchAdapter(
@@ -124,10 +128,13 @@ object MemoWorkspaceAgentTools {
             val saved = viewModel.saveWorkArtifactDurably(note)
             if (saved.isFailure) {
                 val reason = saved.exceptionOrNull()?.message ?: "The note could not be saved."
+                val uncertain = viewModel.vaultError.value != null ||
+                    reason.contains("vault write", ignoreCase = true) ||
+                    reason.contains("read back", ignoreCase = true)
                 return AgentToolResult(
-                    status = AgentToolStatus.FAILED,
+                    status = if (uncertain) AgentToolStatus.NEEDS_REVIEW else AgentToolStatus.FAILED,
                     output = reason,
-                    summary = "Note save failed."
+                    summary = if (uncertain) "Note persistence needs review." else "Note save failed."
                 )
             }
             val persisted = viewModel.snapshot.value.evidence.firstOrNull { it.id == note.id }
@@ -141,6 +148,102 @@ object MemoWorkspaceAgentTools {
                 output = "Saved a private draft note in Memo's encrypted workspace. Record ID: ${persisted.id}. The note is available in Work/Evidence for review.",
                 summary = "Saved draft note '${persisted.title}'.",
                 evidenceReference = persisted.id
+            )
+        }
+    }
+
+    private class ProposeRecordAdapter(
+        private val viewModel: MemoWorkspaceViewModel,
+        private val sourceConversationId: String,
+        private val sourceMessageId: String,
+        private val sourceExcerpt: String
+    ) : AgentCapabilityAdapter {
+        override val definition = AgentToolDefinition(
+            id = "workspace.propose_record",
+            description = "Create a new typed Memo workspace record as a source-linked proposal for human review. This does not approve, merge, publish or overwrite an existing record. Use this for people, organizations, projects, decisions or other records that the user's goal genuinely requires.",
+            inputSchemaJson = """{"type":"object","properties":{"type":{"type":"string","minLength":2,"maxLength":64},"title":{"type":"string","minLength":1,"maxLength":240},"description":{"type":"string","maxLength":12000},"properties":{"type":"object"}},"required":["type","title","description"],"additionalProperties":false}""",
+            executionClass = AgentToolExecutionClass.LOCAL_WRITE
+        )
+
+        override fun isAvailable(): Boolean =
+            sourceConversationId.isNotBlank() &&
+                sourceMessageId.isNotBlank() &&
+                viewModel.vaultReady.value &&
+                viewModel.vaultError.value == null
+
+        override suspend fun invoke(arguments: JSONObject, invocation: AgentToolInvocation): AgentToolResult {
+            check(isAvailable()) { "The source conversation or encrypted workspace is unavailable." }
+            val type = arguments.getString("type").trim().uppercase().replace(Regex("[^A-Z0-9_]+"), "_").trim('_')
+            val title = arguments.getString("title").trim().take(240)
+            val description = arguments.getString("description").trim().take(12_000)
+            require(type.matches(Regex("[A-Z][A-Z0-9_]{1,63}"))) { "Choose a valid record type." }
+            require(title.isNotBlank()) { "A record needs a title." }
+
+            val inputProperties = arguments.optJSONObject("properties") ?: JSONObject()
+            require(inputProperties.length() <= 36) { "A record may contain at most 36 user-defined properties." }
+            val propertyMap = linkedMapOf<String, String>()
+            val keys = inputProperties.keys()
+            while (keys.hasNext()) {
+                val key = keys.next().trim().take(80)
+                require(key.isNotBlank()) { "Record property names cannot be empty." }
+                require(key !in setOf("origin", "agentContentDigest", "agentRunId", "agentCallId")) {
+                    "The property '$key' is reserved by Memo."
+                }
+                val value = inputProperties.opt(key)
+                require(value is String && value.length <= 2_000) {
+                    "Record property '$key' must be text no longer than 2,000 characters."
+                }
+                propertyMap[key] = value
+            }
+            val stableProperties = propertyMap.toSortedMap().entries.joinToString("\n") { "${it.key}=${it.value}" }
+            val digest = sha256("$type\n$title\n$description\n$stableProperties")
+            val existing = viewModel.snapshot.value.entities.firstOrNull { entity ->
+                entity.type == type &&
+                    entity.title.equals(title, ignoreCase = true) &&
+                    entity.reviewStatus !in setOf("REJECTED", "MERGED") &&
+                    entity.properties["agentContentDigest"] == digest
+            }
+            if (existing != null) {
+                return AgentToolResult(
+                    status = AgentToolStatus.SUCCEEDED,
+                    output = "The identical proposal already exists. Existing record ID: ${existing.id}. No duplicate was created.",
+                    summary = "Existing record proposal reused.",
+                    evidenceReference = existing.id
+                )
+            }
+
+            val persistedProperties = propertyMap + mapOf(
+                "origin" to "MEMO_AGENT",
+                "agentContentDigest" to digest,
+                "agentRunId" to invocation.runId,
+                "agentCallId" to invocation.callId
+            )
+            val outcome = viewModel.createEntityDurably(
+                type = type,
+                title = title,
+                description = description,
+                properties = persistedProperties,
+                sourceConversationId = sourceConversationId,
+                sourceMessageId = sourceMessageId,
+                sourceExcerpt = sourceExcerpt.take(2_000)
+            )
+            val entity = outcome.getOrNull()
+            if (entity == null) {
+                val reason = outcome.exceptionOrNull()?.message ?: "Memo could not create the record proposal."
+                val uncertain = viewModel.vaultError.value != null ||
+                    reason.contains("vault write", ignoreCase = true) ||
+                    reason.contains("read back", ignoreCase = true)
+                return AgentToolResult(
+                    status = if (uncertain) AgentToolStatus.NEEDS_REVIEW else AgentToolStatus.FAILED,
+                    output = reason,
+                    summary = if (uncertain) "Record persistence needs review." else "Record proposal was not created."
+                )
+            }
+            return AgentToolResult(
+                status = AgentToolStatus.SUCCEEDED,
+                output = "Created a source-linked record proposal in Memo. Type: ${entity.type}. Title: ${entity.title}. Review status: ${entity.reviewStatus}. Record ID: ${entity.id}. It remains a proposal and was not approved.",
+                summary = "Created record proposal '${entity.title}'.",
+                evidenceReference = entity.id
             )
         }
     }
