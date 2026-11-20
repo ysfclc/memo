@@ -318,7 +318,7 @@ browser_url_tests = (ROOT / "core/src/test/kotlin/app/memo/android/runtime/Brows
 browser_session = (ROOT / "app/src/main/java/app/memo/android/browser/BrowserSession.kt").read_text()
 agent_tools = (ROOT / "app/src/main/java/app/memo/android/ai/MemoWorkspaceAgentTools.kt").read_text()
 agent_engine_tests = (ROOT / "core/src/test/kotlin/app/memo/android/orchestration/AgentExecutionEngineTest.kt").read_text()
-for marker in ('RuntimeDescriptor("app.workspace"', 'RuntimeCapability("workspace.search"', 'RuntimeDescriptor("runtime.browser"', 'RuntimeCapability("browser.navigate_https"', 'RuntimeCapability("browser.capture_evidence"'):
+for marker in ('RuntimeDescriptor("app.workspace"', 'RuntimeCapability("workspace.search"', 'id = "runtime.browser"', 'RuntimeCapability("browser.navigate_https"', 'RuntimeCapability("browser.capture_evidence"'):
     if marker not in runtime_registry:
         fail(f"Talk runtime capability contract is missing: {marker}")
 for marker in ("AgentCapabilityRegistry(RuntimeRegistry().listRuntimes(), adapters)", "capabilityRegistry.availableAdapters()", "capabilityRegistry.resolve(decision.toolId)", "val runtimeId: String ="):
