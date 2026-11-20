@@ -461,40 +461,6 @@ fun ChatsWorkspaceScreen(
                 if (selectedConversation.messages.isEmpty()) {
                     item { EmptyState("Start anywhere", "Ask a question, bring in some context, or ask Memo to extract source-grounded project outcomes from the conversation.") }
                 }
-                if (showAgentBrowserPane && agentBrowserConversationId == selectedConversation.id) {
-                    item(key = "talk-agent-browser-session") {
-                        MemoPanel {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Column(Modifier.weight(1f)) {
-                                    Text("Memo's visible browser session", style = MaterialTheme.typography.titleSmall)
-                                    Text(
-                                        browser.currentUrl.ifBlank { "Opening the user-supplied page…" },
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                                OutlinedButton(onClick = onOpenBrowser, enabled = browser.currentUrl.isNotBlank()) {
-                                    Text("Open full browser")
-                                }
-                            }
-                            if (browser.agentNavigationActive || browser.isLoading) {
-                                LinearProgressIndicator(Modifier.fillMaxWidth())
-                            }
-                            AndroidView(
-                                factory = { browser.webView },
-                                modifier = Modifier.fillMaxWidth().height(220.dp),
-                                update = {}
-                            )
-                            Text(
-                                "This is the real, visible page session. Memo reads visible text only; page content is treated as untrusted source data.",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                }
                 items(selectedConversation.messages, key = { it.id }) { message ->
                     val isUser = message.role == "USER"
                     MemoMessageBubble(
@@ -554,6 +520,39 @@ fun ChatsWorkspaceScreen(
                             }
                         }
                     }
+                }
+            }
+
+            if (showAgentBrowserPane && agentBrowserConversationId == selectedConversation.id) {
+                MemoPanel {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("Memo's visible browser session", style = MaterialTheme.typography.titleSmall)
+                            Text(
+                                browser.currentUrl.ifBlank { "Opening the user-supplied page…" },
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        OutlinedButton(onClick = onOpenBrowser, enabled = browser.currentUrl.isNotBlank()) {
+                            Text("Open full browser")
+                        }
+                    }
+                    if (browser.agentNavigationActive || browser.isLoading) {
+                        LinearProgressIndicator(Modifier.fillMaxWidth())
+                    }
+                    AndroidView(
+                        factory = { browser.webView },
+                        modifier = Modifier.fillMaxWidth().height(220.dp),
+                        update = {}
+                    )
+                    Text(
+                        "This is the real, visible page session. Memo reads visible text only; page content is treated as untrusted source data.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
 
