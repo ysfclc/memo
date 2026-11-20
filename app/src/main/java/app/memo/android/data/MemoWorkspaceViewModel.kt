@@ -17,12 +17,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.util.Locale
 
 class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(application) {
     private val vault = EncryptedVault(application)
     private val persistenceQueue = Channel<AppSnapshot>(Channel.CONFLATED)
+    private val vaultWriteMutex = Mutex()
     private val preferences = application.getSharedPreferences("synthos_preferences", Application.MODE_PRIVATE)
     private val runtimeRegistry = RuntimeRegistry()
 
@@ -48,7 +51,7 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         viewModelScope.launch {
             for (candidate in persistenceQueue) {
                 try {
-                    withContext(Dispatchers.IO) { vault.write(candidate) }
+                    withContext(Dispatchers.IO) { persistSnapshotSafely(candidate) }
                     _vaultError.value = null
                 } catch (error: Throwable) {
                     _vaultError.value = safeError(error, "Could not save the encrypted workspace. Export your data before continuing.")
@@ -200,6 +203,56 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             }
         }
         return null
+    }
+
+    /**
+     * Append a conversation message and wait until the latest encrypted snapshot is written.
+     * Agent decisions use this for their transcript journal before starting any capability.
+     */
+    suspend fun appendChatMessageDurably(
+        conversationId: String,
+        role: String,
+        content: String,
+        modelId: String = "",
+        sourceType: String = "NATIVE"
+    ): String? {
+        if (!_vaultReady.value) return "Unlock the workspace before continuing."
+        _vaultError.value?.let { return "Encrypted workspace persistence is unavailable: $it" }
+        val appendError = appendChatMessage(conversationId, role, content, modelId, sourceType)
+        if (appendError != null) return appendError
+        return try {
+            withContext(Dispatchers.IO) { persistLatestSnapshotSafely() }
+            null
+        } catch (error: Throwable) {
+            val message = safeError(error, "The encrypted workspace could not save this message.")
+            _vaultError.value = message
+            message
+        }
+    }
+
+    /** Durable agent lifecycle/tool event stored as a TOOL message in the existing encrypted conversation. */
+    suspend fun appendAgentEvent(conversationId: String, content: String, modelId: String = ""): String? =
+        appendChatMessageDurably(conversationId, "TOOL", content, modelId, "AGENT_EVENT")
+
+    /** Save a Memo-generated local draft and wait for its encrypted write and read-after-write check. */
+    suspend fun saveWorkArtifactDurably(evidence: EvidenceRecord): Result<Unit> {
+        if (!_vaultReady.value) return Result.failure(IllegalStateException("Unlock the workspace before saving an artifact."))
+        _vaultError.value?.let { return Result.failure(IllegalStateException("Encrypted workspace persistence is unavailable: $it")) }
+        val saveResult = saveWorkArtifact(evidence)
+        if (saveResult.isFailure) return saveResult
+        return try {
+            withContext(Dispatchers.IO) { persistLatestSnapshotSafely() }
+            val persisted = _snapshot.value.evidence.firstOrNull { it.id == evidence.id }
+            if (persisted == null) {
+                Result.failure(IllegalStateException("The note was not present after the encrypted workspace write."))
+            } else {
+                Result.success(Unit)
+            }
+        } catch (error: Throwable) {
+            val message = safeError(error, "The encrypted workspace could not save the artifact.")
+            _vaultError.value = message
+            Result.failure(IllegalStateException(message, error))
+        }
     }
 
     fun updateChatMessage(conversationId: String, messageId: String, content: String): String? {
@@ -1141,6 +1194,27 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
                 },
                 onFailure = { onDone(safeError(it, "Import failed.")) }
             )
+        }
+    }
+
+    /**
+     * Serialize normal queue writes and synchronous durability barriers. If a newer snapshot
+     * appeared while a queued candidate was being written, persist the newer value before release.
+     */
+    private suspend fun persistSnapshotSafely(candidate: AppSnapshot) {
+        vaultWriteMutex.withLock {
+            vault.write(candidate)
+            val latest = _snapshot.value
+            if (latest !== candidate) vault.write(latest)
+        }
+    }
+
+    private suspend fun persistLatestSnapshotSafely() {
+        vaultWriteMutex.withLock {
+            val current = _snapshot.value
+            vault.write(current)
+            val latest = _snapshot.value
+            if (latest !== current) vault.write(latest)
         }
     }
 
