@@ -53,3 +53,21 @@ Record device model, Android version, APK SHA-256, GitHub Actions run URL, test 
 - [ ] Verify the reminder re-schedules after reboot/timezone/time change; test with battery saver and record any OEM delay rather than assuming exact timing.
 - [ ] Complete and fail a bounded native workflow; confirm one generic workflow notification per terminal transition and no duplicate notification on ordinary refreshes.
 - [ ] Tap a Memo notification while locked. Confirm Memo still requires its normal workspace unlock before private content is accessible.
+
+
+## Browser workflow correction — acceptance pending
+
+- [ ] Open Browser → **Browser research** mode independently from **Frontier consultation**.
+- [ ] Start research with a Google Maps query; verify the real Maps page opens in the visible WebView.
+- [ ] Scroll Maps results and capture multiple page snapshots; verify every capture is saved as evidence immediately and previous captures remain.
+- [ ] Open an arbitrary HTTPS target and capture it in the same research run.
+- [ ] Extract with a local model only; verify each proposed ORGANIZATION/TASK has exact evidence and source URL(s), and unsupported properties remain blank.
+- [ ] Verify duplicate proposals do not create duplicate records and follow-up TASK records remain reviewable in Work.
+- [ ] Kill/reopen the app, resume saved research, and verify evidence/proposals survive.
+- [ ] Test extraction failure/retry without losing captures.
+- [ ] Test provider consultation starts browser navigation without a local model blocking it.
+- [ ] Verify approval controls are visible inline, the exact prompt/destination are reviewable, dismissing review does not approve, rejection stops the workflow, and nothing is sent without approval.
+- [ ] Verify manual visible-page capture is labeled MANUAL_PAGE and is not represented as automatically verified AI output.
+- [ ] Verify English, Polish and Turkish controls; screen-reader labels; scroll/takeover; and Android WebView behavior.
+- [ ] Build/install fresh APK; install over existing Memo; verify private data preservation; test on device.
+
