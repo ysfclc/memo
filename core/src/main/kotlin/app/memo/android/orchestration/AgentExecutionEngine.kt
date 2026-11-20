@@ -242,9 +242,17 @@ class AgentExecutionEngine(
                             throw cancelled
                         } catch (error: Throwable) {
                             AgentToolResult(
-                                status = AgentToolStatus.FAILED,
+                                status = if (definition.executionClass == AgentToolExecutionClass.READ_ONLY) {
+                                    AgentToolStatus.FAILED
+                                } else {
+                                    AgentToolStatus.NEEDS_REVIEW
+                                },
                                 output = (error.message?.takeIf { it.isNotBlank() } ?: "The capability failed.").take(1_000),
-                                summary = "Capability failed."
+                                summary = if (definition.executionClass == AgentToolExecutionClass.READ_ONLY) {
+                                    "Capability failed."
+                                } else {
+                                    "Write outcome is uncertain; review before retrying."
+                                }
                             )
                         }
 
