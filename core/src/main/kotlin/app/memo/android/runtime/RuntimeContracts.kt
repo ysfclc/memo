@@ -93,6 +93,7 @@ class RuntimeRegistry {
             RuntimeCapability("browser.navigate_https", "Navigate HTTPS", "Open a user-selected HTTPS page."),
             RuntimeCapability("browser.inspect_page", "Inspect visible page", "Read supported page content through browser-side scripts."),
             RuntimeCapability("browser.capture_evidence", "Capture evidence", "Save inspected content with source URL and timestamp."),
+            RuntimeCapability("browser.open_observed_link", "Open observed same-origin link", "Navigate to an exact same-origin HTTPS link observed in the latest live page capture; no controls are clicked."),
             RuntimeCapability("browser.prepare_prompt", "Prepare prompt", "Fill a supported frontier-chat composer for review.", true),
             RuntimeCapability("browser.submit_prompt", "Submit prompt", "Send a user-approved prompt through the visible provider website; provider UI compatibility is checked first.", true, true),
             RuntimeCapability("browser.capture_response", "Capture response", "Capture a new, stable assistant answer from the current provider page."),
