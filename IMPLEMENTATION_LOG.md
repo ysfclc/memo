@@ -123,3 +123,10 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - **Localization:** added Polish/Turkish labels and a localization test for the new research/consultation controls; the static source verifier now scans the new screen.
 - **CI:** run #977 (commit `93f23741cbe15925c89632d56cb5b58118fbd63d`) failed in the source verifier before Android compilation because it expected `Continue in Talk`, while the current home UI says `Continue with Memo`. The verifier was corrected to check the real label in the home surface in commit `99ed5033228509fa8d3bc7d4718a6a5e981ba0a0`. A new run for that exact commit is not yet confirmed.
 - **Verification limitation:** no local Android/Gradle toolchain or checkout is available in this session. No compile, APK, install or device-acceptance claim. Google Maps result scrolling/capture is still user-driven; autonomous click/type/scroll/verify execution and a dynamic workflow DAG remain unfinished.
+
+
+### CI follow-up: source checks and compile blocker
+
+- Run #980: source verification failed because the localization scanner found missing PL/TR entries in existing Work UI labels after the new research screen was included in the scan. Added the 22 missing catalog entries; branch static scan now finds no missing or duplicate translation keys.
+- Run #981: source invariants and remote-runner checks passed; Kotlin test compilation stopped on `SalesAccountResearchTest.kt` missing required `EvidenceRecord.kind`. Corrected that fixture. Also fixed the newly introduced evidence-resume timestamp reference from `createdAt` to `capturedAt` (the actual `EvidenceRecord` field).
+- The next CI run is needed to reach app compilation and APK assembly. The earlier failure is not evidence that the new browser screen compiled.
