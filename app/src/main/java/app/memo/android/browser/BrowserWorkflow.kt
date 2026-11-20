@@ -42,7 +42,9 @@ data class BrowserModelResponse(
     val response: String,
     val sourceUrl: String,
     val startedAt: Long,
-    val completedAt: Long = nowMillis()
+    val completedAt: Long = nowMillis(),
+    /** AUTO_DETECTED is stable DOM polling; MANUAL_PAGE is a user-captured visible page. */
+    val captureMethod: String = "AUTO_DETECTED"
 )
 
 data class BrowserWorkflowUiState(
