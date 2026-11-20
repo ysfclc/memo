@@ -146,7 +146,7 @@ object MemoWorkspaceAgentTools {
 
     private fun sha256(value: String): String {
         val digest = MessageDigest.getInstance("SHA-256").digest(value.toByteArray(Charsets.UTF_8))
-        return digest.joinToString("") { byte -> "%02x".format(byte) }
+        return digest.joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
     }
 }
 
