@@ -2,7 +2,9 @@
 
 **Status:** Active workflow proposal for this repository  
 **Established:** 9 November 2026  
-**Product authority:** [docs/MEMO_PRODUCT_CONTRACT.md](docs/MEMO_PRODUCT_CONTRACT.md)  
+**Product authority:** [docs/MEMO_PRODUCT_CONTRACT.md](docs/MEMO_PRODUCT_CONTRACT.md)
+**Binding execution architecture:** [docs/AI_EXECUTION_INVARIANTS.md](docs/AI_EXECUTION_INVARIANTS.md)
+**Contributor hard stops:** [AGENTS.md](AGENTS.md)  
 **Social domain contract:** [docs/SOCIAL_PLATFORM_PRODUCT_SPEC.md](docs/SOCIAL_PLATFORM_PRODUCT_SPEC.md)  
 **Requirement ledger:** [docs/REQUIREMENT_TRACEABILITY.md](docs/REQUIREMENT_TRACEABILITY.md)  
 **Engineering ledger:** [TASKS.md](TASKS.md)
@@ -18,11 +20,12 @@ The process must protect build time, not replace it with paperwork. Keep records
 When records conflict, resolve them in this order:
 
 1. Explicit, latest user decision or approval, recorded in the Decision Log.
-2. Product Contract and linked domain specifications: what Memo must be.
-3. Requirement Traceability Register: stable requirement IDs and acceptance criteria.
-4. TASKS.md and ROADMAP.md: implementation sequence and engineering work.
-5. Source code, tests, CI, runtime evidence and device evidence: what actually exists and what has been proven.
-6. Session checkpoints and chat history: temporary context, never a substitute for repository records.
+2. [AI Execution Invariants](docs/AI_EXECUTION_INVARIANTS.md): binding architecture rules that implementation convenience, tests or local designs cannot weaken.
+3. Product Contract and linked domain specifications: what Memo must be.
+4. Requirement Traceability Register: stable requirement IDs and acceptance criteria.
+5. TASKS.md and ROADMAP.md: implementation sequence and engineering work.
+6. Source code, tests, CI, runtime evidence and device evidence: what actually exists and what has been proven.
+7. Session checkpoints and chat history: temporary context, never a substitute for repository records.
 
 A source file, screen, mock, prototype, fixture or old completion marker does not override the product contract. A task is not complete merely because a related class or UI exists.
 
@@ -53,7 +56,7 @@ implemented, verified and device_verified are not interchangeable. Do not use do
 
 ## 4. Fresh Start protocol — before substantial work
 
-1. Read this governance document and the current product contract.
+1. Read this governance document, [AGENTS.md](AGENTS.md), the [AI Execution Invariants](docs/AI_EXECUTION_INVARIANTS.md) and the current product contract.
 2. Read the relevant domain specification and stable requirement IDs.
 3. Read the latest session checkpoint; if none exists, create a baseline checkpoint.
 4. Inspect the actual GitHub repository, target branch, latest commit and open PRs. Never assume the last conversation's branch is still current.
@@ -79,7 +82,7 @@ Every substantial work package must contain:
 - Rollback/recovery: migration compatibility, safe retry/idempotency and handling uncertain external side effects.
 - Proof: commit, changed files, commands/results, CI run/artifact and device evidence where applicable.
 
-Choose a vertical slice that reaches a meaningful user outcome. Avoid building disconnected screens or infrastructure with no linked product acceptance path.
+Choose a vertical slice that reaches a meaningful user outcome through the canonical Talk → shared execution engine → real capability → observed result path. Avoid disconnected screens or infrastructure with no linked product acceptance path. Before implementation, show how the design obeys `docs/AI_EXECUTION_INVARIANTS.md`; a new example or modality extends the shared capability registry/dispatcher rather than creating a new domain, specialist workflow or parallel engine.
 
 ## 6. Implementation and review rules
 
@@ -91,6 +94,7 @@ Choose a vertical slice that reaches a meaningful user outcome. Avoid building d
 - Do not introduce placeholder content, fake counts, simulated integrations or dead controls as if they were working features.
 - Do not add a dependency, permission, remote service or data export without documenting why it is necessary.
 - Keep UI changes consistent with Talk, Live, Work and Studio. Do not create a new silo without a product-level decision.
+- Do not build a dedicated workflow or primary navigation destination for an example request. Prove new capabilities through the same Talk entry point and shared execution lifecycle.
 - Record deviations and unresolved risks before moving to another work package.
 
 ## 7. Mandatory quality gates
@@ -116,6 +120,13 @@ Every relevant gate must pass, or the work remains open with a named blocker.
 - External actions have idempotency/receipt strategy; ambiguous outcomes enter NEEDS_REVIEW, not blind replay.
 - Persistence changes have versioning, migration, corruption and rollback tests.
 - Success is based on an observable postcondition, not a model or provider claim alone.
+
+### Architecture invariants
+- Every tool-using Talk request reaches the single shared orchestration and capability-dispatch path.
+- Intelligence providers (local/frontier models) are independent of action capabilities and adapters.
+- Every advertised capability resolves to a real adapter with schemas, truthful readiness, policy and observable output.
+- The run loop observes and verifies results, supports re-planning and persists recoverable execution state.
+- New examples/modalities do not add hardcoded domain routing or parallel workflows.
 
 ### Engineering
 - Relevant unit, integration and static checks pass.
