@@ -7,8 +7,11 @@ import app.memo.android.browser.BrowserSession
 import app.memo.android.runtime.BrowserUrlPolicy
 import app.memo.android.context.WorkspaceContextRetriever
 import app.memo.android.data.EvidenceRecord
+import app.memo.android.data.ActionApprovalLedger
 import app.memo.android.data.MemoWorkspaceViewModel
 import app.memo.android.data.StudioArtifactPolicy
+import app.memo.android.orchestration.AgentApprovalEnvelope
+import app.memo.android.orchestration.AgentApprovalGrant
 import app.memo.android.orchestration.AgentCapabilityAdapter
 import app.memo.android.orchestration.AgentExecutionEvent
 import app.memo.android.orchestration.AgentToolDefinition
@@ -17,6 +20,9 @@ import app.memo.android.orchestration.AgentToolInvocation
 import app.memo.android.orchestration.AgentToolPostconditionVerification
 import app.memo.android.orchestration.AgentToolResult
 import app.memo.android.orchestration.AgentToolStatus
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.security.MessageDigest
 import java.util.Locale
@@ -46,8 +52,13 @@ object MemoWorkspaceAgentTools {
         add(ProposeRecordAdapter(viewModel, sourceConversationId, sourceMessageId, sourceExcerpt))
         if (browser != null) {
             val userSuppliedUrls = BrowserUrlPolicy.explicitlySuppliedUrls(sourceExcerpt)
-            val browserScope = BrowserAgentScope()
+            val browserScope = BrowserAgentScope().apply {
+                BrowserUrlPolicy.normalizeHttpsUrl(browser.currentUrl)?.let { url ->
+                    lastOpenedPage = BrowserNavigationResult(url, browser.pageTitle)
+                }
+            }
             add(BrowserNavigateAdapter(browser, userSuppliedUrls, browserScope))
+            add(BrowserPromptSubmissionAdapter(browser, viewModel, sourceConversationId, sourceMessageId, sourceExcerpt, browserScope))
             if (includeBrowserPageContent) {
                 add(BrowserCaptureAdapter(browser, viewModel, sourceConversationId, sourceMessageId, browserScope))
                 add(BrowserOpenObservedLinkAdapter(browser, browserScope))
@@ -65,6 +76,10 @@ object MemoWorkspaceAgentTools {
         var lastCapturedLinksDigest: String = ""
         var lastCapturedTitle: String = ""
         var lastCapturedSourceTitle: String = ""
+        var lastPromptSubmissionEvidenceId: String = ""
+        var lastPromptSubmissionActionId: String = ""
+        var lastPromptSubmissionDigest: String = ""
+        var lastPromptSubmissionDestination: String = ""
     }
 
     private fun navigationEvidenceReference(url: String): String =
@@ -132,6 +147,267 @@ object MemoWorkspaceAgentTools {
                 verified = verified,
                 description = if (verified) "The settled visible WebView URL and title match Memo's navigation result." else "The visible browser state no longer matches the navigation result.",
                 evidenceReference = evidence
+            )
+        }
+    }
+
+    private class BrowserPromptSubmissionAdapter(
+        private val browser: BrowserSession,
+        private val viewModel: MemoWorkspaceViewModel,
+        private val sourceConversationId: String,
+        private val sourceMessageId: String,
+        private val sourceExcerpt: String,
+        private val scope: BrowserAgentScope
+    ) : AgentCapabilityAdapter {
+        override val definition = AgentToolDefinition(
+            id = "browser.submit_prompt",
+            description = "Send the exact prompt shown in the approval request to the visible HTTPS page's text composer. The full destination and prompt require explicit human approval. Memo does not fill other fields, submit arbitrary forms or send without approval.",
+            inputSchemaJson = """{"type":"object","properties":{"prompt":{"type":"string","minLength":1,"maxLength":12000}},"required":["prompt"],"additionalProperties":false}""",
+            executionClass = AgentToolExecutionClass.EXTERNAL_WRITE,
+            runtimeId = "runtime.browser",
+            requiresUserApproval = true
+        )
+
+        private fun destination(): String? =
+            BrowserUrlPolicy.normalizeHttpsUrl(browser.currentUrl)
+
+        override fun isAvailable(): Boolean {
+            val opened = scope.lastOpenedPage ?: return false
+            val target = BrowserUrlPolicy.normalizeHttpsUrl(opened.url) ?: return false
+            return viewModel.vaultReady.value &&
+                viewModel.vaultError.value == null &&
+                browser.canCaptureForAgent &&
+                destination() == target
+        }
+
+        override fun approvalFailure(arguments: JSONObject): String? {
+            val prompt = arguments.optString("prompt").trim()
+            if (prompt.isBlank() || prompt.length > 12_000) {
+                return "The exact prompt must contain 1–12,000 characters."
+            }
+            if (!isAvailable()) {
+                return "Open a settled public HTTPS page in Memo's visible browser. The page must remain unchanged while the approval is reviewed."
+            }
+            return null
+        }
+
+        override fun approvalEnvelope(arguments: JSONObject): AgentApprovalEnvelope? {
+            if (approvalFailure(arguments) != null) return null
+            val opened = scope.lastOpenedPage ?: return null
+            val target = destination() ?: return null
+            val prompt = arguments.optString("prompt").trim()
+            return AgentApprovalEnvelope(
+                runtimeId = definition.runtimeId,
+                capabilityId = definition.id,
+                destination = target,
+                title = "Send exact prompt to ${opened.title.take(100).ifBlank { target }}",
+                payload = prompt,
+                risk = "EXTERNAL_WRITE"
+            )
+        }
+
+        override suspend fun invoke(arguments: JSONObject, invocation: AgentToolInvocation): AgentToolResult =
+            AgentToolResult(
+                status = AgentToolStatus.NEEDS_REVIEW,
+                output = "Sending a prompt to a website is an external action. Memo will not do it without approval of the exact destination and prompt.",
+                summary = "Explicit approval is required before browser prompt submission."
+            )
+
+        override suspend fun invokeApproved(
+            arguments: JSONObject,
+            invocation: AgentToolInvocation,
+            grant: AgentApprovalGrant
+        ): AgentToolResult {
+            val envelope = approvalEnvelope(arguments)
+                ?: return AgentToolResult(AgentToolStatus.NEEDS_REVIEW, "The browser page or approved prompt changed. Inspect the page and create a new approval.", "Approved browser prompt became stale.")
+            val expectedHash = ActionApprovalLedger.contentHash(
+                envelope.runtimeId,
+                envelope.capabilityId,
+                envelope.destination,
+                envelope.payload
+            )
+            if (grant.contentHash != expectedHash || approvalFailure(arguments) != null) {
+                withContext(NonCancellable) {
+                    viewModel.markExternalActionNeedsReviewDurably(grant.actionId, "The browser page or exact prompt changed after approval. No automatic retry is allowed.")
+                }
+                return AgentToolResult(AgentToolStatus.NEEDS_REVIEW, "The approval no longer matches the visible page and exact prompt. Inspect the browser before retrying.", "Approved browser prompt failed its preflight check.")
+            }
+            val began = viewModel.beginExternalActionDurably(
+                actionId = grant.actionId,
+                runtimeId = envelope.runtimeId,
+                capabilityId = envelope.capabilityId,
+                destination = envelope.destination,
+                payload = envelope.payload
+            )
+            if (!began) {
+                withContext(NonCancellable) {
+                    viewModel.markExternalActionNeedsReviewDurably(grant.actionId, "The approved browser action could not be durably started. Inspect the action ledger before retrying.")
+                }
+                return AgentToolResult(AgentToolStatus.NEEDS_REVIEW, "Memo could not durably start the approved browser action. Inspect the action ledger before retrying.", "Approved browser action start needs review.")
+            }
+
+            try {
+                val capture = browser.submitPromptForAgent(envelope.payload, envelope.destination)
+                val promptDigest = sha256(envelope.payload)
+                val pageDigest = sha256(capture.content)
+                val sourceDigest = sha256(sourceExcerpt.take(2_000))
+                val metadata = JSONObject()
+                    .put("origin", "MEMO_AGENT")
+                    .put("runtimeId", envelope.runtimeId)
+                    .put("capabilityId", envelope.capabilityId)
+                    .put("actionId", grant.actionId)
+                    .put("approvalHash", grant.contentHash)
+                    .put("destination", envelope.destination)
+                    .put("promptDigest", promptDigest)
+                    .put("pageUrlAfter", capture.url)
+                    .put("pageTitleAfter", capture.title)
+                    .put("pageContentDigest", pageDigest)
+                    .put("pageContentLength", capture.content.length)
+                    .put("sourceConversationId", sourceConversationId)
+                    .put("sourceMessageId", sourceMessageId)
+                    .put("sourceExcerptDigest", sourceDigest)
+                    .put("submissionVerified", true)
+                    .put("capturedAt", capture.capturedAt)
+                    .put("runId", invocation.runId)
+                    .put("callId", invocation.callId)
+                    .toString()
+                val evidence = EvidenceRecord(
+                    title = "Approved browser prompt · ${capture.title}".take(240),
+                    sourceUrl = envelope.destination,
+                    kind = "BROWSER_PROMPT_SUBMISSION",
+                    content = envelope.payload,
+                    summary = "The exact approved prompt was visible as a submitted user message and the composer was cleared. Page snapshot SHA-256: $pageDigest.",
+                    capturedAt = capture.capturedAt,
+                    metadata = metadata
+                )
+                val saved = viewModel.saveWorkArtifactDurably(evidence)
+                if (saved.isFailure) {
+                    val reason = saved.exceptionOrNull()?.message ?: "The submission evidence could not be saved."
+                    withContext(NonCancellable) {
+                        viewModel.markExternalActionNeedsReviewDurably(grant.actionId, "The prompt may have been sent, but encrypted evidence persistence failed: $reason")
+                    }
+                    return AgentToolResult(AgentToolStatus.NEEDS_REVIEW, "The prompt may have been sent, but its encrypted evidence could not be confirmed. Inspect the browser and action ledger before retrying.", "Browser prompt submission needs review.")
+                }
+                val persisted = viewModel.snapshot.value.evidence.firstOrNull { it.id == evidence.id }
+                if (persisted == null) {
+                    withContext(NonCancellable) {
+                        viewModel.markExternalActionNeedsReviewDurably(grant.actionId, "The prompt may have been sent, but its exact evidence record was not readable after the encrypted write.")
+                    }
+                    return AgentToolResult(AgentToolStatus.NEEDS_REVIEW, "The prompt may have been sent, but Memo could not read back its exact evidence record. Inspect the browser before retrying.", "Browser prompt evidence read-back needs review.")
+                }
+                scope.lastPromptSubmissionEvidenceId = persisted.id
+                scope.lastPromptSubmissionActionId = grant.actionId
+                scope.lastPromptSubmissionDigest = promptDigest
+                scope.lastPromptSubmissionDestination = envelope.destination
+                scope.lastOpenedPage = BrowserNavigationResult(capture.url, capture.title)
+                scope.capturedPageUrl = ""
+                scope.observedLinks = emptyMap()
+                scope.lastCapturedEvidenceId = ""
+                scope.lastCapturedContentDigest = ""
+                scope.lastCapturedLinksDigest = ""
+                scope.lastCapturedTitle = ""
+                scope.lastCapturedSourceTitle = ""
+                return AgentToolResult(
+                    status = AgentToolStatus.SUCCEEDED,
+                    output = "The exact approved prompt was visibly submitted to the current browser page. EVIDENCE ID: ${persisted.id}. PROMPT SHA-256: $promptDigest. The encrypted evidence record is saved; the external response has not yet been read.",
+                    summary = "Approved prompt submission verified on ${capture.title.take(100)}.",
+                    evidenceReference = persisted.id
+                )
+            } catch (cancelled: CancellationException) {
+                withContext(NonCancellable) {
+                    viewModel.markExternalActionNeedsReviewDurably(grant.actionId, "Prompt submission was interrupted after the approved action started. Inspect the visible browser before retrying.")
+                }
+                throw cancelled
+            } catch (error: Throwable) {
+                val reason = error.message ?: "The browser prompt outcome is uncertain."
+                withContext(NonCancellable) {
+                    viewModel.markExternalActionNeedsReviewDurably(grant.actionId, "The approved prompt may have been sent, but verification did not finish: $reason")
+                }
+                return AgentToolResult(
+                    status = AgentToolStatus.NEEDS_REVIEW,
+                    output = "The approved prompt may have been sent, but Memo could not complete verification. Inspect the visible browser and action ledger before retrying. $reason",
+                    summary = "Browser prompt submission outcome needs review."
+                )
+            }
+        }
+
+        override suspend fun verifyPostcondition(
+            arguments: JSONObject,
+            invocation: AgentToolInvocation,
+            result: AgentToolResult
+        ): AgentToolPostconditionVerification {
+            val prompt = arguments.optString("prompt").trim()
+            val destination = scope.lastPromptSubmissionDestination
+            val id = result.evidenceReference
+            val evidence = viewModel.snapshot.value.evidence.firstOrNull { it.id == id }
+            val metadata = evidence?.let { runCatching { JSONObject(it.metadata) }.getOrNull() }
+            val actionId = metadata?.optString("actionId").orEmpty()
+            val action = viewModel.snapshot.value.actionApprovals.firstOrNull { it.id == actionId }
+            val promptDigest = sha256(prompt)
+            val expectedHash = ActionApprovalLedger.contentHash(
+                definition.runtimeId,
+                definition.id,
+                destination,
+                prompt
+            )
+            val pageAfter = metadata?.optString("pageUrlAfter").orEmpty()
+            val evidenceVerified = prompt.isNotBlank() && destination.isNotBlank() && id.isNotBlank() &&
+                evidence != null && metadata != null && action != null &&
+                result.output.contains("EVIDENCE ID: $id") &&
+                result.output.contains("PROMPT SHA-256: $promptDigest") &&
+                evidence.kind == "BROWSER_PROMPT_SUBMISSION" &&
+                evidence.content == prompt &&
+                evidence.sourceUrl == destination &&
+                metadata.optString("actionId") == scope.lastPromptSubmissionActionId &&
+                actionId == scope.lastPromptSubmissionActionId &&
+                metadata.optString("runtimeId") == definition.runtimeId &&
+                metadata.optString("capabilityId") == definition.id &&
+                metadata.optString("approvalHash") == expectedHash &&
+                action.contentHash == expectedHash &&
+                action.approvalHash == expectedHash &&
+                action.runtimeId == definition.runtimeId &&
+                action.capabilityId == definition.id &&
+                action.destination == destination &&
+                action.payload == prompt &&
+                action.status == "IN_PROGRESS" &&
+                metadata.optString("destination") == destination &&
+                metadata.optString("promptDigest") == promptDigest &&
+                metadata.optString("sourceConversationId") == sourceConversationId &&
+                metadata.optString("sourceMessageId") == sourceMessageId &&
+                metadata.optString("sourceExcerptDigest") == sha256(sourceExcerpt.take(2_000)) &&
+                metadata.optBoolean("submissionVerified") &&
+                metadata.optString("pageContentDigest").matches(Regex("[0-9a-f]{64}")) &&
+                metadata.optInt("pageContentLength") > 0 &&
+                BrowserUrlPolicy.isSameOriginHttpsLink(destination, pageAfter) &&
+                metadata.optLong("capturedAt") > 0
+            if (!evidenceVerified) {
+                withContext(NonCancellable) {
+                    if (actionId.isNotBlank()) viewModel.markExternalActionNeedsReviewDurably(actionId, "The exact approved prompt evidence or action-ledger binding failed postcondition verification.")
+                }
+                return AgentToolPostconditionVerification(false, "The approved prompt evidence, page snapshot digest, exact payload and action ledger did not all verify.", id)
+            }
+
+            val completed = try {
+                viewModel.completeExternalActionDurably(actionId, id)
+            } catch (cancelled: CancellationException) {
+                withContext(NonCancellable) {
+                    viewModel.markExternalActionNeedsReviewDurably(actionId, "Action completion was interrupted after prompt evidence was saved.")
+                }
+                throw cancelled
+            }
+            val completedAction = viewModel.snapshot.value.actionApprovals.firstOrNull { it.id == actionId }
+            val verified = completed &&
+                completedAction?.status == "COMPLETED" &&
+                completedAction.evidenceRef == id
+            if (!verified) {
+                withContext(NonCancellable) {
+                    viewModel.markExternalActionNeedsReviewDurably(actionId, "The prompt evidence was saved but the completed action state could not be read back.")
+                }
+            }
+            return AgentToolPostconditionVerification(
+                verified = verified,
+                description = if (verified) "The exact approved prompt, visible submission evidence, page digest and completed action-ledger record were read back." else "The prompt evidence was saved but action-ledger completion did not verify; inspect before retrying.",
+                evidenceReference = id
             )
         }
     }
