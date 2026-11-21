@@ -1487,7 +1487,7 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         val current = _snapshot.value
         val existing = current.evidence.firstOrNull { it.id == id }
             ?: return Result.failure(IllegalArgumentException("This artifact no longer exists."))
-        if (existing.kind !in setOf("WORK_ARTIFACT", "ARTIFACT_DRAFT", "SELF_MODEL_ARTIFACT")) {
+        if (existing.kind !in setOf("WORK_ARTIFACT", "ARTIFACT_DRAFT", "SELF_MODEL_ARTIFACT", "STUDIO_ARTIFACT")) {
             return Result.failure(IllegalStateException("Captured source evidence is immutable. Only Memo-created artifacts can be edited."))
         }
         if (existing.content == cleanContent && existing.title == cleanTitle) return Result.success(Unit)
