@@ -224,6 +224,9 @@ The following keeps Claude's task families and ordering while requiring Memo 1-s
 
 - [~] **M3.A4-S2** Talk transcript must render all execution event types, including approval-requested/granted/rejected. Added explicit approval lifecycle rendering and a unit test for all three event labels; CI verification pending.
 
+
+- [~] **M3.A4-S3** Execution-event journal failure is a hard stop: if recording/delivery fails, do not issue another model decision or capability; if a side effect may have started, stop at `NEEDS_REVIEW`. Added this rule to `docs/AI_EXECUTION_INVARIANTS.md`; CI verification pending.
+
 ### M3 — Orchestrator and live environment
 
 - [ ] **M3.A1** Local planner maps intent to a typed, bounded workflow dynamically; no hardcoded workflow per use case.

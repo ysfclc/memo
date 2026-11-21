@@ -187,3 +187,12 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - **Exact commit SHA:** `fe1278a5bda0e742e31e9fc6b76441ec78c67e7`.
 - **Known gaps:** Approval callback currently defaults to no grant in the Talk execution call site; this mapping is visibility only and does not implement durable approval pause/resume. Full approval UI/ledger path is still open.
 - **Status:** `[~]` implementation pending CI.
+
+
+### 2026-11-21 — M3.A4-S3 — Journal failure hard-stop invariant
+
+- **Requirement:** An execution journal/event persistence failure must stop the execution loop; no further model/tool decisions after failure. If an action may have begun, outcome must be reviewed rather than replayed.
+- **Files changed:** `docs/AI_EXECUTION_INVARIANTS.md`; execution guard already committed in `AgentExecutionEngine.kt`.
+- **Implementation summary:** The rule is now part of the binding execution invariants, not merely a code comment. Approval lifecycle events must also be visible in Talk's transcript.
+- **Verification:** Run 1026 (`5a5eff6`) failed compilation due to missing exhaustive approval-event transcript branches; this was corrected in `fe1278a`. Run 1027 on `e4fca2d` was still active at last check. Newer runs were queued/cancelled by subsequent commits. CI for current source remains pending.
+- **Status:** `[~]` rule and code committed; verification pending.
