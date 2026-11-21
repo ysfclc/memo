@@ -250,7 +250,7 @@ The action inbox and first top-level stop control are present in source. Static/
 
 - Added `browser.capture_response`, available only when browser-page sharing consent is enabled and a completed approved prompt submission is present.
 - It verifies the original prompt baseline, waits for a new stable response, saves encrypted response evidence and returns the response as explicitly untrusted source material. It never resends a prompt; baseline loss/timeout becomes NEEDS_REVIEW.
-- Runtime policy and source-verifier regression guards added. Exact-head CI is pending for this newer head; physical-device response/consent acceptance is pending. No release APK is claimed.
+- Studio exposes both submission and response records in a dedicated Browser research evidence section. Runtime policy and source-verifier regression guards added. Exact-head CI is pending for this newer head; physical-device response/consent acceptance is pending. No release APK is claimed.
 
 ## M3.B1-S1 artifact slice — exact-head CI PASS
 
