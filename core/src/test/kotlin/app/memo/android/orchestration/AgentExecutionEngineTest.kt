@@ -438,7 +438,7 @@ class AgentExecutionEngineTest {
         assertEquals(1, result.toolCalls)
         assertEquals(0, result.successfulToolCalls)
         assertTrue(events.any { it.type == AgentExecutionEventType.RUN_NEEDS_REVIEW })
-        assertTrue(result.finalMessage.contains("review"))
+        assertTrue(result.finalMessage.contains("Review"))
     }
 
     @Test
@@ -464,7 +464,7 @@ class AgentExecutionEngineTest {
         assertEquals(AgentRunStatus.NEEDS_REVIEW, result.status)
         assertEquals(1, modelCalls)
         assertEquals(0, result.successfulToolCalls)
-        assertTrue(result.finalMessage.contains("review"))
+        assertTrue(result.finalMessage.contains("Review"))
     }
 
     @Test
