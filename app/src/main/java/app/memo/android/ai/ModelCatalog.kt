@@ -140,6 +140,11 @@ object ModelDownloadResumePolicy {
         return true
     }
 
+    fun contentRangeStart(contentRange: String?): Long? {
+        val match = contentRangePattern.matchEntire(contentRange?.trim().orEmpty()) ?: return null
+        return match.groupValues[1].toLongOrNull()
+    }
+
     fun contentRangeTotal(contentRange: String?): Long? {
         val match = contentRangePattern.matchEntire(contentRange?.trim().orEmpty()) ?: return null
         return match.groupValues[3].takeIf { it != "*" }?.toLongOrNull()
