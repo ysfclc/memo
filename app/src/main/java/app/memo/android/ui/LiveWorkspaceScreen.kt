@@ -262,6 +262,7 @@ private fun agentRunStatusLabel(status: String): String = when (status) {
     "RUNNING" -> "Running"
     "WAITING_FOR_APPROVAL" -> "Waiting for approval"
     "TOOL_RUNNING" -> "Using a capability"
+    "FINALIZING" -> "Saving result"
     "COMPLETED" -> "Completed"
     "LIMIT_REACHED" -> "Limit reached"
     "NEEDS_REVIEW" -> "Needs review"

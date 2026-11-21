@@ -88,6 +88,8 @@ class MemoLocalizationTest {
         assertEquals("Memo yürütmeleri", MemoLocalization.translate("Memo executions", "TR"))
         assertEquals("Oczekuje na zatwierdzenie", MemoLocalization.translate("Waiting for approval", "PL"))
         assertEquals("Onay bekliyor", MemoLocalization.translate("Waiting for approval", "TR"))
+        assertEquals("Zapisywanie wyniku", MemoLocalization.translate("Saving result", "PL"))
+        assertEquals("Sonuç kaydediliyor", MemoLocalization.translate("Saving result", "TR"))
         assertEquals("Wymaga sprawdzenia", MemoLocalization.translate("Needs review", "PL"))
         assertEquals("İnceleme gerekiyor", MemoLocalization.translate("Needs review", "TR"))
         assertTrue(MemoLocalization.translate(

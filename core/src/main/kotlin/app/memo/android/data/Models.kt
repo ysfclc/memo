@@ -228,7 +228,7 @@ data class AgentRunRecord(
         get() = status in ACTIVE_AGENT_RUN_STATUSES
 }
 
-private val ACTIVE_AGENT_RUN_STATUSES = setOf("RUNNING", "WAITING_FOR_APPROVAL", "TOOL_RUNNING")
+private val ACTIVE_AGENT_RUN_STATUSES = setOf("RUNNING", "WAITING_FOR_APPROVAL", "TOOL_RUNNING", "FINALIZING")
 private val TERMINAL_AGENT_RUN_STATUSES = setOf("COMPLETED", "LIMIT_REACHED", "NEEDS_REVIEW", "FAILED", "CANCELLED")
 private val VALID_AGENT_RUN_STATUSES = ACTIVE_AGENT_RUN_STATUSES + TERMINAL_AGENT_RUN_STATUSES
 
@@ -242,12 +242,12 @@ fun AgentRunRecord.applyEvent(event: AgentExecutionEvent): AgentRunRecord {
         AgentExecutionEventType.TOOL_APPROVAL_REQUESTED -> "WAITING_FOR_APPROVAL"
         AgentExecutionEventType.TOOL_STARTED -> "TOOL_RUNNING"
         AgentExecutionEventType.TOOL_APPROVAL_REJECTED,
-        AgentExecutionEventType.RUN_NEEDS_REVIEW -> "NEEDS_REVIEW"
-        AgentExecutionEventType.TOOL_FAILED -> if (event.status == "NEEDS_REVIEW") "NEEDS_REVIEW" else "RUNNING"
-        AgentExecutionEventType.RUN_FINISHED -> "COMPLETED"
-        AgentExecutionEventType.RUN_LIMIT_REACHED -> "LIMIT_REACHED"
-        AgentExecutionEventType.RUN_FAILED -> "FAILED"
-        AgentExecutionEventType.RUN_CANCELLED -> "CANCELLED"
+        AgentExecutionEventType.TOOL_FAILED -> "RUNNING"
+        AgentExecutionEventType.RUN_NEEDS_REVIEW,
+        AgentExecutionEventType.RUN_FINISHED,
+        AgentExecutionEventType.RUN_LIMIT_REACHED,
+        AgentExecutionEventType.RUN_FAILED,
+        AgentExecutionEventType.RUN_CANCELLED -> "FINALIZING"
     }
     val terminal = nextStatus in TERMINAL_AGENT_RUN_STATUSES
     val nextPendingCall = when (event.type) {

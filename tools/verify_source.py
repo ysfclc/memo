@@ -190,7 +190,7 @@ for marker in (
 ):
     if marker not in talk_screen:
         fail(f"Talk execution is not bound to its durable run journal: {marker}")
-for marker in ("Memo executions", "AgentRunSummary(", "run.recoveryReason", "Open conversation"):
+for marker in ("Memo executions", "AgentRunSummary(", "run.recoveryReason", "Open conversation", "FINALIZING", "Saving result"):
     if marker not in live_screen:
         fail(f"Live does not expose persisted Memo run state: {marker}")
 for marker in ("eventsRecordApprovalToolAndTerminalLifecycle", "rejectedOrUncertainToolOutcomesRequireReview", "eventsFromAnotherRunAreRejected"):
@@ -200,6 +200,13 @@ for marker in ("agentRunRecordsRoundTripWithExactRunAndConversationIdentity", "s
     if marker not in workspace_schema_test:
         fail(f"schema-v7 run persistence/recovery test is missing: {marker}")
 print("PASS: Talk execution has a schema-versioned encrypted run record, atomic event journal/readback, truthful Live state and no-replay recovery")
+
+if "fun launchAgentExecution(conversationId: String, block: suspend () -> Unit)" in agent_broker:
+    fail("the obsolete non-durable Talk launcher must not remain")
+if "run.status != \"FINALIZING\"" not in agent_broker:
+    fail("final response persistence must require a durable FINALIZING state")
+if '"FINALIZING"' not in agent_models or "AgentExecutionEventType.RUN_FINISHED" not in agent_models:
+    fail("the durable run reducer must preserve finalization as a recoverable nonterminal state")
 
 xml_files = sorted((ROOT / "app/src/main").rglob("*.xml"))
 for file in xml_files:

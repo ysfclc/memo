@@ -140,7 +140,7 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
                 _vaultError.value = safeError(error, "Memo execution stopped before a terminal state could be recorded.")
             } finally {
                 try {
-                    if (runCreated) {
+                    if (runCreated || _snapshot.value.agentRuns.any { it.id == runId }) {
                         withContext(NonCancellable) {
                             try {
                                 settleAgentApprovals(conversationId)
@@ -238,6 +238,7 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         _vaultError.value?.let { return "Encrypted workspace persistence is unavailable: $it" }
         val current = _snapshot.value
         val run = current.agentRuns.firstOrNull { it.id == runId } ?: return "The durable Memo run record no longer exists."
+        if (run.status != "FINALIZING") return "Memo cannot save a final response for a run that has not reached its durable finalization state."
         val conversation = current.conversations.firstOrNull { it.id == run.conversationId } ?: return "The execution conversation no longer exists."
         val cleanMessage = result.finalMessage.trim().take(24_000)
         if (cleanMessage.isBlank()) return "Memo returned an empty final result; the run remains available for review."
@@ -281,11 +282,16 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         if (!run.isActive) return
         val uncertain = run.toolCalls > 0 || run.pendingApprovalCallId.isNotBlank()
         val now = nowMillis()
-        val status = if (uncertain) "NEEDS_REVIEW" else "FAILED"
-        val reason = if (uncertain) {
-            "Memo stopped before it could record a terminal event after a capability may have started. Inspect the destination before retrying."
-        } else {
-            "Memo stopped before recording a terminal execution event. No capability start was recorded."
+        val status = when {
+            run.lastEventType == AgentExecutionEventType.RUN_CANCELLED.name -> "CANCELLED"
+            run.lastEventType == AgentExecutionEventType.RUN_NEEDS_REVIEW.name || uncertain -> "NEEDS_REVIEW"
+            else -> "FAILED"
+        }
+        val reason = when (status) {
+            "CANCELLED" -> "The user stopped this Memo run. Completed work was retained; nothing was replayed."
+            "NEEDS_REVIEW" -> run.stage.takeIf { run.lastEventType == AgentExecutionEventType.RUN_NEEDS_REVIEW.name && it.isNotBlank() }
+                ?: "Memo stopped before it could record a terminal event after a capability may have started. Inspect the destination before retrying."
+            else -> "Memo stopped before recording a terminal execution event. No capability start was recorded."
         }
         val updated = run.copy(
             status = status, stage = reason.take(800), pendingApprovalCallId = "",
@@ -312,34 +318,6 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             _vaultError.value = safeError(error, "Memo could not persist its execution state.")
             false
         }
-    }
-
-     * Navigating to Live or Approvals must not cancel a run waiting for the user's decision.
-     */
-    fun launchAgentExecution(conversationId: String, block: suspend () -> Unit): Boolean {
-        if (conversationId.isBlank() || !_vaultReady.value || agentExecutionJob?.isActive == true) return false
-        _agentExecutionState.value = AgentExecutionUiState(
-            running = true,
-            conversationId = conversationId,
-            stage = "Starting Memo execution"
-        )
-        agentExecutionJob = viewModelScope.launch {
-            try {
-                block()
-            } finally {
-                try {
-                    withContext(NonCancellable) {
-                        settleAgentApprovals(conversationId)
-                    }
-                } catch (error: Throwable) {
-                    _vaultError.value = safeError(error, "Unresolved Talk approvals could not be settled safely.")
-                } finally {
-                    _agentExecutionState.value = AgentExecutionUiState()
-                    agentExecutionJob = null
-                }
-            }
-        }
-        return true
     }
 
     fun updateAgentExecutionStage(stage: String) {

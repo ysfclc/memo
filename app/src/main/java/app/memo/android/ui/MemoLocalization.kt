@@ -76,6 +76,7 @@ object MemoLocalization {
         "Running" to ("W toku" to "Çalışıyor"),
         "Waiting for approval" to ("Oczekuje na zatwierdzenie" to "Onay bekliyor"),
         "Using a capability" to ("Korzysta z funkcji" to "Bir yetenek kullanıyor"),
+        "Saving result" to ("Zapisywanie wyniku" to "Sonuç kaydediliyor"),
         "Limit reached" to ("Osiągnięto limit" to "Limite ulaşıldı"),
         "Stopped" to ("Zatrzymano" to "Durduruldu"),
         "Interrupted by application restart" to ("Przerwano z powodu ponownego uruchomienia aplikacji" to "Uygulama yeniden başlatıldığı için kesildi"),

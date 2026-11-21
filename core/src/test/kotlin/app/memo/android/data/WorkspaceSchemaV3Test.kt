@@ -96,15 +96,18 @@ class WorkspaceSchemaV3Test {
     @Test fun interruptedAgentRunsRecoverToReviewAndTerminalRunsStayTerminal() {
         val running = AgentRunRecord(id = "run-1", conversationId = "conversation-1", goal = "Inspect records", status = "RUNNING", toolCalls = 1)
         val waiting = AgentRunRecord(id = "run-2", conversationId = "conversation-1", goal = "Submit exact prompt", status = "WAITING_FOR_APPROVAL", pendingApprovalCallId = "call-2")
-        val completed = AgentRunRecord(id = "run-3", conversationId = "conversation-1", goal = "Summarize records", status = "COMPLETED", finishedAt = 30L)
-        val recovered = AppSnapshot(agentRuns = listOf(running, waiting, completed)).recoverInterruptedTasks()
+        val finalizing = AgentRunRecord(id = "run-3", conversationId = "conversation-1", goal = "Save final answer", status = "FINALIZING")
+        val completed = AgentRunRecord(id = "run-4", conversationId = "conversation-1", goal = "Summarize records", status = "COMPLETED", finishedAt = 30L)
+        val recovered = AppSnapshot(agentRuns = listOf(running, waiting, finalizing, completed)).recoverInterruptedTasks()
         assertEquals("NEEDS_REVIEW", recovered.agentRuns[0].status)
         assertEquals("NEEDS_REVIEW", recovered.agentRuns[1].status)
         assertEquals("", recovered.agentRuns[1].pendingApprovalCallId)
         assertTrue(recovered.agentRuns[0].recoveryReason.contains("No step was replayed"))
         assertTrue(recovered.agentRuns[0].finishedAt > 0L)
-        assertEquals("COMPLETED", recovered.agentRuns[2].status)
-        assertEquals(3, recovered.agentRuns.size)
+        assertEquals("NEEDS_REVIEW", recovered.agentRuns[2].status)
+        assertTrue(recovered.agentRuns[2].recoveryReason.contains("No step was replayed"))
+        assertEquals("COMPLETED", recovered.agentRuns[3].status)
+        assertEquals(4, recovered.agentRuns.size)
     }
 
     @Test fun inconsistentSemverAndUnknownFutureSchemaAreRejected() {

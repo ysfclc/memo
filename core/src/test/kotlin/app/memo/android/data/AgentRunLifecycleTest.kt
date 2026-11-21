@@ -11,7 +11,9 @@ class AgentRunLifecycleTest {
     private fun run() = AgentRunRecord(
         id = "run-12345678",
         conversationId = "conversation-1",
-        goal = "Find and summarize three useful records"
+        goal = "Find and summarize three useful records",
+        createdAt = 1L,
+        updatedAt = 1L
     )
 
     @Test
@@ -76,9 +78,11 @@ class AgentRunLifecycleTest {
             summary = "Memo finished this execution turn.",
             at = 60L
         ))
-        assertEquals("COMPLETED", completed.status)
-        assertFalse(completed.isActive)
-        assertEquals(60L, completed.finishedAt)
+        assertEquals("FINALIZING", completed.status)
+        assertTrue(completed.isActive)
+        assertEquals(0L, completed.finishedAt)
+        val finalResultSaved = completed.copy(status = "COMPLETED", finishedAt = 60L)
+        assertFalse(finalResultSaved.isActive)
     }
 
     @Test
@@ -92,8 +96,15 @@ class AgentRunLifecycleTest {
             status = "REJECTED",
             at = 70L
         ))
-        assertEquals("NEEDS_REVIEW", rejected.status)
+        assertEquals("RUNNING", rejected.status)
         assertEquals("", rejected.pendingApprovalCallId)
+        val rejectedFinalizing = rejected.applyEvent(AgentExecutionEvent(
+            runId = rejected.id,
+            type = AgentExecutionEventType.RUN_NEEDS_REVIEW,
+            summary = "The rejected action was not executed; run needs review.",
+            at = 75L
+        ))
+        assertEquals("FINALIZING", rejectedFinalizing.status)
 
         val started = run().copy(status = "TOOL_RUNNING", toolCalls = 1)
         val uncertain = started.applyEvent(AgentExecutionEvent(
@@ -103,8 +114,15 @@ class AgentRunLifecycleTest {
             status = "NEEDS_REVIEW",
             at = 80L
         ))
-        assertEquals("NEEDS_REVIEW", uncertain.status)
-        assertFalse(uncertain.isActive)
+        assertEquals("RUNNING", uncertain.status)
+        val uncertainFinalizing = uncertain.applyEvent(AgentExecutionEvent(
+            runId = uncertain.id,
+            type = AgentExecutionEventType.RUN_NEEDS_REVIEW,
+            summary = "A capability outcome is uncertain.",
+            at = 85L
+        ))
+        assertEquals("FINALIZING", uncertainFinalizing.status)
+        assertTrue(uncertainFinalizing.isActive)
     }
 
     @Test
