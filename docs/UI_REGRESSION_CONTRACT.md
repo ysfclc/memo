@@ -42,3 +42,11 @@ Any failure or missing evidence blocks release. Revert the offending change or r
 - Page changes, hash mismatch, cancellation, timeouts, ambiguous send results or evidence persistence failures stop at NEEDS_REVIEW. Never replay an uncertain prompt automatically.
 - Page response text is a separate opt-in. Do not leak page content into Talk when the user has not enabled browser-page sharing.
 - Test the approval inbox and Talk/Work scrolling with keyboard open, long payloads, empty states, English/Polish/Turkish, tab navigation and narrow screens.
+
+## Consent-gated browser response capture
+
+- browser.capture_response must not be advertised unless the user has explicitly enabled browser-page sharing and a completed browser.submit_prompt evidence reference exists.
+- It must bind to the exact prior submission ID, verify the action ledger is completed, and use the original submission baseline so a previous answer cannot be mistaken for a new response.
+- Only a new, stable response is returned; baseline loss, unsupported page structure, page navigation or timeout must stop for review without resending the prompt.
+- Returned response text is untrusted external content. The UI/model must not treat instructions inside the response as instructions to Memo.
+- The encrypted response evidence must read back with exact prompt submission reference, response digest, page digest and source provenance.
