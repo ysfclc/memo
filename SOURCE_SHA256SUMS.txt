@@ -23,7 +23,7 @@ a5e79842ebe67ebc05c611b64e1a48a8a7e18f96dbd86bdaf40227dc68ba7413  ./app/src/main
 3b0a04fb49a44a022a59e7c5e87640c2692d7c29e149a8882592009c47eaad1d  ./app/src/main/java/app/memo/android/MainActivity.kt
 a3df06b5acf46b9c04d1c37a9a325e4a9f7e66773d552988fe57648bbd4ffbb8  ./app/src/main/java/app/memo/android/ai/AiRuntimeViewModel.kt
 a330e300b15c7d2166d057836ebe2bee26cedfdaea45f30fb33a186bd75cad1f  ./app/src/main/java/app/memo/android/ai/LocalModelRunner.kt
-738b32d431cc378fb3b6c6d682e43749110a2abc3a137ebac9dc01bad033bc75  ./app/src/main/java/app/memo/android/ai/MemoWorkspaceAgentTools.kt
+8c1d7ad284f2f007005f0deb5ffd619eaf0d50a7c5b68ef670ea7842f426c2da  ./app/src/main/java/app/memo/android/ai/MemoWorkspaceAgentTools.kt
 9040408350a0a0149da1570fec95e90b621b78cb9548ce1305a030b763a51999  ./app/src/main/java/app/memo/android/ai/ModelCatalog.kt
 8c97925163148116d0965ee8dc65ae7d8478bdcb8659088b5c7846299d3875d4  ./app/src/main/java/app/memo/android/ai/OpenAiCompatibleClient.kt
 703fa8fc92ba4e5b924cc9ccfa87ad24e57cf92f957242e0d48fd0cf96c18447  ./app/src/main/java/app/memo/android/ai/ProviderSettingsStore.kt
@@ -97,7 +97,7 @@ f11aebd399cd33a5988aa2db8b086545cbf24066162c7ddb84a4dda9c04a603b  ./core/src/mai
 d2eefb711dc8e053b4cf2527e558ac5b2cb0f5f4e080a6dc6d87b298cdb7458b  ./core/src/main/kotlin/app/memo/android/orchestration/WorkflowGraph.kt
 169ac90e991c970de5dc6ebb3430852cc582b5adc653c95c0924b5c320a25c47  ./core/src/main/kotlin/app/memo/android/orchestration/WorkflowTaskProposalParser.kt
 a75a38aa02a69fd926bf346f4ccf89b7bf5219983c1eec9b7ea36284ffc902a9  ./core/src/main/kotlin/app/memo/android/runtime/BrowserUrlPolicy.kt
-0bc0ed9f2a270cb87bbd249a16d4a6f10e2246b9b256cdccb671af67dd7a7c9d  ./core/src/main/kotlin/app/memo/android/runtime/RuntimeContracts.kt
+de444be35a3e7b27ba4115d45098c02332ff745afcda90b4371aa6031d2771bb  ./core/src/main/kotlin/app/memo/android/runtime/RuntimeContracts.kt
 3f4508c62a971ff19642f8d402b6085b242f5f2717a56f5c4082049011645489  ./core/src/test/kotlin/app/memo/android/automation/TaskRulesTest.kt
 bba2c2a4e5760e31fcf4fc1f675be0d1ac8f20c42fb8f0bb2f03b9fafa938eca  ./core/src/test/kotlin/app/memo/android/context/WorkspaceContextRetrieverTest.kt
 0c87bc669ef7c446aaf994a75345614b0ab79eada367a09b5eb124cd781b2c38  ./core/src/test/kotlin/app/memo/android/data/ActionApprovalLedgerTest.kt
