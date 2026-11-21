@@ -15,7 +15,7 @@ d8d9bdada5b3915a5ef758b78227452e3d8ed2ba0931dcc58ac3cf636ffe20cf  ./PRODUCT_GAP_
 7dce4ad3a5107a804760ed50656b6b0fb492aa6857ef48d62ee6767c4f17695c  ./README.md
 ce2bcd53a712bd22e83da53d4a3961e3af299d3ee715e51f91898db29fa779c6  ./REMOTE_RUNNER_SETUP.md
 0064532b2fbd3dcf6a58fadde86e6787e421abc6751b13c3acd059b9731ca049  ./ROADMAP.md
-0c3fbf49ff8e38ad938f99afdce02f96d6288715762ce33aa5c3e57862c18360  ./TASKS.md
+1ba915c798751c8503004d877ab5a8e6beff9be035b836432f3420c35bb37567  ./TASKS.md
 24b925f839d27219398fdf89ca22833ac8fabdf6d87857430b0ff82bf40bcbc8  ./app/build.gradle
 cf9961550854acab5317b4efa543fb1657e49e39b5de3f4a363565f85e2f704a  ./app/proguard-rules.pro
 97b317ecef3a48b16a90786ca24cfaba247ade229fe3ef99c5a66fffdbceca16  ./app/src/androidTest/java/app/memo/android/data/EncryptedStoreUpgradeTest.kt
@@ -23,7 +23,7 @@ a5e79842ebe67ebc05c611b64e1a48a8a7e18f96dbd86bdaf40227dc68ba7413  ./app/src/main
 3b0a04fb49a44a022a59e7c5e87640c2692d7c29e149a8882592009c47eaad1d  ./app/src/main/java/app/memo/android/MainActivity.kt
 a3df06b5acf46b9c04d1c37a9a325e4a9f7e66773d552988fe57648bbd4ffbb8  ./app/src/main/java/app/memo/android/ai/AiRuntimeViewModel.kt
 a330e300b15c7d2166d057836ebe2bee26cedfdaea45f30fb33a186bd75cad1f  ./app/src/main/java/app/memo/android/ai/LocalModelRunner.kt
-d78cdfe5ffac8b0ae1f2c786063e9097f8ffb9692619013590fd6c3808f41911  ./app/src/main/java/app/memo/android/ai/MemoWorkspaceAgentTools.kt
+91c43983ee89ea5b06ba45523c4891df4d1550a8cc122c57f33a206fd3ee804b  ./app/src/main/java/app/memo/android/ai/MemoWorkspaceAgentTools.kt
 9040408350a0a0149da1570fec95e90b621b78cb9548ce1305a030b763a51999  ./app/src/main/java/app/memo/android/ai/ModelCatalog.kt
 8c97925163148116d0965ee8dc65ae7d8478bdcb8659088b5c7846299d3875d4  ./app/src/main/java/app/memo/android/ai/OpenAiCompatibleClient.kt
 703fa8fc92ba4e5b924cc9ccfa87ad24e57cf92f957242e0d48fd0cf96c18447  ./app/src/main/java/app/memo/android/ai/ProviderSettingsStore.kt
@@ -240,7 +240,7 @@ d82dc17d418f2ce0b7f3b68b7304901400290e60aa3de8515fbfa8f2f617492d  ./gradle.prope
 a1453a88e5bc19e7b20a521b56d36acbaec90fc742b79fb49fca11b7ddda73af  ./remote-runner/tests/test_runner.py
 19280c23fb304e503d1037eb423b17d0a14dd2a6fbb3e916574f4c5be17dfebf  ./settings.gradle
 ee9dad7e7bd2a85426759245581af3dabf763d3443038c9b5a959cd3767bba47  ./tools/ci/circleci-android.sh
-da93b94eeace76068f889f975c002dac075b92f460c6e9e9718e946e79ac97fe  ./tools/verify_source.py
+b88784a0fa6e1eb07eb82600015b77d9fa0db1d8df84677f7c1c81f4dfc2f057  ./tools/verify_source.py
 e13e7f8f8ab875b3ce1139907448e8445149c4e2e8b43f87e11fcaa73de9fdf2  ./docs/UI_REGRESSION_CONTRACT.md
 d5c069daba62f0ebade21e8b43b080e94893e2a923c08877a60f61c1113a475c  ./docs/checkpoints/2026-11-21-agent-postcondition-baseline.md
 15b294b23a16627b6439d718c97ebb7177b3f0e85b0010d59e744a59f1d5a5ab  ./docs/checkpoints/2026-11-21-agent-postcondition-verification.md
