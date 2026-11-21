@@ -57,6 +57,26 @@ class MemoLocalizationTest {
     }
 
     @Test
+    fun talkApprovalInboxActionsTranslateInPolishAndTurkish() {
+        assertEquals("Zatwierdź dokładne działanie", MemoLocalization.translate("Approve exact action", "PL"))
+        assertEquals("Tam eylemi onayla", MemoLocalization.translate("Approve exact action", "TR"))
+        assertEquals("Odrzuć i zatrzymaj to działanie", MemoLocalization.translate("Reject and stop this action", "PL"))
+        assertEquals("Reddet ve bu eylemi durdur", MemoLocalization.translate("Reject and stop this action", "TR"))
+        assertTrue(MemoLocalization.translate(
+            "This action is waiting for the matching Talk execution. Review the destination and full exact payload above. Approval is one-use and tied to the displayed content hash.", "PL"
+        ).contains("Zatwierdzenie jest jednorazowe"))
+        assertTrue(MemoLocalization.translate(
+            "This action is waiting for the matching Talk execution. Review the destination and full exact payload above. Approval is one-use and tied to the displayed content hash.", "TR"
+        ).contains("Onay tek kullanımlıktır"))
+        assertTrue(MemoLocalization.translate(
+            "Pending Talk actions and live browser prompts appear here for exact-content review. Completed or uncertain actions stay in their own history and review states.", "PL"
+        ).contains("Oczekujące działania z Rozmowy"))
+        assertTrue(MemoLocalization.translate(
+            "Pending Talk actions and live browser prompts appear here for exact-content review. Completed or uncertain actions stay in their own history and review states.", "TR"
+        ).contains("Bekleyen Talk eylemleri"))
+    }
+
+    @Test
     fun userContentAndUnknownStringsRemainUntouched() {
         val userText = "I met a person called Deniz at the event."
         assertEquals(userText, MemoLocalization.translate(userText, "TR"))
