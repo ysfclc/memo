@@ -26,3 +26,7 @@ Talk can send a prompt to the visible browser page only after the user approves 
 
 ## Scope boundary
 General browser controls, form filling, file uploads, arbitrary page-event subscriptions, native Android actions and universal cross-runtime action support remain open.
+
+## CI follow-up — integrated prompt/response source
+
+Run 44954878877 on commit bac787645ee85958132d56e8524c53325b536c06 passed source verification, remote runner, Android unit tests, lint, APK assembly, identity/signature and emulator install-over-existing data preservation. Release artifact preparation/signing were skipped; physical-device acceptance remains pending.
