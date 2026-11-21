@@ -253,3 +253,12 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - **Compatibility:** no workspace schema, backup schema, encryption format, Keystore alias, package/application identity, signing material or runtime permission was changed by this integration.
 - **Verification:** upstream S7 exact-head CI PASS; current-main source import CI `44927379252` PASS as recorded in the import note; integration-branch CI pending. No local Android SDK/Gradle build and no physical-device acceptance are claimed.
 - **Status:** `[~]` integrated on a dedicated branch; awaiting exact-head CI and device acceptance. Do not merge to main or distribute an APK without explicit review and the required acceptance gates.
+
+### 2026-11-21 — M3.B1-S1 — Talk-created private Markdown artifacts
+
+- **Capability:** added `workspace.save_artifact` to `RuntimeRegistry` and `MemoWorkspaceAgentTools`. It is a reversible local workspace write, not an external side effect. The artifact type is descriptive metadata and does not route to a specialized workflow.
+- **Contract:** `StudioArtifactPolicy` validates bounded title/type/content and computes a canonical SHA-256 digest. The adapter stores a `STUDIO_ARTIFACT` in the encrypted evidence store with source conversation/message, source excerpt digest, content digest, version, draft status and run/call/idempotency metadata.
+- **Verification:** the shared Talk engine requires the artifact ID, exact content digest and source provenance to be read back from the encrypted workspace before success. Duplicate drafts are reused only for the same content and source message; uncertain writes stop for review.
+- **Studio:** the Studio list now includes Talk-created drafts. The existing Evidence dialog opens them for edit, revision history, copy and Markdown export. User edits refresh the content digest and increment the version; source captures remain immutable.
+- **Tests/source gates:** added `StudioArtifactPolicyTest` for normalization, size limits and digest binding; added a runtime registration test; extended `tools/verify_source.py` to guard the adapter, verifier, Studio listing, edit allowlist and digest/version updates.
+- **Boundary:** private Markdown text only. No filesystem code execution, PDF/image/video generation, publishing or external submission is claimed. Exact-head CI and physical-device acceptance pending.
