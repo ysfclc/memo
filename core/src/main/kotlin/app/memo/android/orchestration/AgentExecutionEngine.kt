@@ -166,17 +166,17 @@ class AgentExecutionEngine(
         ) {
             try {
                 onEvent(
-                AgentExecutionEvent(
-                    runId = runId,
-                    type = type,
-                    summary = summary.take(800),
-                    toolId = toolId,
-                    callId = callId,
-                    status = status,
-                    toolVersion = toolVersion,
-                    evidenceReference = evidenceReference.take(500)
+                    AgentExecutionEvent(
+                        runId = runId,
+                        type = type,
+                        summary = summary.take(800),
+                        toolId = toolId,
+                        callId = callId,
+                        status = status,
+                        toolVersion = toolVersion,
+                        evidenceReference = evidenceReference.take(500)
                     )
-            )
+                )
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Throwable) {
