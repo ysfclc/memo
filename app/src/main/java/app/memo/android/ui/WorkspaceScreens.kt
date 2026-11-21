@@ -317,12 +317,12 @@ fun ChatsWorkspaceScreen(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.xs),
                     verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)
                 ) {
-                    
+
                         MemoSectionHeading(
                             title = "Conversations",
                             supporting = "${filtered.size} saved"
                         )
-                    
+
                     filtered.forEach { conversation ->
                         MemoPanel {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -831,7 +831,6 @@ fun ChatsWorkspaceScreen(
         }
     }
 
-
     if (promoteMessageTarget != null && selectedConversation != null) {
         val sourceMessage = promoteMessageTarget!!
         AlertDialog(
@@ -1015,7 +1014,7 @@ private fun TodayWorkScreen(
         modifier = Modifier.fillMaxWidth().padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.sm),
         verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)
     ) {
-        
+
             MemoPanel {
                 Text("Your active work, from the encrypted workspace.", style = MaterialTheme.typography.bodyMedium)
                 Text(
@@ -1027,26 +1026,26 @@ private fun TodayWorkScreen(
                     Text("Nothing active yet. Browser tasks and saved plans will appear here when you create them.")
                 }
             }
-        
+
         priorities.forEach { (priority, label) ->
             val tasks = activeTasks.filter { effectiveTodayPriority(it.todayPriority, it.todayPriorityDate, today) == priority }
             val jobs = activeJobs.filter { effectiveTodayPriority(it.todayPriority, it.todayPriorityDate, today) == priority }
-            
+
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.weight(1f))
                     Text("${tasks.size + jobs.size}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-            
+
             if (tasks.isEmpty() && jobs.isEmpty()) {
-                
+
                     Text(
                         if (priority == "UNSORTED") "Everything has a priority." else "Nothing assigned here.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(start = MemoTokens.Spacing.sm, bottom = MemoTokens.Spacing.xs)
                     )
-                
+
             }
             tasks.forEach { task ->
                 val taskEvidence = snapshot.evidence.filter { it.taskId == task.id }.sortedByDescending { it.capturedAt }
