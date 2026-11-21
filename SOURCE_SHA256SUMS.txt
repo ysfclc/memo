@@ -2,7 +2,7 @@ d7e13280de3d7b2d47cd2a719bea6205dfc7cf2b7c2b902c576529f6a75cae3f  ./.circleci/co
 83a19f08a2fa66c1be3e22220cd4964aeb81bed8ddda3a3b769a3b1d3a874806  ./.github/workflows/build-apk.yml
 35d51b623486a63a825aeffa712fe00e73c069ff4db4cb783affe14783203641  ./.gitignore
 ad8a2b64e91da8f13d0ab9f0e5f4b19c5c3627b5a9ea126a8a1883cbf9f7770a  ./AGENTS.md
-b5f47d4299b812d490fc8492406b3b1178826d62216bfbfb2feae5306da281b4  ./BUILD_STATUS.md
+b108df238621207ad1777d2530bc6434a1b220b49f52f7a0afb110695dcf73fa  ./BUILD_STATUS.md
 1e587651d6846f4bfdb910e3f8f499766786b7d3ab64f6b033725a45a04a8276  ./CHANGELOG.md
 2aee5ab8aa8c837fab1d8597ae6d13bc61d2dffb0ac2ad8a969c397a8aace1f3  ./DEVELOPMENT_GOVERNANCE.md
 27a75bf71bfa1da44ba4c0fcf483b010cab683e19f33f308a150a248cdae81aa  ./DEVICE_ACCEPTANCE_CHECKLIST.md
@@ -43,7 +43,7 @@ b6b1c321eb8734a7aea0f1d0eec446f8fac5a11136a49b240976de3f40eb2563  ./app/src/main
 7233cd4ac760ec24636c103294097c17e5a59d3772dda297a1034ba4f4941598  ./app/src/main/java/app/memo/android/ui/MemoPrimitives.kt
 fa5bd8f42d1349b9794601db776a3e137f933e5eac8caa0d7d9b50ace9979ac0  ./app/src/main/java/app/memo/android/ui/MemoTheme.kt
 23c6e367c5c6c113add96f7dcfc7e6a0884b7a9fa4753f5302ddd2d3485db603  ./app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt
-bcd217dcabacdb9fb913729bdbac00d69416806dd0e561b44184866c375f6458  ./app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt
+8eac0ac4fbf49296df24059ea57de182b22fa2f427dd2bc291a4acb1119b1b33  ./app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt
 f78be77d6fa771c78d14e15a0e2e1e1bad49d384637546ee596e47941b251472  ./app/src/main/java/app/memo/android/ui/components/Primitives.kt
 128544949e1092389370b43128707cf0c985f5531bd7d6c2dff832ede64e3184  ./app/src/main/java/com/synthos/runtime/ai/JobCompiler.java
 8951a538775e3afaaac1c00396cbaeb2b80593fd235d5be1ef1fcc4686d07851  ./app/src/main/java/com/synthos/runtime/ai/LocalModelRuntime.kt
