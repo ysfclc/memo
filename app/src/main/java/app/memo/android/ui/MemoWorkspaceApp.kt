@@ -205,6 +205,7 @@ fun MemoWorkspaceApp(
     val uiLanguage by viewModel.uiLanguage.collectAsState()
     val aiRuntime: AiRuntimeViewModel = androidx.lifecycle.viewmodel.compose.viewModel<AiRuntimeViewModel>()
     val modelState by aiRuntime.uiState.collectAsState()
+    val agentExecutionState by viewModel.agentExecutionState.collectAsState()
     LaunchedEffect(aiRuntime) { aiRuntime.unlockWorkspace() }
     val lockWorkspace = { aiRuntime.lockWorkspace(); onLock() }
     val context = LocalContext.current
@@ -648,6 +649,7 @@ fun MemoWorkspaceApp(
                     AppTab.APPROVALS -> ActionApprovalInboxScreen(
                         snapshot = snapshot,
                         browserState = browser.workflowState,
+                        activeAgentConversationId = agentExecutionState.conversationId,
                         onOpenBrowser = { tab = AppTab.BROWSER; toolSection = ToolSection.BROWSER },
                         onReject = { id ->
                             val pending = viewModel.snapshot.value.actionApprovals.firstOrNull { it.id == id }

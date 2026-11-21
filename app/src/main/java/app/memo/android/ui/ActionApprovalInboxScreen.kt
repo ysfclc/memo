@@ -50,6 +50,7 @@ private enum class ApprovalFilter(val label: String) {
 fun ActionApprovalInboxScreen(
     snapshot: AppSnapshot,
     browserState: BrowserWorkflowUiState,
+    activeAgentConversationId: String,
     onOpenBrowser: () -> Unit,
     onReject: (String) -> Boolean,
     onApproveAgentAction: suspend (String) -> Boolean,
@@ -104,7 +105,7 @@ fun ActionApprovalInboxScreen(
                 Surface(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f), shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                         Text(if (filter == ApprovalFilter.REVIEW) "No actions need review" else if (filter == ApprovalFilter.HISTORY) "No resolved actions yet" else "No action is waiting", style = MaterialTheme.typography.titleMedium)
-                        Text("External browser prompts appear here before sending. The exact-content confirmation remains in the live browser workflow.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Pending Talk actions and live browser prompts appear here for exact-content review. Completed or uncertain actions stay in their own history and review states.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -117,7 +118,10 @@ fun ActionApprovalInboxScreen(
                 action = action,
                 expanded = expandedId == action.id,
                 liveApproval = liveApproval,
-                agentApproval = action.stepId.startsWith("agent-run:") && snapshot.conversations.any { it.id == action.jobId },
+                agentApproval = action.status == "PENDING" &&
+                    action.stepId.startsWith("agent-run:") &&
+                    action.jobId.isNotBlank() && action.jobId == activeAgentConversationId &&
+                    snapshot.conversations.any { it.id == action.jobId },
                 auditEvents = snapshot.actionAuditEvents.filter { it.actionId == action.id }.takeLast(5),
                 onToggle = { expandedId = if (expandedId == action.id) "" else action.id },
                 onOpenBrowser = onOpenBrowser,

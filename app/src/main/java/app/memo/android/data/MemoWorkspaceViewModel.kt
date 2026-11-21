@@ -1190,7 +1190,7 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         val record = _snapshot.value.actionApprovals.firstOrNull { it.id == actionId } ?: return false
         if (!isAgentApprovalRecord(record) || record.status != "PENDING") return false
         val rejected = rejectExternalActionDurably(actionId, reason)
-        if (rejected) agentApprovalWaiters[actionId]?.complete(null)
+        agentApprovalWaiters[actionId]?.complete(null)
         return rejected
     }
 

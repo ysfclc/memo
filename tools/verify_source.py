@@ -107,7 +107,8 @@ if "could not be confirmed" not in app_navigation or "Verify its final state" no
     fail("guest runner cancellation must remain explicitly best-effort and evidence-sensitive")
 print("PASS: top-level stop requests local AI/browser/native cancellation, marks uncertain external actions for review, and reports remote cancellation honestly")
 
-agent_broker = view_model
+agent_broker = (ROOT / "app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt").read_text()
+talk_screen = (ROOT / "app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt").read_text()
 for marker in (
     "fun launchAgentExecution(",
     "suspend fun awaitAgentApproval(",
@@ -125,9 +126,9 @@ for marker in (
     "viewModel.updateAgentExecutionStage(event.summary)",
     "viewModel.stopAgentExecution()",
 ):
-    if marker not in chat:
+    if marker not in talk_screen:
         fail(f"Talk execution lifecycle is not ViewModel-owned or brokered: {marker}")
-if "agentScope.launch" in chat or "var agentJob" in chat:
+if "agentScope.launch" in talk_screen or "var agentJob" in talk_screen:
     fail("Talk execution is still owned by the disposable composable destination scope")
 for marker in ("Approve exact action", "onApproveAgentAction", "onRejectAgentAction", "agent-run:"):
     if marker not in approval_inbox:
