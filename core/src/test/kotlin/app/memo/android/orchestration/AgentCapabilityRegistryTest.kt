@@ -52,6 +52,17 @@ class AgentCapabilityRegistryTest {
     }
 
     @Test
+    fun studioArtifactSaveIsRegisteredAsAReversibleLocalWorkspaceWrite() {
+        val capability = RuntimeRegistry().listRuntimes()
+            .flatMap { it.capabilities }
+            .first { it.id == "workspace.save_artifact" }
+
+        assertFalse(capability.requiresUserApproval)
+        assertFalse(capability.externalSideEffect)
+        assertEquals("Save Studio artifact", capability.label)
+    }
+
+    @Test
     fun adapterCannotWeakenRegisteredApprovalPolicy() {
         val invalid = object : AgentCapabilityAdapter {
             override val definition = AgentToolDefinition(
