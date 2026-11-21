@@ -48,6 +48,7 @@ The optional remote guest runner can be configured from Apps & automation. It re
 - Workflows are policy-validated and bounded, with required final visible-text postconditions.
 - Interrupted native/guest runs are not automatically replayed. Status remains reviewable and actions require user initiation.
 - Talk's shared execution loop accepts a capability as successful only after its adapter verifies an observable postcondition. Unverified reads fail and uncertain writes stop for review; current coverage is the exposed workspace/browser adapters, not every runtime.
+- Talk can create private Markdown drafts through the same dispatcher; Studio lists them for editing, revision history, copy and export. Each draft is encrypted with source provenance and a verified content digest. This slice does not imply PDF/media generation or publishing.
 - Outbound remote guest execution requires a preview and an explicit approval action. The bearer token is encrypted using Android Keystore in app-private preferences.
 - The Apps workflow registry/run history is encrypted using the backward-compatible `SynthStore` vault. The main Compose workspace still uses its own `EncryptedVault`; **these data stores are not yet unified**. Imported/share-captured text is not silently merged into the work graph.
 
