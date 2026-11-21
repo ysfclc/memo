@@ -548,7 +548,7 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - Drafts are saved as `STUDIO_ARTIFACT` in the encrypted workspace with source conversation/message IDs, source excerpt digest, content digest, idempotency/run/call metadata, version 1 and `DRAFT` review status. Exact artifact, digest and provenance are read back before the engine can report success.
 - Studio now lists these drafts. The existing Evidence dialog opens them for editing with revision history, copying and Markdown export. The source capture/evidence immutability boundary remains intact.
 - Supported output in this slice: private Markdown text only. No filesystem code execution, PDF/image/video generation, external publishing or submission is claimed.
-- Validation: `StudioArtifactPolicyTest` covers normalization, bounds and digest binding; `AgentCapabilityRegistryTest` covers the local reversible runtime policy; source verifier guards adapter, postcondition, editability and Studio listing. Exact-head Android CI and physical-device acceptance pending.
+- Validation: `StudioArtifactPolicyTest` covers normalization, bounds and digest binding; `AgentCapabilityRegistryTest` covers the local reversible runtime policy; source verifier guards adapter, postcondition, editability and Studio listing. Exact-head CI run `44953421742` on commit `ae6ef31976d7f35339715a16933ec73e21210af5` passed source verification, remote-runner tests, core/app unit tests, lint, debug APK assembly, package/signature checks and emulator install-over-existing data preservation. Physical-device acceptance remains pending.
 
 
 ### M3.A4-S8 — Approved browser prompt submission
