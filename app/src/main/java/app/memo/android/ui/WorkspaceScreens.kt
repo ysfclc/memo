@@ -1456,7 +1456,7 @@ fun SelfModelStudioScreen(
     val approvedFacts = facts.filter { it.reviewStatus == "APPROVED" }
     val proposedFacts = facts.filter { it.reviewStatus == "PROPOSED" }
     val sources = snapshot.evidence.filter { it.kind == "SELF_MODEL_SOURCE" }.sortedByDescending { it.capturedAt }
-    val artifacts = snapshot.evidence.filter { it.kind == "SELF_MODEL_ARTIFACT" }.sortedByDescending { it.capturedAt }
+    val artifacts = snapshot.evidence.filter { it.kind in setOf("SELF_MODEL_ARTIFACT", "STUDIO_ARTIFACT") }.sortedByDescending { it.capturedAt }
     var sourceTitle by remember { mutableStateOf("Career profile source") }
     var sourceText by remember { mutableStateOf("") }
     var targetNotes by remember { mutableStateOf("") }
@@ -1780,7 +1780,14 @@ fun SelfModelStudioScreen(
                             Column(Modifier.weight(1f)) {
                                 Text(artifact.title, style = MaterialTheme.typography.titleSmall)
                                 Text(artifact.summary.ifBlank { artifact.content.take(160) }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 3, overflow = TextOverflow.Ellipsis)
-                                Text("Local draft · review required · ${formatWorkspaceDate(artifact.capturedAt)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
+                                val artifactType = runCatching { org.json.JSONObject(artifact.metadata).optString("artifactType") }.getOrDefault("")
+                                val artifactStatus = listOfNotNull(
+                                    artifactType.takeIf { it.isNotBlank() },
+                                    "Local draft",
+                                    "review required",
+                                    formatWorkspaceDate(artifact.capturedAt)
+                                ).joinToString(" · ")
+                                Text(artifactStatus, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
                             }
                             Icon(Icons.Rounded.OpenInNew, null, tint = MaterialTheme.colorScheme.primary)
                         }
