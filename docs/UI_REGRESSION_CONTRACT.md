@@ -33,3 +33,12 @@ For the exact candidate commit and APK hash:
 ## Failure policy
 
 Any failure or missing evidence blocks release. Revert the offending change or repair the layout, add a regression test where feasible, rerun the complete gate, and produce a new candidate. Never ask the user to install an APK to discover whether a previously fixed visual bug has returned.
+
+## Approval inbox and external browser actions
+
+- Talk must show the full destination and exact outbound prompt before approval; approval acknowledgement is required and rejection must not invoke the adapter.
+- browser.submit_prompt is an external write. The one-use grant is bound to runtime, capability, normalized HTTPS destination and exact prompt hash; the adapter rechecks the live page before filling/sending.
+- The prompt submission result is not successful until the visible prompt/composer postcondition, encrypted evidence read-back and action-ledger completion are verified.
+- Page changes, hash mismatch, cancellation, timeouts, ambiguous send results or evidence persistence failures stop at NEEDS_REVIEW. Never replay an uncertain prompt automatically.
+- Page response text is a separate opt-in. Do not leak page content into Talk when the user has not enabled browser-page sharing.
+- Test the approval inbox and Talk/Work scrolling with keyboard open, long payloads, empty states, English/Polish/Turkish, tab navigation and narrow screens.
