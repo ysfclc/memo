@@ -262,3 +262,13 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - **Studio:** the Studio list now includes Talk-created drafts. The existing Evidence dialog opens them for edit, revision history, copy and Markdown export. User edits refresh the content digest and increment the version; source captures remain immutable.
 - **Tests/source gates:** added `StudioArtifactPolicyTest` for normalization, size limits and digest binding; added a runtime registration test; extended `tools/verify_source.py` to guard the adapter, verifier, Studio listing, edit allowlist and digest/version updates.
 - **Boundary:** private Markdown text only. No filesystem code execution, PDF/image/video generation, publishing or external submission is claimed. Exact-head CI and physical-device acceptance pending.
+
+### 2026-11-21 — M3.A4-S8 — Approved browser prompt submission from Talk
+
+- **Capability:** added `browser.submit_prompt` to `MemoWorkspaceAgentTools` using the existing `runtime.browser` registration. It is classified `EXTERNAL_WRITE` and requires exact human approval; no unapproved invocation path sends a prompt.
+- **Approval binding:** `AgentApprovalEnvelope` contains the normalized HTTPS destination and exact prompt. The adapter recomputes `ActionApprovalLedger.contentHash`, rechecks page availability after approval, and durably consumes the one-use action grant before touching the visible browser.
+- **Visible action:** `BrowserSession.submitPromptForAgent` rechecks the same page, uses the existing visible-composer prepare/send scripts, verifies the exact prompt appears as a submitted message and the composer is cleared, then captures the settled page for a digest.
+- **Evidence/action lifecycle:** saves encrypted `BROWSER_PROMPT_SUBMISSION` evidence with exact prompt, prompt digest, page digest, source conversation/message, action ID/hash and run/call IDs. The shared postcondition verifies the evidence and in-progress action record, then durably completes the action ledger against the evidence reference.
+- **Failure policy:** changed/stale page, approval hash mismatch, uncertain send, cancellation, evidence write/read-back failure or action completion mismatch becomes `NEEDS_REVIEW`; the prompt is never automatically replayed.
+- **Boundary:** visible text composer only; no general controls/forms, file uploads, provider response polling or native app actions. Reading page responses remains behind the separate page-content consent.
+- **Validation:** explicit runtime policy regression and source-verifier guards added. Exact-head Android CI and physical-device acceptance pending.
