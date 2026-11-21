@@ -201,6 +201,8 @@ for marker in ("agentRunRecordsRoundTripWithExactRunAndConversationIdentity", "s
         fail(f"schema-v7 run persistence/recovery test is missing: {marker}")
 print("PASS: Talk execution has a schema-versioned encrypted run record, atomic event journal/readback, truthful Live state and no-replay recovery")
 
+if "import app.memo.android.orchestration.AgentExecutionEventType" not in agent_broker:
+    fail("the ViewModel run closeout must import the engine event types it compares")
 if "fun launchAgentExecution(conversationId: String, block: suspend () -> Unit)" in agent_broker:
     fail("the obsolete non-durable Talk launcher must not remain")
 if "run.status != \"FINALIZING\"" not in agent_broker:
