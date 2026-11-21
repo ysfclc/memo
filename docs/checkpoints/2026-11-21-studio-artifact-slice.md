@@ -24,3 +24,7 @@ A user can ask Memo in Talk to create a private Markdown deliverable, have the s
 - PR #20 integration CI: run `44952865406` was still in progress at the start of this slice; the updated head requires a fresh exact-head CI run.
 - Physical-device acceptance: PENDING.
 - No release APK is claimed.
+
+## CI follow-up — 21 November 2026
+
+The artifact-capable source head `ae6ef31976d7f35339715a16933ec73e21210af5` passed exact-head CI run `44953421742`: source verification, remote runner, core/app unit tests, lint, debug APK assembly, package/version identity, signature verification and emulator install-over-existing data preservation. Release signing was skipped and physical-device acceptance remains pending. This run predates the later browser prompt/response adapters.
