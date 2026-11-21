@@ -13,6 +13,8 @@ enum class AgentToolExecutionClass { READ_ONLY, LOCAL_WRITE, EXTERNAL_WRITE, DES
 enum class AgentToolStatus { SUCCEEDED, FAILED, BLOCKED, NEEDS_REVIEW }
 enum class AgentRunStatus { FINISHED, ITERATION_LIMIT, FAILED, NEEDS_REVIEW, CANCELLED }
 
+private class AgentEventSinkException(cause: Throwable) : IllegalStateException("Execution event could not be persisted or delivered.", cause)
+
 data class AgentToolDefinition(
     val id: String,
     val description: String,
@@ -162,7 +164,8 @@ class AgentExecutionEngine(
             toolVersion: Int = 0,
             evidenceReference: String = ""
         ) {
-            onEvent(
+            try {
+                onEvent(
                 AgentExecutionEvent(
                     runId = runId,
                     type = type,
@@ -172,8 +175,13 @@ class AgentExecutionEngine(
                     status = status,
                     toolVersion = toolVersion,
                     evidenceReference = evidenceReference.take(500)
-                )
+                    )
             )
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Throwable) {
+                throw AgentEventSinkException(error)
+            }
         }
         fun result(status: AgentRunStatus, message: String) = AgentExecutionResult(
             runId, status, message.take(24_000), modelCalls, toolCalls, successfulToolCalls,
@@ -376,6 +384,17 @@ class AgentExecutionEngine(
                 }
             }
             throw cancelled
+        } catch (error: AgentEventSinkException) {
+            val status = if (toolCalls > 0) AgentRunStatus.NEEDS_REVIEW else AgentRunStatus.FAILED
+            val message = if (toolCalls > 0) {
+                "Memo could not record an execution event after a capability may have started. Stop and review the action outcome before retrying."
+            } else {
+                "Memo could not record the execution state. No capability was started."
+            }
+            withContext(NonCancellable) {
+                runCatching { event(AgentExecutionEventType.RUN_NEEDS_REVIEW, message, status = status.name) }
+            }
+            return result(status, message)
         } catch (error: Throwable) {
             val message = (error.message?.takeIf { it.isNotBlank() } ?: "The agent execution failed.").take(700)
             withContext(NonCancellable) {
