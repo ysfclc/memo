@@ -1068,7 +1068,7 @@ jobs:
                   parts = name.rstrip('/').split('/')
                   if any(part in ('', '.', '..') for part in parts):
                       raise SystemExit(f'Unsafe archive path: {info.filename!r}')
-                  if '.git' in parts or (parts[0] == 'incoming' and len(parts) > 1):
+                  if '.git' in parts or (parts[0] == 'incoming' and parts not in (['incoming'], ['incoming', '.gitkeep'])):
                       raise SystemExit(f'Protected path in repository artifact: {info.filename!r}')
                   key = '/'.join(parts)
                   if key in seen:
