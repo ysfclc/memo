@@ -219,7 +219,12 @@ object MemoWorkspaceAgentTools {
             grant: AgentApprovalGrant
         ): AgentToolResult {
             val envelope = approvalEnvelope(arguments)
-                ?: return AgentToolResult(AgentToolStatus.NEEDS_REVIEW, "The browser page or approved prompt changed. Inspect the page and create a new approval.", "Approved browser prompt became stale.")
+            if (envelope == null) {
+                withContext(NonCancellable) {
+                    viewModel.markExternalActionNeedsReviewDurably(grant.actionId, "The browser page or approved prompt changed before execution. Inspect the page before retrying.")
+                }
+                return AgentToolResult(AgentToolStatus.NEEDS_REVIEW, "The browser page or approved prompt changed. Inspect the page and action ledger before retrying.", "Approved browser prompt became stale.")
+            }
             val expectedHash = ActionApprovalLedger.contentHash(
                 envelope.runtimeId,
                 envelope.capabilityId,
