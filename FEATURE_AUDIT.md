@@ -169,3 +169,7 @@ A top-level Stop active work control now requests cancellation of the current lo
 ### M3.A4-S8 CI result — 21 November 2026
 
 Run 44954196829 on commit 23073011b9c411945c12531ce8483ac0a6d2b4b5 passed source verification, remote runner, core/app unit tests, lint, APK assembly, package/signature and emulator install-over-existing data preservation. It predates the later response-capture adapter. No physical-device acceptance is claimed.
+
+### M3.A4-S9 CI result — 21 November 2026
+
+The integrated prompt/response source passed run 44954878877 on commit bac787645ee85958132d56e8524c53325b536c06, including source verification, remote runner, Android tests, lint, APK identity/signature and emulator install-over-existing data preservation. Physical-device provider/consent acceptance remains pending.
