@@ -131,6 +131,8 @@ A run must have durable, inspectable state sufficient to recover after process d
 
 Every action has explicit lifecycle state, bounded execution and cancellation. Reopening Memo must not silently replay a completed or uncertain side effect. Resume from recorded evidence and idempotency state.
 
+**Journal failure is a hard execution stop.** If Memo cannot durably record a lifecycle event or observation, it must not continue to another model decision or capability. If any side effect may have started, mark the run `NEEDS_REVIEW`, explain that the outcome is uncertain, and require inspection before retry. Approval-requested, approved and rejected states must be visible in the same Talk execution transcript; a transcript rendering omission is a correctness defect.
+
 "Complete" means the required postcondition was observed and its evidence was saved. A model saying that it succeeded is not evidence. A tool returning success is not enough when the result can be independently checked.
 
 Created outputs must be real, accessible artifacts with truthful type, location/reference, provenance and integrity information where applicable. A PDF request must produce a readable PDF file; an image request must produce an actual image artifact; a code request must produce inspectable changes and relevant test evidence. If the required provider or capability is missing, say so and offer a real alternative. Never substitute explanatory text while implying that an artifact was created.
