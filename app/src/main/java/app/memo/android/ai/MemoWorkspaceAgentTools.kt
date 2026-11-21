@@ -91,10 +91,16 @@ object MemoWorkspaceAgentTools {
                 "Memo can open only an HTTPS URL explicitly supplied in the user's message. A model-invented destination was rejected."
             }
             check(browser.canNavigateForAgent) { "The visible browser session is busy or unavailable." }
-            val page = browser.navigateForAgent(url)
-            scope.lastOpenedPage = page
+            scope.lastOpenedPage = null
             scope.capturedPageUrl = ""
             scope.observedLinks = emptyMap()
+            scope.lastCapturedEvidenceId = ""
+            scope.lastCapturedContentDigest = ""
+            scope.lastCapturedLinksDigest = ""
+            scope.lastCapturedTitle = ""
+            scope.lastCapturedSourceTitle = ""
+            val page = browser.navigateForAgent(url)
+            scope.lastOpenedPage = page
             scope.lastCapturedEvidenceId = ""
             scope.lastCapturedContentDigest = ""
             scope.lastCapturedLinksDigest = ""
