@@ -13,6 +13,7 @@ import app.memo.android.orchestration.AgentExecutionEvent
 import app.memo.android.orchestration.AgentToolDefinition
 import app.memo.android.orchestration.AgentToolExecutionClass
 import app.memo.android.orchestration.AgentToolInvocation
+import app.memo.android.orchestration.AgentToolPostconditionVerification
 import app.memo.android.orchestration.AgentToolResult
 import app.memo.android.orchestration.AgentToolStatus
 import org.json.JSONObject
@@ -57,7 +58,15 @@ object MemoWorkspaceAgentTools {
         var lastOpenedPage: BrowserNavigationResult? = null
         var capturedPageUrl: String = ""
         var observedLinks: Map<String, BrowserPageLink> = emptyMap()
+        var lastCapturedEvidenceId: String = ""
+        var lastCapturedContentDigest: String = ""
+        var lastCapturedLinksDigest: String = ""
+        var lastCapturedTitle: String = ""
     }
+
+    private fun navigationEvidenceReference(url: String): String =
+        "browser.navigation:" + runCatching { java.net.URI(url).host }
+            .getOrNull()?.lowercase(Locale.ROOT)?.removePrefix("www.").orEmpty()
 
     private class BrowserNavigateAdapter(
         private val browser: BrowserSession,
@@ -85,12 +94,34 @@ object MemoWorkspaceAgentTools {
             scope.lastOpenedPage = page
             scope.capturedPageUrl = ""
             scope.observedLinks = emptyMap()
-            val host = page.url.substringAfter("://").substringBefore('/')
+            scope.lastCapturedEvidenceId = ""
+            scope.lastCapturedContentDigest = ""
+            scope.lastCapturedLinksDigest = ""
+            scope.lastCapturedTitle = ""
             return AgentToolResult(
                 status = AgentToolStatus.SUCCEEDED,
                 output = "Opened the exact user-supplied HTTPS page in Memo's visible browser session. Page title: ${page.title}. Final URL: ${page.url}. Navigation only; no page controls were activated.",
                 summary = "Opened visible page '${page.title}'.",
-                evidenceReference = "browser.navigation:${host}"
+                evidenceReference = navigationEvidenceReference(page.url)
+            )
+        }
+
+        override suspend fun verifyPostcondition(
+            arguments: JSONObject,
+            invocation: AgentToolInvocation,
+            result: AgentToolResult
+        ): AgentToolPostconditionVerification {
+            val page = scope.lastOpenedPage
+            val pageUrl = page?.let { BrowserUrlPolicy.normalizeHttpsUrl(it.url) }
+            val currentUrl = BrowserUrlPolicy.normalizeHttpsUrl(browser.currentUrl)
+            val evidence = page?.let { navigationEvidenceReference(it.url) }.orEmpty()
+            val verified = page != null && pageUrl != null && pageUrl == currentUrl &&
+                browser.canCaptureForAgent && result.evidenceReference == evidence &&
+                result.output.contains(page.url) && result.output.contains(page.title)
+            return AgentToolPostconditionVerification(
+                verified = verified,
+                description = if (verified) "The settled visible WebView URL and title match Memo's navigation result." else "The visible browser state no longer matches the navigation result.",
+                evidenceReference = evidence
             )
         }
     }
@@ -179,6 +210,10 @@ object MemoWorkspaceAgentTools {
             }
             scope.capturedPageUrl = capture.url
             scope.observedLinks = capture.links.associateBy { it.url }
+            scope.lastCapturedEvidenceId = evidence.id
+            scope.lastCapturedContentDigest = digest
+            scope.lastCapturedLinksDigest = linksDigest
+            scope.lastCapturedTitle = evidence.title
             val excerpt = capture.content.take(6_500)
             val truncation = if (capture.content.length > excerpt.length) {
                 "\n[The full page capture is saved in Memo evidence; this model observation is an excerpt.]"
@@ -196,6 +231,29 @@ object MemoWorkspaceAgentTools {
                     excerpt + truncation + linksSection,
                 summary = "Captured '${capture.title}' and saved encrypted page evidence.",
                 evidenceReference = evidence.id
+            )
+        }
+
+        override suspend fun verifyPostcondition(
+            arguments: JSONObject,
+            invocation: AgentToolInvocation,
+            result: AgentToolResult
+        ): AgentToolPostconditionVerification {
+            val evidenceId = scope.lastCapturedEvidenceId
+            val evidence = viewModel.snapshot.value.evidence.firstOrNull { it.id == evidenceId }
+            val metadata = evidence?.let { runCatching { JSONObject(it.metadata) }.getOrNull() }
+            val contentDigest = evidence?.let { sha256("${it.sourceUrl}\n${it.title}\n${it.content}") }.orEmpty()
+            val verified = isAvailable() && evidenceId.isNotBlank() && result.evidenceReference == evidenceId &&
+                evidence?.kind == "BROWSER_PAGE_CAPTURE" && evidence.sourceUrl == scope.capturedPageUrl &&
+                evidence.title == scope.lastCapturedTitle && evidence.content.isNotBlank() &&
+                contentDigest == scope.lastCapturedContentDigest &&
+                metadata?.optString("contentDigest") == scope.lastCapturedContentDigest &&
+                metadata.optString("observedLinksDigest") == scope.lastCapturedLinksDigest &&
+                result.output.contains("EVIDENCE ID: ${evidenceId}")
+            return AgentToolPostconditionVerification(
+                verified = verified,
+                description = if (verified) "The exact browser capture, source URL, content digest and observed-link digest were read back from encrypted workspace evidence." else "The browser capture could not be read back with matching source/content/link digests.",
+                evidenceReference = evidenceId
             )
         }
     }
@@ -228,13 +286,36 @@ object MemoWorkspaceAgentTools {
             scope.lastOpenedPage = page
             scope.capturedPageUrl = ""
             scope.observedLinks = emptyMap()
+            scope.lastCapturedEvidenceId = ""
+            scope.lastCapturedContentDigest = ""
+            scope.lastCapturedLinksDigest = ""
+            scope.lastCapturedTitle = ""
             return AgentToolResult(
                 status = AgentToolStatus.SUCCEEDED,
                 output = "Opened the exact visible same-origin link '" + link.label.ifBlank { "Untitled link" } +
                     "' in Memo's visible browser. Final page title: " + page.title + ". Final URL: " + page.url +
                     ". No page controls were clicked.",
                 summary = "Opened observed link '" + link.label.ifBlank { "Untitled link" } + "'.",
-                evidenceReference = "browser.navigation:" + page.url.substringAfter("://").substringBefore('/')
+                evidenceReference = navigationEvidenceReference(page.url)
+            )
+        }
+
+        override suspend fun verifyPostcondition(
+            arguments: JSONObject,
+            invocation: AgentToolInvocation,
+            result: AgentToolResult
+        ): AgentToolPostconditionVerification {
+            val page = scope.lastOpenedPage
+            val pageUrl = page?.let { BrowserUrlPolicy.normalizeHttpsUrl(it.url) }
+            val currentUrl = BrowserUrlPolicy.normalizeHttpsUrl(browser.currentUrl)
+            val evidence = page?.let { navigationEvidenceReference(it.url) }.orEmpty()
+            val verified = page != null && pageUrl != null && pageUrl == currentUrl &&
+                browser.canCaptureForAgent && result.evidenceReference == evidence &&
+                result.output.contains(page.url) && result.output.contains(page.title)
+            return AgentToolPostconditionVerification(
+                verified = verified,
+                description = if (verified) "The settled visible WebView URL and title match the observed same-origin navigation." else "The visible browser state no longer matches the observed-link navigation result.",
+                evidenceReference = evidence
             )
         }
     }
@@ -254,11 +335,10 @@ object MemoWorkspaceAgentTools {
         override fun isAvailable(): Boolean =
             viewModel.vaultReady.value && viewModel.vaultError.value == null
 
-        override suspend fun invoke(arguments: JSONObject, invocation: AgentToolInvocation): AgentToolResult {
+        private fun resultFor(query: String): AgentToolResult {
             check(isAvailable()) { "The encrypted Memo workspace is unavailable." }
-            val query = arguments.getString("query").trim()
             val selection = WorkspaceContextRetriever.select(
-                query = query,
+                query = query.trim(),
                 candidates = candidates,
                 maxHits = 8,
                 maxCharacters = 6_000,
@@ -271,12 +351,30 @@ object MemoWorkspaceAgentTools {
                     summary = "No matching local records."
                 )
             }
-            val output = selection.asPromptContext(6_000)
             return AgentToolResult(
                 status = AgentToolStatus.SUCCEEDED,
-                output = output,
+                output = selection.asPromptContext(6_000),
                 summary = "Found ${selection.hits.size} local record(s): " + selection.hits.joinToString { "[${it.type}:${it.id}] ${it.title}" },
                 evidenceReference = selection.hits.joinToString(",") { "${it.type}:${it.id}" }.take(500)
+            )
+        }
+
+        override suspend fun invoke(arguments: JSONObject, invocation: AgentToolInvocation): AgentToolResult =
+            resultFor(arguments.getString("query"))
+
+        override suspend fun verifyPostcondition(
+            arguments: JSONObject,
+            invocation: AgentToolInvocation,
+            result: AgentToolResult
+        ): AgentToolPostconditionVerification {
+            val expected = resultFor(arguments.getString("query"))
+            val verified = result.status == AgentToolStatus.SUCCEEDED &&
+                result.output == expected.output && result.summary == expected.summary &&
+                result.evidenceReference == expected.evidenceReference
+            return AgentToolPostconditionVerification(
+                verified = verified,
+                description = if (verified) "The bounded local-search output and source IDs match a deterministic recomputation from the permitted candidate set." else "The local-search output or source references did not match a deterministic recomputation.",
+                evidenceReference = expected.evidenceReference
             )
         }
     }
@@ -355,6 +453,27 @@ object MemoWorkspaceAgentTools {
                 summary = "Saved draft note '${persisted.title}'.",
                 evidenceReference = persisted.id
             )
+        override suspend fun verifyPostcondition(
+            arguments: JSONObject,
+            invocation: AgentToolInvocation,
+            result: AgentToolResult
+        ): AgentToolPostconditionVerification {
+            val title = arguments.getString("title").trim().take(120)
+            val content = arguments.getString("content").trim().take(12_000)
+            val expectedDigest = sha256("$title\n$content")
+            val id = result.evidenceReference
+            val note = viewModel.snapshot.value.evidence.firstOrNull { it.id == id && it.kind == "AGENT_NOTE" }
+            val digestMatches = note?.let {
+                runCatching { JSONObject(it.metadata).optString("contentDigest") == expectedDigest }.getOrDefault(false)
+            } == true
+            val verified = isAvailable() && id.isNotBlank() && note?.title == title &&
+                note.content == content && digestMatches
+            return AgentToolPostconditionVerification(
+                verified = verified,
+                description = if (verified) "The exact note title, content and digest were read back from the encrypted workspace." else "The saved note could not be read back with matching title/content/digest.",
+                evidenceReference = id
+            )
+        }
         }
     }
 
@@ -445,6 +564,37 @@ object MemoWorkspaceAgentTools {
                 summary = "Created record proposal '${entity.title}'.",
                 evidenceReference = entity.id
             )
+        override suspend fun verifyPostcondition(
+            arguments: JSONObject,
+            invocation: AgentToolInvocation,
+            result: AgentToolResult
+        ): AgentToolPostconditionVerification {
+            val type = arguments.getString("type").trim().uppercase(Locale.ROOT).replace(Regex("[^A-Z0-9_]+"), "_").trim('_')
+            val title = arguments.getString("title").trim().take(240)
+            val description = arguments.getString("description").trim().take(12_000)
+            val inputProperties = arguments.optJSONObject("properties") ?: JSONObject()
+            val propertyMap = linkedMapOf<String, String>()
+            val keys = inputProperties.keys()
+            while (keys.hasNext()) {
+                val key = keys.next().trim().take(80)
+                val value = inputProperties.opt(key)
+                if (key.isBlank() || value !is String || value.length > 2_000) {
+                    return AgentToolPostconditionVerification(false, "The proposed record input no longer passes property validation.", result.evidenceReference)
+                }
+                propertyMap[key] = value
+            }
+            val id = result.evidenceReference
+            val entity = viewModel.snapshot.value.entities.firstOrNull { it.id == id }
+            val verified = isAvailable() && id.isNotBlank() && entity != null &&
+                entity.type == type && entity.title == title && entity.description == description &&
+                entity.properties == propertyMap && entity.sourceConversationId == sourceConversationId &&
+                entity.sourceMessageId == sourceMessageId && entity.reviewStatus !in setOf("REJECTED", "MERGED")
+            return AgentToolPostconditionVerification(
+                verified = verified,
+                description = if (verified) "The exact typed record, properties, source conversation/message and review state were read back from the workspace." else "The proposed record could not be read back with matching type, title, properties, source and review state.",
+                evidenceReference = id
+            )
+        }
         }
     }
 
