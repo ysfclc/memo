@@ -564,7 +564,7 @@ if consent_block_start < 0 or consent_block_end < 0 or "add(BrowserPromptRespons
     fail("Browser response capture must be gated by explicit browser-page sharing consent")
 if "var lastPromptResponseSubmissionEvidenceId" not in agent_tools or "scope.lastPromptResponseSubmissionEvidenceId = submissionId" not in agent_tools:
     fail("Browser response evidence must be idempotent for each prompt submission")
-print("PASS: browser prompt submission is exact-content approved, one-use, durably audited and visibly verified")
+print("PASS: browser prompt submission is exact-content approved and visibly verified; response capture is consent-gated, baseline-bound and idempotent")
 
 
 print("PASS: capability success is gated by explicit postcondition verification; unverified reads fail and uncertain writes require review")
