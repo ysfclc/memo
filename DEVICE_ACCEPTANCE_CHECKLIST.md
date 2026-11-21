@@ -78,3 +78,14 @@ Run on a physical device with an authenticated visible browser session and a pag
 - [ ] Repeat approval/rejection flow in English, Polish and Turkish; check keyboard resize, scroll position, Talk↔Live navigation and action inbox accessibility.
 
 A passing emulator build is not a substitute for these physical-device checks. Record device model, Android version, app version, exact source commit, APK SHA-256 and observed action/evidence IDs.
+
+## Talk — consent-gated browser response capture
+
+- [ ] With browser-page sharing disabled, confirm browser.capture_response is not advertised and no response text is returned to Talk.
+- [ ] Enable browser-page sharing explicitly, submit a prompt through the approved flow, and pass the exact submission evidence ID to browser.capture_response.
+- [ ] Confirm the returned response is new relative to the submission baseline, stable across repeated polls, and not a prior answer from the conversation.
+- [ ] Confirm response evidence is encrypted and contains the submission evidence ID, prompt/response/page digests, source conversation/message and run/call provenance.
+- [ ] Confirm the response is labelled untrusted external content in Talk and instructions embedded in it are not executed.
+- [ ] Interrupt the response stream or navigate away. Confirm NEEDS_REVIEW, no prompt resubmission and no false completed response evidence.
+- [ ] Test an unsupported provider DOM and a response that never stabilizes. Confirm timeout/baseline loss becomes NEEDS_REVIEW rather than an empty successful response.
+- [ ] Revoke/disable page-sharing consent and confirm the response adapter disappears from the available tool set.
