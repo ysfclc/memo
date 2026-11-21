@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -24,6 +25,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
 import app.memo.android.ui.MemoText as Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,8 +50,11 @@ private enum class ApprovalFilter(val label: String) {
 fun ActionApprovalInboxScreen(
     snapshot: AppSnapshot,
     browserState: BrowserWorkflowUiState,
+    activeAgentConversationId: String,
     onOpenBrowser: () -> Unit,
     onReject: (String) -> Boolean,
+    onApproveAgentAction: (String) -> Unit,
+    onRejectAgentAction: (String, String) -> Unit,
     onMarkNeedsReview: (String, String) -> Boolean,
     onShowMessage: (String) -> Unit
 ) {
@@ -99,7 +104,7 @@ fun ActionApprovalInboxScreen(
                 Surface(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f), shape = RoundedCornerShape(18.dp), modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
                         Text(if (filter == ApprovalFilter.REVIEW) "No actions need review" else if (filter == ApprovalFilter.HISTORY) "No resolved actions yet" else "No action is waiting", style = MaterialTheme.typography.titleMedium)
-                        Text("External browser prompts appear here before sending. The exact-content confirmation remains in the live browser workflow.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Pending Talk actions and live browser prompts appear here for exact-content review. Completed or uncertain actions stay in their own history and review states.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -112,9 +117,17 @@ fun ActionApprovalInboxScreen(
                 action = action,
                 expanded = expandedId == action.id,
                 liveApproval = liveApproval,
+                agentApproval = action.status == "PENDING" &&
+                    action.stepId.startsWith("agent-run:") &&
+                    action.jobId.isNotBlank() && action.jobId == activeAgentConversationId &&
+                    snapshot.conversations.any { it.id == action.jobId },
                 auditEvents = snapshot.actionAuditEvents.filter { it.actionId == action.id }.takeLast(5),
                 onToggle = { expandedId = if (expandedId == action.id) "" else action.id },
                 onOpenBrowser = onOpenBrowser,
+                onApproveAgentAction = { onApproveAgentAction(action.id) },
+                onRejectAgentAction = {
+                    onRejectAgentAction(action.id, "Rejected by the user from the action approval inbox.")
+                },
                 onReject = {
                     val accepted = onReject(action.id)
                     onShowMessage(if (accepted) "Action rejected. Memo will not send this proposal." else "The proposal could not be rejected. Review the action ledger.")
@@ -146,12 +159,19 @@ private fun ActionApprovalCard(
     action: ActionApprovalRecord,
     expanded: Boolean,
     liveApproval: Boolean,
+    agentApproval: Boolean,
     auditEvents: List<app.memo.android.data.ActionAuditEvent>,
     onToggle: () -> Unit,
     onOpenBrowser: () -> Unit,
+    onApproveAgentAction: () -> Unit,
+    onRejectAgentAction: () -> Unit,
     onReject: () -> Unit,
     onMarkNeedsReview: () -> Unit
 ) {
+    var agentApprovalReviewed by remember(action.id, action.contentHash) { mutableStateOf(false) }
+    LaunchedEffect(expanded, action.id, action.contentHash) {
+        if (!expanded) agentApprovalReviewed = false
+    }
     Surface(shape = RoundedCornerShape(18.dp), color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.30f), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(15.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -170,6 +190,8 @@ private fun ActionApprovalCard(
                 if (liveApproval) Button(onClick = onOpenBrowser) { Text("Open live approval") }
             }
             if (expanded) {
+                Text("Destination", style = MaterialTheme.typography.labelLarge)
+                SelectionContainer { Text(action.destination, style = MaterialTheme.typography.bodySmall) }
                 SelectionContainer {
                     Column(Modifier.fillMaxWidth().heightIn(max = 400.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Exact outbound payload", style = MaterialTheme.typography.labelLarge)
@@ -193,8 +215,20 @@ private fun ActionApprovalCard(
                 }
             }
             if (action.status == "PENDING") {
-                if (!liveApproval) Text("This proposal is not connected to the matching live prompt. Memo will not approve or send it from history.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                OutlinedButton(onClick = onReject, modifier = Modifier.fillMaxWidth()) { Text("Reject proposal") }
+                if (agentApproval) {
+                    if (expanded) {
+                        Text("This action is waiting for the matching Talk execution. Review the destination and full exact payload above. Approval is one-use and tied to the displayed content hash.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = agentApprovalReviewed, onCheckedChange = { agentApprovalReviewed = it })
+                            Text("I confirm that I reviewed the full destination and exact payload.", style = MaterialTheme.typography.bodySmall)
+                        }
+                        Button(onClick = onApproveAgentAction, enabled = agentApprovalReviewed, modifier = Modifier.fillMaxWidth()) { Text("Approve exact action") }
+                    }
+                    OutlinedButton(onClick = onRejectAgentAction, modifier = Modifier.fillMaxWidth()) { Text("Reject and stop this action") }
+                } else {
+                    if (!liveApproval) Text("This proposal is not connected to the matching live prompt. Memo will not approve or send it from history.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    OutlinedButton(onClick = onReject, modifier = Modifier.fillMaxWidth()) { Text("Reject proposal") }
+                }
             } else if (action.status == "NEEDS_REVIEW" || action.status == "IN_PROGRESS" || action.status == "APPROVED") {
                 Text("Do not retry automatically. Inspect the destination and confirm whether the side effect occurred. Marking for review does not undo a submission already started.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (action.status != "NEEDS_REVIEW") OutlinedButton(onClick = onMarkNeedsReview, modifier = Modifier.fillMaxWidth()) { Text("Mark outcome for review") }

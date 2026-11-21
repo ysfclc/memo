@@ -107,6 +107,109 @@ if "could not be confirmed" not in app_navigation or "Verify its final state" no
     fail("guest runner cancellation must remain explicitly best-effort and evidence-sensitive")
 print("PASS: top-level stop requests local AI/browser/native cancellation, marks uncertain external actions for review, and reports remote cancellation honestly")
 
+agent_broker = (ROOT / "app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt").read_text()
+talk_screen = (ROOT / "app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt").read_text()
+for marker in (
+    "fun launchAgentExecution(",
+    "suspend fun awaitAgentApproval(",
+    "suspend fun approveAgentActionDurably(",
+    "suspend fun rejectAgentActionDurably(",
+    "settleAgentApprovals(conversationId)",
+    "CompletableDeferred<AgentApprovalGrant?>",
+):
+    if marker not in agent_broker:
+        fail(f"durable Talk approval broker is missing: {marker}")
+for marker in (
+    "viewModel.launchAgentExecution(selectedConversation.id, userText, selectedModelId)",
+    "onApprovalRequired = { request ->",
+    "viewModel.awaitAgentApproval(selectedConversation.id, request)",
+    "viewModel.updateAgentExecutionStage(event.summary)",
+    "viewModel.stopAgentExecution()",
+):
+    if marker not in talk_screen:
+        fail(f"Talk execution lifecycle is not ViewModel-owned or brokered: {marker}")
+if "agentScope.launch" in talk_screen or "var agentJob" in talk_screen:
+    fail("Talk execution is still owned by the disposable composable destination scope")
+for marker in ("Approve exact action", "onApproveAgentAction", "onRejectAgentAction", "agent-run:"):
+    if marker not in approval_inbox:
+        fail(f"approval inbox is missing the Talk exact-action decision flow: {marker}")
+if "val accepted = viewModel.approveAgentActionDurably(id)" not in app_navigation:
+    fail("the root approval inbox does not call the durable Talk approval API")
+if "val accepted = viewModel.rejectAgentActionDurably(id, reason)" not in app_navigation:
+    fail("the root approval inbox does not call the durable Talk rejection API")
+if "viewModel.viewModelScope.launch" not in app_navigation:
+    fail("approval decisions are not owned by the ViewModel lifecycle")
+if "actionScope" in approval_inbox or "rememberCoroutineScope" in approval_inbox:
+    fail("approval decisions are owned by the disposable inbox destination")
+for marker in (
+    "agentApprovalReviewed",
+    "enabled = agentApprovalReviewed",
+    "LaunchedEffect(expanded, action.id, action.contentHash)",
+    "Text(action.destination, style = MaterialTheme.typography.bodySmall)",
+):
+    if marker not in approval_inbox:
+        fail(f"Talk approval review gate is missing: {marker}")
+if "viewModel.stopAgentExecution()" not in app_navigation:
+    fail("the product-wide stop action does not cancel the ViewModel-owned Talk execution")
+print("PASS: Talk execution survives destination changes, waits on the encrypted exact-content approval broker, and exposes approve/reject controls")
+
+agent_models = (ROOT / "core/src/main/kotlin/app/memo/android/data/Models.kt").read_text()
+agent_engine = (ROOT / "core/src/main/kotlin/app/memo/android/orchestration/AgentExecutionEngine.kt").read_text()
+agent_run_test = (ROOT / "core/src/test/kotlin/app/memo/android/data/AgentRunLifecycleTest.kt").read_text()
+workspace_schema_test = (ROOT / "core/src/test/kotlin/app/memo/android/data/WorkspaceSchemaV3Test.kt").read_text()
+live_screen = (ROOT / "app/src/main/java/app/memo/android/ui/LiveWorkspaceScreen.kt").read_text()
+for marker in (
+    "data class AgentRunRecord(",
+    "val agentRuns: List<AgentRunRecord>",
+    "fun AgentRunRecord.applyEvent(",
+    "val interruptedAgentRuns = agentRuns.count { it.isActive }",
+    'root.put("agentRuns"',
+    'root.put("schemaVersion", 7)',
+    "require(schema in 1..7)",
+):
+    if marker not in agent_models:
+        fail(f"encrypted durable run model/recovery is missing: {marker}")
+for marker in ("suspend fun executeWithRunId(", "executionRunId = UUID.randomUUID().toString()"):
+    if marker not in agent_engine:
+        fail(f"agent engine cannot share its persisted run identity: {marker}")
+for marker in (
+    "createAgentRunDurably(",
+    "appendAgentEventDurably(",
+    "finishAgentRunDurably(",
+    "closeUnfinishedAgentRunDurably(",
+    "persistAgentRunAndVerify(",
+):
+    if marker not in agent_broker:
+        fail(f"Talk durable run journal is missing: {marker}")
+for marker in (
+    "viewModel.launchAgentExecution(selectedConversation.id, userText, selectedModelId)",
+    "engine.executeWithRunId(",
+    "executionRunId = runId",
+    "viewModel.appendAgentEventDurably(",
+    "viewModel.finishAgentRunDurably(",
+):
+    if marker not in talk_screen:
+        fail(f"Talk execution is not bound to its durable run journal: {marker}")
+for marker in ("Memo executions", "AgentRunSummary(", "run.recoveryReason", "Open conversation", "FINALIZING", "Saving result"):
+    if marker not in live_screen:
+        fail(f"Live does not expose persisted Memo run state: {marker}")
+for marker in ("eventsRecordApprovalToolAndTerminalLifecycle", "rejectedOrUncertainToolOutcomesRequireReview", "eventsFromAnotherRunAreRejected"):
+    if marker not in agent_run_test:
+        fail(f"agent run lifecycle regression coverage is missing: {marker}")
+for marker in ("agentRunRecordsRoundTripWithExactRunAndConversationIdentity", "schemaSixBackupMigratesWithoutAgentRunRecords", "interruptedAgentRunsRecoverToReviewAndTerminalRunsStayTerminal"):
+    if marker not in workspace_schema_test:
+        fail(f"schema-v7 run persistence/recovery test is missing: {marker}")
+print("PASS: Talk execution has a schema-versioned encrypted run record, atomic event journal/readback, truthful Live state and no-replay recovery")
+
+if "import app.memo.android.orchestration.AgentExecutionEventType" not in agent_broker:
+    fail("the ViewModel run closeout must import the engine event types it compares")
+if "fun launchAgentExecution(conversationId: String, block: suspend () -> Unit)" in agent_broker:
+    fail("the obsolete non-durable Talk launcher must not remain")
+if "run.status != \"FINALIZING\"" not in agent_broker:
+    fail("final response persistence must require a durable FINALIZING state")
+if '"FINALIZING"' not in agent_models or "AgentExecutionEventType.RUN_FINISHED" not in agent_models:
+    fail("the durable run reducer must preserve finalization as a recoverable nonterminal state")
+
 xml_files = sorted((ROOT / "app/src/main").rglob("*.xml"))
 for file in xml_files:
     try:
@@ -193,7 +296,7 @@ view_model = (ROOT / "app/src/main/java/app/memo/android/data/MemoWorkspaceViewM
 for marker in ('sourceConversationId: String = ""', 'sourceConversationId = sourceId'):
     if marker not in view_model:
         fail(f"Work-plan source conversation linkage is missing: {marker}")
-for marker in ("Start with Memo", "Continue in Talk", "onOpenCouncil", "onStartConversation"):
+for marker in ("Start with Memo", "AgentExecutionEngine(", "onOpenCouncil", "onStartConversation"):
     if marker not in chat:
         fail(f"Talk entry/composer is missing: {marker}")
 print("PASS: one Memo Activity, universal Talk intent router, linked source conversations, four product surfaces, and safe draft handoff")
@@ -308,6 +411,58 @@ for marker in ("parsesDynamicTaskSpecsAndCreatesFreshAppOwnedIdempotencyKeys", "
     if marker not in proposal_tests:
         fail(f"TaskSpec proposal parser regression coverage is missing: {marker}")
 print("PASS: typed TaskSpec proposals compile into bounded DAGs with exact-runtime capability resolution and fail-closed validation")
+
+
+agent_engine = (ROOT / "core/src/main/kotlin/app/memo/android/orchestration/AgentExecutionEngine.kt").read_text()
+agent_registry = (ROOT / "core/src/main/kotlin/app/memo/android/orchestration/AgentCapabilityRegistry.kt").read_text()
+agent_registry_tests = (ROOT / "core/src/test/kotlin/app/memo/android/orchestration/AgentCapabilityRegistryTest.kt").read_text()
+browser_url_policy = (ROOT / "core/src/main/kotlin/app/memo/android/runtime/BrowserUrlPolicy.kt").read_text()
+browser_url_tests = (ROOT / "core/src/test/kotlin/app/memo/android/runtime/BrowserUrlPolicyTest.kt").read_text()
+browser_session = (ROOT / "app/src/main/java/app/memo/android/browser/BrowserSession.kt").read_text()
+agent_tools = (ROOT / "app/src/main/java/app/memo/android/ai/MemoWorkspaceAgentTools.kt").read_text()
+agent_engine_tests = (ROOT / "core/src/test/kotlin/app/memo/android/orchestration/AgentExecutionEngineTest.kt").read_text()
+for marker in ('RuntimeDescriptor("app.workspace"', 'RuntimeCapability("workspace.search"', 'id = "runtime.browser"', 'RuntimeCapability("browser.navigate_https"', 'RuntimeCapability("browser.capture_evidence"', 'RuntimeCapability("browser.open_observed_link"'):
+    if marker not in runtime_registry:
+        fail(f"Talk runtime capability contract is missing: {marker}")
+for marker in ("AgentCapabilityRegistry(RuntimeRegistry().listRuntimes(), adapters)", "capabilityRegistry.availableAdapters()", "capabilityRegistry.resolve(decision.toolId)", "val runtimeId: String ="):
+    if marker not in agent_engine:
+        fail(f"Talk dynamic capability discovery is missing: {marker}")
+for marker in ("definition.runtimeId", "no matching policy entry", "policy.requiresUserApproval == definition.requiresUserApproval", "policy.externalSideEffect == hasExternalSideEffect", "fun availableAdapters()"):
+    if marker not in agent_registry:
+        fail(f"runtime capability policy enforcement is missing: {marker}")
+for marker in ("adaptersMustMatchARegisteredRuntimeCapability", "readinessIsRecheckedInsteadOfFrozenAtConstruction", "adapterCannotWeakenRegisteredApprovalPolicy"):
+    if marker not in agent_registry_tests:
+        fail(f"runtime capability registry regression coverage is missing: {marker}")
+for marker in ("https://", "uri.rawUserInfo != null", "uri.port !in setOf(-1, 443)", "explicitlySuppliedUrls", "wasExplicitlySupplied"):
+    if marker not in browser_url_policy:
+        fail(f"browser URL policy is missing a public HTTPS / user-supplied URL guard: {marker}")
+for marker in ("rejectsHttpCredentialsLocalIpAndNonstandardPortUrls", "modelMayNavigateOnlyToAnExactUrlInTheUsersMessage"):
+    if marker not in browser_url_tests:
+        fail(f"browser URL safety regression coverage is missing: {marker}")
+for marker in ("canNavigateForAgent", "canCaptureForAgent", "navigateForAgent", "captureCurrentPageForAgent", "sameAgentPageTarget", "agentNavigationPending", "onReceivedSslError"):
+    if marker not in browser_session:
+        fail(f"visible BrowserSession agent integration or fail-closed check is missing: {marker}")
+for marker in ('id = "browser.navigate_https"', 'id = "browser.capture_evidence"', "BrowserUrlPolicy.explicitlySuppliedUrls", "BROWSER_PAGE_CAPTURE", "saveWorkArtifactDurably", 'runtimeId = "runtime.browser"'):
+    if marker not in agent_tools:
+        fail(f"real Memo browser evidence adapter is incomplete: {marker}")
+for marker in ("capabilitiesAreRediscoveredAfterEachSuccessfulStep", "browser.navigate_https", "browser.capture_evidence"):
+    if marker not in agent_engine_tests:
+        fail(f"dynamic sequential browser capability test is missing: {marker}")
+browser_scripts = (ROOT / "app/src/main/java/app/memo/android/browser/BrowserScripts.kt").read_text()
+for marker in ("fun verifyObservedLink(", "navigateToObservedLinkForAgent", "BrowserUrlPolicy.isSameOriginHttpsLink"):
+    if marker not in browser_session and marker not in browser_scripts:
+        fail(f"observed-link navigation is missing its live-origin or DOM verification: {marker}")
+for marker in ('id = "browser.open_observed_link"', "scope.observedLinks", "scope.capturedPageUrl", "latest captured page's same-origin link set"):
+    if marker not in agent_tools:
+        fail(f"Talk observed-link adapter is missing its source binding or availability guard: {marker}")
+for marker in ("observedLinksCannotEscapeCapturedOrigin", "isSameOriginHttpsLink"):
+    if marker not in browser_url_tests:
+        fail(f"observed-link origin policy regression test is missing: {marker}")
+talk_ui = (ROOT / "app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt").read_text()
+for marker in ("shareBrowserPageRemotely", "includeBrowserPageContent", "AndroidView(", "browser.webView", "showAgentBrowserPane"):
+    if marker not in talk_ui:
+        fail(f"Talk browser visibility or separate remote-page privacy control is missing: {marker}")
+print("PASS: runtime-backed per-turn capability discovery, approval-policy matching, user-supplied HTTPS browser navigation, encrypted page evidence and separate remote-page consent are enforced and tested")
 
 
 print("PASS: CI safely handles canonical ZIP imports and checked-out direct-source builds, verifies source integrity, and runs Android unit tests/lint/APK assembly")

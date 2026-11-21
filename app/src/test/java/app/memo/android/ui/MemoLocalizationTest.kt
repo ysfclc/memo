@@ -57,6 +57,50 @@ class MemoLocalizationTest {
     }
 
     @Test
+    fun talkApprovalInboxActionsTranslateInPolishAndTurkish() {
+        assertEquals("Zatwierdź dokładne działanie", MemoLocalization.translate("Approve exact action", "PL"))
+        assertEquals("Tam eylemi onayla", MemoLocalization.translate("Approve exact action", "TR"))
+        assertEquals("Odrzuć i zatrzymaj to działanie", MemoLocalization.translate("Reject and stop this action", "PL"))
+        assertEquals("Reddet ve bu eylemi durdur", MemoLocalization.translate("Reject and stop this action", "TR"))
+        assertTrue(MemoLocalization.translate(
+            "This action is waiting for the matching Talk execution. Review the destination and full exact payload above. Approval is one-use and tied to the displayed content hash.", "PL"
+        ).contains("Zatwierdzenie jest jednorazowe"))
+        assertTrue(MemoLocalization.translate(
+            "This action is waiting for the matching Talk execution. Review the destination and full exact payload above. Approval is one-use and tied to the displayed content hash.", "TR"
+        ).contains("Onay tek kullanımlıktır"))
+        assertTrue(MemoLocalization.translate(
+            "Pending Talk actions and live browser prompts appear here for exact-content review. Completed or uncertain actions stay in their own history and review states.", "PL"
+        ).contains("Oczekujące działania z Rozmowy"))
+        assertTrue(MemoLocalization.translate(
+            "Pending Talk actions and live browser prompts appear here for exact-content review. Completed or uncertain actions stay in their own history and review states.", "TR"
+        ).contains("Bekleyen Talk eylemleri"))
+    }
+
+    @Test
+    fun approvalReviewAcknowledgementTranslatesInPolishAndTurkish() {
+        assertEquals("Potwierdzam sprawdzenie pełnego celu i dokładnej treści działania.", MemoLocalization.translate("I confirm that I reviewed the full destination and exact payload.", "PL"))
+        assertEquals("Tam hedefi ve eylemin eksiksiz içeriğini incelediğimi onaylıyorum.", MemoLocalization.translate("I confirm that I reviewed the full destination and exact payload.", "TR"))
+    }
+
+    @Test
+    fun durableExecutionLabelsTranslateInPolishAndTurkish() {
+        assertEquals("Wykonania Memo", MemoLocalization.translate("Memo executions", "PL"))
+        assertEquals("Memo yürütmeleri", MemoLocalization.translate("Memo executions", "TR"))
+        assertEquals("Oczekuje na zatwierdzenie", MemoLocalization.translate("Waiting for approval", "PL"))
+        assertEquals("Onay bekliyor", MemoLocalization.translate("Waiting for approval", "TR"))
+        assertEquals("Zapisywanie wyniku", MemoLocalization.translate("Saving result", "PL"))
+        assertEquals("Sonuç kaydediliyor", MemoLocalization.translate("Saving result", "TR"))
+        assertEquals("Wymaga sprawdzenia", MemoLocalization.translate("Needs review", "PL"))
+        assertEquals("İnceleme gerekiyor", MemoLocalization.translate("Needs review", "TR"))
+        assertTrue(MemoLocalization.translate(
+            "Memo restarted during this run. Review saved events and any action that may have started. No step was replayed.", "PL"
+        ).contains("Żaden krok nie został odtworzony"))
+        assertTrue(MemoLocalization.translate(
+            "Memo restarted during this run. Review saved events and any action that may have started. No step was replayed.", "TR"
+        ).contains("Hiçbir adım yeniden oynatılmadı"))
+    }
+
+    @Test
     fun userContentAndUnknownStringsRemainUntouched() {
         val userText = "I met a person called Deniz at the event."
         assertEquals(userText, MemoLocalization.translate(userText, "TR"))

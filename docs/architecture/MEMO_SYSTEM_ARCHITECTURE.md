@@ -13,7 +13,7 @@ Memo is one Android application and one user-owned workspace. Talk is the intent
 | Android composition root | `app/src/main/java/app/memo/android/MainActivity.kt`, `ui/MemoWorkspaceApp.kt` | App lifecycle, Compose navigation, permissions and UI | Android-only; domain rules should not live only in composables |
 | Platform-independent core | `:core` | Canonical records, validators, outcome parsing, context retrieval, workflow graph, capability compiler, runtime descriptors and approval ledger | Kotlin/JVM; no Android framework imports |
 | Android application services | `app/.../data`, `ai`, `notifications` | Encrypted vault adapter, ViewModel, model/provider adapters, notifications | Android framework and OS APIs live here |
-| Browser runtime | `app/.../browser/BrowserSession.kt`, `BrowserWorkflow.kt`, `BrowserScripts.kt` | Visible WebView sessions, supported page inspection, prompt preparation/submission and captured response evidence | User-visible, sequential and provider-specific; no hidden browser or assumed API parity |
+| Browser runtime | `app/.../browser/BrowserSession.kt`, `BrowserWorkflow.kt`, `BrowserScripts.kt` | Visible WebView sessions, HTTPS navigation, visible-page inspection and captured response evidence | Talk now uses the existing visible WebView for exact user-supplied public HTTPS navigation and read-only page capture. Full capture is stored as encrypted EvidenceRecord; remote page text is separately opt-in. Provider prompt preparation/submission still uses the older approval-gated workflow and is not yet migrated to the Talk engine. |
 | Native app runtime | `app/src/main/java/com/synthos/runtime/engine` | Foreground/unlocked Accessibility workflows and visible-label postconditions | Optional Android permission; actions remain bounded and fail closed when policy/approval is missing |
 | Remote guest runner | `remote-runner/server.py`, `app/.../RemoteRunnerClient.kt` | Separately paired HTTPS worker for a bounded workflow definition | Receives only the approved workflow payload, not the full workspace or model context |
 | Build and supply chain | `.github/workflows/build-apk.yml`, `tools/verify_source.py` | Source validation, tests/lint, APK assembly and isolated signing | Build/test receives no signing secrets; signing receives the APK artifact only; write-only handoff does not execute project code |
@@ -68,7 +68,7 @@ The first slice (M7.A1 / MEMO-SALES-001) is deliberately read-only: create/reuse
 ## Known limits at this baseline
 
 - The main workspace and native workflow stores are separate; there is no proven migration to one transaction boundary.
-- A universal cross-runtime durable DAG executor, idempotent recovery, shared Live timeline and global pause/takeover remain incomplete.
+- The Talk runtime registry validates adapter ownership and policy and refreshes availability per model turn. The user-visible browser read/capture slice is integrated, but universal cross-runtime durable DAG execution, process-death invocation recovery, verified postconditions, shared Live timeline and global pause/takeover remain incomplete.
 - Social provider connections, real feeds/inbox/publishing/analytics and CRM-style customer acquisition are specified, not verified integrations.
 - Local-model discovery/provider/device coverage and Accessibility behavior still require device acceptance.
 - The 8 November APK build is evidence for commit `c4cfba8`, not every later feature branch or integration commit.

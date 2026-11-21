@@ -113,3 +113,121 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - Integrated the fail-closed native action policy and Talk draft-preservation changes with the Signal & Graphite design foundation, unified experience/navigation rebuild, Today priority model, and evidence-backed industrial account intake.
 - Preserved the mainline product scope and existing execution history; did not replace the main task ledger with the shortened feature-branch copy.
 - Verification remains open: run authoritative Gradle unit tests, lint and Android APK pipeline against the integrated commit. No APK or device acceptance is claimed by this source merge.
+
+
+### 2026-11-20 — GOV-ARCH-001 — Lock the intent-driven execution architecture before further feature work
+
+- **Requirement:** MEMO-AGENT-001, MEMO-CAP-001, MEMO-ARTIFACT-001; existing MEMO-ORCH-001 and MEMO-AI-001.
+- **Baseline:** `ysfclc/memo` main at `c307f94f5d296622e9e3b2fa92b02fe9c58361f2`; changes isolated on `governance/agent-execution-invariants-2026-11-20`.
+- **Files changed:** Added `AGENTS.md` and `docs/AI_EXECUTION_INVARIANTS.md`; updated DEVELOPMENT_GOVERNANCE, IMPLEMENTATION_CONTRACT, Product Contract, TASKS, REQUIREMENT_TRACEABILITY, DECISION_LOG and this log.
+- **Implementation summary:** Established binding rules for one Talk-to-outcome path, separation of intelligence providers from callable action capabilities, real adapter contracts, shared dispatch and observe/verify/replan loop, durable execution, deterministic policy and regression acceptance. Explicitly prohibited per-example workflows/domains/screens, phantom capabilities, model-only claims of action, and parallel orchestrators.
+- **Product status:** Documentation/constraints only. No agent loop, dispatcher or capability implementation is claimed by this entry. Current source gaps remain open.
+- **Validation:** Repository source and existing docs inspected before writing. Branch comparison against `main` reported 13 commits ahead / 0 behind and 11 changed documentation files; final pre-closeout branch head was `ae9fa19260f33c0b56ef9a75f837971310b3562c`. All referenced governance files and requirement IDs were fetched back from the branch. No build or device test is applicable to this documentation-only change.
+- **Review:** Draft PR [#12](https://github.com/ysfclc/memo/pull/12) opened; not merged.
+- **Known gaps:** Talk `runPrompt()` still generates text directly; `IntentPlanner` remains keyword/template based; `WorkflowGraph` and `WorkflowTaskProposalParser` remain proposal/validation foundations; universal callable dispatch, observe/replan loop and durable cross-runtime execution remain open.
+- **Next gate:** Any feature implementation must first show how it uses these invariants; the first engineering work package must connect Talk to the shared executor, not add another specialist workflow.
+- **Status:** specified / governance locked; product implementation remains open.
+
+### 2026-11-20 — WP-AGENT-001 — First connected Talk execution loop
+
+- **Requirement:** MEMO-ORCH-001, MEMO-AGENT-001, MEMO-CAP-001; one general-purpose Talk entry point using the selected local or explicitly permitted frontier model as intelligence provider and real, dynamically selected capabilities.
+- **Baseline:** Governance branch `governance/agent-execution-invariants-2026-11-20`, based on main commit `c307f94f5d296622e9e3b2fa92b02fe9c58361f2`. Implementation branch: `agent/talk-execution-loop-2026-11-20`.
+- **Files changed:** `AgentExecutionEngine.kt`, `AgentExecutionEngineTest.kt`, `AiRuntimeViewModel.kt`, `MemoWorkspaceAgentTools.kt`, `MemoWorkspaceViewModel.kt`, `WorkspaceScreens.kt`, `MemoLocalization.kt`, `core/build.gradle`.
+- **Data compatibility impact:** No vault schema bump, encryption-alias change, app ID change, or replacement store. Existing encrypted workspace remains canonical. New agent event records use the existing conversation message model with role `TOOL`; local draft notes use existing EvidenceRecord; record proposals use the existing EntityRecord model and native source conversation/message provenance.
+- **Implementation summary:** Talk now runs a bounded, provider-agnostic model-decision loop. It advertises only adapters whose implementations are currently connected: permission-gated local workspace search, encrypted private draft-note save, and source-linked `PROPOSED` record creation. Model decisions are parsed and schema-validated; unknown tools are rejected; external/destructive actions pause before invocation; uncertain write failures/timeouts/cancellation stop for review; actual tool outcomes feed the next model turn. Tool/lifecycle events (run/call IDs, status, capability version and evidence reference, without raw arguments/private payloads) are persisted to the existing vault and authenticated by read-after-write. Stop cancels the agent coroutine and active model request.
+- **Tests added:** `AgentExecutionEngineTest` covers tool → observed result → final response, unavailable capability recovery, schema rejection, exact approval blocking for an external write, uncertain local-write failure requiring review, normal direct text response and JSON-without-protocol handling.
+- **Commands and results:** No local Gradle build was available in this environment. CI #989 first exposed a stale source-verifier assertion for the obsolete `Continue in Talk` label; the verifier was corrected to assert the actual `AgentExecutionEngine` Talk connection. CI #995 then exposed a missing `EvidenceRecord.kind` argument in `SalesAccountResearchTest`; the fixture now explicitly identifies the evidence as `PUBLIC_WEB_PAGE`. CI #996 compiled the core tests and exposed a missing Compose `Spacer` import in `MemoPrimitives.kt`; that import was added. **CI #997 on head `d4ba59293ea9ccef11ba119ccd2ddcd8b32432cd` passed:** source invariants, remote-runner test, `:core:test`, `:app:testDebugUnitTest`, `:app:lintDebug`, `:app:assembleDebug`, `:app:assembleDebugAndroidTest`, APK package/version identity and `apksigner` verification. The APK reported package `app.memo.android.debug`, version code `997`. The Android emulator in-place upgrade gate also passed: app-private data survived the replacement and both encrypted Memo stores reopened; legacy recovery and corruption tests passed. The build itself reported `BUILD SUCCESSFUL` (Gradle 8.14.6).
+- **Artifact / device evidence:** CI successfully built and cryptographically verified the debug APK (package `app.memo.android.debug`, version code `997`) using the ephemeral CI debug key. Because this was a pull-request validation run, the workflow intentionally skipped publishing the APK and integrated-repository artifacts and skipped the isolated persistent-signing job; the available run artifact is build diagnostics only. The emulator install-over-existing and encrypted-store acceptance gates passed. No physical-device acceptance is claimed.
+- **Security and failure-path review:** Uses existing explicit remote-use gate; workspace search is not included for remote models without the existing workspace-sharing permission. No browser/Android/code/media/PDF/video adapters are exposed. No unapproved external writes. Local writes are private draft/proposal operations. Uncertain outcomes become NEEDS_REVIEW rather than blind retries.
+- **Known gaps:** No registry-wide capability discovery, generic browser session adapter, Android app-action adapter, code runner, image/PDF/video renderer, durable process-death resume/reconciliation, structured user approval UX, postcondition evaluator, generic task capability, or Talk→Live/Work/Studio projection. Automated JVM, lint, APK and emulator upgrade acceptance passed; physical-device acceptance remains pending.
+- **Status:** `[~]` in progress; first Talk execution slice is implemented and CI/emulator validated at the recorded head. Code remains on the separate draft PR branch and is not merged.
+
+
+### 2026-11-20 — WP-AGENT-002 — Runtime-validated capabilities and visible browser integration in Talk
+
+- **Requirements:** MEMO-ORCH-001, MEMO-AGENT-001, MEMO-CAP-001.
+- **Baseline:** Green first Talk slice at CI #998; implementation branch remains agent/talk-execution-loop-2026-11-20, draft PR #14.
+- **Implementation:** Added AgentCapabilityRegistry and registered the app.workspace runtime contract. Every adapter must refer to a registered runtime/capability and exactly match its approval and external-side-effect policy. Capability readiness is rechecked before every model decision, so later steps can become available after earlier actions.
+- **Browser integration:** Added real browser.navigate_https and browser.capture_evidence adapters over the existing BrowserSession and BrowserScripts.capturePage. Navigation accepts only exact public HTTPS URLs literally included in the user's request. Memo opens that address in the shared, visible WebView and waits for the same host/path/query to finish loading; redirects away from the exact requested page fail closed. It does not click links, manipulate composers, fill forms or submit prompts. Read-only capture verifies the page remains the same before and after extraction.
+- **Evidence and privacy:** Full visible-page text is saved through saveWorkArtifactDurably as BROWSER_PAGE_CAPTURE in the existing encrypted workspace, with URL, timestamp, digest, runtime/run/call IDs and source conversation/message provenance. Duplicate content is detected for the same page and source conversation. Only a bounded excerpt is fed back to the model and is explicitly labelled untrusted source data. A separate per-request checkbox is required before page text may be sent to a remote provider; default is off. The shared WebView is rendered in Talk during browser activity and can be opened in the full browser surface.
+- **Tests:** Runtime mismatch and approval-policy mismatch are rejected; live readiness is tested; a model-directed navigate → newly-available capture → final-response sequence is tested; HTTPS URL normalization and rejection of HTTP, credentials, local/IP destinations and nonstandard ports are covered.
+- **Validation:** CI #999 passed for the registry/core tests. CI #1001 passed on combined source head 4f87acab1cf729275666df14944c8b950993be03: source invariants, remote-runner tests, :core:test, :app:testDebugUnitTest, :app:lintDebug, debug and instrumentation APK assembly, APK package/version/signature checks, and Android emulator in-place upgrade with encrypted-store/data preservation. Gradle reported BUILD SUCCESSFUL; APK package app.memo.android.debug, version code 1001. The pull-request workflow intentionally does not publish the APK or run isolated persistent signing; no downloadable signed APK is claimed. No physical-device test is claimed.
+- **Known gaps retained:** Browser links/forms and provider prompt submission are not exposed by this Talk adapter; the latter remains in the older approval-gated browser workflow. Native Android, code/file and image/PDF/video adapters, global process-death invocation recovery, universal postconditions, full Work/Studio/Live execution projection and physical-device acceptance remain open.
+- **Status:** [~] in progress; browser read/capture is an initial working vertical slice, not full browser automation or a completed Memo milestone.
+
+### 2026-11-20 — WP-AGENT-003 — Verified same-origin link navigation in Talk
+
+- **Requirements:** MEMO-ORCH-001, MEMO-AGENT-001, MEMO-CAP-001, MEMO-BROWSER-001.
+- **Baseline:** PR #14 branch before this slice; WP-AGENT-001/002 had passed CI #1003.
+- **Implementation:** Added `browser.open_observed_link` to the registered browser runtime and Talk adapter catalogue. The adapter is dynamically unavailable until a visible-page capture has completed and yielded safe same-origin links. It accepts only an exact HTTPS URL from that capture's bounded link set. The browser rechecks that the current page is still the captured source, confirms that the exact anchor remains visible in the live DOM, and then navigates to that target in the same visible WebView.
+- **Safety boundary:** Page-derived navigation is restricted to the exact HTTPS origin (not sibling/subdomains), rejects insecure/local/IP/credentialed/nonstandard-port targets through the existing URL policy, never clicks an anchor or arbitrary page control, and clears the link set after navigation so another link requires a fresh capture. Page text and links remain untrusted data. No form filling or provider prompt submission is exposed.
+- **Evidence and tests:** Added pure-core same-origin URL policy coverage and source-verifier assertions for live DOM verification, exact page/link binding, runtime registration and adapter readiness. Captured same-origin links are included in encrypted page-evidence metadata and returned to the model as untrusted references.
+- **Validation:** CI #1018 passed on head `4000d03c5ce58249f5954acd4378fab2c3ef87a7`: source invariants, remote-runner tests, `:core:test`, `:app:testDebugUnitTest`, `:app:lintDebug`, debug APK assembly, APK identity/signature and emulator install-over-existing encrypted-store/app-private-data preservation. The PR workflow skips delivery artifacts and isolated release signing. No real-site behavior or physical-device acceptance is claimed.
+- **Status:** `[~]` implementation and CI validated; broader browser execution remains incomplete.
+
+
+### 2026-11-21 — M3.A4-S1 — Fail closed on execution event sink failure
+
+- **Requirement:** Never continue a model-directed run if its execution event cannot be persisted/delivered; avoid blind replay when a capability may have run.
+- **Files changed:** `core/src/main/kotlin/app/memo/android/orchestration/AgentExecutionEngine.kt`; `core/src/test/kotlin/app/memo/android/orchestration/AgentExecutionEngineTest.kt`.
+- **Implementation summary:** Event callback failures are wrapped and handled separately. When a capability call has started, the engine returns `NEEDS_REVIEW` and does not ask the model for another decision. The user-facing message tells them to inspect the action outcome before retrying. When event failure occurs before any capability, the run fails closed. A regression test makes the event sink throw after a capability result and asserts one model decision, one capability invocation, and `NEEDS_REVIEW`.
+- **Tests and results:** Regression test executed successfully in CI #1033 on head edf6e618; see the run linked below.
+- **Exact commit SHA:** `5a5eff69038cc49004a05964f9c8f9e1472d6910` (test commit; engine commits precede it on branch).
+- **Device/emulator evidence:** Pending.
+- **Known gaps:** Durable execution journal/process-death recovery, pausing/resuming approvals, global postcondition verification, broader adapter coverage remain open.
+- **Status:** `[~]` source change + test authored, verification pending.
+
+
+### 2026-11-21 — M3.A4-S2 — Talk transcript approval lifecycle coverage
+
+- **Requirement:** Every execution event emitted by the shared engine must be safely and visibly represented in Talk.
+- **Files changed:** `app/src/main/java/app/memo/android/ai/MemoWorkspaceAgentTools.kt`.
+- **Implementation summary:** Added transcript mappings for approval requested, granted and rejected event types. The transcript metadata continues to include run/call IDs, status, capability version and evidence reference.
+- **Tests and results:** Added `MemoWorkspaceAgentToolsTest.transcriptExplainsAllApprovalLifecycleEvents`, covering all three approval events and run/capability metadata. Compile/CI pending.
+- **Exact commit SHA:** `fe1278a5bda0e742e31e9fc6b76441ec78c67e7`.
+- **Known gaps:** Approval callback currently defaults to no grant in the Talk execution call site; this mapping is visibility only and does not implement durable approval pause/resume. Full approval UI/ledger path is still open.
+- **Status:** `[~]` implementation pending CI.
+
+
+### 2026-11-21 — M3.A4-S3 — Journal failure hard-stop invariant
+
+- **Requirement:** An execution journal/event persistence failure must stop the execution loop; no further model/tool decisions after failure. If an action may have begun, outcome must be reviewed rather than replayed.
+- **Files changed:** `docs/AI_EXECUTION_INVARIANTS.md`; execution guard already committed in `AgentExecutionEngine.kt`.
+- **Implementation summary:** The rule is now part of the binding execution invariants, not merely a code comment. Approval lifecycle events must also be visible in Talk's transcript.
+- **Verification:** Run 1026 (`5a5eff6`) failed compilation due to missing exhaustive approval-event transcript branches; this was corrected in `fe1278a`. Run 1027 on `e4fca2d` was still active at last check. Newer runs were queued/cancelled by subsequent commits. CI for current source remains pending.
+- **Status:** `[~]` rule and code committed; verification pending.
+
+ 
+### 2026-11-21 — M3.A4-S4 — ViewModel-owned Talk execution and exact approval broker
+
+- **Requirements:** MEMO-ORCH-001, MEMO-AGENT-001, MEMO-APPROVAL-001, MEMO-RECOVERY-001.
+- **Files changed:** app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt; app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt; app/src/main/java/app/memo/android/ui/ActionApprovalInboxScreen.kt; app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt; tools/verify_source.py; docs/AI_EXECUTION_INVARIANTS.md; TASKS.md; IMPLEMENTATION_LOG.md.
+- **Implementation:** Talk runs now belong to ViewModel scope and remain alive while the user changes destinations. The engine's existing approval callback stages an exact-content proposal in the existing encrypted action ledger, registers a waiter before suspending, and resumes only after the inbox durably approves the matching hash. Rejection returns no grant. The inbox exposes explicit approve/reject controls only for a pending action tied to the currently active Talk conversation; its decisions run in app-root scope so navigation cannot cancel durable read-back.
+- **Termination:** leftover pending actions are durably rejected and unused approvals are moved to NEEDS_REVIEW; process restart still invalidates or flags actions and does not resume/replay the model run.
+- **Tests:** structural source assertions added for ViewModel ownership, callback wiring, wait registration, inbox decisions and global Stop. Existing engine tests already exercise exact approval grants, rejection, mismatched envelopes and fail-closed behavior. CI #1038 passed the exact S4 head `07f100c6`: source verifier, remote-runner tests, Android unit tests, lint, debug APK assembly, APK identity/signature checks and install-over-existing preservation. The workflow uploaded diagnostics only and skipped APK publication/re-signing. The S5 changes below require their own CI run.
+- **Known gap:** no external-write adapter is currently included in MemoWorkspaceAgentTools; this commits the generic approval handshake, not an end-to-end external side-effect capability.
+- **Status:** [~] S4 CI verified; M3.A4 remains partial.
+
+### 2026-11-21 — M3.A4-S5 — Exact approval review acknowledgement and durable decision ownership
+
+- **Requirements:** MEMO-APPROVAL-001, MEMO-RECOVERY-001.
+- **Files changed:** app/src/main/java/app/memo/android/ui/ActionApprovalInboxScreen.kt; app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt; app/src/main/java/app/memo/android/ui/MemoLocalization.kt; app/src/test/java/app/memo/android/ui/MemoLocalizationTest.kt; tools/verify_source.py; TASKS.md; IMPLEMENTATION_LOG.md.
+- **Implementation:** approve is only rendered after expanding the action. The full destination and exact payload are then visible, and the user must explicitly acknowledge having reviewed them. Collapsing the card clears the acknowledgement. Rejection remains available at all times. The durable approval/rejection coroutines now belong to ViewModel scope and survive Activity recreation.
+- **Validation:** PL/TR translation unit assertions and source-verifier checks added. Exact S5 head a6ed188c passed CI #1039: source verifier, remote runner, Android unit tests, lint, APK assembly, identity/signature and install-over-existing preservation. The PR event skipped APK packaging/re-signing and uploaded build reports only.
+- **Build artifact:** CI #1038 uploaded only the 140,719-byte `Memo-Android-Build-Reports` ZIP; APK packaging/re-signing upload steps were skipped for the PR event. No new installable APK was delivered.
+- **Known gap:** no external-write adapter is currently included in MemoWorkspaceAgentTools; this increments the approval broker/UI but does not claim an end-to-end external side effect is usable from Talk.
+- **Status:** [~] implementation; verify exact commit in CI before marking complete.
+
+ 
+### 2026-11-21 — M3.A4-S6 — Encrypted durable Talk run record and restart recovery
+
+- **Requirements:** MEMO-ORCH-001, MEMO-AGENT-001, MEMO-RECOVERY-001.
+- **Files changed:** core/src/main/kotlin/app/memo/android/data/Models.kt; core/src/main/kotlin/app/memo/android/orchestration/AgentExecutionEngine.kt; app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt; app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt; app/src/main/java/app/memo/android/ui/LiveWorkspaceScreen.kt; app/src/main/java/app/memo/android/ui/MemoLocalization.kt; tools/verify_source.py; schema/engine/localization tests; TASKS.md; IMPLEMENTATION_LOG.md; docs/AI_EXECUTION_INVARIANTS.md.
+- **Data compatibility:** additive workspace backup schema 7. Readers accept schemas 1–7; schemas 1–6 import with an empty agent-run history. Existing primary vault path, encryption format, Keystore alias and action ledger are unchanged.
+- **Implementation:** run identity is allocated by Memo before model execution and injected into the engine. Run creation is durably read back before the engine starts. Lifecycle events update the run index and conversation TOOL transcript in one encrypted snapshot write; read-after-write verification gates the next model/capability action. Engine end events enter `FINALIZING`; only the same verified snapshot write as the final assistant/system message changes the record to terminal.
+- **Recovery:** on unlock/import, nonterminal runs (including FINALIZING) become NEEDS_REVIEW; pending approval references are cleared and the saved recovery note explicitly says that no step was replayed. Runs with uncertain capability starts remain review-only. No automatic execution resume was added.
+- **UI:** Live includes a recent Memo executions section with status, last recorded stage, model/capability counters, recovery reason, and links to conversation/approval review.
+- **Tests:** deterministic-clock event reducer, exact event/run identity, approval/tool lifecycle, uncertain outcome, FINALIZING crash-window recovery, schema-v7 round-trip, schema-v6 migration, Council backup v7 assertion, restart recovery and PL/TR translations.
+- **Validation:** CI #1040/#1041 stopped at source verification on stale launcher/Live markers; both guards were corrected. CI #1042 passed source/runner checks and compiled core but failed two core tests (timestamp fixture and Council schema-6 expectation), now corrected. CI #1043 reached Android compilation and reported three unresolved `AgentExecutionEventType` references in the ViewModel closeout; the missing import and regression guard are added here. Exact-head CI remains pending. Parent S5 head a6ed188c passed CI #1039 including Android tests/lint/assembly/signature and install-over-existing preservation.
+- **Known limitation:** MemoWorkspaceAgentTools still does not expose an end-to-end external-write adapter. This milestone makes the generic run lifecycle durable/observable; it does not claim a submitted/sent action can yet be executed from every Talk request.
+- **Status:** [~] source implementation; exact-head CI and physical-device acceptance required.

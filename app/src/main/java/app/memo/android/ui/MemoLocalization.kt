@@ -29,6 +29,20 @@ object MemoLocalization {
 
     private val translations: Map<String, Pair<String, String>> = mapOf(
 
+        "MEMO ACTION" to ("DZIAŁANIE MEMO" to "MEMO İŞLEMİ"),
+        "Memo's visible browser session" to ("Widoczna sesja przeglądarki Memo" to "Memo'nun görünür tarayıcı oturumu"),
+        "Opening the user-supplied page…" to ("Otwieranie strony podanej przez użytkownika…" to "Kullanıcının sağladığı sayfa açılıyor…"),
+        "Open full browser" to ("Otwórz pełną przeglądarkę" to "Tam tarayıcıyı aç"),
+        "Also share captured webpage content with the remote provider" to ("Udostępnij dostawcy zdalnemu również przechwyconą treść strony" to "Yakalanan web sayfası içeriğini uzak sağlayıcıyla da paylaş"),
+        "Off by default. Signed-in pages can contain private information. Memo shares page text only after you enable this separately." to ("Domyślnie wyłączone. Zalogowane strony mogą zawierać prywatne informacje. Memo udostępni tekst strony dopiero po osobnym włączeniu tej opcji." to "Varsayılan olarak kapalıdır. Oturum açılmış sayfalar özel bilgiler içerebilir. Memo sayfa metnini ancak bu seçeneği ayrıca açtığınızda paylaşır."),
+        "This is the real, visible page session. Memo reads visible text only; page content is treated as untrusted source data." to ("To rzeczywista, widoczna sesja strony. Memo odczytuje tylko widoczny tekst i traktuje go jako niezaufane dane źródłowe." to "Bu gerçek ve görünür sayfa oturumudur. Memo yalnızca görünür metni okur ve sayfa içeriğini güvenilmeyen kaynak verisi olarak ele alır."),
+        "Memo started an execution." to ("Memo rozpoczęło wykonywanie zadania." to "Memo bir yürütme başlattı."),
+        "Memo returned a final response." to ("Memo zwróciło odpowiedź końcową." to "Memo son yanıtını verdi."),
+        "Execution limit reached." to ("Osiągnięto limit wykonywania." to "Yürütme sınırına ulaşıldı."),
+        "Execution paused for review." to ("Wykonywanie wstrzymano do sprawdzenia." to "Yürütme inceleme için duraklatıldı."),
+        "Execution failed." to ("Wykonywanie nie powiodło się." to "Yürütme başarısız oldu."),
+        "Execution cancelled. Completed results were retained." to ("Wykonywanie anulowano. Zachowano ukończone wyniki." to "Yürütme iptal edildi. Tamamlanan sonuçlar korundu."),
+        "Execution stopped by you. Completed capability results remain in this conversation. Any interrupted local write is marked for review before retrying." to ("Zatrzymano na Twoje polecenie. Ukończone wyniki działań pozostały w tej rozmowie. Przerwane lokalne zapisy należy sprawdzić przed ponowieniem." to "İsteğin üzerine durduruldu. Tamamlanan işlem sonuçları bu sohbette tutuldu. Kesintiye uğrayan yerel yazma işlemleri yeniden denenmeden önce incelenmelidir."),
         "See active work, browser sessions, checkpoints and decisions in one place. Memo only reports completion when it has an observable result." to ("Zobacz aktywne zadania, sesje przeglądarki, punkty kontrolne i decyzje w jednym miejscu. Memo zgłasza ukończenie tylko wtedy, gdy ma obserwowalny wynik." to "Etkin işleri, tarayıcı oturumlarını, kontrol noktalarını ve kararları tek yerde gör. Memo yalnızca gözlemlenebilir bir sonuç olduğunda tamamlandı der."),
         "Current participant" to ("Bieżący uczestnik" to "Geçerli katılımcı"),
         "Browser workflow" to ("Przepływ przeglądarki" to "Tarayıcı iş akışı"),
@@ -49,6 +63,26 @@ object MemoLocalization {
         "No active browser workflow" to ("Brak aktywnego przepływu przeglądarki" to "Etkin tarayıcı akışı yok"),
         "When a website or frontier-AI workflow is running, its real session and approval checkpoint will appear here." to ("Gdy działa witryna lub przepływ frontier AI, pojawi się tu rzeczywista sesja i punkt zatwierdzenia." to "Bir web sitesi veya frontier AI akışı çalışırken gerçek oturum ve onay noktası burada görünür."),
         "Inspect live browser" to ("Sprawdź aktywną przeglądarkę" to "Canlı tarayıcıyı incele"),
+        "Memo executions" to ("Wykonania Memo" to "Memo yürütmeleri"),
+        "Recent Talk runs and their recorded outcome" to ("Ostatnie uruchomienia Rozmowy i zapisane wyniki" to "Son Talk çalıştırmaları ve kaydedilen sonuçları"),
+        "No Memo executions yet" to ("Brak uruchomień Memo" to "Henüz Memo yürütmesi yok"),
+        "Your Talk runs will appear here with their last durable stage and recovery state." to ("Uruchomienia Rozmowy pojawią się tutaj z ostatnim trwale zapisanym etapem i stanem odzyskiwania." to "Talk çalıştırmaların son kalıcı aşama ve kurtarma durumlarıyla burada görünecek."),
+        "Last recorded stage" to ("Ostatni zapisany etap" to "Son kaydedilen aşama"),
+        "Model calls" to ("Wywołania modelu" to "Model çağrıları"),
+        "Capability calls" to ("Wywołania funkcji" to "Yetenek çağrıları"),
+        "Succeeded" to ("Udane" to "Başarılı"),
+        "Open conversation" to ("Otwórz rozmowę" to "Sohbeti aç"),
+        "Review actions" to ("Sprawdź działania" to "Eylemleri incele"),
+        "Running" to ("W toku" to "Çalışıyor"),
+        "Waiting for approval" to ("Oczekuje na zatwierdzenie" to "Onay bekliyor"),
+        "Using a capability" to ("Korzysta z funkcji" to "Bir yetenek kullanıyor"),
+        "Saving result" to ("Zapisywanie wyniku" to "Sonuç kaydediliyor"),
+        "Limit reached" to ("Osiągnięto limit" to "Limite ulaşıldı"),
+        "Stopped" to ("Zatrzymano" to "Durduruldu"),
+        "Interrupted by application restart" to ("Przerwano z powodu ponownego uruchomienia aplikacji" to "Uygulama yeniden başlatıldığı için kesildi"),
+        "Memo restarted during this run. Review saved events and any action that may have started. No step was replayed." to ("Memo uruchomiono ponownie w trakcie tego przebiegu. Sprawdź zapisane zdarzenia i działania, które mogły się rozpocząć. Żaden krok nie został odtworzony." to "Memo bu çalışma sırasında yeniden başlatıldı. Kaydedilen olayları ve başlamış olabilecek eylemleri incele. Hiçbir adım yeniden oynatılmadı."),
+        "Memo stopped before it could record a terminal event after a capability may have started. Inspect the destination before retrying." to ("Memo zatrzymało się, zanim zapisało zdarzenie końcowe po możliwym rozpoczęciu działania. Przed ponowieniem sprawdź miejsce docelowe." to "Memo, bir yetenek başlamış olabilecekken son olayı kaydedemeden durdu. Yeniden denemeden önce hedefi incele."),
+        "Memo stopped before recording a terminal execution event. No capability start was recorded." to ("Memo zatrzymało się przed zapisaniem końcowego zdarzenia wykonania. Nie zapisano rozpoczęcia żadnej funkcji." to "Memo, son yürütme olayını kaydetmeden durdu. Herhangi bir yeteneğin başlatıldığı kaydedilmedi."),
         "Work in motion" to ("Trwające zadania" to "Devam eden işler"),
         "Resumable plans and tasks that need attention" to ("Wznawialne plany i zadania wymagające uwagi" to "Devam ettirilebilir planlar ve ilgilenilmesi gereken görevler"),
         "Nothing needs attention right now" to ("Nic nie wymaga teraz uwagi" to "Şu anda ilgilenilmesi gereken bir şey yok"),
@@ -101,6 +135,11 @@ object MemoLocalization {
         "No actions need review" to ("Żadne działanie nie wymaga sprawdzenia" to "İnceleme gereken eylem yok"),
         "No resolved actions yet" to ("Brak rozstrzygniętych działań" to "Henüz sonuçlanmış eylem yok"),
         "No action is waiting" to ("Żadne działanie nie oczekuje" to "Bekleyen eylem yok"),
+        "Pending Talk actions and live browser prompts appear here for exact-content review. Completed or uncertain actions stay in their own history and review states." to ("Oczekujące działania z Rozmowy i aktywne prompty przeglądarki pojawiają się tu do sprawdzenia dokładnej treści. Zakończone lub niepewne działania pozostają w osobnej historii i sekcji do sprawdzenia." to "Bekleyen Talk eylemleri ve canlı tarayıcı istemleri, tam içeriğin incelenmesi için burada görünür. Tamamlanan veya sonucu belirsiz eylemler kendi geçmişlerinde ve inceleme durumlarında kalır."),
+        "This action is waiting for the matching Talk execution. Review the destination and full exact payload above. Approval is one-use and tied to the displayed content hash." to ("To działanie oczekuje na powiązane wykonanie w Rozmowie. Sprawdź powyższy cel i pełny, dokładny ładunek. Zatwierdzenie jest jednorazowe i powiązane z wyświetlonym skrótem treści." to "Bu eylem eşleşen Talk yürütmesini bekliyor. Yukarıdaki hedefi ve tam içeriği incele. Onay tek kullanımlıktır ve gösterilen içerik özetine bağlıdır."),
+        "Approve exact action" to ("Zatwierdź dokładne działanie" to "Tam eylemi onayla"),
+        "Reject and stop this action" to ("Odrzuć i zatrzymaj to działanie" to "Reddet ve bu eylemi durdur"),
+        "I confirm that I reviewed the full destination and exact payload." to ("Potwierdzam sprawdzenie pełnego celu i dokładnej treści działania." to "Tam hedefi ve eylemin eksiksiz içeriğini incelediğimi onaylıyorum."),
         "External browser prompts appear here before sending. The exact-content confirmation remains in the live browser workflow." to ("Tutaj pojawiają się zewnętrzne prompty przed wysłaniem. Potwierdzenie dokładnej treści pozostaje w aktywnym przepływie przeglądarki." to "Harici istemler gönderilmeden önce burada görünür. Tam içerik onayı canlı tarayıcı akışında kalır."),
         "Inspect payload and audit" to ("Sprawdź treść i audyt" to "İçeriği ve denetimi incele"),
         "Show less" to ("Pokaż mniej" to "Daha az göster"),
@@ -524,11 +563,44 @@ object MemoLocalization {
         "Restore plain JSON" to ("Przywróć zwykły JSON" to "Düz JSON'u geri yükle"),
         "Restoring replaces current conversations, tasks, evidence, jobs and workspace graph. Memo verifies the encrypted authentication tag before parsing the backup. Export the current workspace first if you need to keep it." to ("Przywrócenie zastępuje bieżące rozmowy, zadania, dowody, procesy i graf obszaru roboczego. Memo weryfikuje tag uwierzytelnienia przed odczytem kopii. Najpierw wyeksportuj obecne dane, jeśli chcesz je zachować." to "Geri yükleme mevcut sohbetleri, görevleri, kanıtları, işleri ve çalışma alanı grafiğini değiştirir. Memo yedeği ayrıştırmadan önce şifreli doğrulama etiketini kontrol eder. Mevcut verileri korumak istiyorsan önce dışa aktar."),
         "The passphrases do not match." to ("Hasła nie są zgodne." to "Parolalar eşleşmiyor."),
+        "Account" to ("Konto" to "Hesap"),
+        "Add industrial account" to ("Dodaj konto przemysłowe" to "Endüstriyel hesap ekle"),
+        "All six ICP factors start as Unknown. Add source evidence and score them later; Memo will not invent fit or mark this account ready." to ("Wszystkie sześć czynników ICP zaczyna się od statusu Nieznany. Dodaj dowody ze źródeł i oceń je później; Memo nie będzie wymyślać dopasowania ani oznaczać tego konta jako gotowego." to "Altı ICP faktörünün tamamı Bilinmiyor durumuyla başlar. Kaynak kanıtı ekleyip daha sonra puanlayın; Memo uygunluğu uydurmaz veya bu hesabı hazır olarak işaretlemez."),
+        "Approximate size (optional)" to ("Przybliżona wielkość (opcjonalnie)" to "Yaklaşık büyüklük (isteğe bağlı)"),
+        "Company name" to ("Nazwa firmy" to "Şirket adı"),
+        "Company website" to ("Strona internetowa firmy" to "Şirket web sitesi"),
+        "Create a company record in Work. No contacts or messages are collected." to ("Utwórz rekord firmy w Work. Kontakty ani wiadomości nie są zbierane." to "Work alanında bir şirket kaydı oluşturur. Kişi veya mesaj toplanmaz."),
+        "Create draft plan" to ("Utwórz plan roboczy" to "Taslak plan oluştur"),
+        "Creates a local draft plan only. Nothing is sent, published or executed." to ("Tworzy wyłącznie lokalny plan roboczy. Nic nie jest wysyłane, publikowane ani wykonywane." to "Yalnızca yerel bir taslak plan oluşturur. Hiçbir şey gönderilmez, yayınlanmaz veya yürütülmez."),
+        "Current model turn" to ("Bieżąca tura modelu" to "Mevcut model turu"),
+        "Evidence" to ("Dowody" to "Kanıtlar"),
+        "Linked work" to ("Powiązana praca" to "Bağlantılı işler"),
+        "Location (or Unknown)" to ("Lokalizacja (lub Nieznana)" to "Konum (veya Bilinmiyor)"),
+        "Memo is still executing in another conversation. Switch back there to see its activity and result." to ("Memo nadal wykonuje zadanie w innej rozmowie. Wróć do niej, aby zobaczyć aktywność i wynik." to "Memo başka bir sohbette çalışmaya devam ediyor. Etkinliği ve sonucu görmek için o sohbete geri dönün."),
+        "Nothing active yet. Browser tasks and saved plans will appear here when you create them." to ("Nie ma jeszcze aktywnych zadań. Zadania przeglądarki i zapisane plany pojawią się tutaj po ich utworzeniu." to "Henüz etkin bir şey yok. Tarayıcı görevleri ve kaydedilen planlar oluşturduğunuzda burada görünür."),
+        "Outcome and next action" to ("Wynik i następne działanie" to "Sonuç ve sonraki adım"),
+        "Promote response to Work" to ("Przenieś odpowiedź do Work" to "Yanıtı Work'e aktar"),
+        "Promoted from this message" to ("Przeniesiono z tej wiadomości" to "Bu mesajdan aktarıldı"),
+        "Research notes (optional)" to ("Notatki badawcze (opcjonalnie)" to "Araştırma notları (isteğe bağlı)"),
+        "Review the outcome or next action Memo should turn into a plan. The source conversation and exact message will stay linked." to ("Sprawdź wynik lub następne działanie, które Memo ma przekształcić w plan. Rozmowa źródłowa i dokładna wiadomość pozostaną powiązane." to "Memo'nun plana dönüştürmesini istediğiniz sonucu veya sonraki adımı inceleyin. Kaynak sohbet ve tam mesaj bağlantılı kalır."),
+        "Save for research" to ("Zapisz do badań" to "Araştırma için kaydet"),
+        "Today" to ("Dzisiaj" to "Bugün"),
+        "Your active work, from the encrypted workspace." to ("Twoja aktywna praca z zaszyfrowanego obszaru roboczego." to "Şifrelenmiş çalışma alanınızdaki etkin işleriniz."),
+        "Steps run in order. Launch, wait and delay are available. Tap and Back are temporarily disabled until exact-action approval is ready; existing drafts containing them must be edited before saving." to ("Kroki są wykonywane po kolei. Dostępne są uruchamianie, oczekiwanie i opóźnienie. Dotknięcie i Wstecz są tymczasowo wyłączone do czasu wdrożenia zatwierdzania dokładnych działań; istniejące wersje robocze zawierające te kroki trzeba edytować przed zapisaniem." to "Adımlar sırayla çalışır. Başlatma, bekleme ve gecikme kullanılabilir. Tam eylem onayı hazır olana kadar Dokun ve Geri geçici olarak devre dışıdır; bunları içeren mevcut taslaklar kaydedilmeden önce düzenlenmelidir."),
     )
 
     fun translate(text: String, language: String): String {
         val normalized = language.uppercase()
         if (normalized == "EN") return text
+        val agentPrefixes = listOf(
+            "Using capability: " to ("Korzystanie z funkcji: " to "Yetenek kullanılıyor: "),
+            "Capability finished: " to ("Funkcja zakończona: " to "Yetenek tamamlandı: "),
+            "Capability did not succeed: " to ("Funkcja nie powiodła się: " to "Yetenek başarılı olmadı: ")
+        )
+        agentPrefixes.firstOrNull { text.startsWith(it.first) }?.let { (prefix, labels) ->
+            val suffix = text.removePrefix(prefix)
+            return when (normalized) { "PL" -> labels.first + suffix; "TR" -> labels.second + suffix; else -> text }
+        }
         // Translate a known interface prefix while leaving the user-provided source title intact.
         if (text.startsWith("Open source conversation · ")) {
             val title = text.removePrefix("Open source conversation · ")

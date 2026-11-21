@@ -10,19 +10,39 @@ import app.memo.android.runtime.RuntimeRegistry
 import app.memo.android.orchestration.IntentPlanner
 import app.memo.android.orchestration.CapabilityCompiler
 import app.memo.android.orchestration.WorkflowGraphCompiler
+import app.memo.android.orchestration.AgentApprovalGrant
+import app.memo.android.orchestration.AgentApprovalRequest
+import app.memo.android.orchestration.AgentExecutionEvent
+import app.memo.android.orchestration.AgentExecutionEventType
+import app.memo.android.orchestration.AgentExecutionResult
+import app.memo.android.orchestration.AgentRunStatus
 import org.json.JSONObject
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
+
+data class AgentExecutionUiState(
+    val running: Boolean = false,
+    val conversationId: String = "",
+    val stage: String = ""
+)
 
 class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(application) {
     private val vault = EncryptedVault(application)
     private val persistenceQueue = Channel<AppSnapshot>(Channel.CONFLATED)
+    private val vaultWriteMutex = Mutex()
     private val preferences = application.getSharedPreferences("synthos_preferences", Application.MODE_PRIVATE)
     private val runtimeRegistry = RuntimeRegistry()
 
@@ -34,6 +54,11 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
 
     private val _vaultError = MutableStateFlow<String?>(null)
     val vaultError: StateFlow<String?> = _vaultError.asStateFlow()
+
+    private val _agentExecutionState = MutableStateFlow(AgentExecutionUiState())
+    val agentExecutionState: StateFlow<AgentExecutionUiState> = _agentExecutionState.asStateFlow()
+    private var agentExecutionJob: Job? = null
+    private val agentApprovalWaiters = ConcurrentHashMap<String, CompletableDeferred<AgentApprovalGrant?>>()
 
     private val _themeMode = MutableStateFlow(preferences.getString("theme_mode", "SYSTEM") ?: "SYSTEM")
     val themeMode: StateFlow<String> = _themeMode.asStateFlow()
@@ -48,7 +73,7 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         viewModelScope.launch {
             for (candidate in persistenceQueue) {
                 try {
-                    withContext(Dispatchers.IO) { vault.write(candidate) }
+                    withContext(Dispatchers.IO) { persistSnapshotSafely(candidate) }
                     _vaultError.value = null
                 } catch (error: Throwable) {
                     _vaultError.value = safeError(error, "Could not save the encrypted workspace. Export your data before continuing.")
@@ -79,9 +104,230 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
 
     /** Clears decrypted data from UI state when the user manually locks the workspace. */
     fun clearSensitiveMemory() {
+        stopAgentExecution()
         _snapshot.value = AppSnapshot()
         _vaultReady.value = false
         _vaultError.value = null
+    }
+
+
+
+    /**
+     * Persist a run record before starting the engine. The same ID is passed through every
+     * engine event and approval request, keeping the encrypted run index and transcript aligned.
+     */
+    fun launchAgentExecution(
+        conversationId: String,
+        goal: String,
+        modelId: String,
+        block: suspend (String) -> Unit
+    ): Boolean {
+        if (conversationId.isBlank() || !_vaultReady.value || agentExecutionJob?.isActive == true) return false
+        val runId = newId()
+        _agentExecutionState.value = AgentExecutionUiState(
+            running = true,
+            conversationId = conversationId,
+            stage = "Starting Memo execution"
+        )
+        agentExecutionJob = viewModelScope.launch {
+            var runCreated = false
+            try {
+                runCreated = createAgentRunDurably(runId, conversationId, goal, modelId)
+                if (!runCreated) return@launch
+                block(runId)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Throwable) {
+                _vaultError.value = safeError(error, "Memo execution stopped before a terminal state could be recorded.")
+            } finally {
+                try {
+                    if (runCreated || _snapshot.value.agentRuns.any { it.id == runId }) {
+                        withContext(NonCancellable) {
+                            try {
+                                settleAgentApprovals(conversationId)
+                            } finally {
+                                closeUnfinishedAgentRunDurably(runId)
+                            }
+                        }
+                    }
+                } catch (error: Throwable) {
+                    _vaultError.value = safeError(error, "Unresolved Talk execution state could not be settled safely.")
+                } finally {
+                    _agentExecutionState.value = AgentExecutionUiState()
+                    agentExecutionJob = null
+                }
+            }
+        }
+        return true
+    }
+
+    private suspend fun createAgentRunDurably(
+        runId: String,
+        conversationId: String,
+        goal: String,
+        modelId: String
+    ): Boolean {
+        if (!_vaultReady.value || _vaultError.value != null) return false
+        val cleanGoal = goal.trim().take(6_000)
+        if (cleanGoal.isBlank()) return false
+        val current = _snapshot.value
+        if (current.conversations.none { it.id == conversationId } || current.agentRuns.size >= MAX_AGENT_RUNS) {
+            _vaultError.value = if (current.agentRuns.size >= MAX_AGENT_RUNS) {
+                "Memo execution history is full. Export your workspace before starting another run."
+            } else {
+                "The originating conversation no longer exists."
+            }
+            return false
+        }
+        if (current.agentRuns.any { it.id == runId }) return false
+        val record = AgentRunRecord(id = runId, conversationId = conversationId, goal = cleanGoal, modelId = modelId.take(160))
+        val next = current.copy(agentRuns = listOf(record) + current.agentRuns)
+        _snapshot.value = next
+        persist(next)
+        return persistAgentRunAndVerify(runId) { saved ->
+            saved.agentRuns.any { it.id == runId && it.status == "RUNNING" && it.conversationId == conversationId }
+        }
+    }
+
+    /** Event transcript message and run state are written together, then reopened and verified. */
+    suspend fun appendAgentEventDurably(
+        runId: String,
+        conversationId: String,
+        content: String,
+        event: AgentExecutionEvent,
+        modelId: String = ""
+    ): String? {
+        if (!_vaultReady.value) return "Unlock the workspace before continuing."
+        _vaultError.value?.let { return "Encrypted workspace persistence is unavailable: $it" }
+        if (event.runId != runId) return "Execution event ID did not match the persisted Memo run."
+        val current = _snapshot.value
+        val run = current.agentRuns.firstOrNull { it.id == runId && it.conversationId == conversationId }
+            ?: return "The durable Memo run record no longer exists."
+        val conversation = current.conversations.firstOrNull { it.id == conversationId }
+            ?: return "The execution conversation no longer exists."
+        if (conversation.messages.size >= 250) return "This conversation reached its message limit; Memo cannot safely extend its execution journal."
+        val message = ChatMessageRecord(role = "TOOL", content = content.trim().take(24_000), modelId = modelId.take(160), sourceType = "AGENT_EVENT")
+        val updatedRun = run.applyEvent(event)
+        val updatedConversation = conversation.copy(messages = conversation.messages + message, updatedAt = nowMillis())
+        val next = current.copy(
+            conversations = current.conversations.map { if (it.id == conversationId) updatedConversation else it },
+            agentRuns = current.agentRuns.map { if (it.id == runId) updatedRun else it }
+        )
+        _snapshot.value = next
+        persist(next)
+        if (_agentExecutionState.value.running && _agentExecutionState.value.conversationId == conversationId) {
+            _agentExecutionState.value = _agentExecutionState.value.copy(stage = event.summary.take(800))
+        }
+        return if (persistAgentRunAndVerify(runId) { saved ->
+            val storedRun = saved.agentRuns.firstOrNull { it.id == runId }
+            val storedConversation = saved.conversations.firstOrNull { it.id == conversationId }
+            storedRun?.lastEventType == event.type.name &&
+                storedRun.status == updatedRun.status &&
+                storedConversation?.messages?.any { it.id == message.id && it.sourceType == "AGENT_EVENT" } == true
+        }) null else "The execution event and matching run state could not be read back from the encrypted workspace."
+    }
+
+    /** Finish the run and append its final response within the same verified encrypted snapshot. */
+    suspend fun finishAgentRunDurably(
+        runId: String,
+        result: AgentExecutionResult,
+        messageRole: String,
+        modelId: String,
+        sourceType: String
+    ): String? {
+        if (!_vaultReady.value) return "Unlock the workspace before finishing this execution."
+        _vaultError.value?.let { return "Encrypted workspace persistence is unavailable: $it" }
+        val current = _snapshot.value
+        val run = current.agentRuns.firstOrNull { it.id == runId } ?: return "The durable Memo run record no longer exists."
+        if (run.status != "FINALIZING") return "Memo cannot save a final response for a run that has not reached its durable finalization state."
+        val conversation = current.conversations.firstOrNull { it.id == run.conversationId } ?: return "The execution conversation no longer exists."
+        val cleanMessage = result.finalMessage.trim().take(24_000)
+        if (cleanMessage.isBlank()) return "Memo returned an empty final result; the run remains available for review."
+        if (conversation.messages.size >= 250) return "This conversation reached its message limit; the final run result could not be appended."
+        val finalStatus = when (result.status) {
+            AgentRunStatus.FINISHED -> "COMPLETED"
+            AgentRunStatus.ITERATION_LIMIT -> "LIMIT_REACHED"
+            AgentRunStatus.NEEDS_REVIEW -> "NEEDS_REVIEW"
+            AgentRunStatus.FAILED -> "FAILED"
+            AgentRunStatus.CANCELLED -> "CANCELLED"
+        }
+        val message = ChatMessageRecord(role = messageRole.uppercase(Locale.ROOT).take(24), content = cleanMessage, modelId = modelId.take(160), sourceType = sourceType.take(40))
+        val now = nowMillis()
+        val updatedRun = run.copy(
+            status = finalStatus, stage = cleanMessage.take(800), finalMessage = cleanMessage.take(4_000),
+            pendingApprovalCallId = "", modelCalls = result.modelCalls.coerceIn(0, 20),
+            toolCalls = result.toolCalls.coerceIn(0, 1_000),
+            successfulToolCalls = result.successfulToolCalls.coerceIn(0, result.toolCalls.coerceIn(0, 1_000)),
+            recoveryReason = if (finalStatus == "NEEDS_REVIEW") cleanMessage.take(800) else "",
+            updatedAt = now, finishedAt = now
+        )
+        val updatedConversation = conversation.copy(messages = conversation.messages + message, updatedAt = now)
+        val next = current.copy(
+            conversations = current.conversations.map { if (it.id == run.conversationId) updatedConversation else it },
+            agentRuns = current.agentRuns.map { if (it.id == runId) updatedRun else it }
+        )
+        _snapshot.value = next
+        persist(next)
+        return if (persistAgentRunAndVerify(runId) { saved ->
+            val savedRun = saved.agentRuns.firstOrNull { it.id == runId }
+            val savedConversation = saved.conversations.firstOrNull { it.id == run.conversationId }
+            savedRun?.status == finalStatus &&
+                savedRun.finalMessage == cleanMessage.take(4_000) &&
+                savedConversation?.messages?.any { it.id == message.id && it.content == cleanMessage } == true
+        }) null else "The final response and Memo run status could not be read back from the encrypted workspace."
+    }
+
+    private suspend fun closeUnfinishedAgentRunDurably(runId: String) {
+        val current = _snapshot.value
+        val run = current.agentRuns.firstOrNull { it.id == runId } ?: return
+        if (!run.isActive) return
+        val uncertain = run.toolCalls > 0 || run.pendingApprovalCallId.isNotBlank()
+        val now = nowMillis()
+        val status = when {
+            run.lastEventType == AgentExecutionEventType.RUN_CANCELLED.name -> "CANCELLED"
+            run.lastEventType == AgentExecutionEventType.RUN_NEEDS_REVIEW.name || uncertain -> "NEEDS_REVIEW"
+            else -> "FAILED"
+        }
+        val reason = when (status) {
+            "CANCELLED" -> "The user stopped this Memo run. Completed work was retained; nothing was replayed."
+            "NEEDS_REVIEW" -> run.stage.takeIf { run.lastEventType == AgentExecutionEventType.RUN_NEEDS_REVIEW.name && it.isNotBlank() }
+                ?: "Memo stopped before it could record a terminal event after a capability may have started. Inspect the destination before retrying."
+            else -> "Memo stopped before recording a terminal execution event. No capability start was recorded."
+        }
+        val updated = run.copy(
+            status = status, stage = reason.take(800), pendingApprovalCallId = "",
+            recoveryReason = reason.take(800), updatedAt = now, finishedAt = now
+        )
+        val next = current.copy(agentRuns = current.agentRuns.map { if (it.id == runId) updated else it })
+        _snapshot.value = next
+        persist(next)
+        if (!persistAgentRunAndVerify(runId) { saved -> saved.agentRuns.firstOrNull { it.id == runId }?.status == status }) {
+            _vaultError.value = "Memo could not verify the final state of an interrupted execution."
+        }
+    }
+
+    private suspend fun persistAgentRunAndVerify(runId: String, check: (AppSnapshot) -> Boolean): Boolean {
+        return try {
+            val saved = withContext(Dispatchers.IO) { persistLatestSnapshotAndReadSafely() }
+            if (saved != null && check(saved)) true else {
+                _vaultError.value = "Memo run $runId state could not be verified in encrypted storage."
+                false
+            }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Throwable) {
+            _vaultError.value = safeError(error, "Memo could not persist its execution state.")
+            false
+        }
+    }
+
+    fun updateAgentExecutionStage(stage: String) {
+        val current = _agentExecutionState.value
+        if (current.running) _agentExecutionState.value = current.copy(stage = stage.take(800))
+    }
+
+    fun stopAgentExecution() {
+        agentExecutionJob?.cancel(CancellationException("Talk execution stopped by the user."))
     }
 
     fun setThemeMode(mode: String) {
@@ -200,6 +446,118 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             }
         }
         return null
+    }
+
+    /**
+     * Append a conversation message and wait until the latest encrypted snapshot is written.
+     * Agent decisions use this for their transcript journal before starting any capability.
+     */
+    /**
+     * Append a conversation message and verify it by reopening the encrypted vault.
+     * Agent decisions use this before starting a capability, not just for UI display.
+     */
+    suspend fun appendChatMessageDurably(
+        conversationId: String,
+        role: String,
+        content: String,
+        modelId: String = "",
+        sourceType: String = "NATIVE"
+    ): String? {
+        if (!_vaultReady.value) return "Unlock the workspace before continuing."
+        _vaultError.value?.let { return "Encrypted workspace persistence is unavailable: $it" }
+        val beforeIds = _snapshot.value.conversations.firstOrNull { it.id == conversationId }
+            ?.messages?.mapTo(mutableSetOf()) { it.id }
+            ?: return "Conversation no longer exists."
+        val appendError = appendChatMessage(conversationId, role, content, modelId, sourceType)
+        if (appendError != null) return appendError
+        val newMessageId = _snapshot.value.conversations.firstOrNull { it.id == conversationId }
+            ?.messages?.lastOrNull { it.id !in beforeIds }?.id
+            ?: return "The message was not added to the conversation."
+        return try {
+            val persisted = withContext(Dispatchers.IO) { persistLatestSnapshotAndReadSafely() }
+            val found = persisted?.conversations?.firstOrNull { it.id == conversationId }
+                ?.messages?.any { it.id == newMessageId } == true
+            if (found) null else "The encrypted vault write completed, but the exact message could not be read back."
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Throwable) {
+            val message = safeError(error, "The encrypted workspace could not save this message.")
+            _vaultError.value = message
+            message
+        }
+    }
+
+    /** Save a private draft note and verify its exact identity by reopening the encrypted vault. */
+    suspend fun saveWorkArtifactDurably(evidence: EvidenceRecord): Result<Unit> {
+        if (!_vaultReady.value) return Result.failure(IllegalStateException("Unlock the workspace before saving an artifact."))
+        _vaultError.value?.let { return Result.failure(IllegalStateException("Encrypted workspace persistence is unavailable: $it")) }
+        val saveResult = saveWorkArtifact(evidence)
+        if (saveResult.isFailure) return saveResult
+        return try {
+            val persisted = withContext(Dispatchers.IO) { persistLatestSnapshotAndReadSafely() }
+            if (persisted?.evidence?.any { it.id == evidence.id } == true) {
+                Result.success(Unit)
+            } else {
+                Result.failure(IllegalStateException("The encrypted vault write completed, but the exact artifact could not be read back."))
+            }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Throwable) {
+            val message = safeError(error, "The encrypted workspace could not save the artifact.")
+            _vaultError.value = message
+            Result.failure(IllegalStateException(message, error))
+        }
+    }
+
+    /** Create a source-linked proposed record. It is not approved or merged into an existing entity. */
+    suspend fun createEntityDurably(
+        type: String,
+        title: String,
+        description: String,
+        properties: Map<String, String>,
+        sourceConversationId: String,
+        sourceMessageId: String,
+        sourceExcerpt: String
+    ): Result<EntityRecord> {
+        if (!_vaultReady.value) return Result.failure(IllegalStateException("Unlock the workspace before creating a record."))
+        _vaultError.value?.let { return Result.failure(IllegalStateException("Encrypted workspace persistence is unavailable: $it")) }
+        val source = _snapshot.value.conversations.firstOrNull { it.id == sourceConversationId }
+            ?: return Result.failure(IllegalStateException("The source conversation no longer exists."))
+        if (source.messages.none { it.id == sourceMessageId }) {
+            return Result.failure(IllegalStateException("The source message no longer exists in that conversation."))
+        }
+        val priorIds = _snapshot.value.entities.mapTo(mutableSetOf()) { it.id }
+        val createError = createEntity(
+            type = type,
+            title = title,
+            description = description,
+            properties = properties,
+            sourceConversationId = sourceConversationId,
+            sourceMessageId = sourceMessageId,
+            sourceExcerpt = sourceExcerpt,
+            reviewStatus = "PROPOSED"
+        )
+        if (createError != null) return Result.failure(IllegalStateException(createError))
+        val normalizedType = type.trim().uppercase(Locale.ROOT).replace(Regex("[^A-Z0-9_]+"), "_").trim('_')
+        val normalizedTitle = title.trim()
+        val created = _snapshot.value.entities.firstOrNull {
+            it.id !in priorIds &&
+                it.sourceConversationId == sourceConversationId &&
+                it.type == normalizedType &&
+                it.title.equals(normalizedTitle, ignoreCase = true)
+        } ?: return Result.failure(IllegalStateException("The proposed record was not added to the workspace snapshot."))
+        return try {
+            val persisted = withContext(Dispatchers.IO) { persistLatestSnapshotAndReadSafely() }
+            val verified = persisted?.entities?.firstOrNull { it.id == created.id }
+                ?: return Result.failure(IllegalStateException("The encrypted vault write completed, but the proposed record could not be read back."))
+            Result.success(verified)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Throwable) {
+            val message = safeError(error, "The encrypted workspace could not save the proposed record.")
+            _vaultError.value = message
+            Result.failure(IllegalStateException(message, error))
+        }
     }
 
     fun updateChatMessage(conversationId: String, messageId: String, content: String): String? {
@@ -882,6 +1240,179 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         return accepted
     }
 
+    /**
+     * Exact-action transitions used by the Talk approval broker. Each transition is flushed to
+     * the encrypted vault and read back before the caller may progress to the next side effect.
+     */
+    suspend fun proposeExternalActionDurably(
+        jobId: String,
+        stepId: String,
+        runtimeId: String,
+        capabilityId: String,
+        destination: String,
+        title: String,
+        payload: String,
+        risk: String = "EXTERNAL_WRITE"
+    ): ActionApprovalRecord? {
+        val id = proposeExternalAction(jobId, stepId, runtimeId, capabilityId, destination, title, payload, risk)
+            ?: return null
+        return persistAndReadActionRecord(id, "PENDING")
+    }
+
+    suspend fun approveExternalActionDurably(actionId: String, displayedHash: String): Boolean =
+        approveExternalAction(actionId, displayedHash) &&
+            persistAndReadActionRecord(actionId, "APPROVED")?.approvalHash == displayedHash
+
+    suspend fun rejectExternalActionDurably(actionId: String, reason: String): Boolean =
+        rejectExternalAction(actionId, reason) &&
+            persistAndReadActionRecord(actionId, "REJECTED") != null
+
+    suspend fun beginExternalActionDurably(
+        actionId: String,
+        runtimeId: String,
+        capabilityId: String,
+        destination: String,
+        payload: String
+    ): Boolean =
+        beginExternalAction(actionId, runtimeId, capabilityId, destination, payload) &&
+            persistAndReadActionRecord(actionId, "IN_PROGRESS") != null
+
+    suspend fun completeExternalActionDurably(actionId: String, evidenceRef: String): Boolean =
+        completeExternalAction(actionId, evidenceRef) &&
+            persistAndReadActionRecord(actionId, "COMPLETED")?.evidenceRef == evidenceRef
+
+    suspend fun markExternalActionNeedsReviewDurably(actionId: String, reason: String): Boolean =
+        markExternalActionNeedsReview(actionId, reason) &&
+            persistAndReadActionRecord(actionId, "NEEDS_REVIEW") != null
+
+
+    /**
+     * Stage the exact model-proposed action in the encrypted ledger and suspend this same Talk run
+     * until a human approves or rejects it. The adapter must still consume the one-use grant
+     * immediately before performing its external side effect.
+     */
+    suspend fun awaitAgentApproval(
+        conversationId: String,
+        request: AgentApprovalRequest
+    ): AgentApprovalGrant? {
+        if (!_agentExecutionState.value.running ||
+            _agentExecutionState.value.conversationId != conversationId ||
+            !_vaultReady.value || _vaultError.value != null
+        ) return null
+
+        val actionId = proposeExternalAction(
+            jobId = conversationId,
+            stepId = "agent-run:" + request.runId + ":" + request.callId,
+            runtimeId = request.envelope.runtimeId,
+            capabilityId = request.envelope.capabilityId,
+            destination = request.envelope.destination,
+            title = request.envelope.title,
+            payload = request.envelope.payload,
+            risk = request.envelope.risk
+        ) ?: return null
+
+        val waiter = CompletableDeferred<AgentApprovalGrant?>()
+        if (agentApprovalWaiters.putIfAbsent(actionId, waiter) != null) {
+            markExternalActionNeedsReviewDurably(actionId, "Duplicate live approval waiter detected; inspect before retrying.")
+            return null
+        }
+
+        try {
+            val pending = persistAndReadActionRecord(actionId, "PENDING")
+            if (pending == null) {
+                // A fast user decision may happen during the initial durable readback.
+                // Only a second encrypted readback of APPROVED state may recover that decision.
+                val approved = persistAndReadActionRecord(actionId, "APPROVED")
+                if (approved != null && approved.approvalHash == approved.contentHash) {
+                    waiter.complete(AgentApprovalGrant(actionId, approved.approvalHash))
+                } else {
+                    waiter.complete(null)
+                }
+            }
+
+            val decision = withTimeoutOrNull(7 * 60 * 1_000L) { waiter.await() }
+            if (decision == null) {
+                rejectAgentActionDurably(
+                    actionId,
+                    "Approval was rejected, expired or not completed before the execution approval window closed."
+                )
+            }
+            return decision
+        } catch (cancelled: CancellationException) {
+            withContext(NonCancellable) {
+                val current = _snapshot.value.actionApprovals.firstOrNull { it.id == actionId }
+                if (current?.status == "PENDING") {
+                    rejectAgentActionDurably(actionId, "Talk execution was cancelled before this action was approved.")
+                }
+            }
+            throw cancelled
+        } finally {
+            agentApprovalWaiters.remove(actionId, waiter)
+        }
+    }
+
+    /** Approve only a live Talk proposal, using the exact hash currently shown in the inbox. */
+    suspend fun approveAgentActionDurably(actionId: String): Boolean {
+        val record = _snapshot.value.actionApprovals.firstOrNull { it.id == actionId } ?: return false
+        if (!isAgentApprovalRecord(record) || record.status != "PENDING" ||
+            !_agentExecutionState.value.running ||
+            _agentExecutionState.value.conversationId != record.jobId
+        ) return false
+        val approved = approveExternalActionDurably(actionId, record.contentHash)
+        if (approved) {
+            agentApprovalWaiters[actionId]?.complete(AgentApprovalGrant(actionId, record.contentHash))
+        }
+        return approved
+    }
+
+    /** Rejecting a Talk proposal resolves the suspended callback with no grant. */
+    suspend fun rejectAgentActionDurably(actionId: String, reason: String): Boolean {
+        val record = _snapshot.value.actionApprovals.firstOrNull { it.id == actionId } ?: return false
+        if (!isAgentApprovalRecord(record) || record.status != "PENDING") return false
+        val rejected = rejectExternalActionDurably(actionId, reason)
+        agentApprovalWaiters[actionId]?.complete(null)
+        return rejected
+    }
+
+    private fun isAgentApprovalRecord(record: ActionApprovalRecord): Boolean =
+        record.stepId.startsWith("agent-run:") &&
+            _snapshot.value.conversations.any { it.id == record.jobId }
+
+    /** No pending or unused approval may remain attached to a Talk run that has ended. */
+    private suspend fun settleAgentApprovals(conversationId: String) {
+        val open = _snapshot.value.actionApprovals.filter {
+            it.jobId == conversationId &&
+                it.stepId.startsWith("agent-run:") &&
+                it.status in setOf("PENDING", "APPROVED")
+        }
+        open.forEach { action ->
+            when (action.status) {
+                "PENDING" -> rejectAgentActionDurably(
+                    action.id,
+                    "Talk execution ended before this approval was consumed. No external action was started."
+                )
+                "APPROVED" -> markExternalActionNeedsReviewDurably(
+                    action.id,
+                    "Approval was recorded but the action did not reach a verified terminal state before the Talk run ended."
+                )
+            }
+            agentApprovalWaiters.remove(action.id)?.complete(null)
+        }
+    }
+
+    private suspend fun persistAndReadActionRecord(actionId: String, expectedStatus: String): ActionApprovalRecord? {
+        if (!_vaultReady.value || _vaultError.value != null) return null
+        return try {
+            val persisted = withContext(Dispatchers.IO) { persistLatestSnapshotAndReadSafely() }
+            persisted?.actionApprovals?.firstOrNull { it.id == actionId && it.status == expectedStatus }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Throwable) {
+            _vaultError.value = safeError(error, "The action approval ledger could not be persisted and verified.")
+            null
+        }
+    }
+
     fun createTask(title: String, rawUrl: String, kind: TaskKind, query: String): String? {
         val validation = TaskRules.validate(title, rawUrl, kind, query)
         if (validation != null) return validation
@@ -1141,6 +1672,47 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
                 },
                 onFailure = { onDone(safeError(it, "Import failed.")) }
             )
+        }
+    }
+
+    /**
+     * Serialize normal queue writes and synchronous durability barriers. If a newer snapshot
+     * appeared while a queued candidate was being written, persist the newer value before release.
+     */
+    private suspend fun persistSnapshotSafely(candidate: AppSnapshot) {
+        vaultWriteMutex.lock()
+        try {
+            vault.write(candidate)
+            val latest = _snapshot.value
+            if (latest !== candidate) vault.write(latest)
+        } finally {
+            vaultWriteMutex.unlock()
+        }
+    }
+
+    /** Write the newest snapshot, then authenticate/decrypt the AtomicFile for read-after-write verification. */
+    private suspend fun persistLatestSnapshotAndReadSafely(): AppSnapshot? {
+        vaultWriteMutex.lock()
+        try {
+            val current = _snapshot.value
+            vault.write(current)
+            val latest = _snapshot.value
+            if (latest !== current) vault.write(latest)
+            return vault.read()
+        } finally {
+            vaultWriteMutex.unlock()
+        }
+    }
+
+    private suspend fun persistLatestSnapshotSafely() {
+        vaultWriteMutex.lock()
+        try {
+            val current = _snapshot.value
+            vault.write(current)
+            val latest = _snapshot.value
+            if (latest !== current) vault.write(latest)
+        } finally {
+            vaultWriteMutex.unlock()
         }
     }
 

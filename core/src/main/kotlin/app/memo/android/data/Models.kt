@@ -1,5 +1,7 @@
 package app.memo.android.data
 
+import app.memo.android.orchestration.AgentExecutionEvent
+import app.memo.android.orchestration.AgentExecutionEventType
 import org.json.JSONArray
 import org.json.JSONObject
 import java.text.SimpleDateFormat
@@ -18,6 +20,7 @@ private const val MAX_ENTITIES = 1_200
 private const val MAX_RELATIONSHIPS = 4_000
 private const val MAX_JOBS = 240
 private const val MAX_JOB_STEPS = 100
+const val MAX_AGENT_RUNS = 240
 private const val MAX_ACTION_APPROVALS = ActionApprovalLedger.MAX_ACTIONS
 private const val MAX_ACTION_AUDIT_EVENTS = ActionApprovalLedger.MAX_EVENTS
 private const val MAX_CONTENT_CHARS = 15_000
@@ -200,6 +203,79 @@ data class WorkJobRecord(
     val todayPriorityDate: String = ""
 )
 
+
+data class AgentRunRecord(
+    val id: String = newId(),
+    val conversationId: String,
+    val goal: String,
+    val modelId: String = "",
+    val status: String = "RUNNING",
+    val stage: String = "Starting Memo execution",
+    val lastEventType: String = "",
+    val lastToolId: String = "",
+    val pendingApprovalCallId: String = "",
+    val lastEvidenceReference: String = "",
+    val finalMessage: String = "",
+    val recoveryReason: String = "",
+    val modelCalls: Int = 0,
+    val toolCalls: Int = 0,
+    val successfulToolCalls: Int = 0,
+    val createdAt: Long = nowMillis(),
+    val updatedAt: Long = nowMillis(),
+    val finishedAt: Long = 0L
+) {
+    val isActive: Boolean
+        get() = status in ACTIVE_AGENT_RUN_STATUSES
+}
+
+private val ACTIVE_AGENT_RUN_STATUSES = setOf("RUNNING", "WAITING_FOR_APPROVAL", "TOOL_RUNNING", "FINALIZING")
+private val TERMINAL_AGENT_RUN_STATUSES = setOf("COMPLETED", "LIMIT_REACHED", "NEEDS_REVIEW", "FAILED", "CANCELLED")
+private val VALID_AGENT_RUN_STATUSES = ACTIVE_AGENT_RUN_STATUSES + TERMINAL_AGENT_RUN_STATUSES
+
+/** Pure reducer shared by the durable vault writer and JVM lifecycle tests. */
+fun AgentRunRecord.applyEvent(event: AgentExecutionEvent): AgentRunRecord {
+    require(event.runId == id) { "An execution event belongs to a different run." }
+    val nextStatus = when (event.type) {
+        AgentExecutionEventType.RUN_STARTED,
+        AgentExecutionEventType.TOOL_APPROVAL_GRANTED,
+        AgentExecutionEventType.TOOL_FINISHED -> "RUNNING"
+        AgentExecutionEventType.TOOL_APPROVAL_REQUESTED -> "WAITING_FOR_APPROVAL"
+        AgentExecutionEventType.TOOL_STARTED -> "TOOL_RUNNING"
+        AgentExecutionEventType.TOOL_APPROVAL_REJECTED,
+        AgentExecutionEventType.TOOL_FAILED -> "RUNNING"
+        AgentExecutionEventType.RUN_NEEDS_REVIEW,
+        AgentExecutionEventType.RUN_FINISHED,
+        AgentExecutionEventType.RUN_LIMIT_REACHED,
+        AgentExecutionEventType.RUN_FAILED,
+        AgentExecutionEventType.RUN_CANCELLED -> "FINALIZING"
+    }
+    val terminal = nextStatus in TERMINAL_AGENT_RUN_STATUSES
+    val nextPendingCall = when (event.type) {
+        AgentExecutionEventType.TOOL_APPROVAL_REQUESTED -> event.callId.take(128)
+        AgentExecutionEventType.TOOL_APPROVAL_GRANTED,
+        AgentExecutionEventType.TOOL_APPROVAL_REJECTED,
+        AgentExecutionEventType.RUN_FINISHED,
+        AgentExecutionEventType.RUN_LIMIT_REACHED,
+        AgentExecutionEventType.RUN_NEEDS_REVIEW,
+        AgentExecutionEventType.RUN_FAILED,
+        AgentExecutionEventType.RUN_CANCELLED -> ""
+        else -> pendingApprovalCallId
+    }
+    return copy(
+        status = nextStatus,
+        stage = event.summary.take(800),
+        lastEventType = event.type.name,
+        lastToolId = event.toolId.takeIf { it.isNotBlank() }?.take(80) ?: lastToolId,
+        pendingApprovalCallId = nextPendingCall,
+        lastEvidenceReference = event.evidenceReference.takeIf { it.isNotBlank() }?.take(500) ?: lastEvidenceReference,
+        toolCalls = (toolCalls + if (event.type == AgentExecutionEventType.TOOL_STARTED) 1 else 0).coerceAtMost(1_000),
+        successfulToolCalls = (successfulToolCalls + if (event.type == AgentExecutionEventType.TOOL_FINISHED) 1 else 0).coerceAtMost(1_000),
+        recoveryReason = if (nextStatus == "NEEDS_REVIEW") event.summary.take(800) else "",
+        updatedAt = maxOf(updatedAt, event.at),
+        finishedAt = if (terminal) maxOf(createdAt, event.at) else 0L
+    )
+}
+
 data class AppSnapshot(
     val tasks: List<TaskRecord> = emptyList(),
     val evidence: List<EvidenceRecord> = emptyList(),
@@ -211,14 +287,16 @@ data class AppSnapshot(
     val relationships: List<EntityRelationship> = emptyList(),
     val jobs: List<WorkJobRecord> = emptyList(),
     val actionApprovals: List<ActionApprovalRecord> = emptyList(),
-    val actionAuditEvents: List<ActionAuditEvent> = emptyList()
+    val actionAuditEvents: List<ActionAuditEvent> = emptyList(),
+    val agentRuns: List<AgentRunRecord> = emptyList()
 ) {
     /** A persisted RUNNING task has lost its WebView execution context after process death. */
     fun recoverInterruptedTasks(): AppSnapshot {
         val interrupted = tasks.count { it.status == TaskStatus.RUNNING }
         val interruptedJobs = jobs.count { it.status == "RUNNING" }
         val actionCandidates = actionApprovals.count { it.status in setOf("PENDING", "APPROVED", "IN_PROGRESS") }
-        if (interrupted == 0 && interruptedJobs == 0 && actionCandidates == 0) return this
+        val interruptedAgentRuns = agentRuns.count { it.isActive }
+        if (interrupted == 0 && interruptedJobs == 0 && actionCandidates == 0 && interruptedAgentRuns == 0) return this
         val recovered = copy(
             tasks = tasks.map { task ->
                 if (task.status == TaskStatus.RUNNING) task.copy(
@@ -235,8 +313,18 @@ data class AppSnapshot(
                     updatedAt = nowMillis()
                 ) else job
             },
+            agentRuns = agentRuns.map { run ->
+                if (run.isActive) run.copy(
+                    status = "NEEDS_REVIEW",
+                    stage = "Interrupted by application restart",
+                    pendingApprovalCallId = "",
+                    recoveryReason = "Memo restarted during this run. Review saved events and any action that may have started. No step was replayed.",
+                    updatedAt = nowMillis(),
+                    finishedAt = nowMillis()
+                ) else run
+            },
             activity = (listOf(ActivityRecord(
-                message = "Recovered ${interrupted} interrupted ${if (interrupted == 1) "task" else "tasks"}, ${interruptedJobs} interrupted ${if (interruptedJobs == 1) "job" else "jobs"}, and invalidated or flagged ${actionCandidates} pending external ${if (actionCandidates == 1) "action" else "actions"}. Review is required before resuming.",
+                message = "Recovered ${interrupted} interrupted ${if (interrupted == 1) "task" else "tasks"}, ${interruptedJobs} interrupted ${if (interruptedJobs == 1) "job" else "jobs"}, ${interruptedAgentRuns} interrupted Memo ${if (interruptedAgentRuns == 1) "run" else "runs"}, and invalidated or flagged ${actionCandidates} pending external ${if (actionCandidates == 1) "action" else "actions"}. Review is required before resuming.",
                 level = "WARN"
             )) + activity).take(MAX_ACTIVITY)
         )
@@ -253,6 +341,9 @@ data class AppSnapshot(
         jobs.forEach { job -> if (job.workflowGraphJson.isNotBlank()) app.memo.android.orchestration.WorkflowGraph.fromJson(job.workflowGraphJson) }
         require(actionApprovals.size <= MAX_ACTION_APPROVALS) { "Workspace contains too many action approval records for a safe backup." }
         require(actionAuditEvents.size <= MAX_ACTION_AUDIT_EVENTS) { "Workspace contains too many audit events for a safe backup." }
+        require(agentRuns.size <= MAX_AGENT_RUNS) { "Workspace contains too many Memo execution records for a safe backup." }
+        require(agentRuns.all { it.id.isNotBlank() && it.id.length <= 128 && it.conversationId.isNotBlank() && it.conversationId.length <= 128 && it.goal.isNotBlank() && it.goal.length <= 6_000 && it.modelId.length <= 160 && it.stage.length <= 800 && it.finalMessage.length <= 4_000 && it.recoveryReason.length <= 800 && it.pendingApprovalCallId.length <= 128 }) { "A Memo execution record exceeds the safe backup limits." }
+        require(agentRuns.all { it.status in VALID_AGENT_RUN_STATUSES && it.modelCalls in 0..20 && it.toolCalls in 0..1_000 && it.successfulToolCalls in 0..it.toolCalls }) { "A Memo execution record has invalid lifecycle state or counters." }
         require(ActionApprovalLedger.verifyLedger(this)) { "The action ledger or audit chain failed verification; export is blocked to preserve evidence of tampering." }
         // Estimate escaped JSON size before constructing the full object tree. Every UTF-8 code point costs
         // at most four bytes; control characters may expand to six ASCII bytes when JSON-escaped.
@@ -329,6 +420,12 @@ data class AppSnapshot(
             add(event.actionId); add(event.runtimeId); add(event.destination); add(event.contentHash); add(event.status)
             add(event.previousHash); add(event.eventHash); add(event.details)
         }
+        agentRuns.forEach { run ->
+            add(run.id); add(run.conversationId); add(run.goal); add(run.modelId); add(run.status); add(run.stage)
+            add(run.lastEventType); add(run.lastToolId); add(run.pendingApprovalCallId); add(run.lastEvidenceReference)
+            add(run.finalMessage); add(run.recoveryReason); add(run.modelCalls.toString()); add(run.toolCalls.toString())
+            add(run.successfulToolCalls.toString()); add(run.createdAt.toString()); add(run.updatedAt.toString()); add(run.finishedAt.toString())
+        }
         return total
     }
 
@@ -344,9 +441,9 @@ data class AppSnapshot(
         councilRunLimit: Int
     ): String {
         val root = JSONObject()
-        root.put("schemaVersion", 6)
-        root.put("schemaSemver", "6.0.0")
-        root.put("minimumReaderVersion", 6)
+        root.put("schemaVersion", 7)
+        root.put("schemaSemver", "7.0.0")
+        root.put("minimumReaderVersion", 7)
         root.put("exportedAt", nowMillis())
         root.put("themeMode", themeMode)
         root.put("tasks", JSONArray().apply {
@@ -564,6 +661,30 @@ data class AppSnapshot(
                 })
             }
         })
+        root.put("agentRuns", JSONArray().apply {
+            agentRuns.forEach { run ->
+                put(JSONObject().apply {
+                    put("id", run.id.take(128))
+                    put("conversationId", run.conversationId.take(128))
+                    put("goal", run.goal.take(6_000))
+                    put("modelId", run.modelId.take(160))
+                    put("status", run.status.take(32))
+                    put("stage", run.stage.take(800))
+                    put("lastEventType", run.lastEventType.take(48))
+                    put("lastToolId", run.lastToolId.take(80))
+                    put("pendingApprovalCallId", run.pendingApprovalCallId.take(128))
+                    put("lastEvidenceReference", run.lastEvidenceReference.take(500))
+                    put("finalMessage", run.finalMessage.take(4_000))
+                    put("recoveryReason", run.recoveryReason.take(800))
+                    put("modelCalls", run.modelCalls.coerceIn(0, 20))
+                    put("toolCalls", run.toolCalls.coerceIn(0, 1_000))
+                    put("successfulToolCalls", run.successfulToolCalls.coerceIn(0, run.toolCalls.coerceIn(0, 1_000)))
+                    put("createdAt", run.createdAt)
+                    put("updatedAt", run.updatedAt)
+                    put("finishedAt", run.finishedAt)
+                })
+            }
+        })
         return root.toString(2)
     }
 
@@ -572,13 +693,13 @@ data class AppSnapshot(
             require(raw.toByteArray(Charsets.UTF_8).size <= MAX_WORKSPACE_BACKUP_BYTES) { "Import file is larger than 40 MB." }
             val root = JSONObject(raw)
             val schema = root.optInt("schemaVersion", 0)
-            require(schema in 1..6) { "This backup format is not supported." }
+            require(schema in 1..7) { "This backup format is not supported." }
             val schemaSemver = root.safeString("schemaSemver")
             if (schemaSemver.isNotBlank()) {
                 val major = schemaSemver.substringBefore('.').toIntOrNull()
                 require(major == schema) { "Backup schema version metadata is inconsistent." }
             }
-            require(root.optInt("minimumReaderVersion", schema).coerceAtLeast(1) <= 6) { "This backup requires a newer Memo reader." }
+            require(root.optInt("minimumReaderVersion", schema).coerceAtLeast(1) <= 7) { "This backup requires a newer Memo reader." }
 
             val usedTaskIds = mutableSetOf<String>()
             val tasks = root.optJSONArray("tasks").toTypedRecords(MAX_TASKS) { row ->
@@ -787,8 +908,37 @@ data class AppSnapshot(
                     details = row.safeString("details").take(1_000)
                 )
             }
+            val usedAgentRunIds = mutableSetOf<String>()
+            val agentRuns = if (schema < 7) emptyList() else root.optJSONArray("agentRuns").toTypedRecords(MAX_AGENT_RUNS) { row ->
+                val status = row.safeString("status").take(32).takeIf { it in VALID_AGENT_RUN_STATUSES } ?: "NEEDS_REVIEW"
+                AgentRunRecord(
+                    id = uniqueImportedId(row.safeString("id"), usedAgentRunIds),
+                    conversationId = row.safeString("conversationId").take(128),
+                    goal = row.safeString("goal").take(6_000),
+                    modelId = row.safeString("modelId").take(160),
+                    status = status,
+                    stage = row.safeString("stage").take(800),
+                    lastEventType = row.safeString("lastEventType").take(48),
+                    lastToolId = row.safeString("lastToolId").take(80),
+                    pendingApprovalCallId = row.safeString("pendingApprovalCallId").take(128),
+                    lastEvidenceReference = row.safeString("lastEvidenceReference").take(500),
+                    finalMessage = row.safeString("finalMessage").take(4_000),
+                    recoveryReason = row.safeString("recoveryReason").take(800),
+                    modelCalls = row.optInt("modelCalls", 0).coerceIn(0, 20),
+                    toolCalls = row.optInt("toolCalls", 0).coerceIn(0, 1_000),
+                    successfulToolCalls = row.optInt("successfulToolCalls", 0).coerceIn(0, row.optInt("toolCalls", 0).coerceIn(0, 1_000)),
+                    createdAt = row.optLong("createdAt", nowMillis()),
+                    updatedAt = row.optLong("updatedAt", nowMillis()),
+                    finishedAt = row.optLong("finishedAt", 0L).coerceAtLeast(0L)
+                )
+            }
             val theme = root.safeString("themeMode").uppercase().takeIf { it in setOf("SYSTEM", "LIGHT", "DARK") } ?: "SYSTEM"
-            val snapshot = AppSnapshot(tasks, evidence, activity, theme, councilRuns, conversations, entities, relationships, jobs, actionApprovals, actionAuditEvents)
+            val snapshot = AppSnapshot(
+                tasks = tasks, evidence = evidence, activity = activity, themeMode = theme,
+                councilRuns = councilRuns, conversations = conversations, entities = entities,
+                relationships = relationships, jobs = jobs, actionApprovals = actionApprovals,
+                actionAuditEvents = actionAuditEvents, agentRuns = agentRuns
+            )
             require(ActionApprovalLedger.verifyLedger(snapshot)) { "The imported action ledger or audit chain failed verification." }
             return snapshot
         }

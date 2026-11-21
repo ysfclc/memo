@@ -1,7 +1,7 @@
 # Memo — Product Contract
 
 **Version:** 1.0  
-**Reconciled:** 5 November 2026  
+**Reconciled:** 5 November 2026; execution architecture locked 20 November 2026  
 **Product:** Memo for Android  
 **Integration branch:** `main`  
 **Authority:** This document records the user's product decisions and is the product-level source of truth for future implementation. `TASKS.md` is the engineering execution ledger. Older architecture drafts and inherited app implementations are subordinate where they conflict with this contract. The full social platform requirements are specified in [SOCIAL_PLATFORM_PRODUCT_SPEC.md](SOCIAL_PLATFORM_PRODUCT_SPEC.md) and are equally in scope; they must not be reduced to content publishing.
@@ -13,6 +13,10 @@
 **Memo is a personal AI operating agent on the phone: it understands what the user wants, assembles and runs the right workflow across the user's information, models, websites and Android apps, produces useful work, and keeps the user in control.**
 
 Memo is not a chatbot skin, generic browser, CRM clone, static task manager, app launcher, or dashboard of disconnected modules.
+
+### Binding execution architecture
+
+[AI Execution Invariants](AI_EXECUTION_INVARIANTS.md) are part of this Product Contract and mandatory for every implementation. The user states an outcome; Memo determines which intelligence provider and real capabilities are appropriate. All tool-using requests from Talk follow one shared, bounded execution loop and dispatcher. Local/frontier models provide intelligence; browser, Android, code, files, media creation and workspace operations are separate replaceable capabilities. Plans and graphs are proposals, not execution. The engine must observe, verify and persist actual outcomes. Examples must never become hardcoded domains, templates, specialist workflow engines or mandatory screens.
 
 Conversation is the easiest interface. It is not the database. Browser sessions, local models, frontier AI websites, native apps and automation services are replaceable capabilities—not separate products and never competing sources of truth.
 

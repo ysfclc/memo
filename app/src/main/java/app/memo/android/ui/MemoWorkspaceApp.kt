@@ -14,6 +14,7 @@ import android.provider.Settings
 import android.net.Uri
 import android.speech.RecognizerIntent
 import androidx.activity.compose.BackHandler
+import androidx.lifecycle.viewModelScope
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -205,6 +206,7 @@ fun MemoWorkspaceApp(
     val uiLanguage by viewModel.uiLanguage.collectAsState()
     val aiRuntime: AiRuntimeViewModel = androidx.lifecycle.viewmodel.compose.viewModel<AiRuntimeViewModel>()
     val modelState by aiRuntime.uiState.collectAsState()
+    val agentExecutionState by viewModel.agentExecutionState.collectAsState()
     LaunchedEffect(aiRuntime) { aiRuntime.unlockWorkspace() }
     val lockWorkspace = { aiRuntime.lockWorkspace(); onLock() }
     val context = LocalContext.current
@@ -290,12 +292,14 @@ fun MemoWorkspaceApp(
     }
     /** Stop active runtimes immediately; remote cancellation is explicitly best-effort. */
     fun stopActiveWork() {
+        viewModel.stopAgentExecution()
         browser.stopBrowserWorkflow()
         browser.cancelPendingTask()
         aiRuntime.cancelRun()
         AutomationAccessibilityService.requestCancel()
 
         snapshot.actionApprovals.forEach { action ->
+            if (action.stepId.startsWith("agent-run:")) return@forEach
             when (action.status) {
                 "PENDING" -> viewModel.rejectExternalAction(action.id, "Emergency stop requested by user before execution.")
                 "APPROVED", "IN_PROGRESS" -> viewModel.markExternalActionNeedsReview(
@@ -557,6 +561,7 @@ fun MemoWorkspaceApp(
                         runtime = aiRuntime,
                         runtimeState = modelState,
                         viewModel = viewModel,
+                        browser = browser,
                         selectedConversationId = activeConversationId,
                         onSelectConversation = { activeConversationId = it },
                         initialPrompt = pendingChatPrompt,
@@ -564,6 +569,7 @@ fun MemoWorkspaceApp(
                         onOpenModels = { tab = AppTab.MODELS },
                         onOpenWork = { tab = AppTab.WORK },
                         onOpenCouncil = { tab = AppTab.COUNCIL },
+                        onOpenBrowser = { tab = AppTab.BROWSER; toolSection = ToolSection.BROWSER },
                         onStartConversation = ::startTalkIntent,
                         onShowMessage = ::snack
                     )
@@ -644,6 +650,7 @@ fun MemoWorkspaceApp(
                     AppTab.APPROVALS -> ActionApprovalInboxScreen(
                         snapshot = snapshot,
                         browserState = browser.workflowState,
+                        activeAgentConversationId = agentExecutionState.conversationId,
                         onOpenBrowser = { tab = AppTab.BROWSER; toolSection = ToolSection.BROWSER },
                         onReject = { id ->
                             val pending = viewModel.snapshot.value.actionApprovals.firstOrNull { it.id == id }
@@ -653,6 +660,18 @@ fun MemoWorkspaceApp(
                             val accepted = viewModel.rejectExternalAction(id, "User rejected the proposal from the action inbox.")
                             if (accepted && matchesLivePrompt) browser.rejectCurrentPrompt()
                             accepted
+                        },
+                        onApproveAgentAction = { id ->
+                            viewModel.viewModelScope.launch {
+                                val accepted = viewModel.approveAgentActionDurably(id)
+                                snack(if (accepted) "Exact action approved. Memo is resuming the waiting Talk execution." else "Approval was not accepted. Check the action status and audit history.")
+                            }
+                        },
+                        onRejectAgentAction = { id, reason ->
+                            viewModel.viewModelScope.launch {
+                                val accepted = viewModel.rejectAgentActionDurably(id, reason)
+                                snack(if (accepted) "Action rejected. The waiting Talk execution will stop before this action is run." else "The action could not be rejected. Check its status and audit history.")
+                            }
                         },
                         onMarkNeedsReview = { id, reason -> viewModel.markExternalActionNeedsReview(id, reason) },
                         onShowMessage = ::snack

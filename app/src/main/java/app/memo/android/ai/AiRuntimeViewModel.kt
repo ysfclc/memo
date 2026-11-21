@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
@@ -544,6 +545,34 @@ class AiRuntimeViewModel(application: Application) : AndroidViewModel(applicatio
                 onComplete(null, message)
             }
         }
+    }
+
+    /** One suspendable model turn for Memo's shared agent engine. Provider choice remains independent from tool choice. */
+    suspend fun generateAgentTurn(
+        rawPrompt: String,
+        systemInstruction: String,
+        selectedModelId: String,
+        allowRemote: Boolean
+    ): String = suspendCancellableCoroutine { continuation ->
+        continuation.invokeOnCancellation { cancelRun() }
+        if (!continuation.isActive) return@suspendCancellableCoroutine
+        runPrompt(
+            rawPrompt = rawPrompt,
+            systemInstruction = systemInstruction,
+            selectedModelId = selectedModelId,
+            allowRemote = allowRemote,
+            onComplete = { response, error ->
+                if (continuation.isActive) {
+                    if (response != null) {
+                        continuation.resumeWith(Result.success(response))
+                    } else if (error.equals("Request cancelled.", ignoreCase = true)) {
+                        continuation.cancel(CancellationException("Model request cancelled by the user."))
+                    } else {
+                        continuation.resumeWith(Result.failure(IllegalStateException(error ?: "Model generation failed.")))
+                    }
+                }
+            }
+        )
     }
 
     /** Run one conversational or structured-extraction request through a single explicitly selected model. */

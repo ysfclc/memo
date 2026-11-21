@@ -31,6 +31,18 @@ The full product scope is retained:
 - English, Polish and Turkish as first-class experiences; accessible, polished, responsive UI with one coherent design system;
 - encrypted storage and backup, key/data migration safety, local-first defaults, release automation, measurable performance and real-device acceptance.
 
+## Architecture lock — 20 November 2026
+
+**Binding contract:** [AI Execution Invariants](docs/AI_EXECUTION_INVARIANTS.md), enforced by repository [AGENTS.md](AGENTS.md) and [DEVELOPMENT_GOVERNANCE.md](DEVELOPMENT_GOVERNANCE.md).
+
+The user gives Memo an outcome. Talk must route every tool-using request through one provider-agnostic, model-directed execution loop and one shared dispatcher. Local/frontier models are intelligence providers; browser, Android, code, files, PDF, image, video, workspace and future operations are callable capabilities. The engine discovers actual capability availability, validates proposed actions, executes, observes, verifies and continues/re-plans. Deterministic code owns permissions, approvals, audit, budgets, cancellation, idempotency and recovery.
+
+**Hard prohibitions:** no keyword/domain planner as the primary executor; no fixed workflow, screen, template, agent or engine for each example; no model-only text response presented as action; no registry entries without callable adapters; no treating a TaskSpec, DAG, manifest or green build as proof of execution; no duplicate stores, dispatchers, journals or approval systems.
+
+The examples in the invariants document are cross-cutting acceptance tests for the same engine. Do not prioritize isolated entity CRUD/page polish or specialist browser flows over the missing Talk-to-execution connection unless the user explicitly asks for that work.
+
+This is a constraint lock, not an implementation-complete marker. The agent execution loop, callable capability dispatch, durable run lifecycle and universal verification remain unimplemented until proven end-to-end.
+
 ## Current implementation increment — 2026-10-28
 
 The strict gates above remain in force. The current source pass adds the following actual behavior, while leaving wider milestones open until their acceptance evidence exists:
@@ -54,7 +66,7 @@ The primary surfaces are now Talk / Live / Work / Studio in source and CI #99. T
 
 The current Talk composer opens a conversation draft; it does not yet parse an intent into a dynamic workflow. `IntentPlanner` is keyword/template based and `CapabilityCompiler` maps domains to static lists. They are useful prototypes, not the final dynamic planner or workflow engine. Council is still a separate route. The browser workflow is provider-specific; native app automation uses a separate legacy store; the primary workspace and native workflow store are not unified. Do not describe these as one integrated agent.
 
-**Next implementation order:** (1) complete real encrypted-store emulator upgrade/migration acceptance, then physical-phone install-over-existing and data-preservation acceptance; design the later single-store consolidation only after both stores are safely isolated; (2) typed TaskSpec + dynamic versioned DAG and shared runtime/policy contracts; (3) make the Talk composer produce an inspectable workflow draft and route to the correct capability; (4) unify Live events and attach visible browser/native runtime panes; (5) integrate Council with Talk context; (6) complete end-to-end Brainstorm, CRM, Jobs, Content and arbitrary-work journeys; (7) add Today priorities and everyday voice/capture utilities. Do not spend the next increments polishing isolated entity CRUD while the central intent-to-outcome loop is missing.
+**Next implementation order under the architecture lock:** (1) finish the already-started encrypted-store emulator and physical-phone migration/install-over-existing acceptance before any store consolidation or compatibility-sensitive change; (2) define one versioned, executable capability contract and a shared dispatcher that resolves real adapters, with intelligence providers kept independent from tools; (3) connect the existing Talk composer to one model-directed execution loop that supports direct answers, one-step tool calls and dynamically composed multi-step work—the DAG may represent complex plans but is not the only execution mechanism; (4) implement the durable run journal, event lifecycle, budgets, permission checks, exact approvals, cancellation, idempotency and safe recovery; (5) connect the existing local-model, browser/frontier, Android and workspace implementations through adapters, then add file/code/document/media capabilities where real implementations are available; (6) connect Live to the shared runtime events and expose actual pause/stop/takeover state; (7) pass the cross-cutting acceptance scenarios in `docs/AI_EXECUTION_INVARIANTS.md` through the same Talk path; (8) resume secondary UI polish and broader domain journeys without creating specialist engines. Do not spend the next increments polishing isolated entity CRUD while the central intent-to-outcome loop is missing.
 
 ## 5 November 2026 — Talk / Live / Work / Studio shell increment
 
@@ -205,13 +217,26 @@ The following keeps Claude's task families and ordering while requiring Memo 1-s
 - [ ] **M2.B0c** Accessible component kit with disabled/loading/error/empty states and consistent touch targets.
 - [ ] **M2.B0d** Navigation shell, shared transitions, predictive back and responsive layouts. No second navigation system or disconnected mock screens.
 
+### Execution safety increment — event-sink failure
+
+- [~] **M3.A4-S1** Treat execution-event persistence/delivery failure as a hard stop. If a capability may already have started, return `NEEDS_REVIEW` and do not continue with another model decision. A regression test covers failure while recording a completed capability. Source committed on Talk execution branch; CI/device verification pending. This is a guardrail, not durable process-death recovery.
+
+
+- [~] **M3.A4-S2** Talk transcript must render all execution event types, including approval-requested/granted/rejected. Added explicit approval lifecycle rendering and a unit test for all three event labels; CI verification pending.
+
+
+- [~] **M3.A4-S3** Execution-event journal failure is a hard stop: if recording/delivery fails, do not issue another model decision or capability; if a side effect may have started, stop at `NEEDS_REVIEW`. Added this rule to `docs/AI_EXECUTION_INVARIANTS.md`; CI verification pending.
+
 ### M3 — Orchestrator and live environment
 
 - [ ] **M3.A1** Local planner maps intent to a typed, bounded workflow dynamically; no hardcoded workflow per use case.
 - [ ] **M3.A2** Context retrieval across permitted Memo records/sources with relevance, provenance, privacy scope and source freshness.
-- [ ] **M3.A3** Connect chat and workflow state; show plans, artifacts, checkpoints and outcome evidence in the same product flow.
-- [ ] **M3.A4** Local tool-using agent engine with capability restrictions, tool schemas, bounded steps, iteration/time budgets and kill switch.
+- [~] **M3.A3** Connect chat and workflow state; show plans, artifacts, checkpoints and outcome evidence in the same product flow. Talk now durably records requests, execution events and results in the existing encrypted conversation. Browser navigation/capture can surface the existing visible WebView session in Talk, but full Work/Studio/Live projection and process-death resume remain open.
+- [~] **M3.A4** Local tool-using agent engine with capability restrictions, tool schemas, bounded steps, iteration/time budgets and kill switch. The provider-agnostic Talk loop uses a runtime-validated adapter registry and recalculates readiness before each model decision. Callable adapters include workspace search/private notes/proposed records plus explicitly user-supplied HTTPS navigation and visible-page evidence capture. Remote browser-page text sharing is a separate per-request permission and defaults off. Process-death recovery, Android-app/code/media capabilities, full postconditions and physical-device acceptance remain open.
+
+**2026-11-20 implementation slices:** AgentExecutionEngine.kt is connected to Talk via AiRuntimeViewModel.generateAgentTurn(). AgentCapabilityRegistry checks every adapter against RuntimeRegistry ownership and approval/side-effect policy, and refreshes live readiness on every model turn. Workspace operations use the encrypted vault. The browser slice uses the same visible BrowserSession: only exact public HTTPS URLs included in the user's request may be opened; visible page text is captured without activating controls and the full source is durably saved as an encrypted EvidenceRecord. A separate opt-in is required before page text may be sent to a remote model. Talk can also open a page-derived link only after that exact HTTPS anchor appears in the latest capture, belongs to the capture's exact origin, and is re-verified against the still-visible DOM immediately before navigation. This remains navigation-only: it does not click controls, fill forms or submit prompts. Automated CI #1003 passed the foundation baseline; CI #1018 passed source verification, remote-runner tests, core/app unit tests, lint, debug APK assembly, APK identity/signature checks and emulator install-over-existing validation including preservation of both encrypted Memo stores and app-private data. The milestone remains **in progress**: browser form actions and provider prompt submission are not yet in the unified Talk loop; native Android, file/code, image/PDF/video capabilities, durable process-death invocation recovery, complete postconditions and physical-device acceptance remain open.
 - [ ] **M3.B1** Evidence-bearing artifact renderers and approval UX; user reviews the populated artifact, not only a vague plan.
+- [~] **M3.A4 browser navigation extension** Talk can follow a captured same-origin HTTPS anchor after live DOM verification; form interaction and provider prompt submission remain gated until the exact approval-ledger wait/resume path is connected.
 - [ ] **M3.B2** Live tab/session view; every action has state, timestamp, rationale, result and evidence.
 - [ ] **M3.B3** Glance widget with truthful status and safe user control.
 - [ ] **M3.C1** Profile/preferences, voice preferences, privacy defaults and explicit autonomy settings.
@@ -469,3 +494,37 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 
 - [~] Domain model, evidence-backed ICP scoring, unknown-factor handling, duplicate warnings, vault-gated proposed ORGANIZATION creation and initial Work intake UI integrated.
 - [ ] Add evidence capture / factor review UI, run full Gradle and ViewModel integration tests, and verify the Android experience. This is one optional Work workflow; Memo's product scope remains broader.
+
+ 
+## 2026-11-21 — M3.A4-S4 — ViewModel-owned Talk execution and exact approval broker
+
+- **Requirements:** MEMO-ORCH-001, MEMO-AGENT-001, MEMO-APPROVAL-001, MEMO-RECOVERY-001.
+- **Change:** moved the Talk execution job out of the disposable Compose destination scope into MemoWorkspaceViewModel; navigation from Talk to Live/Approvals no longer cancels the active run. Run state and stage are exposed as a StateFlow, and the global Stop control cancels the ViewModel-owned job.
+- **Approval path:** the engine's onApprovalRequired callback now stages the exact runtime/capability/destination/title/payload in the existing encrypted one-use action ledger and suspends the same run. The action ID is registered with its waiter before the first suspension, avoiding a fast-approval race. Approval is accepted only for the active conversation's live Talk request and only after exact-hash approval is persisted and read back. Rejection resumes the callback without a grant; no adapter invocation follows.
+- **UI:** the existing Action Approval Inbox now exposes Approve exact action and Reject and stop this action only for a pending action bound to an existing, currently executing Talk conversation and the agent-run: call marker. The app-root coroutine owns durable decisions, so switching tabs cannot cancel the read-back. Existing browser-live approval behavior remains separate.
+- **Termination:** the ViewModel settles leftover pending actions as rejected and unused approved actions as NEEDS_REVIEW; an uncertain/in-flight outcome is never replayed. Process-restart behavior remains invalidation/review, not automatic run resumption.
+- **Validation:** CI #1034 and #1036 stopped before Android compilation on source-verifier defects; CI #1035 and #1037 also exposed four missing PL/TR strings in the approval UI. Follow-up commits corrected the verifier, callback wiring and translations. CI #1038 passed on exact head `07f100c6`: source invariants, remote-runner tests, Android unit tests, lint, debug APK assembly, identity/signature checks and install-over-existing data-preservation. PR workflow published only `Memo-Android-Build-Reports`; APK preparation and isolated signing/publication were skipped, so no installable APK artifact is claimed. No external-write adapter is currently exposed through MemoWorkspaceAgentTools; this increment wires the generic approval broker/UI but does not claim an end-to-end external side-effect capability.
+- **Status:** [~] this integration slice is CI-verified; M3.A4 and overall Talk execution remain open.
+
+### M3.A4-S5 — Exact approval review acknowledgement and durable decision ownership
+
+- **Requirements:** MEMO-APPROVAL-001, MEMO-RECOVERY-001.
+- **Change:** the approval card now exposes the complete destination and exact payload before approval is offered. The user must expand the card and tick an explicit review acknowledgement; collapsing the card resets that acknowledgement. Reject remains available without expansion.
+- **Lifecycle:** approval and rejection persistence jobs now run in `MemoWorkspaceViewModel.viewModelScope`, surviving tab changes and Activity recreation. The inbox composable owns no decision job.
+- **Tests:** added PL/TR acknowledgement translations and localization assertions; source verifier guards the review checkbox, full destination display and ViewModel-owned decision scope.
+- **Validation:** S5 exact head a6ed188c passed CI #1039: source verifier, remote-runner tests, Android core/app unit tests, lint, debug APK assembly, identity/signature and install-over-existing preservation. The PR workflow still skipped APK packaging/re-signing and published diagnostics only.
+- **Status:** [~] source implementation committed; validate exact-head CI before marking complete.
+
+ 
+### M3.A4-S6 — Encrypted durable Talk run record and restart recovery
+
+- **Requirements:** MEMO-ORCH-001, MEMO-AGENT-001, MEMO-RECOVERY-001.
+- **Change:** added AgentRunRecord to the existing encrypted AppSnapshot and bumped workspace backup schema to 7 with additive schema-1–6 import compatibility. Each record retains run/conversation identity, goal, model, lifecycle status, last event/stage, capability counts, pending approval call, evidence reference and final/recovery message.
+- **Execution identity:** Memo creates the run ID before engine startup and supplies that exact ID to AgentExecutionEngine.executeWithRunId; approval requests and every event therefore point to the same durable record.
+- **Journal boundary:** the run record transition and its TOOL transcript message are written together to one encrypted snapshot, reopened and verified before the engine continues. Engine terminal events enter `FINALIZING`; the final response and terminal run status are then committed together. If that second write is interrupted, the still-active `FINALIZING` record is recovered to `NEEDS_REVIEW` rather than appearing completed without its final answer.
+- **Restart behavior:** unlock converts RUNNING, WAITING_FOR_APPROVAL, TOOL_RUNNING and FINALIZING records to NEEDS_REVIEW, clears the approval call reference and records that no step was replayed. Existing action ledger recovery still invalidates/flags pending or in-flight external actions. Completed history remains unchanged.
+- **Live visibility:** Live now shows recent Talk runs, their actual persisted status, last recorded stage, call counts, recovery reason, and links back to the originating conversation and approval inbox.
+- **Tests:** deterministic-clock event-reducer tests, finalization crash-window/recovery tests, schema-v7 round-trip/schema-v6 import compatibility, Council backup schema-version assertion, caller-supplied run-ID engine test, PL/TR Live labels and source-verifier guards. The obsolete non-durable Talk launcher is removed.
+- **Validation:** CI #1040/#1041 stopped at source verification on stale launcher/Live markers; both guards were corrected. CI #1042 passed source verifier/runner tests and compiled core, then reported two core-test failures (timestamp fixture and old Council schema assertion); both were corrected. CI #1043 then reached Android compilation and reported three unresolved references caused by the missing `AgentExecutionEventType` import in the ViewModel closeout. The import and a matching source-verifier guard are added here; exact-head CI remains pending. Parent S5 head a6ed188c passed CI #1039; PR-event APK publication/re-signing remains skipped.
+- **Known gap:** no external-write adapter is currently exposed by MemoWorkspaceAgentTools; this milestone makes the execution lifecycle durable/visible, not every external action executable. Physical-device behavior remains unverified.
+- **Status:** [~] source implementation pending exact-head CI and device acceptance.

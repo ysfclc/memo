@@ -29,6 +29,11 @@ data class RuntimeDescriptor(
 /** Native Memo workspaces and the embedded browser are registered independently. */
 class RuntimeRegistry {
     private val appRuntime = listOf(
+        RuntimeDescriptor("app.workspace", "Memo workspace", RuntimeKind.APP, "Local retrieval, private notes and source-linked record proposals.", listOf(
+            RuntimeCapability("workspace.search", "Search workspace", "Search permitted local Memo conversations, records, jobs and evidence."),
+            RuntimeCapability("workspace.save_note", "Save private note", "Save a private note in the encrypted Memo workspace."),
+            RuntimeCapability("workspace.propose_record", "Propose record", "Create a source-linked workspace record proposal for human review.")
+        )),
         RuntimeDescriptor("app.chats", "AI Chats", RuntimeKind.APP, "Persistent conversations, source capture and model handoffs.", listOf(
             RuntimeCapability("chat.create", "Create conversation", "Create a durable local conversation."),
             RuntimeCapability("chat.append_message", "Append message", "Persist a user, model or imported message."),
@@ -88,6 +93,7 @@ class RuntimeRegistry {
             RuntimeCapability("browser.navigate_https", "Navigate HTTPS", "Open a user-selected HTTPS page."),
             RuntimeCapability("browser.inspect_page", "Inspect visible page", "Read supported page content through browser-side scripts."),
             RuntimeCapability("browser.capture_evidence", "Capture evidence", "Save inspected content with source URL and timestamp."),
+            RuntimeCapability("browser.open_observed_link", "Open observed same-origin link", "Navigate to an exact same-origin HTTPS link observed in the latest live page capture; no controls are clicked."),
             RuntimeCapability("browser.prepare_prompt", "Prepare prompt", "Fill a supported frontier-chat composer for review.", true),
             RuntimeCapability("browser.submit_prompt", "Submit prompt", "Send a user-approved prompt through the visible provider website; provider UI compatibility is checked first.", true, true),
             RuntimeCapability("browser.capture_response", "Capture response", "Capture a new, stable assistant answer from the current provider page."),
