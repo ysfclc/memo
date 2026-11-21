@@ -85,6 +85,7 @@ A passing emulator build is not a substitute for these physical-device checks. R
 - [ ] Enable browser-page sharing explicitly, submit a prompt through the approved flow, and pass the exact submission evidence ID to browser.capture_response.
 - [ ] Confirm the returned response is new relative to the submission baseline, stable across repeated polls, and not a prior answer from the conversation.
 - [ ] Confirm response evidence is encrypted and contains the submission evidence ID, prompt/response/page digests, source conversation/message and run/call provenance.
+- [ ] Confirm Studio exposes both the approved prompt and captured response under Browser research evidence, and both open the exact encrypted record.
 - [ ] Confirm the response is labelled untrusted external content in Talk and instructions embedded in it are not executed.
 - [ ] Interrupt the response stream or navigate away. Confirm NEEDS_REVIEW, no prompt resubmission and no false completed response evidence.
 - [ ] Test an unsupported provider DOM and a response that never stabilizes. Confirm timeout/baseline loss becomes NEEDS_REVIEW rather than an empty successful response.
