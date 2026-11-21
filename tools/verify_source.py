@@ -472,8 +472,8 @@ for marker in (
 ):
     if marker not in agent_engine:
         fail(f"shared Talk engine does not enforce verified capability outcomes: {marker}")
-if agent_tools.count("override suspend fun verifyPostcondition(") != 7:
-    fail("each of the seven current Talk adapters must implement an explicit postcondition verifier")
+if agent_tools.count("override suspend fun verifyPostcondition(") != 8:
+    fail("each of the eight current Talk adapters must implement an explicit postcondition verifier")
 for marker in (
     "deterministic recomputation from the permitted candidate set",
     "exact note title, content and digest",
@@ -526,6 +526,33 @@ for marker in ('"STUDIO_ARTIFACT"', "Your generated artifacts", "artifactType"):
     if marker not in talk_ui:
         fail(f"Studio does not expose Talk-created artifacts for review: {marker}")
 print("PASS: Talk can save source-linked private Markdown drafts through the registered workspace runtime; digest, bounds and Studio review surface are guarded")
+for marker in (
+    'RuntimeCapability("browser.submit_prompt"',
+    'id = "browser.submit_prompt"',
+    "AgentApprovalEnvelope(",
+    "ActionApprovalLedger.contentHash(",
+    "beginExternalActionDurably(",
+    "completeExternalActionDurably(",
+    "markExternalActionNeedsReviewDurably(",
+    "BROWSER_PROMPT_SUBMISSION",
+    "submitPromptForAgent(",
+):
+    if marker not in runtime_registry + agent_tools:
+        fail(f"Approved browser prompt submission is missing its exact approval/evidence boundary: {marker}")
+for marker in (
+    "suspend fun submitPromptForAgent(",
+    "BrowserScripts.preparePrompt(cleanPrompt)",
+    "BrowserScripts.sendPreparedPrompt(cleanPrompt)",
+    "BrowserScripts.verifyPromptSubmission(cleanPrompt, preserveState = true)",
+):
+    if marker not in browser_session:
+        fail(f"Browser prompt submission must use the visible, verified composer path: {marker}")
+if "fun verifyPromptSubmission" not in browser_scripts:
+    fail("The browser prompt submission verifier is missing")
+if "browserPromptSubmissionIsAnExplicitlyApprovedExternalWrite" not in agent_registry_tests:
+    fail("Browser prompt submission must have a regression test for explicit external-write approval")
+print("PASS: browser prompt submission is exact-content approved, one-use, durably audited and visibly verified")
+
 
 print("PASS: capability success is gated by explicit postcondition verification; unverified reads fail and uncertain writes require review")
 for marker in ("writeOutcomeUncertainOnCancellation", "AgentExecutionEventType.RUN_NEEDS_REVIEW"):
