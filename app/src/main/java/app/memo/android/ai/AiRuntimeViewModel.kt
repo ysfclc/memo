@@ -184,6 +184,7 @@ class AiRuntimeViewModel(application: Application) : AndroidViewModel(applicatio
             readTimeout = 45_000
             requestMethod = "GET"
             setRequestProperty("User-Agent", "Memo-Android/2.0")
+            setRequestProperty("Accept-Encoding", "identity")
             if (offset > 0L) {
                 setRequestProperty("Range", "bytes=$offset-")
                 val validator = checkpoint?.etag?.takeIf { it.isNotBlank() }
@@ -292,6 +293,11 @@ class AiRuntimeViewModel(application: Application) : AndroidViewModel(applicatio
                 append = false
             }
 
+            if (responseCode == 206 && !append &&
+                ModelDownloadResumePolicy.contentRangeStart(connection.getHeaderField("Content-Range")) != 0L
+            ) {
+                throw IllegalStateException("Model server returned a partial range that does not start at byte zero. The file was not installed.")
+            }
             if (responseCode == 408 || responseCode == 429 || responseCode in 500..599) {
                 throw IOException("Model server returned HTTP $responseCode. Try resuming later.")
             }
@@ -328,35 +334,36 @@ class AiRuntimeViewModel(application: Application) : AndroidViewModel(applicatio
 
             connection.inputStream.use { input ->
                 FileOutputStream(partial, append).use { fileOutput ->
-                    val output = BufferedOutputStream(fileOutput)
-                    val buffer = ByteArray(128 * 1024)
-                    while (true) {
-                        kotlinx.coroutines.currentCoroutineContext().ensureActive()
-                        val count = input.read(buffer)
-                        if (count < 0) break
-                        output.write(buffer, 0, count)
-                        bytesRead += count
-                        val now = System.currentTimeMillis()
-                        if (now - lastUpdate > 250L) {
-                            lastUpdate = now
-                            _uiState.update {
-                                it.copy(downloads = it.downloads + (entry.id to DownloadStatus(
-                                    modelId = entry.id,
-                                    bytesRead = bytesRead,
-                                    totalBytes = total,
-                                    stage = stage
-                                )))
+                    BufferedOutputStream(fileOutput).use { output ->
+                        val buffer = ByteArray(128 * 1024)
+                        while (true) {
+                            kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                            val count = input.read(buffer)
+                            if (count < 0) break
+                            output.write(buffer, 0, count)
+                            bytesRead += count
+                            val now = System.currentTimeMillis()
+                            if (now - lastUpdate > 250L) {
+                                lastUpdate = now
+                                _uiState.update {
+                                    it.copy(downloads = it.downloads + (entry.id to DownloadStatus(
+                                        modelId = entry.id,
+                                        bytesRead = bytesRead,
+                                        totalBytes = total,
+                                        stage = stage
+                                    )))
+                                }
+                            }
+                            if (bytesRead - lastCheckpointBytes >= 2L * 1024 * 1024) {
+                                output.flush()
+                                fileOutput.fd.sync()
+                                writeDownloadCheckpoint(entry, responseEtag, responseLastModified)
+                                lastCheckpointBytes = bytesRead
                             }
                         }
-                        if (bytesRead - lastCheckpointBytes >= 2L * 1024 * 1024) {
-                            output.flush()
-                            fileOutput.fd.sync()
-                            writeDownloadCheckpoint(entry, responseEtag, responseLastModified)
-                            lastCheckpointBytes = bytesRead
-                        }
+                        output.flush()
+                        fileOutput.fd.sync()
                     }
-                    output.flush()
-                    fileOutput.fd.sync()
                 }
             }
 
@@ -556,6 +563,10 @@ class AiRuntimeViewModel(application: Application) : AndroidViewModel(applicatio
                 withContext(Dispatchers.IO) {
                     val model = _uiState.value.installedModels.firstOrNull { it.id == modelId } ?: return@withContext
                     require(model.file.delete()) { "Could not delete the model file." }
+                    ModelCatalog.entries.firstOrNull { it.id == modelId }?.let { entry ->
+                        partialModelFile(entry).delete()
+                        partialModelCheckpointFile(entry).delete()
+                    }
                 }
                 refreshModels()
             }.onFailure { _uiState.update { state -> state.copy(lastError = safeMessage(it)) } }
