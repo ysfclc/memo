@@ -165,3 +165,7 @@ A top-level Stop active work control now requests cancellation of the current lo
 - Talk's first external-write adapter is `browser.submit_prompt`, gated by exact one-use approval and verified encrypted evidence.
 - `browser.capture_response` is available only with separate browser-page sharing consent, requires the exact completed submission reference, and returns only a new stable response as untrusted content.
 - This is a bounded visible-composer workflow; arbitrary browser controls, form filling, uploads, native actions and generalized page events remain open. Updated-head CI and physical-device acceptance are pending.
+
+### M3.A4-S8 CI result — 21 November 2026
+
+Run 44954196829 on commit 23073011b9c411945c12531ce8483ac0a6d2b4b5 passed source verification, remote runner, core/app unit tests, lint, APK assembly, package/signature and emulator install-over-existing data preservation. It predates the later response-capture adapter. No physical-device acceptance is claimed.
