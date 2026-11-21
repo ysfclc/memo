@@ -448,7 +448,8 @@ fun ModelsScreen(runtime: AiRuntimeViewModel, onShowMessage: (String) -> Unit) {
                     download = download,
                     onInstall = { runtime.installModel(entry.id) },
                     onCancel = { runtime.cancelModelDownload(entry.id) },
-                    onDelete = { runtime.deleteModel(entry.id) }
+                    onDelete = { runtime.deleteModel(entry.id) },
+                    onDiscardPartial = { runtime.discardPartialModelDownload(entry.id) }
                 )
             }
             OutlinedButton(onClick = { importLauncher.launch(arrayOf("application/octet-stream", "application/x-binary", "*/*")) }, modifier = Modifier.fillMaxWidth()) {
@@ -506,7 +507,8 @@ private fun ModelCatalogCard(
     download: app.memo.android.ai.DownloadStatus?,
     onInstall: () -> Unit,
     onCancel: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onDiscardPartial: () -> Unit
 ) {
     SurfaceCard {
         Row(verticalAlignment = Alignment.Top) {
@@ -522,7 +524,19 @@ private fun ModelCatalogCard(
             val progress = download.progress
             if (progress != null) LinearProgressIndicator(progress = progress, modifier = Modifier.fillMaxWidth()) else LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             Text("${download.stage} · ${formatBytes(download.bytesRead)} / ${formatBytes(download.totalBytes)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Rounded.StopCircle, null); Spacer(Modifier.width(6.dp)); Text("Cancel download") }
+            download.error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
+            if (download.canResume) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    Button(onClick = onInstall, modifier = Modifier.weight(1f)) {
+                        Icon(Icons.Rounded.PlayArrow, null); Spacer(Modifier.width(6.dp)); Text("Resume download")
+                    }
+                    TextButton(onClick = onDiscardPartial) { Text("Discard") }
+                }
+            } else {
+                OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Rounded.PauseCircle, null); Spacer(Modifier.width(6.dp)); Text("Pause and keep progress")
+                }
+            }
         } else if (installed) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Ready for Council", modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.tertiary, style = MaterialTheme.typography.labelMedium)
