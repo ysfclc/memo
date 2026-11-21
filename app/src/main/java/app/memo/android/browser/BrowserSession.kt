@@ -457,7 +457,7 @@ class BrowserSession(
             "Memo could not verify the original prompt baseline. Inspect the provider conversation manually; do not resend."
         }
 
-        val deadline = System.currentTimeMillis() + 45_000L
+        val deadline = System.currentTimeMillis() + 35_000L
         var response = ""
         var lastReason = "Waiting for a new, stable assistant response."
         while (System.currentTimeMillis() < deadline) {
@@ -477,7 +477,7 @@ class BrowserSession(
             delay(1_000L)
         }
         check(response.length >= 24) {
-            "$lastReason The response did not become stable within 45 seconds. Inspect the page; the prompt will not be resent."
+            "$lastReason The response did not become stable within 35 seconds. Inspect the page; the prompt will not be resent."
         }
         val afterUrl = BrowserUrlPolicy.normalizeHttpsUrl(currentUrl)
             ?: throw IllegalStateException("The browser left the supported HTTPS page while waiting for a response.")
