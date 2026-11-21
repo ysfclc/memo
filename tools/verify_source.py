@@ -190,7 +190,7 @@ for marker in (
 ):
     if marker not in talk_screen:
         fail(f"Talk execution is not bound to its durable run journal: {marker}")
-for marker in ("Memo executions", "AgentRunSummary(", "Interrupted by application restart", "Open conversation"):
+for marker in ("Memo executions", "AgentRunSummary(", "run.recoveryReason", "Open conversation"):
     if marker not in live_screen:
         fail(f"Live does not expose persisted Memo run state: {marker}")
 for marker in ("eventsRecordApprovalToolAndTerminalLifecycle", "rejectedOrUncertainToolOutcomesRequireReview", "eventsFromAnotherRunAreRejected"):
