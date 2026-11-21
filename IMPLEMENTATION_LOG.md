@@ -176,3 +176,14 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - **Device/emulator evidence:** Pending.
 - **Known gaps:** Durable execution journal/process-death recovery, pausing/resuming approvals, global postcondition verification, broader adapter coverage remain open.
 - **Status:** `[~]` source change + test authored, verification pending.
+
+
+### 2026-11-21 — M3.A4-S2 — Talk transcript approval lifecycle coverage
+
+- **Requirement:** Every execution event emitted by the shared engine must be safely and visibly represented in Talk.
+- **Files changed:** `app/src/main/java/app/memo/android/ai/MemoWorkspaceAgentTools.kt`.
+- **Implementation summary:** Added transcript mappings for approval requested, granted and rejected event types. The transcript metadata continues to include run/call IDs, status, capability version and evidence reference.
+- **Tests and results:** Source change committed; compile/CI pending.
+- **Exact commit SHA:** `fe1278a5bda0e742e31e9fc6b76441ec78c67e7`.
+- **Known gaps:** Approval callback currently defaults to no grant in the Talk execution call site; this mapping is visibility only and does not implement durable approval pause/resume. Full approval UI/ledger path is still open.
+- **Status:** `[~]` implementation pending CI.
