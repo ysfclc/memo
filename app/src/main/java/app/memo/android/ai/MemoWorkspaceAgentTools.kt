@@ -439,6 +439,8 @@ object MemoWorkspaceAgentTools {
         override fun isAvailable(): Boolean {
             val destination = scope.lastPromptSubmissionDestination
             return scope.lastPromptSubmissionEvidenceId.isNotBlank() &&
+                !(scope.lastPromptResponseEvidenceId.isNotBlank() &&
+                    scope.lastPromptResponseSubmissionEvidenceId == scope.lastPromptSubmissionEvidenceId) &&
                 destination.isNotBlank() &&
                 viewModel.vaultReady.value &&
                 viewModel.vaultError.value == null &&
