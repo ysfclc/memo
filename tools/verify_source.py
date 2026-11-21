@@ -107,6 +107,37 @@ if "could not be confirmed" not in app_navigation or "Verify its final state" no
     fail("guest runner cancellation must remain explicitly best-effort and evidence-sensitive")
 print("PASS: top-level stop requests local AI/browser/native cancellation, marks uncertain external actions for review, and reports remote cancellation honestly")
 
+agent_broker = view_model
+for marker in (
+    "fun launchAgentExecution(",
+    "suspend fun awaitAgentApproval(",
+    "suspend fun approveAgentActionDurably(",
+    "suspend fun rejectAgentActionDurably(",
+    "settleAgentApprovals(conversationId)",
+    "CompletableDeferred<AgentApprovalGrant?>",
+):
+    if marker not in agent_broker:
+        fail(f"durable Talk approval broker is missing: {marker}")
+for marker in (
+    "viewModel.launchAgentExecution(selectedConversation.id)",
+    "onApprovalRequired = { request ->",
+    "viewModel.awaitAgentApproval(selectedConversation.id, request)",
+    "viewModel.updateAgentExecutionStage(event.summary)",
+    "viewModel.stopAgentExecution()",
+):
+    if marker not in chat:
+        fail(f"Talk execution lifecycle is not ViewModel-owned or brokered: {marker}")
+if "agentScope.launch" in chat or "var agentJob" in chat:
+    fail("Talk execution is still owned by the disposable composable destination scope")
+for marker in ("Approve exact action", "onApproveAgentAction", "onRejectAgentAction", "agent-run:"):
+    if marker not in approval_inbox:
+        fail(f"approval inbox is missing the Talk exact-action decision flow: {marker}")
+if "onApproveAgentAction = { id -> viewModel.approveAgentActionDurably(id) }" not in app_navigation:
+    fail("the root approval inbox does not call the durable Talk approval API")
+if "viewModel.stopAgentExecution()" not in app_navigation:
+    fail("the product-wide stop action does not cancel the ViewModel-owned Talk execution")
+print("PASS: Talk execution survives destination changes, waits on the encrypted exact-content approval broker, and exposes approve/reject controls")
+
 xml_files = sorted((ROOT / "app/src/main").rglob("*.xml"))
 for file in xml_files:
     try:

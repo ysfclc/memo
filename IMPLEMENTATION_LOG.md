@@ -171,7 +171,7 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - **Requirement:** Never continue a model-directed run if its execution event cannot be persisted/delivered; avoid blind replay when a capability may have run.
 - **Files changed:** `core/src/main/kotlin/app/memo/android/orchestration/AgentExecutionEngine.kt`; `core/src/test/kotlin/app/memo/android/orchestration/AgentExecutionEngineTest.kt`.
 - **Implementation summary:** Event callback failures are wrapped and handled separately. When a capability call has started, the engine returns `NEEDS_REVIEW` and does not ask the model for another decision. The user-facing message tells them to inspect the action outcome before retrying. When event failure occurs before any capability, the run fails closed. A regression test makes the event sink throw after a capability result and asserts one model decision, one capability invocation, and `NEEDS_REVIEW`.
-- **Tests and results:** Regression test added; not yet executed. CI not yet verified for this commit.
+- **Tests and results:** Regression test executed successfully in CI #1033 on head edf6e618; see the run linked below.
 - **Exact commit SHA:** `5a5eff69038cc49004a05964f9c8f9e1472d6910` (test commit; engine commits precede it on branch).
 - **Device/emulator evidence:** Pending.
 - **Known gaps:** Durable execution journal/process-death recovery, pausing/resuming approvals, global postcondition verification, broader adapter coverage remain open.
@@ -196,3 +196,14 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - **Implementation summary:** The rule is now part of the binding execution invariants, not merely a code comment. Approval lifecycle events must also be visible in Talk's transcript.
 - **Verification:** Run 1026 (`5a5eff6`) failed compilation due to missing exhaustive approval-event transcript branches; this was corrected in `fe1278a`. Run 1027 on `e4fca2d` was still active at last check. Newer runs were queued/cancelled by subsequent commits. CI for current source remains pending.
 - **Status:** `[~]` rule and code committed; verification pending.
+
+ 
+### 2026-11-21 — M3.A4-S4 — ViewModel-owned Talk execution and exact approval broker
+
+- **Requirements:** MEMO-ORCH-001, MEMO-AGENT-001, MEMO-APPROVAL-001, MEMO-RECOVERY-001.
+- **Files changed:** app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt; app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt; app/src/main/java/app/memo/android/ui/ActionApprovalInboxScreen.kt; app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt; tools/verify_source.py; docs/AI_EXECUTION_INVARIANTS.md; TASKS.md; IMPLEMENTATION_LOG.md.
+- **Implementation:** Talk runs now belong to ViewModel scope and remain alive while the user changes destinations. The engine's existing approval callback stages an exact-content proposal in the existing encrypted action ledger, registers a waiter before suspending, and resumes only after the inbox durably approves the matching hash. Rejection returns no grant. The inbox exposes explicit approve/reject controls only for a pending action tied to an existing Talk conversation.
+- **Termination:** leftover pending actions are durably rejected and unused approvals are moved to NEEDS_REVIEW; process restart still invalidates or flags actions and does not resume/replay the model run.
+- **Tests:** structural source assertions added for ViewModel ownership, callback wiring, wait registration, inbox decisions and global Stop. Existing engine tests already exercise exact approval grants, rejection, mismatched envelopes and fail-closed behavior. Full Gradle/CI result pending for this commit.
+- **Known gap:** no external-write adapter is currently included in MemoWorkspaceAgentTools; this commits the generic approval handshake, not an end-to-end external side-effect capability.
+- **Status:** [~] implementation; verify CI and review concurrency/build behavior before treating this slice as validated.

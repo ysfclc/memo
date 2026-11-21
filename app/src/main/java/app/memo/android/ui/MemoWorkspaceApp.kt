@@ -290,12 +290,14 @@ fun MemoWorkspaceApp(
     }
     /** Stop active runtimes immediately; remote cancellation is explicitly best-effort. */
     fun stopActiveWork() {
+        viewModel.stopAgentExecution()
         browser.stopBrowserWorkflow()
         browser.cancelPendingTask()
         aiRuntime.cancelRun()
         AutomationAccessibilityService.requestCancel()
 
         snapshot.actionApprovals.forEach { action ->
+            if (action.stepId.startsWith("agent-run:")) return@forEach
             when (action.status) {
                 "PENDING" -> viewModel.rejectExternalAction(action.id, "Emergency stop requested by user before execution.")
                 "APPROVED", "IN_PROGRESS" -> viewModel.markExternalActionNeedsReview(
@@ -656,6 +658,8 @@ fun MemoWorkspaceApp(
                             if (accepted && matchesLivePrompt) browser.rejectCurrentPrompt()
                             accepted
                         },
+                        onApproveAgentAction = { id -> viewModel.approveAgentActionDurably(id) },
+                        onRejectAgentAction = { id, reason -> viewModel.rejectAgentActionDurably(id, reason) },
                         onMarkNeedsReview = { id, reason -> viewModel.markExternalActionNeedsReview(id, reason) },
                         onShowMessage = ::snack
                     )

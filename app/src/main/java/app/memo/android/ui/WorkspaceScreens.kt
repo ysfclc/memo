@@ -126,7 +126,6 @@ import app.memo.android.ui.components.DotLabel
 import app.memo.android.ui.components.EmptyState
 import app.memo.android.ui.components.SurfaceCard
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -154,11 +153,10 @@ fun ChatsWorkspaceScreen(
 ) {
     val conversations = snapshot.conversations.sortedByDescending { it.updatedAt }
     val selectedConversation = conversations.firstOrNull { it.id == selectedConversationId }
-    val agentScope = rememberCoroutineScope()
-    var agentRunning by remember { mutableStateOf(false) }
-    var agentStage by remember { mutableStateOf("") }
-    var agentJob by remember { mutableStateOf<Job?>(null) }
-    var agentConversationId by remember { mutableStateOf("") }
+    val agentExecutionState by viewModel.agentExecutionState.collectAsState()
+    val agentRunning = agentExecutionState.running
+    val agentStage = agentExecutionState.stage
+    val agentConversationId = agentExecutionState.conversationId
     var showAgentBrowserPane by remember { mutableStateOf(false) }
     var agentBrowserConversationId by remember { mutableStateOf("") }
     var shareBrowserPageRemotely by remember(selectedConversationId) { mutableStateOf(false) }
@@ -508,7 +506,7 @@ fun ChatsWorkspaceScreen(
                                     }
                                 }
                                 TextButton(onClick = {
-                                    agentJob?.cancel()
+                                    viewModel.stopAgentExecution()
                                     runtime.cancelRun()
                                 }) { Text("Stop") }
                             }
@@ -684,11 +682,7 @@ fun ChatsWorkspaceScreen(
                                 val includeBrowserPageContentForRequest =
                                     selectedModelId != REMOTE_MODEL_ID || shareBrowserPageRemotely
                                 shareBrowserPageRemotely = false
-                                agentScope.launch {
-                                    if (agentRunning) return@launch
-                                    agentRunning = true
-                                    agentConversationId = selectedConversation.id
-                                    agentStage = "Starting Memo execution"
+                                val launched = viewModel.launchAgentExecution(selectedConversation.id) {
                                     try {
                                         val appendError = viewModel.appendChatMessageDurably(
                                             selectedConversation.id,
@@ -697,7 +691,7 @@ fun ChatsWorkspaceScreen(
                                         )
                                         if (appendError != null) {
                                             onShowMessage(appendError)
-                                            return@launch
+                                            return@launchAgentExecution
                                         }
                                         val durableConversation = viewModel.snapshot.value.conversations.firstOrNull {
                                             it.id == selectedConversation.id
@@ -748,8 +742,11 @@ fun ChatsWorkspaceScreen(
                                         val result = engine.execute(
                                             goal = userText,
                                             conversationContext = promptWithContext,
+                                            onApprovalRequired = { request ->
+                                                viewModel.awaitAgentApproval(selectedConversation.id, request)
+                                            },
                                             onEvent = { event ->
-                                                agentStage = event.summary
+                                                viewModel.updateAgentExecutionStage(event.summary)
                                                 if (event.toolId.startsWith("browser.")) {
                                                     showAgentBrowserPane = true
                                                     agentBrowserConversationId = selectedConversation.id
@@ -816,14 +813,13 @@ fun ChatsWorkspaceScreen(
                                             sourceType = "AGENT_ERROR"
                                         )
                                         onShowMessage(persistError ?: failureMessage.take(180))
-                                    } finally {
-                                        agentRunning = false
-                                        agentStage = ""
-                                        agentConversationId = ""
-                                        agentJob = null
                                     }
-                                }.also { agentJob = it }
-                                draft = ""
+                                }
+                                if (!launched) {
+                                    onShowMessage("Another Memo execution is already active, or the encrypted workspace is unavailable.")
+                                } else {
+                                    draft = ""
+                                }
                             },
                             enabled = !agentRunning && !runtimeState.running && draft.isNotBlank() && modelOptions.isNotEmpty() && (selectedModelId != REMOTE_MODEL_ID || allowRemote),
                             modifier = Modifier.size(52.dp)

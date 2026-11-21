@@ -10,9 +10,14 @@ import app.memo.android.runtime.RuntimeRegistry
 import app.memo.android.orchestration.IntentPlanner
 import app.memo.android.orchestration.CapabilityCompiler
 import app.memo.android.orchestration.WorkflowGraphCompiler
+import app.memo.android.orchestration.AgentApprovalGrant
+import app.memo.android.orchestration.AgentApprovalRequest
 import org.json.JSONObject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,7 +25,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
+
+data class AgentExecutionUiState(
+    val running: Boolean = false,
+    val conversationId: String = "",
+    val stage: String = ""
+)
 
 class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(application) {
     private val vault = EncryptedVault(application)
@@ -37,6 +50,11 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
 
     private val _vaultError = MutableStateFlow<String?>(null)
     val vaultError: StateFlow<String?> = _vaultError.asStateFlow()
+
+    private val _agentExecutionState = MutableStateFlow(AgentExecutionUiState())
+    val agentExecutionState: StateFlow<AgentExecutionUiState> = _agentExecutionState.asStateFlow()
+    private var agentExecutionJob: Job? = null
+    private val agentApprovalWaiters = ConcurrentHashMap<String, CompletableDeferred<AgentApprovalGrant?>>()
 
     private val _themeMode = MutableStateFlow(preferences.getString("theme_mode", "SYSTEM") ?: "SYSTEM")
     val themeMode: StateFlow<String> = _themeMode.asStateFlow()
@@ -82,9 +100,50 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
 
     /** Clears decrypted data from UI state when the user manually locks the workspace. */
     fun clearSensitiveMemory() {
+        stopAgentExecution()
         _snapshot.value = AppSnapshot()
         _vaultReady.value = false
         _vaultError.value = null
+    }
+
+
+    /**
+     * Own Talk execution at ViewModel scope, not the composable destination scope.
+     * Navigating to Live or Approvals must not cancel a run waiting for the user's decision.
+     */
+    fun launchAgentExecution(conversationId: String, block: suspend () -> Unit): Boolean {
+        if (conversationId.isBlank() || !_vaultReady.value || agentExecutionJob?.isActive == true) return false
+        _agentExecutionState.value = AgentExecutionUiState(
+            running = true,
+            conversationId = conversationId,
+            stage = "Starting Memo execution"
+        )
+        agentExecutionJob = viewModelScope.launch {
+            try {
+                block()
+            } finally {
+                try {
+                    withContext(NonCancellable) {
+                        settleAgentApprovals(conversationId)
+                    }
+                } catch (error: Throwable) {
+                    _vaultError.value = safeError(error, "Unresolved Talk approvals could not be settled safely.")
+                } finally {
+                    _agentExecutionState.value = AgentExecutionUiState()
+                    agentExecutionJob = null
+                }
+            }
+        }
+        return true
+    }
+
+    fun updateAgentExecutionStage(stage: String) {
+        val current = _agentExecutionState.value
+        if (current.running) _agentExecutionState.value = current.copy(stage = stage.take(800))
+    }
+
+    fun stopAgentExecution() {
+        agentExecutionJob?.cancel(CancellationException("Talk execution stopped by the user."))
     }
 
     fun setThemeMode(mode: String) {
@@ -1045,6 +1104,121 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
     suspend fun markExternalActionNeedsReviewDurably(actionId: String, reason: String): Boolean =
         markExternalActionNeedsReview(actionId, reason) &&
             persistAndReadActionRecord(actionId, "NEEDS_REVIEW") != null
+
+
+    /**
+     * Stage the exact model-proposed action in the encrypted ledger and suspend this same Talk run
+     * until a human approves or rejects it. The adapter must still consume the one-use grant
+     * immediately before performing its external side effect.
+     */
+    suspend fun awaitAgentApproval(
+        conversationId: String,
+        request: AgentApprovalRequest
+    ): AgentApprovalGrant? {
+        if (!_agentExecutionState.value.running ||
+            _agentExecutionState.value.conversationId != conversationId ||
+            !_vaultReady.value || _vaultError.value != null
+        ) return null
+
+        val actionId = proposeExternalAction(
+            jobId = conversationId,
+            stepId = "agent-run:" + request.runId + ":" + request.callId,
+            runtimeId = request.envelope.runtimeId,
+            capabilityId = request.envelope.capabilityId,
+            destination = request.envelope.destination,
+            title = request.envelope.title,
+            payload = request.envelope.payload,
+            risk = request.envelope.risk
+        ) ?: return null
+
+        val waiter = CompletableDeferred<AgentApprovalGrant?>()
+        if (agentApprovalWaiters.putIfAbsent(actionId, waiter) != null) {
+            markExternalActionNeedsReviewDurably(actionId, "Duplicate live approval waiter detected; inspect before retrying.")
+            return null
+        }
+
+        try {
+            val pending = persistAndReadActionRecord(actionId, "PENDING")
+            if (pending == null) {
+                // A fast user decision may happen during the initial durable readback.
+                // Only a second encrypted readback of APPROVED state may recover that decision.
+                val approved = persistAndReadActionRecord(actionId, "APPROVED")
+                if (approved != null && approved.approvalHash == approved.contentHash) {
+                    waiter.complete(AgentApprovalGrant(actionId, approved.approvalHash))
+                } else {
+                    waiter.complete(null)
+                }
+            }
+
+            val decision = withTimeoutOrNull(7 * 60 * 1_000L) { waiter.await() }
+            if (decision == null) {
+                rejectAgentActionDurably(
+                    actionId,
+                    "Approval was rejected, expired or not completed before the execution approval window closed."
+                )
+            }
+            return decision
+        } catch (cancelled: CancellationException) {
+            withContext(NonCancellable) {
+                val current = _snapshot.value.actionApprovals.firstOrNull { it.id == actionId }
+                if (current?.status == "PENDING") {
+                    rejectAgentActionDurably(actionId, "Talk execution was cancelled before this action was approved.")
+                }
+            }
+            throw cancelled
+        } finally {
+            agentApprovalWaiters.remove(actionId, waiter)
+        }
+    }
+
+    /** Approve only a live Talk proposal, using the exact hash currently shown in the inbox. */
+    suspend fun approveAgentActionDurably(actionId: String): Boolean {
+        val record = _snapshot.value.actionApprovals.firstOrNull { it.id == actionId } ?: return false
+        if (!isAgentApprovalRecord(record) || record.status != "PENDING" ||
+            !_agentExecutionState.value.running ||
+            _agentExecutionState.value.conversationId != record.jobId
+        ) return false
+        val approved = approveExternalActionDurably(actionId, record.contentHash)
+        if (approved) {
+            agentApprovalWaiters[actionId]?.complete(AgentApprovalGrant(actionId, record.contentHash))
+        }
+        return approved
+    }
+
+    /** Rejecting a Talk proposal resolves the suspended callback with no grant. */
+    suspend fun rejectAgentActionDurably(actionId: String, reason: String): Boolean {
+        val record = _snapshot.value.actionApprovals.firstOrNull { it.id == actionId } ?: return false
+        if (!isAgentApprovalRecord(record) || record.status != "PENDING") return false
+        val rejected = rejectExternalActionDurably(actionId, reason)
+        if (rejected) agentApprovalWaiters[actionId]?.complete(null)
+        return rejected
+    }
+
+    private fun isAgentApprovalRecord(record: ActionApprovalRecord): Boolean =
+        record.stepId.startsWith("agent-run:") &&
+            _snapshot.value.conversations.any { it.id == record.jobId }
+
+    /** No pending or unused approval may remain attached to a Talk run that has ended. */
+    private suspend fun settleAgentApprovals(conversationId: String) {
+        val open = _snapshot.value.actionApprovals.filter {
+            it.jobId == conversationId &&
+                it.stepId.startsWith("agent-run:") &&
+                it.status in setOf("PENDING", "APPROVED")
+        }
+        open.forEach { action ->
+            when (action.status) {
+                "PENDING" -> rejectAgentActionDurably(
+                    action.id,
+                    "Talk execution ended before this approval was consumed. No external action was started."
+                )
+                "APPROVED" -> markExternalActionNeedsReviewDurably(
+                    action.id,
+                    "Approval was recorded but the action did not reach a verified terminal state before the Talk run ended."
+                )
+            }
+            agentApprovalWaiters.remove(action.id)?.complete(null)
+        }
+    }
 
     private suspend fun persistAndReadActionRecord(actionId: String, expectedStatus: String): ActionApprovalRecord? {
         if (!_vaultReady.value || _vaultError.value != null) return null

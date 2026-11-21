@@ -494,3 +494,14 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 
 - [~] Domain model, evidence-backed ICP scoring, unknown-factor handling, duplicate warnings, vault-gated proposed ORGANIZATION creation and initial Work intake UI integrated.
 - [ ] Add evidence capture / factor review UI, run full Gradle and ViewModel integration tests, and verify the Android experience. This is one optional Work workflow; Memo's product scope remains broader.
+
+ 
+## 2026-11-21 — M3.A4-S4 — ViewModel-owned Talk execution and exact approval broker
+
+- **Requirements:** MEMO-ORCH-001, MEMO-AGENT-001, MEMO-APPROVAL-001, MEMO-RECOVERY-001.
+- **Change:** moved the Talk execution job out of the disposable Compose destination scope into MemoWorkspaceViewModel; navigation from Talk to Live/Approvals no longer cancels the active run. Run state and stage are exposed as a StateFlow, and the global Stop control cancels the ViewModel-owned job.
+- **Approval path:** the engine's onApprovalRequired callback now stages the exact runtime/capability/destination/title/payload in the existing encrypted one-use action ledger and suspends the same run. The action ID is registered with its waiter before the first suspension, avoiding a fast-approval race. Approval is accepted only for the active conversation's live Talk request and only after exact-hash approval is persisted and read back. Rejection resumes the callback without a grant; no adapter invocation follows.
+- **UI:** the existing Action Approval Inbox now exposes Approve exact action and Reject and stop this action only for a pending action bound to an existing Talk conversation and the agent-run: call marker. Existing browser-live approval behavior remains separate.
+- **Termination:** the ViewModel settles leftover pending actions as rejected and unused approved actions as NEEDS_REVIEW; an uncertain/in-flight outcome is never replayed. Process-restart behavior remains invalidation/review, not automatic run resumption.
+- **Validation:** source verifier and CI results pending for this commit. No external-write adapter is currently exposed through MemoWorkspaceAgentTools; this increment connects the generic broker and UI but does not claim a user-visible external-write capability is complete.
+- **Status:** [~] implementation pending CI; M3.A4 and overall Talk execution remain open.
