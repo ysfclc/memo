@@ -230,3 +230,11 @@ The action inbox and first top-level stop control are present in source. Static/
 - Integrated M3.A4-S7 shared capability postcondition verification from PR #17. Exact source head `bfe40a182b1e283699a8c4c36bf9c612f83981c7` passed Actions run `44907881554` (source verifier, remote runner, core/app unit tests, lint, debug/instrumentation APK assembly, package/signature and emulator install-over-existing data preservation).
 - Preserved the current main Talk/Work scrolling repair and added the binding UI regression/device acceptance gate from PR #18.
 - Integration-branch CI is pending. No canonical release APK or physical-device acceptance is claimed.
+
+## M3.B1-S1 — Talk-created private Markdown artifacts (integration branch)
+
+- Added `workspace.save_artifact` as a registered local-write capability in the shared Talk dispatcher.
+- Saves encrypted `STUDIO_ARTIFACT` records with source conversation/message provenance, source excerpt digest, content digest, version and DRAFT status. The shared engine requires exact read-back verification before reporting success.
+- Studio lists Talk-created drafts. The existing Evidence dialog supports edit/revision history, copy and Markdown export; user edits refresh the content digest and increment the version.
+- Added core policy tests and source-verifier/runtime-registration guards.
+- Exact-head Android CI: pending for the updated PR #20 head. No phone acceptance or release APK claimed. Supported output is Markdown text only; file/code, PDF/media and publishing remain open.
