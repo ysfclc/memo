@@ -73,6 +73,16 @@ class AgentCapabilityRegistryTest {
     }
 
     @Test
+    fun browserResponseCaptureDoesNotAuthorizeExternalSideEffects() {
+        val capability = RuntimeRegistry().listRuntimes()
+            .flatMap { it.capabilities }
+            .first { it.id == "browser.capture_response" }
+
+        assertFalse(capability.requiresUserApproval)
+        assertFalse(capability.externalSideEffect)
+    }
+
+    @Test
     fun adapterCannotWeakenRegisteredApprovalPolicy() {
         val invalid = object : AgentCapabilityAdapter {
             override val definition = AgentToolDefinition(
