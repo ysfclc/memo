@@ -463,6 +463,8 @@ object MemoWorkspaceAgentTools {
                 summary = "Saved draft note '${persisted.title}'.",
                 evidenceReference = persisted.id
             )
+        }
+
         override suspend fun verifyPostcondition(
             arguments: JSONObject,
             invocation: AgentToolInvocation,
@@ -573,6 +575,8 @@ object MemoWorkspaceAgentTools {
                 summary = "Created record proposal '${entity.title}'.",
                 evidenceReference = entity.id
             )
+        }
+
         override suspend fun verifyPostcondition(
             arguments: JSONObject,
             invocation: AgentToolInvocation,
