@@ -63,6 +63,16 @@ class AgentCapabilityRegistryTest {
     }
 
     @Test
+    fun browserPromptSubmissionIsAnExplicitlyApprovedExternalWrite() {
+        val capability = RuntimeRegistry().listRuntimes()
+            .flatMap { it.capabilities }
+            .first { it.id == "browser.submit_prompt" }
+
+        assertTrue(capability.requiresUserApproval)
+        assertTrue(capability.externalSideEffect)
+    }
+
+    @Test
     fun adapterCannotWeakenRegisteredApprovalPolicy() {
         val invalid = object : AgentCapabilityAdapter {
             override val definition = AgentToolDefinition(
