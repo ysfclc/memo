@@ -212,3 +212,7 @@ This does not create a separate CRM or authorise scraping, cold-message automati
 ## 10 November 2026 — Unified experience implementation
 
 The Android experience rebuild implements the first integrated foundation for the broader product direction in [MEMO_EXPERIENCE_NAVIGATION_REBUILD.md](product/MEMO_EXPERIENCE_NAVIGATION_REBUILD.md), using the [Signal & Graphite design system](product/MEMO_DESIGN_SYSTEM.md). This does not narrow Memo to sales or make social/business workflows separate products. They remain capabilities connected through Memo's shared personal/work graph, intent interface, execution timeline, approvals and studio.
+
+## 21 November 2026 — Talk-created private Markdown artifact slice
+
+Talk can now expose a generic `workspace.save_artifact` capability through the shared provider-agnostic execution loop. It stores a private Markdown draft as an encrypted `STUDIO_ARTIFACT` with source conversation/message provenance, source excerpt digest, content digest and version metadata. The engine requires the exact draft and evidence reference to be read back before reporting success. Studio lists the draft and the existing Evidence dialog supports editing with revision history, copying and Markdown export. This is a bounded text-artifact increment; it does not imply filesystem code execution, PDF/image/video generation, or external publishing. Those remain separate capability and approval milestones.
