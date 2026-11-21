@@ -213,7 +213,21 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - **Requirements:** MEMO-APPROVAL-001, MEMO-RECOVERY-001.
 - **Files changed:** app/src/main/java/app/memo/android/ui/ActionApprovalInboxScreen.kt; app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt; app/src/main/java/app/memo/android/ui/MemoLocalization.kt; app/src/test/java/app/memo/android/ui/MemoLocalizationTest.kt; tools/verify_source.py; TASKS.md; IMPLEMENTATION_LOG.md.
 - **Implementation:** approve is only rendered after expanding the action. The full destination and exact payload are then visible, and the user must explicitly acknowledge having reviewed them. Collapsing the card clears the acknowledgement. Rejection remains available at all times. The durable approval/rejection coroutines now belong to ViewModel scope and survive Activity recreation.
-- **Validation:** PL/TR translation unit assertions and source-verifier checks added. Exact S5 CI pending; parent S4 head `07f100c6` passed CI #1038.
+- **Validation:** PL/TR translation unit assertions and source-verifier checks added. Exact S5 head a6ed188c passed CI #1039: source verifier, remote runner, Android unit tests, lint, APK assembly, identity/signature and install-over-existing preservation. The PR event skipped APK packaging/re-signing and uploaded build reports only.
 - **Build artifact:** CI #1038 uploaded only the 140,719-byte `Memo-Android-Build-Reports` ZIP; APK packaging/re-signing upload steps were skipped for the PR event. No new installable APK was delivered.
 - **Known gap:** no external-write adapter is currently included in MemoWorkspaceAgentTools; this increments the approval broker/UI but does not claim an end-to-end external side effect is usable from Talk.
 - **Status:** [~] implementation; verify exact commit in CI before marking complete.
+
+ 
+### 2026-11-21 — M3.A4-S6 — Encrypted durable Talk run record and restart recovery
+
+- **Requirements:** MEMO-ORCH-001, MEMO-AGENT-001, MEMO-RECOVERY-001.
+- **Files changed:** core/src/main/kotlin/app/memo/android/data/Models.kt; core/src/main/kotlin/app/memo/android/orchestration/AgentExecutionEngine.kt; app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt; app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt; app/src/main/java/app/memo/android/ui/LiveWorkspaceScreen.kt; app/src/main/java/app/memo/android/ui/MemoLocalization.kt; tools/verify_source.py; schema/engine/localization tests; TASKS.md; IMPLEMENTATION_LOG.md; docs/AI_EXECUTION_INVARIANTS.md.
+- **Data compatibility:** additive workspace backup schema 7. Readers accept schemas 1–7; schemas 1–6 import with an empty agent-run history. Existing primary vault path, encryption format, Keystore alias and action ledger are unchanged.
+- **Implementation:** run identity is allocated by Memo before model execution and injected into the engine. Run creation is durably read back before the engine starts. Lifecycle events update the run index and conversation TOOL transcript in one encrypted snapshot write; read-after-write verification gates the next model/capability action. The final assistant/system message and result counters/status are written with the terminal record.
+- **Recovery:** on unlock/import, nonterminal runs become NEEDS_REVIEW; pending approval references are cleared and the saved recovery note explicitly says that no step was replayed. Runs with uncertain capability starts remain review-only. No automatic execution resume was added.
+- **UI:** Live includes a recent Memo executions section with status, last recorded stage, model/capability counters, recovery reason, and links to conversation/approval review.
+- **Tests:** deterministic event reducer, exact event/run identity, approval/tool lifecycle, uncertain outcome, schema-v7 round-trip, schema-v6 migration, restart recovery and PL/TR translations.
+- **Validation:** pending exact-head CI; parent S5 head a6ed188c passed CI #1039 including Android tests/lint/assembly/signature and install-over-existing preservation.
+- **Known limitation:** MemoWorkspaceAgentTools still does not expose an end-to-end external-write adapter. This milestone makes the generic run lifecycle durable/observable; it does not claim a submitted/sent action can yet be executed from every Talk request.
+- **Status:** [~] source implementation; exact-head CI and physical-device acceptance required.

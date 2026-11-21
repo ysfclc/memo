@@ -12,6 +12,9 @@ import app.memo.android.orchestration.CapabilityCompiler
 import app.memo.android.orchestration.WorkflowGraphCompiler
 import app.memo.android.orchestration.AgentApprovalGrant
 import app.memo.android.orchestration.AgentApprovalRequest
+import app.memo.android.orchestration.AgentExecutionEvent
+import app.memo.android.orchestration.AgentExecutionResult
+import app.memo.android.orchestration.AgentRunStatus
 import org.json.JSONObject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -107,8 +110,210 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
     }
 
 
+
     /**
-     * Own Talk execution at ViewModel scope, not the composable destination scope.
+     * Persist a run record before starting the engine. The same ID is passed through every
+     * engine event and approval request, keeping the encrypted run index and transcript aligned.
+     */
+    fun launchAgentExecution(
+        conversationId: String,
+        goal: String,
+        modelId: String,
+        block: suspend (String) -> Unit
+    ): Boolean {
+        if (conversationId.isBlank() || !_vaultReady.value || agentExecutionJob?.isActive == true) return false
+        val runId = newId()
+        _agentExecutionState.value = AgentExecutionUiState(
+            running = true,
+            conversationId = conversationId,
+            stage = "Starting Memo execution"
+        )
+        agentExecutionJob = viewModelScope.launch {
+            var runCreated = false
+            try {
+                runCreated = createAgentRunDurably(runId, conversationId, goal, modelId)
+                if (!runCreated) return@launch
+                block(runId)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Throwable) {
+                _vaultError.value = safeError(error, "Memo execution stopped before a terminal state could be recorded.")
+            } finally {
+                try {
+                    if (runCreated) {
+                        withContext(NonCancellable) {
+                            try {
+                                settleAgentApprovals(conversationId)
+                            } finally {
+                                closeUnfinishedAgentRunDurably(runId)
+                            }
+                        }
+                    }
+                } catch (error: Throwable) {
+                    _vaultError.value = safeError(error, "Unresolved Talk execution state could not be settled safely.")
+                } finally {
+                    _agentExecutionState.value = AgentExecutionUiState()
+                    agentExecutionJob = null
+                }
+            }
+        }
+        return true
+    }
+
+    private suspend fun createAgentRunDurably(
+        runId: String,
+        conversationId: String,
+        goal: String,
+        modelId: String
+    ): Boolean {
+        if (!_vaultReady.value || _vaultError.value != null) return false
+        val cleanGoal = goal.trim().take(6_000)
+        if (cleanGoal.isBlank()) return false
+        val current = _snapshot.value
+        if (current.conversations.none { it.id == conversationId } || current.agentRuns.size >= MAX_AGENT_RUNS) {
+            _vaultError.value = if (current.agentRuns.size >= MAX_AGENT_RUNS) {
+                "Memo execution history is full. Export your workspace before starting another run."
+            } else {
+                "The originating conversation no longer exists."
+            }
+            return false
+        }
+        if (current.agentRuns.any { it.id == runId }) return false
+        val record = AgentRunRecord(id = runId, conversationId = conversationId, goal = cleanGoal, modelId = modelId.take(160))
+        val next = current.copy(agentRuns = listOf(record) + current.agentRuns)
+        _snapshot.value = next
+        persist(next)
+        return persistAgentRunAndVerify(runId) { saved ->
+            saved.agentRuns.any { it.id == runId && it.status == "RUNNING" && it.conversationId == conversationId }
+        }
+    }
+
+    /** Event transcript message and run state are written together, then reopened and verified. */
+    suspend fun appendAgentEventDurably(
+        runId: String,
+        conversationId: String,
+        content: String,
+        event: AgentExecutionEvent,
+        modelId: String = ""
+    ): String? {
+        if (!_vaultReady.value) return "Unlock the workspace before continuing."
+        _vaultError.value?.let { return "Encrypted workspace persistence is unavailable: $it" }
+        if (event.runId != runId) return "Execution event ID did not match the persisted Memo run."
+        val current = _snapshot.value
+        val run = current.agentRuns.firstOrNull { it.id == runId && it.conversationId == conversationId }
+            ?: return "The durable Memo run record no longer exists."
+        val conversation = current.conversations.firstOrNull { it.id == conversationId }
+            ?: return "The execution conversation no longer exists."
+        if (conversation.messages.size >= 250) return "This conversation reached its message limit; Memo cannot safely extend its execution journal."
+        val message = ChatMessageRecord(role = "TOOL", content = content.trim().take(24_000), modelId = modelId.take(160), sourceType = "AGENT_EVENT")
+        val updatedRun = run.applyEvent(event)
+        val updatedConversation = conversation.copy(messages = conversation.messages + message, updatedAt = nowMillis())
+        val next = current.copy(
+            conversations = current.conversations.map { if (it.id == conversationId) updatedConversation else it },
+            agentRuns = current.agentRuns.map { if (it.id == runId) updatedRun else it }
+        )
+        _snapshot.value = next
+        persist(next)
+        if (_agentExecutionState.value.running && _agentExecutionState.value.conversationId == conversationId) {
+            _agentExecutionState.value = _agentExecutionState.value.copy(stage = event.summary.take(800))
+        }
+        return if (persistAgentRunAndVerify(runId) { saved ->
+            val storedRun = saved.agentRuns.firstOrNull { it.id == runId }
+            val storedConversation = saved.conversations.firstOrNull { it.id == conversationId }
+            storedRun?.lastEventType == event.type.name &&
+                storedRun.status == updatedRun.status &&
+                storedConversation?.messages?.any { it.id == message.id && it.sourceType == "AGENT_EVENT" } == true
+        }) null else "The execution event and matching run state could not be read back from the encrypted workspace."
+    }
+
+    /** Finish the run and append its final response within the same verified encrypted snapshot. */
+    suspend fun finishAgentRunDurably(
+        runId: String,
+        result: AgentExecutionResult,
+        messageRole: String,
+        modelId: String,
+        sourceType: String
+    ): String? {
+        if (!_vaultReady.value) return "Unlock the workspace before finishing this execution."
+        _vaultError.value?.let { return "Encrypted workspace persistence is unavailable: $it" }
+        val current = _snapshot.value
+        val run = current.agentRuns.firstOrNull { it.id == runId } ?: return "The durable Memo run record no longer exists."
+        val conversation = current.conversations.firstOrNull { it.id == run.conversationId } ?: return "The execution conversation no longer exists."
+        val cleanMessage = result.finalMessage.trim().take(24_000)
+        if (cleanMessage.isBlank()) return "Memo returned an empty final result; the run remains available for review."
+        if (conversation.messages.size >= 250) return "This conversation reached its message limit; the final run result could not be appended."
+        val finalStatus = when (result.status) {
+            AgentRunStatus.FINISHED -> "COMPLETED"
+            AgentRunStatus.ITERATION_LIMIT -> "LIMIT_REACHED"
+            AgentRunStatus.NEEDS_REVIEW -> "NEEDS_REVIEW"
+            AgentRunStatus.FAILED -> "FAILED"
+            AgentRunStatus.CANCELLED -> "CANCELLED"
+        }
+        val message = ChatMessageRecord(role = messageRole.uppercase(Locale.ROOT).take(24), content = cleanMessage, modelId = modelId.take(160), sourceType = sourceType.take(40))
+        val now = nowMillis()
+        val updatedRun = run.copy(
+            status = finalStatus, stage = cleanMessage.take(800), finalMessage = cleanMessage.take(4_000),
+            pendingApprovalCallId = "", modelCalls = result.modelCalls.coerceIn(0, 20),
+            toolCalls = result.toolCalls.coerceIn(0, 1_000),
+            successfulToolCalls = result.successfulToolCalls.coerceIn(0, result.toolCalls.coerceIn(0, 1_000)),
+            recoveryReason = if (finalStatus == "NEEDS_REVIEW") cleanMessage.take(800) else "",
+            updatedAt = now, finishedAt = now
+        )
+        val updatedConversation = conversation.copy(messages = conversation.messages + message, updatedAt = now)
+        val next = current.copy(
+            conversations = current.conversations.map { if (it.id == run.conversationId) updatedConversation else it },
+            agentRuns = current.agentRuns.map { if (it.id == runId) updatedRun else it }
+        )
+        _snapshot.value = next
+        persist(next)
+        return if (persistAgentRunAndVerify(runId) { saved ->
+            val savedRun = saved.agentRuns.firstOrNull { it.id == runId }
+            val savedConversation = saved.conversations.firstOrNull { it.id == run.conversationId }
+            savedRun?.status == finalStatus &&
+                savedRun.finalMessage == cleanMessage.take(4_000) &&
+                savedConversation?.messages?.any { it.id == message.id && it.content == cleanMessage } == true
+        }) null else "The final response and Memo run status could not be read back from the encrypted workspace."
+    }
+
+    private suspend fun closeUnfinishedAgentRunDurably(runId: String) {
+        val current = _snapshot.value
+        val run = current.agentRuns.firstOrNull { it.id == runId } ?: return
+        if (!run.isActive) return
+        val uncertain = run.toolCalls > 0 || run.pendingApprovalCallId.isNotBlank()
+        val now = nowMillis()
+        val status = if (uncertain) "NEEDS_REVIEW" else "FAILED"
+        val reason = if (uncertain) {
+            "Memo stopped before it could record a terminal event after a capability may have started. Inspect the destination before retrying."
+        } else {
+            "Memo stopped before recording a terminal execution event. No capability start was recorded."
+        }
+        val updated = run.copy(
+            status = status, stage = reason.take(800), pendingApprovalCallId = "",
+            recoveryReason = reason.take(800), updatedAt = now, finishedAt = now
+        )
+        val next = current.copy(agentRuns = current.agentRuns.map { if (it.id == runId) updated else it })
+        _snapshot.value = next
+        persist(next)
+        if (!persistAgentRunAndVerify(runId) { saved -> saved.agentRuns.firstOrNull { it.id == runId }?.status == status }) {
+            _vaultError.value = "Memo could not verify the final state of an interrupted execution."
+        }
+    }
+
+    private suspend fun persistAgentRunAndVerify(runId: String, check: (AppSnapshot) -> Boolean): Boolean {
+        return try {
+            val saved = withContext(Dispatchers.IO) { persistLatestSnapshotAndReadSafely() }
+            if (saved != null && check(saved)) true else {
+                _vaultError.value = "Memo run $runId state could not be verified in encrypted storage."
+                false
+            }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Throwable) {
+            _vaultError.value = safeError(error, "Memo could not persist its execution state.")
+            false
+        }
+    }
+
      * Navigating to Live or Approvals must not cancel a run waiting for the user's decision.
      */
     fun launchAgentExecution(conversationId: String, block: suspend () -> Unit): Boolean {
@@ -302,10 +507,6 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             message
         }
     }
-
-    /** Durable agent lifecycle/tool event stored as a TOOL message in the existing encrypted conversation. */
-    suspend fun appendAgentEvent(conversationId: String, content: String, modelId: String = ""): String? =
-        appendChatMessageDurably(conversationId, "TOOL", content, modelId, "AGENT_EVENT")
 
     /** Save a private draft note and verify its exact identity by reopening the encrypted vault. */
     suspend fun saveWorkArtifactDurably(evidence: EvidenceRecord): Result<Unit> {

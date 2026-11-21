@@ -144,10 +144,25 @@ class AgentExecutionEngine(
         conversationContext: String = "",
         onApprovalRequired: suspend (AgentApprovalRequest) -> AgentApprovalGrant? = { null },
         onEvent: suspend (AgentExecutionEvent) -> Unit = {}
+    ): AgentExecutionResult = executeWithRunId(
+        executionRunId = UUID.randomUUID().toString(),
+        goal = goal,
+        conversationContext = conversationContext,
+        onApprovalRequired = onApprovalRequired,
+        onEvent = onEvent
+    )
+
+    suspend fun executeWithRunId(
+        executionRunId: String,
+        goal: String,
+        conversationContext: String = "",
+        onApprovalRequired: suspend (AgentApprovalRequest) -> AgentApprovalGrant? = { null },
+        onEvent: suspend (AgentExecutionEvent) -> Unit = {}
     ): AgentExecutionResult {
+        require(executionRunId.isNotBlank() && executionRunId.length <= 128) { "An execution run ID is required and must be bounded." }
         val cleanGoal = goal.trim().take(6_000)
         require(cleanGoal.isNotBlank()) { "An execution goal is required." }
-        val runId = UUID.randomUUID().toString()
+        val runId = executionRunId
         val startedAt = System.currentTimeMillis()
         val startedNanos = System.nanoTime()
         val observations = mutableListOf<String>()

@@ -681,7 +681,7 @@ fun ChatsWorkspaceScreen(
                                 val includeBrowserPageContentForRequest =
                                     selectedModelId != REMOTE_MODEL_ID || shareBrowserPageRemotely
                                 shareBrowserPageRemotely = false
-                                val launched = viewModel.launchAgentExecution(selectedConversation.id) {
+                                val launched = viewModel.launchAgentExecution(selectedConversation.id, userText, selectedModelId) { runId ->
                                     try {
                                         val appendError = viewModel.appendChatMessageDurably(
                                             selectedConversation.id,
@@ -738,7 +738,8 @@ fun ChatsWorkspaceScreen(
                                             },
                                             adapters = tools
                                         )
-                                        val result = engine.execute(
+                                        val result = engine.executeWithRunId(
+                                            executionRunId = runId,
                                             goal = userText,
                                             conversationContext = promptWithContext,
                                             onApprovalRequired = { request ->
@@ -754,10 +755,12 @@ fun ChatsWorkspaceScreen(
                                                     event = event,
                                                     language = uiLanguage
                                                 )
-                                                val journalError = viewModel.appendAgentEvent(
-                                                    selectedConversation.id,
-                                                    transcript,
-                                                    selectedModelId
+                                                val journalError = viewModel.appendAgentEventDurably(
+                                                    runId = runId,
+                                                    conversationId = selectedConversation.id,
+                                                    content = transcript,
+                                                    event = event,
+                                                    modelId = selectedModelId
                                                 )
                                                 if (journalError != null) {
                                                     throw IllegalStateException(
@@ -768,10 +771,10 @@ fun ChatsWorkspaceScreen(
                                         )
                                         val successfulResponse = result.status == AgentRunStatus.FINISHED
                                         val messageRole = if (successfulResponse) "ASSISTANT" else "SYSTEM"
-                                        val appendResultError = viewModel.appendChatMessageDurably(
-                                            selectedConversation.id,
-                                            messageRole,
-                                            result.finalMessage,
+                                        val appendResultError = viewModel.finishAgentRunDurably(
+                                            runId = runId,
+                                            result = result,
+                                            messageRole = messageRole,
                                             modelId = selectedModelId,
                                             sourceType = if (successfulResponse) {
                                                 if (selectedModelId == REMOTE_MODEL_ID) "REMOTE" else "LOCAL"

@@ -53,6 +53,22 @@ class AgentExecutionEngineTest {
     }
 
     @Test
+    fun callerSuppliedRunIdIsUsedForAllLifecycleEvents() = runBlocking {
+        val events = mutableListOf<AgentExecutionEvent>()
+        val result = AgentExecutionEngine(
+            AgentModelProvider { _, _ -> """{"type":"final","content":"Done"}""" },
+            emptyList()
+        ).executeWithRunId(
+            executionRunId = "stable-run-id-123",
+            goal = "Give a direct answer",
+            onEvent = { events += it }
+        )
+        assertEquals(AgentRunStatus.FINISHED, result.status)
+        assertTrue(events.isNotEmpty())
+        assertTrue(events.all { it.runId == "stable-run-id-123" })
+    }
+
+    @Test
     fun unknownCapabilityIsNotExecutedAndModelCanRecover() = runBlocking {
         val responses = ArrayDeque(
             listOf(

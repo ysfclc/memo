@@ -512,5 +512,19 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - **Change:** the approval card now exposes the complete destination and exact payload before approval is offered. The user must expand the card and tick an explicit review acknowledgement; collapsing the card resets that acknowledgement. Reject remains available without expansion.
 - **Lifecycle:** approval and rejection persistence jobs now run in `MemoWorkspaceViewModel.viewModelScope`, surviving tab changes and Activity recreation. The inbox composable owns no decision job.
 - **Tests:** added PL/TR acknowledgement translations and localization assertions; source verifier guards the review checkbox, full destination display and ViewModel-owned decision scope.
-- **Validation:** CI pending for the exact S5 commit. The parent S4 head `07f100c6` passed CI #1038 as recorded above.
+- **Validation:** S5 exact head a6ed188c passed CI #1039: source verifier, remote-runner tests, Android core/app unit tests, lint, debug APK assembly, identity/signature and install-over-existing preservation. The PR workflow still skipped APK packaging/re-signing and published diagnostics only.
 - **Status:** [~] source implementation committed; validate exact-head CI before marking complete.
+
+ 
+### M3.A4-S6 — Encrypted durable Talk run record and restart recovery
+
+- **Requirements:** MEMO-ORCH-001, MEMO-AGENT-001, MEMO-RECOVERY-001.
+- **Change:** added AgentRunRecord to the existing encrypted AppSnapshot and bumped workspace backup schema to 7 with additive schema-1–6 import compatibility. Each record retains run/conversation identity, goal, model, lifecycle status, last event/stage, capability counts, pending approval call, evidence reference and final/recovery message.
+- **Execution identity:** Memo creates the run ID before engine startup and supplies that exact ID to AgentExecutionEngine.executeWithRunId; approval requests and every event therefore point to the same durable record.
+- **Journal boundary:** the run record transition and its TOOL transcript message are written together to one encrypted snapshot, reopened and verified before the engine continues. Final run status and final assistant/system result are also persisted together. Missing terminal events are closed as FAILED or NEEDS_REVIEW, based on whether a capability may have started.
+- **Restart behavior:** unlock converts RUNNING, WAITING_FOR_APPROVAL and TOOL_RUNNING records to NEEDS_REVIEW, clears the approval call reference and records that no step was replayed. Existing action ledger recovery still invalidates/flags pending or in-flight external actions. Completed/failed/cancelled history remains unchanged.
+- **Live visibility:** Live now shows recent Talk runs, their actual persisted status, last recorded stage, call counts, recovery reason, and links back to the originating conversation and approval inbox.
+- **Tests:** pure event-reducer tests, schema-v7 round-trip/import compatibility, restart no-replay tests, caller-supplied run-ID engine test, PL/TR Live labels and source-verifier guards.
+- **Validation:** exact S6 CI pending. Parent S5 head a6ed188c passed CI #1039: source verifier, runner tests, core/app unit tests, lint, APK assembly, APK identity/signature and install-over-existing data-preservation. PR event skipped APK publication/re-signing, so this is build evidence, not an installable APK.
+- **Known gap:** no external-write adapter is currently exposed by MemoWorkspaceAgentTools; this milestone makes the execution lifecycle durable/visible, not every external action executable. Physical-device behavior remains unverified.
+- **Status:** [~] source implementation pending exact-head CI and device acceptance.

@@ -83,6 +83,22 @@ class MemoLocalizationTest {
     }
 
     @Test
+    fun durableExecutionLabelsTranslateInPolishAndTurkish() {
+        assertEquals("Wykonania Memo", MemoLocalization.translate("Memo executions", "PL"))
+        assertEquals("Memo yürütmeleri", MemoLocalization.translate("Memo executions", "TR"))
+        assertEquals("Oczekuje na zatwierdzenie", MemoLocalization.translate("Waiting for approval", "PL"))
+        assertEquals("Onay bekliyor", MemoLocalization.translate("Waiting for approval", "TR"))
+        assertEquals("Wymaga sprawdzenia", MemoLocalization.translate("Needs review", "PL"))
+        assertEquals("İnceleme gerekiyor", MemoLocalization.translate("Needs review", "TR"))
+        assertTrue(MemoLocalization.translate(
+            "Memo restarted during this run. Review saved events and any action that may have started. No step was replayed.", "PL"
+        ).contains("Żaden krok nie został odtworzony"))
+        assertTrue(MemoLocalization.translate(
+            "Memo restarted during this run. Review saved events and any action that may have started. No step was replayed.", "TR"
+        ).contains("Hiçbir adım yeniden oynatılmadı"))
+    }
+
+    @Test
     fun userContentAndUnknownStringsRemainUntouched() {
         val userText = "I met a person called Deniz at the event."
         assertEquals(userText, MemoLocalization.translate(userText, "TR"))

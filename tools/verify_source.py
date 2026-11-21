@@ -153,6 +153,54 @@ if "viewModel.stopAgentExecution()" not in app_navigation:
     fail("the product-wide stop action does not cancel the ViewModel-owned Talk execution")
 print("PASS: Talk execution survives destination changes, waits on the encrypted exact-content approval broker, and exposes approve/reject controls")
 
+agent_models = (ROOT / "core/src/main/kotlin/app/memo/android/data/Models.kt").read_text()
+agent_engine = (ROOT / "core/src/main/kotlin/app/memo/android/orchestration/AgentExecutionEngine.kt").read_text()
+agent_run_test = (ROOT / "core/src/test/kotlin/app/memo/android/data/AgentRunLifecycleTest.kt").read_text()
+workspace_schema_test = (ROOT / "core/src/test/kotlin/app/memo/android/data/WorkspaceSchemaV3Test.kt").read_text()
+live_screen = (ROOT / "app/src/main/java/app/memo/android/ui/LiveWorkspaceScreen.kt").read_text()
+for marker in (
+    "data class AgentRunRecord(",
+    "val agentRuns: List<AgentRunRecord>",
+    "fun AgentRunRecord.applyEvent(",
+    "val interruptedAgentRuns = agentRuns.count { it.isActive }",
+    'root.put("agentRuns"',
+    'root.put("schemaVersion", 7)',
+    "require(schema in 1..7)",
+):
+    if marker not in agent_models:
+        fail(f"encrypted durable run model/recovery is missing: {marker}")
+for marker in ("suspend fun executeWithRunId(", "executionRunId = UUID.randomUUID().toString()"):
+    if marker not in agent_engine:
+        fail(f"agent engine cannot share its persisted run identity: {marker}")
+for marker in (
+    "createAgentRunDurably(",
+    "appendAgentEventDurably(",
+    "finishAgentRunDurably(",
+    "closeUnfinishedAgentRunDurably(",
+    "persistAgentRunAndVerify(",
+):
+    if marker not in agent_broker:
+        fail(f"Talk durable run journal is missing: {marker}")
+for marker in (
+    "viewModel.launchAgentExecution(selectedConversation.id, userText, selectedModelId)",
+    "engine.executeWithRunId(",
+    "executionRunId = runId",
+    "viewModel.appendAgentEventDurably(",
+    "viewModel.finishAgentRunDurably(",
+):
+    if marker not in talk_screen:
+        fail(f"Talk execution is not bound to its durable run journal: {marker}")
+for marker in ("Memo executions", "AgentRunSummary(", "Interrupted by application restart", "Open conversation"):
+    if marker not in live_screen:
+        fail(f"Live does not expose persisted Memo run state: {marker}")
+for marker in ("eventsRecordApprovalToolAndTerminalLifecycle", "rejectedOrUncertainToolOutcomesRequireReview", "eventsFromAnotherRunAreRejected"):
+    if marker not in agent_run_test:
+        fail(f"agent run lifecycle regression coverage is missing: {marker}")
+for marker in ("agentRunRecordsRoundTripWithExactRunAndConversationIdentity", "schemaSixBackupMigratesWithoutAgentRunRecords", "interruptedAgentRunsRecoverToReviewAndTerminalRunsStayTerminal"):
+    if marker not in workspace_schema_test:
+        fail(f"schema-v7 run persistence/recovery test is missing: {marker}")
+print("PASS: Talk execution has a schema-versioned encrypted run record, atomic event journal/readback, truthful Live state and no-replay recovery")
+
 xml_files = sorted((ROOT / "app/src/main").rglob("*.xml"))
 for file in xml_files:
     try:

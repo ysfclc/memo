@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import app.memo.android.data.ActionApprovalRecord
+import app.memo.android.data.AgentRunRecord
 import app.memo.android.data.AppSnapshot
 import app.memo.android.data.TaskRecord
 import app.memo.android.data.TaskStatus
@@ -50,6 +51,7 @@ fun LiveWorkspaceScreen(
     val reviewActions = snapshot.actionApprovals
         .filter { it.status in setOf("PENDING", "APPROVED", "IN_PROGRESS", "NEEDS_REVIEW") }
         .sortedByDescending { it.createdAt }
+    val recentAgentRuns = snapshot.agentRuns.sortedByDescending { it.updatedAt }.take(6)
     val recentActivity = snapshot.activity.sortedByDescending { it.at }.take(10)
 
     LazyColumn(
@@ -108,6 +110,14 @@ fun LiveWorkspaceScreen(
                         body = "When a website or frontier-AI workflow is running, its real session and approval checkpoint will appear here."
                     )
                 }
+            }
+        }
+        item { MemoSectionHeading("Memo executions", supporting = "Recent Talk runs and their recorded outcome") }
+        if (recentAgentRuns.isEmpty()) {
+            item { EmptyState("No Memo executions yet", "Your Talk runs will appear here with their last durable stage and recovery state.") }
+        } else {
+            items(recentAgentRuns, key = { "agent-run-${it.id}" }) { run ->
+                AgentRunSummary(run, onOpenConversation = { onOpenTalk(run.conversationId) }, onOpenApprovals = onOpenApprovals)
             }
         }
         item { MemoSectionHeading("Work in motion", supporting = "Resumable plans and tasks that need attention") }
@@ -204,6 +214,60 @@ fun LiveWorkspaceScreen(
             }
         }
     }
+}
+
+
+@Composable
+private fun AgentRunSummary(run: AgentRunRecord, onOpenConversation: () -> Unit, onOpenApprovals: () -> Unit) {
+    val tone = when (run.status) {
+        "NEEDS_REVIEW", "WAITING_FOR_APPROVAL" -> MemoStatusTone.WARNING
+        "FAILED" -> MemoStatusTone.ERROR
+        "COMPLETED" -> MemoStatusTone.SUCCESS
+        else -> MemoStatusTone.INFO
+    }
+    MemoPanel {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(run.goal, style = MaterialTheme.typography.titleSmall, maxLines = 3)
+            MemoStatusTag(label = agentRunStatusLabel(run.status), tone = tone)
+            if (run.stage.isNotBlank()) {
+                Text("Last recorded stage", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(run.stage, style = MaterialTheme.typography.bodySmall, maxLines = 3)
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column {
+                    Text("Model calls", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(run.modelCalls.toString(), style = MaterialTheme.typography.bodyMedium)
+                }
+                Column {
+                    Text("Capability calls", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(run.toolCalls.toString(), style = MaterialTheme.typography.bodyMedium)
+                }
+                Column {
+                    Text("Succeeded", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(run.successfulToolCalls.toString(), style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+            if (run.recoveryReason.isNotBlank()) Text(run.recoveryReason, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = onOpenConversation) { Text("Open conversation") }
+                if (run.status in setOf("WAITING_FOR_APPROVAL", "NEEDS_REVIEW")) {
+                    TextButton(onClick = onOpenApprovals) { Text("Review actions") }
+                }
+            }
+        }
+    }
+}
+
+private fun agentRunStatusLabel(status: String): String = when (status) {
+    "RUNNING" -> "Running"
+    "WAITING_FOR_APPROVAL" -> "Waiting for approval"
+    "TOOL_RUNNING" -> "Using a capability"
+    "COMPLETED" -> "Completed"
+    "LIMIT_REACHED" -> "Limit reached"
+    "NEEDS_REVIEW" -> "Needs review"
+    "FAILED" -> "Failed"
+    "CANCELLED" -> "Stopped"
+    else -> "Needs review"
 }
 
 @Composable
