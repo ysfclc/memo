@@ -185,6 +185,11 @@ class AgentExecutionEngine(
         var modelCalls = 0
         var toolCalls = 0
         var successfulToolCalls = 0
+        // A started write is review-only until its verified completion event is durably recorded.
+        var writeOutcomeUncertainOnCancellation = false
+        var interruptedWriteToolId = ""
+        var interruptedWriteCallId = ""
+        var interruptedWriteEvidenceReference = ""
 
         suspend fun event(
             type: AgentExecutionEventType,
@@ -336,6 +341,12 @@ class AgentExecutionEngine(
 
                         toolCalls++
                         event(AgentExecutionEventType.TOOL_STARTED, "Starting " + definition.id + ".", toolId = definition.id, callId = callId, status = "RUNNING", toolVersion = definition.version)
+                        if (definition.executionClass != AgentToolExecutionClass.READ_ONLY) {
+                            writeOutcomeUncertainOnCancellation = true
+                            interruptedWriteToolId = definition.id
+                            interruptedWriteCallId = callId
+                            interruptedWriteEvidenceReference = ""
+                        }
 
                         var toolResult = try {
                             withTimeoutOrNull(config.toolTimeoutMs) {
@@ -377,6 +388,16 @@ class AgentExecutionEngine(
                             )
                         }
 
+                        if (definition.executionClass != AgentToolExecutionClass.READ_ONLY && toolResult.status == AgentToolStatus.FAILED) {
+                            toolResult = toolResult.copy(
+                                status = AgentToolStatus.NEEDS_REVIEW,
+                                output = (toolResult.output + "\\nA write adapter reported failure after start; Memo cannot prove that no side effect occurred. Inspect before retrying.").take(24_000),
+                                summary = "Write outcome is uncertain; review before retrying."
+                            )
+                        }
+                        if (definition.executionClass != AgentToolExecutionClass.READ_ONLY) {
+                            interruptedWriteEvidenceReference = toolResult.evidenceReference
+                        }
                         var verifiedPostcondition = ""
                         if (toolResult.status == AgentToolStatus.SUCCEEDED) {
                             val verification = try {
@@ -384,6 +405,26 @@ class AgentExecutionEngine(
                                     adapter.verifyPostcondition(decision.arguments, invocation, toolResult)
                                 }
                             } catch (cancelled: CancellationException) {
+                                if (definition.executionClass != AgentToolExecutionClass.READ_ONLY) {
+                                    interruptedWriteEvidenceReference = toolResult.evidenceReference
+                                }
+                                withContext(NonCancellable) {
+                                    runCatching {
+                                        event(
+                                            AgentExecutionEventType.TOOL_FAILED,
+                                            if (definition.executionClass == AgentToolExecutionClass.READ_ONLY) {
+                                                "Postcondition verification was interrupted; the read was not accepted as successful."
+                                            } else {
+                                                "A write was interrupted before its postcondition was verified. Inspect the saved evidence/destination before retrying."
+                                            },
+                                            toolId = definition.id,
+                                            callId = callId,
+                                            status = if (definition.executionClass == AgentToolExecutionClass.READ_ONLY) "FAILED" else "NEEDS_REVIEW",
+                                            toolVersion = definition.version,
+                                            evidenceReference = toolResult.evidenceReference
+                                        )
+                                    }
+                                }
                                 throw cancelled
                             } catch (error: Throwable) {
                                 null
@@ -440,6 +481,14 @@ class AgentExecutionEngine(
                             toolVersion = definition.version,
                             evidenceReference = toolResult.evidenceReference
                         )
+                        // Clear uncertainty only after a completion/block event has been recorded.
+                        if (definition.executionClass != AgentToolExecutionClass.READ_ONLY &&
+                            toolResult.status != AgentToolStatus.NEEDS_REVIEW) {
+                            writeOutcomeUncertainOnCancellation = false
+                            interruptedWriteToolId = ""
+                            interruptedWriteCallId = ""
+                            interruptedWriteEvidenceReference = ""
+                        }
                         if (toolResult.status == AgentToolStatus.NEEDS_REVIEW) {
                             val message = "A capability has an uncertain or approval-gated outcome. Review it before continuing: ${toolResult.summary}"
                             event(AgentExecutionEventType.RUN_NEEDS_REVIEW, message, toolId = definition.id, callId = callId, status = "NEEDS_REVIEW")
@@ -454,7 +503,20 @@ class AgentExecutionEngine(
         } catch (cancelled: CancellationException) {
             withContext(NonCancellable) {
                 runCatching {
-                    event(AgentExecutionEventType.RUN_CANCELLED, "The user cancelled this execution. Completed results were retained; no unfinished action was replayed.", status = "CANCELLED")
+                    val requiresReview = writeOutcomeUncertainOnCancellation
+                    val message = if (requiresReview) {
+                        "Memo was stopped while a write may have started but its outcome was not verified and recorded. Inspect the destination/evidence before retrying; no action was replayed."
+                    } else {
+                        "The user cancelled this execution. Completed results were retained; no unfinished action was replayed."
+                    }
+                    event(
+                        if (requiresReview) AgentExecutionEventType.RUN_NEEDS_REVIEW else AgentExecutionEventType.RUN_CANCELLED,
+                        message,
+                        toolId = interruptedWriteToolId,
+                        callId = interruptedWriteCallId,
+                        status = if (requiresReview) "NEEDS_REVIEW" else "CANCELLED",
+                        evidenceReference = interruptedWriteEvidenceReference
+                    )
                 }
             }
             throw cancelled

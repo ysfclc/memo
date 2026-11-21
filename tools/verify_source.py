@@ -492,6 +492,17 @@ for marker in (
     if marker not in agent_engine_tests:
         fail(f"shared Talk postcondition regression coverage is missing: {marker}")
 print("PASS: capability success is gated by explicit postcondition verification; unverified reads fail and uncertain writes require review")
+for marker in ("writeOutcomeUncertainOnCancellation", "AgentExecutionEventType.RUN_NEEDS_REVIEW"):
+    if marker not in agent_engine:
+        fail(f"write interruption can be misclassified as cancellation without review: {marker}")
+for marker in (
+    "cancellationDuringLocalWriteInvocationRequiresReview",
+    "cancellationDuringLocalWriteVerificationRequiresReview",
+    "failedWriteAdapterStopsForReviewInsteadOfReplanning",
+):
+    if marker not in agent_engine_tests:
+        fail(f"write-interruption safety regression coverage is missing: {marker}")
+print("PASS: started/uncertain writes stop for review on cancellation or adapter failure; they are not replayed")
 
 print("PASS: runtime-backed per-turn capability discovery, approval-policy matching, user-supplied HTTPS browser navigation, encrypted page evidence and separate remote-page consent are enforced and tested")
 

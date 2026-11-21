@@ -1,5 +1,9 @@
 package app.memo.android.orchestration
 
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
@@ -439,6 +443,109 @@ class AgentExecutionEngineTest {
         assertEquals(0, result.successfulToolCalls)
         assertTrue(events.any { it.type == AgentExecutionEventType.RUN_NEEDS_REVIEW })
         assertTrue(result.finalMessage.contains("Review"))
+    }
+
+    @Test
+    fun cancellationDuringLocalWriteInvocationRequiresReview() = runBlocking {
+        var modelCalls = 0
+        var invocations = 0
+        val invocationStarted = CompletableDeferred<Unit>()
+        val events = mutableListOf<AgentExecutionEvent>()
+        val model = AgentModelProvider { _, _ ->
+            modelCalls++
+            """{"type":"tool_call","tool":"workspace.save_note","arguments":{"query":"save"}}"""
+        }
+        val adapter = object : AgentCapabilityAdapter {
+            override val definition = AgentToolDefinition(
+                "workspace.save_note", "Save a local note.", schema,
+                executionClass = AgentToolExecutionClass.LOCAL_WRITE
+            )
+            override fun isAvailable() = true
+            override suspend fun invoke(arguments: JSONObject, invocation: AgentToolInvocation): AgentToolResult {
+                invocations++
+                invocationStarted.complete(Unit)
+                awaitCancellation()
+            }
+            override suspend fun verifyPostcondition(arguments: JSONObject, invocation: AgentToolInvocation, result: AgentToolResult): AgentToolPostconditionVerification =
+                error("Verification must not run after an interrupted write invocation.")
+        }
+        val job = launch { AgentExecutionEngine(model, listOf(adapter)).execute("Save a note") { events += it } }
+        invocationStarted.await()
+        job.cancelAndJoin()
+
+        assertEquals(1, modelCalls)
+        assertEquals(1, invocations)
+        assertTrue(events.any { it.type == AgentExecutionEventType.TOOL_FAILED && it.status == AgentToolStatus.NEEDS_REVIEW.name })
+        assertTrue(events.any { it.type == AgentExecutionEventType.RUN_NEEDS_REVIEW })
+        assertFalse(events.any { it.type == AgentExecutionEventType.RUN_CANCELLED })
+    }
+
+    @Test
+    fun cancellationDuringLocalWriteVerificationRequiresReview() = runBlocking {
+        var modelCalls = 0
+        var invocations = 0
+        val verificationStarted = CompletableDeferred<Unit>()
+        val events = mutableListOf<AgentExecutionEvent>()
+        val model = AgentModelProvider { _, _ ->
+            modelCalls++
+            """{"type":"tool_call","tool":"workspace.save_note","arguments":{"query":"save"}}"""
+        }
+        val adapter = object : AgentCapabilityAdapter {
+            override val definition = AgentToolDefinition(
+                "workspace.save_note", "Save a local note.", schema,
+                executionClass = AgentToolExecutionClass.LOCAL_WRITE
+            )
+            override fun isAvailable() = true
+            override suspend fun invoke(arguments: JSONObject, invocation: AgentToolInvocation): AgentToolResult {
+                invocations++
+                return AgentToolResult(AgentToolStatus.SUCCEEDED, "Saved note.", evidenceReference = "evidence:note-1")
+            }
+            override suspend fun verifyPostcondition(arguments: JSONObject, invocation: AgentToolInvocation, result: AgentToolResult): AgentToolPostconditionVerification {
+                verificationStarted.complete(Unit)
+                awaitCancellation()
+            }
+        }
+        val job = launch { AgentExecutionEngine(model, listOf(adapter)).execute("Save a note") { events += it } }
+        verificationStarted.await()
+        job.cancelAndJoin()
+
+        assertEquals(1, modelCalls)
+        assertEquals(1, invocations)
+        assertTrue(events.any { it.type == AgentExecutionEventType.TOOL_FAILED && it.status == AgentToolStatus.NEEDS_REVIEW.name && it.evidenceReference == "evidence:note-1" })
+        assertTrue(events.any { it.type == AgentExecutionEventType.RUN_NEEDS_REVIEW && it.evidenceReference == "evidence:note-1" })
+        assertFalse(events.any { it.type == AgentExecutionEventType.RUN_CANCELLED })
+    }
+
+    @Test
+    fun failedWriteAdapterStopsForReviewInsteadOfReplanning() = runBlocking {
+        var modelCalls = 0
+        var invocations = 0
+        val model = AgentModelProvider { _, _ ->
+            modelCalls++
+            """{"type":"tool_call","tool":"workspace.save_note","arguments":{"query":"save"}}"""
+        }
+        val adapter = object : AgentCapabilityAdapter {
+            override val definition = AgentToolDefinition(
+                "workspace.save_note", "Save a local note.", schema,
+                executionClass = AgentToolExecutionClass.LOCAL_WRITE
+            )
+            override fun isAvailable() = true
+            override suspend fun invoke(arguments: JSONObject, invocation: AgentToolInvocation): AgentToolResult {
+                invocations++
+                return AgentToolResult(AgentToolStatus.FAILED, "The adapter reported failure.")
+            }
+            override suspend fun verifyPostcondition(arguments: JSONObject, invocation: AgentToolInvocation, result: AgentToolResult): AgentToolPostconditionVerification =
+                error("A failed write adapter result cannot be accepted without review.")
+        }
+        val events = mutableListOf<AgentExecutionEvent>()
+        val result = AgentExecutionEngine(model, listOf(adapter)).execute("Save a note") { events += it }
+
+        assertEquals(AgentRunStatus.NEEDS_REVIEW, result.status)
+        assertEquals(1, modelCalls)
+        assertEquals(1, invocations)
+        assertEquals(0, result.successfulToolCalls)
+        assertTrue(events.any { it.type == AgentExecutionEventType.TOOL_FAILED && it.status == AgentToolStatus.NEEDS_REVIEW.name })
+        assertTrue(events.any { it.type == AgentExecutionEventType.RUN_NEEDS_REVIEW })
     }
 
     @Test

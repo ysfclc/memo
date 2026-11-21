@@ -6,7 +6,7 @@
 - The shared Talk engine requires explicit adapter postcondition verification before counting a capability as successful. Read-only verification failure is a failed observation and can be re-planned; local/external/destructive uncertainty stops for review. Writes require matching invocation/result/verifier evidence IDs.
 - The six current workspace/browser adapters verify deterministic search output, encrypted note/record read-back, settled browser navigation and capture digests. Three core regressions cover missing and mismatched postconditions. The source verifier guards the protocol.
 - Baseline source commit `adf58109af909358940e7361251669377e2a84d5` was validated by Actions run `44901392061`; observed jobs passed source/runner tests, Android unit tests, lint, debug/instrumentation assembly, APK identity/signature and install-over-existing preservation. This is baseline evidence only, not S7 validation.
-- PR run `44904962417` was queued for the previous branch head. The duplicate-ledger cleanup and manifest refresh will trigger a new exact-head run. No S7 CI pass is claimed.
+- Exact-head CI run `44905212265` passed on `d3cbdc26dfbb0cc4e1c076a2b45ac81a77862d0e` (source verifier, runner tests, core/app unit tests, lint, debug/instrumentation assembly, identity/signature and install-over-existing). The cancellation-hardening changes in this commit are newer; exact-head CI is pending.
 - **Local:** no Gradle/Android SDK or checked-out project tree, so no local test/lint/build was run.
 - **Release:** no canonical release APK produced. Available CI debug identity `app.memo.android.debug` is not an update for `app.memo.android`; physical-device acceptance remains open.
 
