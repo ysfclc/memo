@@ -222,6 +222,8 @@ The following keeps Claude's task families and ordering while requiring Memo 1-s
 - [~] **M3.A4-S1** Treat execution-event persistence/delivery failure as a hard stop. If a capability may already have started, return `NEEDS_REVIEW` and do not continue with another model decision. A regression test covers failure while recording a completed capability. Source committed on Talk execution branch; CI/device verification pending. This is a guardrail, not durable process-death recovery.
 
 
+- [~] **M3.A4-S2** Talk transcript must render all execution event types, including approval-requested/granted/rejected. Added explicit approval lifecycle rendering to avoid incomplete event handling; CI verification pending.
+
 ### M3 — Orchestrator and live environment
 
 - [ ] **M3.A1** Local planner maps intent to a typed, bounded workflow dynamically; no hardcoded workflow per use case.
