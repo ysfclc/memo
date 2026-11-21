@@ -484,7 +484,6 @@ object MemoWorkspaceAgentTools {
                 evidenceReference = id
             )
         }
-        }
     }
 
     private class ProposeRecordAdapter(
@@ -604,7 +603,6 @@ object MemoWorkspaceAgentTools {
                 description = if (verified) "The exact typed record, properties, source conversation/message and review state were read back from the workspace." else "The proposed record could not be read back with matching type, title, properties, source and review state.",
                 evidenceReference = id
             )
-        }
         }
     }
 
