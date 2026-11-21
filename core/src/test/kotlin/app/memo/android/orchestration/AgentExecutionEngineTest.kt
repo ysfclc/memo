@@ -357,4 +357,36 @@ class AgentExecutionEngineTest {
         assertTrue(systemPrompts[2].contains("browser.capture_evidence"))
     }
 
+    @Test
+    fun eventPersistenceFailureAfterToolExecutionStopsRunForReview() = runBlocking {
+        var modelCalls = 0
+        var capabilityCalls = 0
+        val model = AgentModelProvider { _, _ ->
+            modelCalls++
+            if (modelCalls == 1) {
+                """{"type":"tool_call","tool":"workspace.search","arguments":{"query":"records"}}"""
+            } else {
+                """{"type":"final","content":"Finished"}"""
+            }
+        }
+        val adapter = object : AgentCapabilityAdapter {
+            override val definition = AgentToolDefinition("workspace.search", "Search saved records.", schema)
+            override fun isAvailable() = true
+            override suspend fun invoke(arguments: JSONObject, invocation: AgentToolInvocation): AgentToolResult {
+                capabilityCalls++
+                return AgentToolResult(AgentToolStatus.SUCCEEDED, "Search result returned.")
+            }
+        }
+        val result = AgentExecutionEngine(model, listOf(adapter)).execute("Search records") { event ->
+            if (event.type == AgentExecutionEventType.TOOL_FINISHED) error("event store unavailable")
+        }
+
+        assertEquals(AgentRunStatus.NEEDS_REVIEW, result.status)
+        assertEquals(1, modelCalls)
+        assertEquals(1, capabilityCalls)
+        assertEquals(1, result.toolCalls)
+        assertTrue(result.finalMessage.contains("review the action outcome"))
+    }
+
+
 }
