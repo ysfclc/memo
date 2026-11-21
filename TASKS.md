@@ -557,5 +557,15 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - After approval, the adapter recomputes the content hash, durably consumes the one-use action grant, rechecks the visible page, fills the visible text composer, clicks the send control, and verifies that the exact prompt appears as a submitted message and the composer is cleared.
 - The adapter saves an encrypted `BROWSER_PROMPT_SUBMISSION` evidence record containing the exact prompt, prompt digest, page snapshot digest, source conversation/message provenance and action ID/hash. The shared postcondition verifies the evidence and completes the action ledger only after read-back.
 - Any page change, uncertain send, cancellation, evidence persistence failure or action-ledger mismatch stops at `NEEDS_REVIEW`; the prompt is never automatically replayed.
-- Scope boundary: no arbitrary page controls, form filling, file upload, provider response polling or native Android actions in this slice. Page response content remains subject to the existing explicit browser-page sharing consent.
+- Scope boundary: no arbitrary page controls, form filling, file upload or native Android actions in this slice. Stable response capture for the submitted prompt is available only when the user separately enables browser-page sharing consent.
 - Validation: source verifier and runtime approval regression coverage added. Exact-head Android CI and physical-device acceptance pending.
+
+
+### M3.A4-S9 — Consent-gated stable browser response capture
+
+- [~] Added `browser.capture_response` to the Talk tool set only when the user has separately enabled browser-page sharing. It requires the exact evidence ID from the previously approved `browser.submit_prompt` call and verifies that the submission action is already COMPLETED.
+- Uses the browser's submission baseline to detect a new assistant response, not an older answer. The response must be new, stable across repeated polls and associated with the same-origin page; lost baseline, unsupported page structure or timeout stops for review and never resends the prompt.
+- Saves the response as encrypted `BROWSER_PROMPT_RESPONSE` evidence with prompt-submission reference, prompt/response/page digests, source conversation/message provenance and run/call IDs. The postcondition reads back the exact response and source binding before returning it to Talk as explicitly labelled untrusted external content.
+- This adapter is a local evidence write, not a new external side effect; runtime policy does not require external-action approval. It is not advertised when page-sharing consent is disabled.
+- Scope boundary: provider-specific response detection is bounded to the existing stable-response script; general page controls/forms, uploads, native apps and arbitrary page-event subscriptions remain open.
+- Validation: runtime policy regression and source-verifier guards added. Exact-head Android CI and physical-device acceptance pending.
