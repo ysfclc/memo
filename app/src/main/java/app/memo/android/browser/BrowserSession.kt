@@ -435,6 +435,59 @@ class BrowserSession(
             }
         }
 
+    /**
+     * Wait for the new assistant response associated with the exact prompt previously submitted by Talk.
+     * The browser script compares against its submission baseline, so an older answer cannot be returned.
+     */
+    suspend fun captureAssistantResponseForAgent(
+        prompt: String,
+        expectedUrl: String
+    ): Pair<String, BrowserPageCapture> = withContext(Dispatchers.Main.immediate) {
+        val cleanPrompt = prompt.trim()
+        require(cleanPrompt.isNotBlank()) { "A prompt submission is required before capturing a response." }
+        val target = BrowserUrlPolicy.normalizeHttpsUrl(expectedUrl)
+            ?: throw IllegalArgumentException("Response capture requires the original HTTPS destination.")
+        check(canCaptureForAgent && BrowserUrlPolicy.isSameOriginHttpsLink(target, currentUrl)) {
+            "The visible browser page is unavailable or has moved away from the approved prompt destination."
+        }
+        val submission = evaluateAgentScript(
+            BrowserScripts.verifyPromptSubmission(cleanPrompt, preserveState = true)
+        )
+        check(submission.optBoolean("verified")) {
+            "Memo could not verify the original prompt baseline. Inspect the provider conversation manually; do not resend."
+        }
+
+        val deadline = System.currentTimeMillis() + 45_000L
+        var response = ""
+        var lastReason = "Waiting for a new, stable assistant response."
+        while (System.currentTimeMillis() < deadline) {
+            val poll = evaluateAgentScript(BrowserScripts.pollAssistantResponse)
+            when (poll.optString("status")) {
+                "COMPLETED" -> {
+                    response = poll.optString("response").trim()
+                    if (response.isNotBlank()) break
+                    lastReason = "The provider reported completion without readable response text."
+                }
+                "NEEDS_REVIEW" -> throw IllegalStateException(
+                    poll.optString("reason").ifBlank { "The provider response baseline needs manual review." }
+                )
+                "PENDING" -> lastReason = poll.optString("reason").ifBlank { lastReason }
+                else -> throw IllegalStateException("The provider returned an unsupported response state.")
+            }
+            delay(1_000L)
+        }
+        check(response.length >= 24) {
+            "$lastReason The response did not become stable within 45 seconds. Inspect the page; the prompt will not be resent."
+        }
+        val afterUrl = BrowserUrlPolicy.normalizeHttpsUrl(currentUrl)
+            ?: throw IllegalStateException("The browser left the supported HTTPS page while waiting for a response.")
+        check(BrowserUrlPolicy.isSameOriginHttpsLink(target, afterUrl)) {
+            "The provider response appeared after the browser moved to another origin. Inspect the page manually."
+        }
+        val capture = captureCurrentPageForAgent(afterUrl)
+        response.take(14_000) to capture
+    }
+
     private suspend fun evaluateAgentScript(script: String): JSONObject {
         val pending = CompletableDeferred<JSONObject>()
         webView.evaluateJavascript(script) { raw ->
