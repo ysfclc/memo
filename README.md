@@ -47,6 +47,7 @@ The optional remote guest runner can be configured from Apps & automation. It re
 - Native workflow edits are archived as revisions; a run records/pins the workflow version it used. Browser provider sends now use the core `ActionApprovalLedger` and a hash-chained event history; the central approval inbox now covers the browser action ledger, while universal runtime adoption remains open.
 - Workflows are policy-validated and bounded, with required final visible-text postconditions.
 - Interrupted native/guest runs are not automatically replayed. Status remains reviewable and actions require user initiation.
+- Talk's shared execution loop accepts a capability as successful only after its adapter verifies an observable postcondition. Unverified reads fail and uncertain writes stop for review; current coverage is the exposed workspace/browser adapters, not every runtime.
 - Outbound remote guest execution requires a preview and an explicit approval action. The bearer token is encrypted using Android Keystore in app-private preferences.
 - The Apps workflow registry/run history is encrypted using the backward-compatible `SynthStore` vault. The main Compose workspace still uses its own `EncryptedVault`; **these data stores are not yet unified**. Imported/share-captured text is not silently merged into the work graph.
 
