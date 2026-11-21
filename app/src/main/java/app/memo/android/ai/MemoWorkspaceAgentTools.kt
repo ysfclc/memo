@@ -465,7 +465,8 @@ object MemoWorkspaceAgentTools {
             val destination = submissionMetadata.optString("destination")
             if (submission.kind != "BROWSER_PROMPT_SUBMISSION" ||
                 submissionMetadata.optString("promptDigest") != promptDigest ||
-                action?.status != "COMPLETED" ||
+                action == null ||
+                action.status != "COMPLETED" ||
                 action.evidenceRef != submissionId ||
                 !BrowserUrlPolicy.isSameOriginHttpsLink(destination, browser.currentUrl)
             ) {
