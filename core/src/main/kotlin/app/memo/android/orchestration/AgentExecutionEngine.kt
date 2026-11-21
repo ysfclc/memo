@@ -391,7 +391,7 @@ class AgentExecutionEngine(
                         if (definition.executionClass != AgentToolExecutionClass.READ_ONLY && toolResult.status == AgentToolStatus.FAILED) {
                             toolResult = toolResult.copy(
                                 status = AgentToolStatus.NEEDS_REVIEW,
-                                output = (toolResult.output + "\\nA write adapter reported failure after start; Memo cannot prove that no side effect occurred. Inspect before retrying.").take(24_000),
+                                output = (toolResult.output + "\nA write adapter reported failure after start; Memo cannot prove that no side effect occurred. Inspect before retrying.").take(24_000),
                                 summary = "Write outcome is uncertain; review before retrying."
                             )
                         }
