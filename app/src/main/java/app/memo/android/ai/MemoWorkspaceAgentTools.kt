@@ -62,6 +62,7 @@ object MemoWorkspaceAgentTools {
         var lastCapturedContentDigest: String = ""
         var lastCapturedLinksDigest: String = ""
         var lastCapturedTitle: String = ""
+        var lastCapturedSourceTitle: String = ""
     }
 
     private fun navigationEvidenceReference(url: String): String =
@@ -98,6 +99,7 @@ object MemoWorkspaceAgentTools {
             scope.lastCapturedContentDigest = ""
             scope.lastCapturedLinksDigest = ""
             scope.lastCapturedTitle = ""
+            scope.lastCapturedSourceTitle = ""
             return AgentToolResult(
                 status = AgentToolStatus.SUCCEEDED,
                 output = "Opened the exact user-supplied HTTPS page in Memo's visible browser session. Page title: ${page.title}. Final URL: ${page.url}. Navigation only; no page controls were activated.",
@@ -214,6 +216,7 @@ object MemoWorkspaceAgentTools {
             scope.lastCapturedContentDigest = digest
             scope.lastCapturedLinksDigest = linksDigest
             scope.lastCapturedTitle = evidence.title
+            scope.lastCapturedSourceTitle = capture.title
             val excerpt = capture.content.take(6_500)
             val truncation = if (capture.content.length > excerpt.length) {
                 "\n[The full page capture is saved in Memo evidence; this model observation is an excerpt.]"
@@ -242,7 +245,7 @@ object MemoWorkspaceAgentTools {
             val evidenceId = scope.lastCapturedEvidenceId
             val evidence = viewModel.snapshot.value.evidence.firstOrNull { it.id == evidenceId }
             val metadata = evidence?.let { runCatching { JSONObject(it.metadata) }.getOrNull() }
-            val contentDigest = evidence?.let { sha256("${it.sourceUrl}\n${it.title}\n${it.content}") }.orEmpty()
+            val contentDigest = evidence?.let { sha256("${it.sourceUrl}\n${scope.lastCapturedSourceTitle}\n${it.content}") }.orEmpty()
             val verified = isAvailable() && evidenceId.isNotBlank() && result.evidenceReference == evidenceId &&
                 evidence?.kind == "BROWSER_PAGE_CAPTURE" && evidence.sourceUrl == scope.capturedPageUrl &&
                 evidence.title == scope.lastCapturedTitle && evidence.content.isNotBlank() &&
@@ -290,6 +293,7 @@ object MemoWorkspaceAgentTools {
             scope.lastCapturedContentDigest = ""
             scope.lastCapturedLinksDigest = ""
             scope.lastCapturedTitle = ""
+            scope.lastCapturedSourceTitle = ""
             return AgentToolResult(
                 status = AgentToolStatus.SUCCEEDED,
                 output = "Opened the exact visible same-origin link '" + link.label.ifBlank { "Untitled link" } +
