@@ -217,6 +217,11 @@ The following keeps Claude's task families and ordering while requiring Memo 1-s
 - [ ] **M2.B0c** Accessible component kit with disabled/loading/error/empty states and consistent touch targets.
 - [ ] **M2.B0d** Navigation shell, shared transitions, predictive back and responsive layouts. No second navigation system or disconnected mock screens.
 
+### Execution safety increment — event-sink failure
+
+- [~] **M3.A4-S1** Treat execution-event persistence/delivery failure as a hard stop. If a capability may already have started, return `NEEDS_REVIEW` and do not continue with another model decision. A regression test covers failure while recording a completed capability. Source committed on Talk execution branch; CI/device verification pending. This is a guardrail, not durable process-death recovery.
+
+
 ### M3 — Orchestrator and live environment
 
 - [ ] **M3.A1** Local planner maps intent to a typed, bounded workflow dynamically; no hardcoded workflow per use case.
