@@ -1496,6 +1496,14 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         history.put(org.json.JSONObject().put("title", existing.title).put("content", existing.content.take(24_000)).put("savedAt", nowMillis()))
         while (history.length() > 5) history.remove(0)
         metadata.put("revisionHistory", history)
+        if (existing.kind == "STUDIO_ARTIFACT") {
+            val artifactType = metadata.optString("artifactType")
+            val revisedDraft = runCatching { StudioArtifactPolicy.prepare(cleanTitle, artifactType, cleanContent) }
+                .getOrElse { error -> return Result.failure(IllegalArgumentException(error.message ?: "The Studio draft no longer passes artifact validation.", error)) }
+            metadata.put("contentDigest", revisedDraft.contentDigest)
+            metadata.put("format", "MARKDOWN")
+            metadata.put("reviewStatus", "DRAFT")
+        }
         metadata.put("version", metadata.optInt("version", 1) + 1)
         metadata.put("lastEditedAt", nowMillis())
         metadata.put("editedBy", "user")
