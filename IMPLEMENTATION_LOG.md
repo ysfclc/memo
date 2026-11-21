@@ -281,3 +281,8 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - **Trust boundary:** response text is returned with an explicit UNTRUSTED EXTERNAL RESPONSE label. The adapter is not advertised without page-sharing consent and is a local evidence write, not another external side effect.
 - **Boundary:** provider-specific stable response detection only; arbitrary page events, general controls/forms, uploads and native-app actions remain open.
 - **Validation:** runtime policy regression and source-verifier guards added. Exact-head Android CI and physical-device acceptance pending.
+
+#### CI result — M3.B1-S1 artifact slice
+
+- Run `44953421742` on commit `ae6ef31976d7f35339715a16933ec73e21210af5` passed: source invariants/checksum verification, remote runner, core and app unit tests, lint, debug APK assembly, package/version identity, APK signature verification, and emulator install-over-existing with app-private data preservation.
+- The run predates the subsequent M3.A4-S8/S9 browser prompt/response additions. It does not prove those later adapters, physical-device behavior or release signing.
