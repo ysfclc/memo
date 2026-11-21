@@ -389,7 +389,7 @@ class AgentExecutionEngine(
                                 null
                             }
                             val verificationFailure = when {
-                                verification == null -> "The adapter's postcondition verifier did not return a result before the verification timeout."
+                                verification == null -> "The adapter's postcondition verification was missing, failed, or timed out."
                                 verification.description.isBlank() -> "The verifier returned no bounded explanation."
                                 !verification.verified -> verification.description
                                 toolResult.output.isBlank() -> "The capability returned no observable output."
