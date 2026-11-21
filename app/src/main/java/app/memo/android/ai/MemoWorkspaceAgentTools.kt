@@ -8,6 +8,7 @@ import app.memo.android.runtime.BrowserUrlPolicy
 import app.memo.android.context.WorkspaceContextRetriever
 import app.memo.android.data.EvidenceRecord
 import app.memo.android.data.MemoWorkspaceViewModel
+import app.memo.android.data.StudioArtifactPolicy
 import app.memo.android.orchestration.AgentCapabilityAdapter
 import app.memo.android.orchestration.AgentExecutionEvent
 import app.memo.android.orchestration.AgentToolDefinition
@@ -41,6 +42,7 @@ object MemoWorkspaceAgentTools {
     ): List<AgentCapabilityAdapter> = buildList {
         if (includeWorkspaceSearch) add(WorkspaceSearchAdapter(viewModel, contextCandidates))
         add(SaveNoteAdapter(viewModel))
+        add(StudioArtifactAdapter(viewModel, sourceConversationId, sourceMessageId, sourceExcerpt))
         add(ProposeRecordAdapter(viewModel, sourceConversationId, sourceMessageId, sourceExcerpt))
         if (browser != null) {
             val userSuppliedUrls = BrowserUrlPolicy.explicitlySuppliedUrls(sourceExcerpt)
@@ -483,6 +485,141 @@ object MemoWorkspaceAgentTools {
             return AgentToolPostconditionVerification(
                 verified = verified,
                 description = if (verified) "The exact note title, content and digest were read back from the encrypted workspace." else "The saved note could not be read back with matching title/content/digest.",
+                evidenceReference = id
+            )
+        }
+    }
+
+    private class StudioArtifactAdapter(
+        private val viewModel: MemoWorkspaceViewModel,
+        private val sourceConversationId: String,
+        private val sourceMessageId: String,
+        private val sourceExcerpt: String
+    ) : AgentCapabilityAdapter {
+        override val definition = AgentToolDefinition(
+            id = "workspace.save_artifact",
+            description = "Save a private, editable Markdown deliverable in Memo's encrypted workspace. Use for a report, plan, proposal, research brief or other text artifact. The draft can be opened, edited, copied or exported from Studio; this does not publish, submit or send it anywhere.",
+            inputSchemaJson = """{"type":"object","properties":{"title":{"type":"string","minLength":1,"maxLength":240},"artifactType":{"type":"string","minLength":2,"maxLength":64},"content":{"type":"string","minLength":1,"maxLength":24000}},"required":["title","artifactType","content"],"additionalProperties":false}""",
+            executionClass = AgentToolExecutionClass.LOCAL_WRITE,
+            runtimeId = "app.workspace"
+        )
+
+        override fun isAvailable(): Boolean =
+            sourceConversationId.isNotBlank() &&
+                sourceMessageId.isNotBlank() &&
+                viewModel.vaultReady.value &&
+                viewModel.vaultError.value == null
+
+        private fun sourceExcerptDigest(): String = sha256(sourceExcerpt.take(2_000))
+
+        override suspend fun invoke(arguments: JSONObject, invocation: AgentToolInvocation): AgentToolResult {
+            check(isAvailable()) { "The source conversation or encrypted Memo workspace is unavailable." }
+            val draft = StudioArtifactPolicy.prepare(
+                title = arguments.getString("title"),
+                artifactType = arguments.getString("artifactType"),
+                content = arguments.getString("content")
+            )
+            val sourceDigest = sourceExcerptDigest()
+            val existing = viewModel.snapshot.value.evidence.firstOrNull { record ->
+                if (record.kind != "STUDIO_ARTIFACT") return@firstOrNull false
+                runCatching {
+                    val metadata = JSONObject(record.metadata)
+                    metadata.optString("contentDigest") == draft.contentDigest &&
+                        metadata.optString("sourceConversationId") == sourceConversationId &&
+                        metadata.optString("sourceMessageId") == sourceMessageId &&
+                        metadata.optString("sourceExcerptDigest") == sourceDigest
+                }.getOrDefault(false)
+            }
+            if (existing != null) {
+                return AgentToolResult(
+                    status = AgentToolStatus.SUCCEEDED,
+                    output = "The identical private draft already exists in Studio. ARTIFACT ID: ${existing.id}. CONTENT SHA-256: ${draft.contentDigest}. No duplicate was created.",
+                    summary = "Existing Studio draft reused.",
+                    evidenceReference = existing.id
+                )
+            }
+
+            val metadata = JSONObject()
+                .put("origin", "MEMO_AGENT")
+                .put("artifactType", draft.artifactType)
+                .put("format", "MARKDOWN")
+                .put("contentDigest", draft.contentDigest)
+                .put("sourceConversationId", sourceConversationId)
+                .put("sourceMessageId", sourceMessageId)
+                .put("sourceExcerptDigest", sourceDigest)
+                .put("idempotencyKey", invocation.idempotencyKey)
+                .put("runId", invocation.runId)
+                .put("callId", invocation.callId)
+                .put("reviewStatus", "DRAFT")
+                .put("version", 1)
+                .toString()
+            val artifact = EvidenceRecord(
+                title = draft.title,
+                sourceUrl = "",
+                kind = "STUDIO_ARTIFACT",
+                content = draft.content,
+                summary = draft.content.lineSequence().firstOrNull().orEmpty().take(1_000),
+                metadata = metadata
+            )
+            val saved = viewModel.saveWorkArtifactDurably(artifact)
+            if (saved.isFailure) {
+                val reason = saved.exceptionOrNull()?.message ?: "The draft could not be saved."
+                val uncertain = viewModel.vaultError.value != null ||
+                    reason.contains("vault write", ignoreCase = true) ||
+                    reason.contains("read back", ignoreCase = true)
+                return AgentToolResult(
+                    status = if (uncertain) AgentToolStatus.NEEDS_REVIEW else AgentToolStatus.FAILED,
+                    output = reason,
+                    summary = if (uncertain) "Studio artifact persistence needs review." else "Studio artifact save failed."
+                )
+            }
+            val persisted = viewModel.snapshot.value.evidence.firstOrNull { it.id == artifact.id }
+                ?: return AgentToolResult(
+                    status = AgentToolStatus.NEEDS_REVIEW,
+                    output = "The encrypted write returned, but the exact Studio draft could not be found in the workspace snapshot. Inspect Memo before retrying.",
+                    summary = "Studio artifact persistence could not be verified."
+                )
+            return AgentToolResult(
+                status = AgentToolStatus.SUCCEEDED,
+                output = "Saved a private Markdown draft in Memo Studio. ARTIFACT ID: ${persisted.id}. CONTENT SHA-256: ${draft.contentDigest}. Open it in Studio to edit, copy or export; it has not been submitted, published or sent externally.",
+                summary = "Saved ${draft.artifactType.lowercase(Locale.ROOT).replace('_', ' ')} '${persisted.title}' as a private Studio draft.",
+                evidenceReference = persisted.id
+            )
+        }
+
+        override suspend fun verifyPostcondition(
+            arguments: JSONObject,
+            invocation: AgentToolInvocation,
+            result: AgentToolResult
+        ): AgentToolPostconditionVerification {
+            val draft = runCatching {
+                StudioArtifactPolicy.prepare(
+                    title = arguments.getString("title"),
+                    artifactType = arguments.getString("artifactType"),
+                    content = arguments.getString("content")
+                )
+            }.getOrNull()
+            val id = result.evidenceReference
+            val artifact = viewModel.snapshot.value.evidence.firstOrNull { it.id == id }
+            val metadata = artifact?.let { runCatching { JSONObject(it.metadata) }.getOrNull() }
+            val verified = isAvailable() && draft != null && id.isNotBlank() &&
+                artifact != null && metadata != null &&
+                result.output.contains("ARTIFACT ID: $id") &&
+                result.output.contains("CONTENT SHA-256: ${draft.contentDigest}") &&
+                artifact.kind == "STUDIO_ARTIFACT" &&
+                artifact.title == draft.title &&
+                artifact.content == draft.content &&
+                metadata.optString("artifactType") == draft.artifactType &&
+                metadata.optString("format") == "MARKDOWN" &&
+                metadata.optString("contentDigest") == draft.contentDigest &&
+                metadata.optString("sourceConversationId") == sourceConversationId &&
+                metadata.optString("sourceMessageId") == sourceMessageId &&
+                metadata.optString("sourceExcerptDigest") == sourceExcerptDigest() &&
+                metadata.optString("reviewStatus") == "DRAFT" &&
+                metadata.optInt("version") == 1
+            return AgentToolPostconditionVerification(
+                verified = verified,
+                description = if (verified) "The exact Markdown draft, type, content digest and source provenance were read back from the encrypted workspace." else "The Studio draft could not be read back with matching content, digest, version and source provenance.",
                 evidenceReference = id
             )
         }
