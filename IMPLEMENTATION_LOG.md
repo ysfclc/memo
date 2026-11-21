@@ -244,3 +244,16 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - **Compatibility:** no workspace/backup schema, encryption key, application identity, signing or external approval policy changed.
 - **Validation:** baseline source commit `adf58109af909358940e7361251669377e2a84d5` had CI run `44901392061` all observed jobs passing. This S7 branch has not yet been validated by Actions; local Gradle/Android SDK/project checkout are unavailable here. No APK was built for this increment.
 - **Status:** `[~]` implementation committed to branch; exact-head CI and physical-device acceptance pending.
+
+
+### 2026-11-21 — M3.A4-S7 — Shared capability postcondition verification
+
+- **Requirement:** MEMO-ORCH-001, MEMO-AGENT-001, MEMO-CAP-001, MEMO-LIVE-001.
+- **Baseline:** main `a6c893c7808c5f042f9fe3cb8254b5ac5b90a2c4`; source head `adf58109af909358940e7361251669377e2a84d5`; baseline checkpoint `docs/checkpoints/2026-11-21-agent-postcondition-baseline.md`. Work is on `agent/postcondition-verification-20261121`; no changes were merged to main.
+- **Files changed:** `core/src/main/kotlin/app/memo/android/orchestration/AgentExecutionEngine.kt`, `core/src/test/kotlin/app/memo/android/orchestration/AgentExecutionEngineTest.kt`, `app/src/main/java/app/memo/android/ai/MemoWorkspaceAgentTools.kt`, `tools/verify_source.py`, task/gap/traceability/invariant/product/build documents and checkpoints.
+- **Implementation:** introduced `AgentToolPostconditionVerification` and a default-null verifier contract on `AgentCapabilityAdapter`. The shared engine invokes verification under the capability timeout, requires observable output, checks the evidence reference, and only counts/records `TOOL_FINISHED` after verification. Missing/failed/mismatched read-only verification becomes `FAILED` and may be re-planned; local/external/destructive uncertainty becomes `NEEDS_REVIEW`. Write verification must match the invocation's evidence ID.
+- **Adapters:** search recomputes its bounded result and source IDs; note/proposal verifiers read exact workspace records; browser navigation compares the returned URL/title to the settled visible WebView; capture reopens encrypted evidence and checks source/content/link digests. A failed navigation clears old capture state before trying a new destination.
+- **Tests:** three new engine regressions cover missing read verifier, missing write verifier and mismatched write evidence. Existing success tests were updated to supply test verifiers. Source verifier guards the new contract and all six adapter implementations.
+- **Compatibility:** no workspace/backup schema, encryption key, application identity, signing or external approval policy changed.
+- **Validation:** baseline source commit `adf58109af909358940e7361251669377e2a84d5` had CI run `44901392061` all observed jobs passing. This S7 branch has not yet been validated by Actions; local Gradle/Android SDK/project checkout are unavailable here. No APK was built for this increment.
+- **Status:** `[~]` implementation committed to branch; exact-head CI and physical-device acceptance pending.
