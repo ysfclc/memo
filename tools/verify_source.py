@@ -472,8 +472,8 @@ for marker in (
 ):
     if marker not in agent_engine:
         fail(f"shared Talk engine does not enforce verified capability outcomes: {marker}")
-if agent_tools.count("override suspend fun verifyPostcondition(") != 8:
-    fail("each of the eight current Talk adapters must implement an explicit postcondition verifier")
+if agent_tools.count("override suspend fun verifyPostcondition(") != 9:
+    fail("each of the nine current Talk adapters must implement an explicit postcondition verifier")
 for marker in (
     "deterministic recomputation from the permitted candidate set",
     "exact note title, content and digest",
@@ -551,6 +551,13 @@ if "fun verifyPromptSubmission" not in browser_scripts:
     fail("The browser prompt submission verifier is missing")
 if "browserPromptSubmissionIsAnExplicitlyApprovedExternalWrite" not in agent_registry_tests:
     fail("Browser prompt submission must have a regression test for explicit external-write approval")
+if "browserResponseCaptureDoesNotAuthorizeExternalSideEffects" not in agent_registry_tests:
+    fail("Browser response capture must remain read-only and non-approvable as an external write")
+for marker in ('id = "browser.capture_response"', "BrowserPromptResponseAdapter(", "UNTRUSTED EXTERNAL RESPONSE", "captureAssistantResponseForAgent(", "BrowserScripts.pollAssistantResponse"):
+    if marker not in agent_tools + browser_session:
+        fail(f"Consent-gated stable browser response capture is incomplete: {marker}")
+if "add(BrowserPromptResponseAdapter(" not in agent_tools:
+    fail("Stable browser response capture must be wired only into the consent-enabled Talk tool set")
 print("PASS: browser prompt submission is exact-content approved, one-use, durably audited and visibly verified")
 
 
