@@ -1,12 +1,12 @@
 # Current PR candidate — 21 November 2026
 
-## M3.A4-S7 — Shared capability postcondition verification (CI pending)
+## M3.A4-S7 — Shared capability postcondition verification (CI passed; device acceptance pending)
 
 - PR #17: `https://github.com/ysfclc/memo/pull/17`; branch `agent/postcondition-verification-20261121`; baseline main `a6c893c7808c5f042f9fe3cb8254b5ac5b90a2c4`.
 - The shared Talk engine requires explicit adapter postcondition verification before counting a capability as successful. Read-only verification failure is a failed observation and can be re-planned; local/external/destructive uncertainty stops for review. Writes require matching invocation/result/verifier evidence IDs.
-- The six current workspace/browser adapters verify deterministic search output, encrypted note/record read-back, settled browser navigation and capture digests. Three core regressions cover missing and mismatched postconditions. The source verifier guards the protocol.
+- The six current workspace/browser adapters verify deterministic search output, encrypted note/record read-back, settled browser navigation and capture digests. Six engine regressions cover missing/mismatched postconditions, cancellation during write invocation/verification, and write adapter failure without re-planning. Source verifier guards the protocol
 - Baseline source commit `adf58109af909358940e7361251669377e2a84d5` was validated by Actions run `44901392061`; observed jobs passed source/runner tests, Android unit tests, lint, debug/instrumentation assembly, APK identity/signature and install-over-existing preservation. This is baseline evidence only, not S7 validation.
-- Exact-head CI run `44905212265` passed on `d3cbdc26dfbb0cc4e1c076a2b45ac81a77862d0e` (source verifier, runner tests, core/app unit tests, lint, debug/instrumentation assembly, identity/signature and install-over-existing). The cancellation-hardening changes in this commit are newer; exact-head CI is pending.
+- Exact-head CI run `44907881554` passed on `bfe40a182b1e283699a8c4c36bf9c612f83981c7`: source verifier, runner tests, core/app unit tests, lint, debug/instrumentation assembly, identity/signature and install-over-existing preservation. Write-interruption review hardening is included
 - **Local:** no Gradle/Android SDK or checked-out project tree, so no local test/lint/build was run.
 - **Release:** no canonical release APK produced. Available CI debug identity `app.memo.android.debug` is not an update for `app.memo.android`; physical-device acceptance remains open.
 
