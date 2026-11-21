@@ -256,7 +256,7 @@ fun ChatsWorkspaceScreen(
     }
 
     if (selectedConversation == null) {
-        Column(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
             Column(Modifier.padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.md), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
                 MemoPageHeader(title = "Talk", eyebrow = "MEMO / TALK", description = "A searchable home for ongoing conversations, imported transcripts and the work they produce.")
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -313,18 +313,17 @@ fun ChatsWorkspaceScreen(
                     Button(onClick = onOpenModels, modifier = Modifier.fillMaxWidth().padding(horizontal = MemoTokens.Spacing.pageMargin)) { Icon(Icons.Rounded.Tune, null); Spacer(Modifier.width(8.dp)); Text("Configure a model") }
                 }
             } else {
-                LazyColumn(
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
-                    contentPadding = PaddingValues(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.xs),
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.xs),
                     verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)
                 ) {
-                    item {
+                    
                         MemoSectionHeading(
                             title = "Conversations",
                             supporting = "${filtered.size} saved"
                         )
-                    }
-                    items(filtered, key = { it.id }) { conversation ->
+                    
+                    filtered.forEach { conversation ->
                         MemoPanel {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                 Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(12.dp), modifier = Modifier.size(44.dp)) {
@@ -341,7 +340,7 @@ fun ChatsWorkspaceScreen(
                             }
                         }
                     }
-                }
+                
             }
         }
     } else {
@@ -1012,12 +1011,11 @@ private fun TodayWorkScreen(
         "NOT_TODAY" to "Not today"
     )
     val openEntities = snapshot.entities.filter { it.reviewStatus !in setOf("REJECTED", "MERGED") }
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.sm),
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.sm),
         verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)
     ) {
-        item {
+        
             MemoPanel {
                 Text("Your active work, from the encrypted workspace.", style = MaterialTheme.typography.bodyMedium)
                 Text(
@@ -1029,28 +1027,28 @@ private fun TodayWorkScreen(
                     Text("Nothing active yet. Browser tasks and saved plans will appear here when you create them.")
                 }
             }
-        }
+        
         priorities.forEach { (priority, label) ->
             val tasks = activeTasks.filter { effectiveTodayPriority(it.todayPriority, it.todayPriorityDate, today) == priority }
             val jobs = activeJobs.filter { effectiveTodayPriority(it.todayPriority, it.todayPriorityDate, today) == priority }
-            item(key = "today-heading-$priority") {
+            
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(label, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.weight(1f))
                     Text("${tasks.size + jobs.size}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-            }
+            
             if (tasks.isEmpty() && jobs.isEmpty()) {
-                item(key = "today-empty-$priority") {
+                
                     Text(
                         if (priority == "UNSORTED") "Everything has a priority." else "Nothing assigned here.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(start = MemoTokens.Spacing.sm, bottom = MemoTokens.Spacing.xs)
                     )
-                }
+                
             }
-            items(tasks, key = { "task-${it.id}" }) { task ->
+            tasks.forEach { task ->
                 val taskEvidence = snapshot.evidence.filter { it.taskId == task.id }.sortedByDescending { it.capturedAt }
                 TodayPriorityCard(
                     title = task.title,
@@ -1062,7 +1060,7 @@ private fun TodayWorkScreen(
                     onOpenEvidence = onOpenEvidence
                 )
             }
-            items(jobs, key = { "job-${it.id}" }) { job ->
+            jobs.forEach { job ->
                 val completed = job.steps.count { it.status == "COMPLETED" }
                 val runningStep = job.steps.firstOrNull { it.status == "RUNNING" }
                 val reviewStep = job.steps.firstOrNull { it.status == "NEEDS_REVIEW" }
@@ -1090,7 +1088,7 @@ private fun TodayWorkScreen(
                 )
             }
         }
-    }
+    
 }
 
 @Composable
@@ -1207,7 +1205,7 @@ fun WorkWorkspaceScreen(
         inSection && (search.isBlank() || entity.title.contains(search, true) || entity.type.contains(search, true) || entity.description.contains(search, true))
     }.sortedWith(compareBy<EntityRecord> { if (it.reviewStatus == "PROPOSED") 0 else 1 }.thenByDescending { it.updatedAt })
 
-    Column(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Column(Modifier.padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.md), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
             MemoPageHeader(title = "Work", eyebrow = "MEMO / WORK", description = "Conversations become projects, tasks, decisions and linked knowledge. Every proposal keeps its source.")
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1259,8 +1257,8 @@ fun WorkWorkspaceScreen(
                     if (section == "ARCHIVE") "Rejected proposals and merged source records are retained here so you can inspect their history." else "Create an entity manually, or open an AI conversation and run Extract outcomes. Candidate entities are source-checked and remain proposals until you approve them."
                 )
             } else {
-                LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.sm), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
-                    items(visibleEntities, key = { it.id }) { entity ->
+                Column(Modifier.fillMaxWidth().padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.sm), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
+                    visibleEntities.forEach { entity ->
                         EntityCard(
                             entity = entity,
                             relationshipCount = snapshot.relationships.count { it.fromEntityId == entity.id || it.toEntityId == entity.id },
@@ -1270,14 +1268,14 @@ fun WorkWorkspaceScreen(
                             onReject = { viewModel.setEntityReviewStatus(entity.id, "REJECTED"); onShowMessage("Rejected ${entity.title}.") }
                         )
                     }
-                }
+                
             }
         } else {
             if (snapshot.jobs.isEmpty()) {
                 EmptyState("No plans yet", "Action-oriented requests become editable plans here. Review each checkpoint and its requirements before starting; completed work needs a real outcome and evidence.")
             } else {
-                LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.sm), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
-                    items(snapshot.jobs.sortedByDescending { it.updatedAt }, key = { it.id }) { job ->
+                Column(Modifier.fillMaxWidth().padding(horizontal = MemoTokens.Spacing.pageMargin, vertical = MemoTokens.Spacing.sm), verticalArrangement = Arrangement.spacedBy(MemoTokens.Spacing.sm)) {
+                    snapshot.jobs.sortedByDescending { it.updatedAt }.forEach { job ->
                         JobCard(
                             job,
                             sourceTitle = snapshot.conversations.firstOrNull { it.id == job.sourceConversationId }?.title,
@@ -1348,7 +1346,7 @@ fun WorkWorkspaceScreen(
                             onOpenEvidence = onOpenEvidence
                         )
                     }
-                }
+                
             }
         }
     }
