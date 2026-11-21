@@ -558,7 +558,7 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - The adapter saves an encrypted `BROWSER_PROMPT_SUBMISSION` evidence record containing the exact prompt, prompt digest, page snapshot digest, source conversation/message provenance and action ID/hash. The shared postcondition verifies the evidence and completes the action ledger only after read-back.
 - Any page change, uncertain send, cancellation, evidence persistence failure or action-ledger mismatch stops at `NEEDS_REVIEW`; the prompt is never automatically replayed.
 - Scope boundary: no arbitrary page controls, form filling, file upload or native Android actions in this slice. Stable response capture for the submitted prompt is available only when the user separately enables browser-page sharing consent.
-- Validation: source verifier and runtime approval regression coverage added. Exact-head Android CI and physical-device acceptance pending.
+- Validation: source verifier and runtime approval regression coverage added. Exact-head CI run 44954196829 on commit 23073011b9c411945c12531ce8483ac0a6d2b4b5 passed source verification, remote-runner tests, core/app unit tests, lint, debug APK assembly, package/signature checks and emulator install-over-existing data preservation. Physical-device acceptance remains pending.
 
 
 ### M3.A4-S9 — Consent-gated stable browser response capture
