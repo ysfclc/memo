@@ -77,6 +77,12 @@ class MemoLocalizationTest {
     }
 
     @Test
+    fun approvalReviewAcknowledgementTranslatesInPolishAndTurkish() {
+        assertEquals("Potwierdzam sprawdzenie pełnego celu i dokładnej treści działania.", MemoLocalization.translate("I confirm that I reviewed the full destination and exact payload.", "PL"))
+        assertEquals("Tam hedefi ve eylemin eksiksiz içeriğini incelediğimi onaylıyorum.", MemoLocalization.translate("I confirm that I reviewed the full destination and exact payload.", "TR"))
+    }
+
+    @Test
     fun userContentAndUnknownStringsRemainUntouched() {
         val userText = "I met a person called Deniz at the event."
         assertEquals(userText, MemoLocalization.translate(userText, "TR"))

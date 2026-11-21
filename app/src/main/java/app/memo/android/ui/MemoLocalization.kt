@@ -119,6 +119,7 @@ object MemoLocalization {
         "This action is waiting for the matching Talk execution. Review the destination and full exact payload above. Approval is one-use and tied to the displayed content hash." to ("To działanie oczekuje na powiązane wykonanie w Rozmowie. Sprawdź powyższy cel i pełny, dokładny ładunek. Zatwierdzenie jest jednorazowe i powiązane z wyświetlonym skrótem treści." to "Bu eylem eşleşen Talk yürütmesini bekliyor. Yukarıdaki hedefi ve tam içeriği incele. Onay tek kullanımlıktır ve gösterilen içerik özetine bağlıdır."),
         "Approve exact action" to ("Zatwierdź dokładne działanie" to "Tam eylemi onayla"),
         "Reject and stop this action" to ("Odrzuć i zatrzymaj to działanie" to "Reddet ve bu eylemi durdur"),
+        "I confirm that I reviewed the full destination and exact payload." to ("Potwierdzam sprawdzenie pełnego celu i dokładnej treści działania." to "Tam hedefi ve eylemin eksiksiz içeriğini incelediğimi onaylıyorum."),
         "External browser prompts appear here before sending. The exact-content confirmation remains in the live browser workflow." to ("Tutaj pojawiają się zewnętrzne prompty przed wysłaniem. Potwierdzenie dokładnej treści pozostaje w aktywnym przepływie przeglądarki." to "Harici istemler gönderilmeden önce burada görünür. Tam içerik onayı canlı tarayıcı akışında kalır."),
         "Inspect payload and audit" to ("Sprawdź treść i audyt" to "İçeriği ve denetimi incele"),
         "Show less" to ("Pokaż mniej" to "Daha az göster"),

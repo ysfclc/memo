@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -24,6 +25,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
 import app.memo.android.ui.MemoText as Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -166,6 +168,10 @@ private fun ActionApprovalCard(
     onReject: () -> Unit,
     onMarkNeedsReview: () -> Unit
 ) {
+    var agentApprovalReviewed by remember(action.id, action.contentHash) { mutableStateOf(false) }
+    LaunchedEffect(expanded, action.id, action.contentHash) {
+        if (!expanded) agentApprovalReviewed = false
+    }
     Surface(shape = RoundedCornerShape(18.dp), color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.30f), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.padding(15.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -184,6 +190,8 @@ private fun ActionApprovalCard(
                 if (liveApproval) Button(onClick = onOpenBrowser) { Text("Open live approval") }
             }
             if (expanded) {
+                Text("Destination", style = MaterialTheme.typography.labelLarge)
+                SelectionContainer { Text(action.destination, style = MaterialTheme.typography.bodySmall) }
                 SelectionContainer {
                     Column(Modifier.fillMaxWidth().heightIn(max = 400.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Exact outbound payload", style = MaterialTheme.typography.labelLarge)
@@ -208,8 +216,14 @@ private fun ActionApprovalCard(
             }
             if (action.status == "PENDING") {
                 if (agentApproval) {
-                    Text("This action is waiting for the matching Talk execution. Review the destination and full exact payload above. Approval is one-use and tied to the displayed content hash.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Button(onClick = onApproveAgentAction, modifier = Modifier.fillMaxWidth()) { Text("Approve exact action") }
+                    if (expanded) {
+                        Text("This action is waiting for the matching Talk execution. Review the destination and full exact payload above. Approval is one-use and tied to the displayed content hash.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = agentApprovalReviewed, onCheckedChange = { agentApprovalReviewed = it })
+                            Text("I confirm that I reviewed the full destination and exact payload.", style = MaterialTheme.typography.bodySmall)
+                        }
+                        Button(onClick = onApproveAgentAction, enabled = agentApprovalReviewed, modifier = Modifier.fillMaxWidth()) { Text("Approve exact action") }
+                    }
                     OutlinedButton(onClick = onRejectAgentAction, modifier = Modifier.fillMaxWidth()) { Text("Reject and stop this action") }
                 } else {
                     if (!liveApproval) Text("This proposal is not connected to the matching live prompt. Memo will not approve or send it from history.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

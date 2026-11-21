@@ -14,6 +14,7 @@ import android.provider.Settings
 import android.net.Uri
 import android.speech.RecognizerIntent
 import androidx.activity.compose.BackHandler
+import androidx.lifecycle.viewModelScope
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -661,13 +662,13 @@ fun MemoWorkspaceApp(
                             accepted
                         },
                         onApproveAgentAction = { id ->
-                            scope.launch {
+                            viewModel.viewModelScope.launch {
                                 val accepted = viewModel.approveAgentActionDurably(id)
                                 snack(if (accepted) "Exact action approved. Memo is resuming the waiting Talk execution." else "Approval was not accepted. Check the action status and audit history.")
                             }
                         },
                         onRejectAgentAction = { id, reason ->
-                            scope.launch {
+                            viewModel.viewModelScope.launch {
                                 val accepted = viewModel.rejectAgentActionDurably(id, reason)
                                 snack(if (accepted) "Action rejected. The waiting Talk execution will stop before this action is run." else "The action could not be rejected. Check its status and audit history.")
                             }
