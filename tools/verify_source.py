@@ -472,8 +472,8 @@ for marker in (
 ):
     if marker not in agent_engine:
         fail(f"shared Talk engine does not enforce verified capability outcomes: {marker}")
-if agent_tools.count("override suspend fun verifyPostcondition(") != 6:
-    fail("each of the six current Talk adapters must implement an explicit postcondition verifier")
+if agent_tools.count("override suspend fun verifyPostcondition(") != 7:
+    fail("each of the seven current Talk adapters must implement an explicit postcondition verifier")
 for marker in (
     "deterministic recomputation from the permitted candidate set",
     "exact note title, content and digest",
@@ -491,6 +491,31 @@ for marker in (
 ):
     if marker not in agent_engine_tests:
         fail(f"shared Talk postcondition regression coverage is missing: {marker}")
+studio_artifact_policy = (ROOT / "core/src/main/kotlin/app/memo/android/data/StudioArtifactPolicy.kt").read_text()
+studio_artifact_tests = (ROOT / "core/src/test/kotlin/app/memo/android/data/StudioArtifactPolicyTest.kt").read_text()
+for marker in (
+    'RuntimeCapability("workspace.save_artifact"',
+    'id = "workspace.save_artifact"',
+    "StudioArtifactPolicy.prepare",
+    'kind = "STUDIO_ARTIFACT"',
+    "sourceExcerptDigest",
+    "CONTENT SHA-256:",
+):
+    if marker not in runtime_registry + agent_tools:
+        fail(f"Talk-to-Studio artifact capability is missing its runtime, persistence or evidence contract: {marker}")
+for marker in (
+    "fun normalizesDescriptiveTypeAndProducesStableDigest",
+    "fun digestBindsTitleTypeAndContent",
+    "fun rejectsBlankAndOversizedArtifactFields",
+    "fun acceptsNewArtifactTypesWithoutAddingSpecializedWorkflows",
+):
+    if marker not in studio_artifact_tests:
+        fail(f"Studio artifact policy regression coverage is missing: {marker}")
+for marker in ('"STUDIO_ARTIFACT"', "Your generated artifacts", "artifactType"):
+    if marker not in talk_ui:
+        fail(f"Studio does not expose Talk-created artifacts for review: {marker}")
+print("PASS: Talk can save source-linked private Markdown drafts through the registered workspace runtime; digest, bounds and Studio review surface are guarded")
+
 print("PASS: capability success is gated by explicit postcondition verification; unverified reads fail and uncertain writes require review")
 for marker in ("writeOutcomeUncertainOnCancellation", "AgentExecutionEventType.RUN_NEEDS_REVIEW"):
     if marker not in agent_engine:
