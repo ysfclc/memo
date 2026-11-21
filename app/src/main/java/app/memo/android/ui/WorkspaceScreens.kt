@@ -340,7 +340,7 @@ fun ChatsWorkspaceScreen(
                             }
                         }
                     }
-                
+                }
             }
         }
     } else {
@@ -1088,7 +1088,7 @@ private fun TodayWorkScreen(
                 )
             }
         }
-    
+    }
 }
 
 @Composable
@@ -1268,7 +1268,7 @@ fun WorkWorkspaceScreen(
                             onReject = { viewModel.setEntityReviewStatus(entity.id, "REJECTED"); onShowMessage("Rejected ${entity.title}.") }
                         )
                     }
-                
+                }
             }
         } else {
             if (snapshot.jobs.isEmpty()) {
@@ -1346,7 +1346,7 @@ fun WorkWorkspaceScreen(
                             onOpenEvidence = onOpenEvidence
                         )
                     }
-                
+                }
             }
         }
     }
