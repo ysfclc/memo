@@ -1,3 +1,16 @@
+# Current PR candidate — 21 November 2026
+
+## M3.A4-S7 — Shared capability postcondition verification (CI passed; device acceptance pending)
+
+- PR #17: `https://github.com/ysfclc/memo/pull/17`; branch `agent/postcondition-verification-20261121`; baseline main `a6c893c7808c5f042f9fe3cb8254b5ac5b90a2c4`.
+- The shared Talk engine requires explicit adapter postcondition verification before counting a capability as successful. Read-only verification failure is a failed observation and can be re-planned; local/external/destructive uncertainty stops for review. Writes require matching invocation/result/verifier evidence IDs.
+- The six current workspace/browser adapters verify deterministic search output, encrypted note/record read-back, settled browser navigation and capture digests. Six engine regressions cover missing/mismatched postconditions, cancellation during write invocation/verification, and write adapter failure without re-planning. Source verifier guards the protocol
+- Baseline source commit `adf58109af909358940e7361251669377e2a84d5` was validated by Actions run `44901392061`; observed jobs passed source/runner tests, Android unit tests, lint, debug/instrumentation assembly, APK identity/signature and install-over-existing preservation. This is baseline evidence only, not S7 validation.
+- Exact-head CI run `44907881554` passed on `bfe40a182b1e283699a8c4c36bf9c612f83981c7`: source verifier, runner tests, core/app unit tests, lint, debug/instrumentation assembly, identity/signature and install-over-existing preservation. Write-interruption review hardening is included
+- **Local:** no Gradle/Android SDK or checked-out project tree, so no local test/lint/build was run.
+- **Release:** no canonical release APK produced. Available CI debug identity `app.memo.android.debug` is not an update for `app.memo.android`; physical-device acceptance remains open.
+
+---
 # Verified APK evidence — 8 November 2026
 
 - **Workflow:** [Memo Android build #223](https://github.com/ysfclc/memo/actions/runs/42530596381), run ID `42530596381`, completed successfully.
@@ -210,3 +223,10 @@ The action inbox and first top-level stop control are present in source. Static/
 - Required source, runner, JVM, lint and APK identity gates: PASS
 - Build/test signature: ephemeral CI debug key; final pinned signing is isolated.
 - Workflow run: https://github.com/ysfclc/memo/actions/runs/44927379252
+
+## Product integration candidate — 21 November 2026
+
+- Integration branch: `build/product-core-integration-2026-11-21`, based on current main `d80f19ae6ff956392cbe11c2b1aaead1758a7d19`.
+- Integrated M3.A4-S7 shared capability postcondition verification from PR #17. Exact source head `bfe40a182b1e283699a8c4c36bf9c612f83981c7` passed Actions run `44907881554` (source verifier, remote runner, core/app unit tests, lint, debug/instrumentation APK assembly, package/signature and emulator install-over-existing data preservation).
+- Preserved the current main Talk/Work scrolling repair and added the binding UI regression/device acceptance gate from PR #18.
+- Integration-branch CI is pending. No canonical release APK or physical-device acceptance is claimed.
