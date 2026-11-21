@@ -53,3 +53,12 @@ Record device model, Android version, APK SHA-256, GitHub Actions run URL, test 
 - [ ] Verify the reminder re-schedules after reboot/timezone/time change; test with battery saver and record any OEM delay rather than assuming exact timing.
 - [ ] Complete and fail a bounded native workflow; confirm one generic workflow notification per terminal transition and no duplicate notification on ordinary refreshes.
 - [ ] Tap a Memo notification while locked. Confirm Memo still requires its normal workspace unlock before private content is accessible.
+
+## UI regression gate — mandatory for every release candidate
+
+- [ ] Verify the exact candidate commit preserves the Talk and Work page-level scrolling contract in docs/UI_REGRESSION_CONTRACT.md; inspect source diffs for all affected screens and shared layout primitives.
+- [ ] On a real phone, scroll Talk from the top header through every section to the bottom. Confirm all page content moves as one continuous surface; no clipped cards, trapped nested scroll regions, fixed sections hiding content, or overlapping composer/navigation.
+- [ ] Repeat for Work across Today, Entities, Archive, Plans and all filters/actions. Confirm the full page remains reachable and each intended horizontal chip row scrolls horizontally without hijacking vertical page scroll.
+- [ ] Repeat after opening/closing the keyboard, changing language, switching tabs, returning from a detail screen, and with long/empty content.
+- [ ] Record device, Android version, exact APK SHA-256, commit SHA, screenshots/video, and pass/fail for each screen. A CI build, static source check or emulator test alone does not count as physical-device acceptance.
+- [ ] If any check fails or has not been run, mark the candidate NOT RELEASE-VERIFIED. Do not ask the user to install it as an update.
