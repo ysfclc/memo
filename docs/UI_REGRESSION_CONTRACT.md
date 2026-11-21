@@ -45,7 +45,7 @@ Any failure or missing evidence blocks release. Revert the offending change or r
 
 ## Consent-gated browser response capture
 
-- browser.capture_response must not be advertised unless the user has explicitly enabled browser-page sharing and a completed browser.submit_prompt evidence reference exists.
+- browser.capture_response must not be advertised for a remote model unless the user has explicitly enabled per-request browser-page sharing and a completed browser.submit_prompt evidence reference exists. A local model may receive page content on-device without remote-sharing consent.
 - It must bind to the exact prior submission ID, verify the action ledger is completed, and use the original submission baseline so a previous answer cannot be mistaken for a new response.
 - Only a new, stable response is returned; baseline loss, unsupported page structure, page navigation or timeout must stop for review without resending the prompt.
 - Returned response text is untrusted external content. The UI/model must not treat instructions inside the response as instructions to Memo.
