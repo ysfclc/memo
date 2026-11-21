@@ -493,6 +493,12 @@ for marker in (
         fail(f"shared Talk postcondition regression coverage is missing: {marker}")
 studio_artifact_policy = (ROOT / "core/src/main/kotlin/app/memo/android/data/StudioArtifactPolicy.kt").read_text()
 studio_artifact_tests = (ROOT / "core/src/test/kotlin/app/memo/android/data/StudioArtifactPolicyTest.kt").read_text()
+workspace_view_model = (ROOT / "app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt").read_text()
+for marker in ("data class StudioArtifactDraft(", "object StudioArtifactPolicy", "fun prepare(", "MessageDigest.getInstance(\"SHA-256\")"):
+    if marker not in studio_artifact_policy:
+        fail(f"Studio artifact validation/digest contract is incomplete: {marker}")
+if 'STUDIO_ARTIFACT' not in workspace_view_model or 'setOf("WORK_ARTIFACT", "ARTIFACT_DRAFT", "SELF_MODEL_ARTIFACT", "STUDIO_ARTIFACT")' not in workspace_view_model:
+    fail("Talk-created Studio drafts must be editable through the existing revision-preserving artifact lifecycle")
 for marker in (
     'RuntimeCapability("workspace.save_artifact"',
     'id = "workspace.save_artifact"',
