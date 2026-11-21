@@ -247,10 +247,10 @@ object MemoWorkspaceAgentTools {
             val metadata = evidence?.let { runCatching { JSONObject(it.metadata) }.getOrNull() }
             val contentDigest = evidence?.let { sha256("${it.sourceUrl}\n${scope.lastCapturedSourceTitle}\n${it.content}") }.orEmpty()
             val verified = isAvailable() && evidenceId.isNotBlank() && result.evidenceReference == evidenceId &&
-                evidence?.kind == "BROWSER_PAGE_CAPTURE" && evidence.sourceUrl == scope.capturedPageUrl &&
-                evidence.title == scope.lastCapturedTitle && evidence.content.isNotBlank() &&
+                evidence != null && metadata != null && evidence.kind == "BROWSER_PAGE_CAPTURE" &&
+                evidence.sourceUrl == scope.capturedPageUrl && evidence.title == scope.lastCapturedTitle && evidence.content.isNotBlank() &&
                 contentDigest == scope.lastCapturedContentDigest &&
-                metadata?.optString("contentDigest") == scope.lastCapturedContentDigest &&
+                metadata.optString("contentDigest") == scope.lastCapturedContentDigest &&
                 metadata.optString("observedLinksDigest") == scope.lastCapturedLinksDigest &&
                 result.output.contains("EVIDENCE ID: ${evidenceId}")
             return AgentToolPostconditionVerification(
@@ -470,7 +470,7 @@ object MemoWorkspaceAgentTools {
             val digestMatches = note?.let {
                 runCatching { JSONObject(it.metadata).optString("contentDigest") == expectedDigest }.getOrDefault(false)
             } == true
-            val verified = isAvailable() && id.isNotBlank() && note?.title == title &&
+            val verified = isAvailable() && id.isNotBlank() && note != null && note.title == title &&
                 note.content == content && digestMatches
             return AgentToolPostconditionVerification(
                 verified = verified,
