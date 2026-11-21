@@ -287,3 +287,8 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 
 - Run `44953421742` on commit `ae6ef31976d7f35339715a16933ec73e21210af5` passed: source invariants/checksum verification, remote runner, core and app unit tests, lint, debug APK assembly, package/version identity, APK signature verification, and emulator install-over-existing with app-private data preservation.
 - The run predates the subsequent M3.A4-S8/S9 browser prompt/response additions. It does not prove those later adapters, physical-device behavior or release signing.
+
+#### CI result — M3.A4-S8 approved browser prompt submission
+
+- Run 44954196829 on commit 23073011b9c411945c12531ce8483ac0a6d2b4b5 passed source checksum/invariant verification, remote-runner tests, core/app unit tests, lint, debug APK assembly, package/version identity, APK signature verification and emulator install-over-existing with app-private data preservation.
+- Release-signing job was skipped. This run includes the prompt-submission adapter but predates M3.A4-S9 response capture and the later Studio browser-evidence list. Physical-device approval/rejection/stale-page/uncertain-send acceptance remains pending.
