@@ -164,3 +164,15 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - **Evidence and tests:** Added pure-core same-origin URL policy coverage and source-verifier assertions for live DOM verification, exact page/link binding, runtime registration and adapter readiness. Captured same-origin links are included in encrypted page-evidence metadata and returned to the model as untrusted references.
 - **Validation:** CI #1018 passed on head `4000d03c5ce58249f5954acd4378fab2c3ef87a7`: source invariants, remote-runner tests, `:core:test`, `:app:testDebugUnitTest`, `:app:lintDebug`, debug APK assembly, APK identity/signature and emulator install-over-existing encrypted-store/app-private-data preservation. The PR workflow skips delivery artifacts and isolated release signing. No real-site behavior or physical-device acceptance is claimed.
 - **Status:** `[~]` implementation and CI validated; broader browser execution remains incomplete.
+
+
+### 2026-11-21 — M3.A4-S1 — Fail closed on execution event sink failure
+
+- **Requirement:** Never continue a model-directed run if its execution event cannot be persisted/delivered; avoid blind replay when a capability may have run.
+- **Files changed:** `core/src/main/kotlin/app/memo/android/orchestration/AgentExecutionEngine.kt`; `core/src/test/kotlin/app/memo/android/orchestration/AgentExecutionEngineTest.kt`.
+- **Implementation summary:** Event callback failures are wrapped and handled separately. When a capability call has started, the engine returns `NEEDS_REVIEW` and does not ask the model for another decision. The user-facing message tells them to inspect the action outcome before retrying. When event failure occurs before any capability, the run fails closed. A regression test makes the event sink throw after a capability result and asserts one model decision, one capability invocation, and `NEEDS_REVIEW`.
+- **Tests and results:** Regression test added; not yet executed. CI not yet verified for this commit.
+- **Exact commit SHA:** `5a5eff69038cc49004a05964f9c8f9e1472d6910` (test commit; engine commits precede it on branch).
+- **Device/emulator evidence:** Pending.
+- **Known gaps:** Durable execution journal/process-death recovery, pausing/resuming approvals, global postcondition verification, broader adapter coverage remain open.
+- **Status:** `[~]` source change + test authored, verification pending.
