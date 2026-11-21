@@ -24,7 +24,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
 import app.memo.android.ui.MemoText as Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,7 +39,6 @@ import app.memo.android.data.AppSnapshot
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import kotlinx.coroutines.launch
 
 private enum class ApprovalFilter(val label: String) {
     QUEUE("Action queue"), REVIEW("Needs review"), HISTORY("History")
@@ -53,12 +51,11 @@ fun ActionApprovalInboxScreen(
     activeAgentConversationId: String,
     onOpenBrowser: () -> Unit,
     onReject: (String) -> Boolean,
-    onApproveAgentAction: suspend (String) -> Boolean,
-    onRejectAgentAction: suspend (String, String) -> Boolean,
+    onApproveAgentAction: (String) -> Unit,
+    onRejectAgentAction: (String, String) -> Unit,
     onMarkNeedsReview: (String, String) -> Boolean,
     onShowMessage: (String) -> Unit
 ) {
-    val actionScope = rememberCoroutineScope()
     var filter by remember { mutableStateOf(ApprovalFilter.QUEUE) }
     var expandedId by remember { mutableStateOf("") }
     val pendingCount = snapshot.actionApprovals.count { it.status == "PENDING" }
@@ -125,23 +122,9 @@ fun ActionApprovalInboxScreen(
                 auditEvents = snapshot.actionAuditEvents.filter { it.actionId == action.id }.takeLast(5),
                 onToggle = { expandedId = if (expandedId == action.id) "" else action.id },
                 onOpenBrowser = onOpenBrowser,
-                onApproveAgentAction = {
-                    actionScope.launch {
-                        val accepted = onApproveAgentAction(action.id)
-                        onShowMessage(
-                            if (accepted) "Exact action approved. Memo is resuming the waiting Talk execution."
-                            else "Approval was not accepted. Check the action status and audit history."
-                        )
-                    }
-                },
+                onApproveAgentAction = { onApproveAgentAction(action.id) },
                 onRejectAgentAction = {
-                    actionScope.launch {
-                        val accepted = onRejectAgentAction(action.id, "Rejected by the user from the action approval inbox.")
-                        onShowMessage(
-                            if (accepted) "Action rejected. The waiting Talk execution will stop before this action is run."
-                            else "The action could not be rejected. Check its status and audit history."
-                        )
-                    }
+                    onRejectAgentAction(action.id, "Rejected by the user from the action approval inbox.")
                 },
                 onReject = {
                     val accepted = onReject(action.id)
