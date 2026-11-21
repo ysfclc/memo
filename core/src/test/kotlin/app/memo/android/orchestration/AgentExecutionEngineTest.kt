@@ -10,6 +10,12 @@ import org.junit.Test
 class AgentExecutionEngineTest {
     private val schema = """{"type":"object","properties":{"query":{"type":"string","minLength":1,"maxLength":120}},"required":["query"],"additionalProperties":false}"""
 
+    private fun verifiedTestResult(result: AgentToolResult, description: String) = AgentToolPostconditionVerification(
+        verified = result.status == AgentToolStatus.SUCCEEDED && result.output.isNotBlank(),
+        description = description,
+        evidenceReference = result.evidenceReference
+    )
+
     @Test
     fun modelChoosesToolThenUsesObservedResultBeforeFinalAnswer() = runBlocking {
         val prompts = mutableListOf<String>()
@@ -33,6 +39,8 @@ class AgentExecutionEngineTest {
                 assertTrue(invocation.idempotencyKey.isNotBlank())
                 return AgentToolResult(AgentToolStatus.SUCCEEDED, "Three records with source IDs.", "Found three records.", "evidence:123")
             }
+            override suspend fun verifyPostcondition(arguments: JSONObject, invocation: AgentToolInvocation, result: AgentToolResult) =
+                verifiedTestResult(result, "The search output and evidence reference were checked by the test adapter.")
         }
         val events = mutableListOf<AgentExecutionEvent>()
         val result = AgentExecutionEngine(model, listOf(adapter)).execute("Find vendor records") { events += it }
@@ -162,6 +170,8 @@ class AgentExecutionEngineTest {
                 approvedExecutionCount++
                 return AgentToolResult(AgentToolStatus.SUCCEEDED, "The visible conversation confirms the prompt.", evidenceReference = "evidence:prompt-1")
             }
+            override suspend fun verifyPostcondition(arguments: JSONObject, invocation: AgentToolInvocation, result: AgentToolResult) =
+                verifiedTestResult(result, "The test observed the approved prompt response and exact evidence reference.")
         }
         val events = mutableListOf<AgentExecutionEvent>()
         val responses = ArrayDeque(
@@ -343,8 +353,10 @@ class AgentExecutionEngineTest {
             override suspend fun invoke(arguments: JSONObject, invocation: AgentToolInvocation): AgentToolResult {
                 assertEquals("https://example.com/", arguments.getString("url"))
                 pageReady = true
-                return AgentToolResult(AgentToolStatus.SUCCEEDED, "Visible page loaded.", "Opened example.com.")
+                return AgentToolResult(AgentToolStatus.SUCCEEDED, "Visible page loaded.", "Opened example.com.", "browser.navigation:example.com")
             }
+            override suspend fun verifyPostcondition(arguments: JSONObject, invocation: AgentToolInvocation, result: AgentToolResult) =
+                verifiedTestResult(result, "The test confirms the visible page navigation state.")
         }
         val capture = object : AgentCapabilityAdapter {
             override val definition = AgentToolDefinition(
@@ -357,6 +369,8 @@ class AgentExecutionEngineTest {
             override fun isAvailable() = pageReady
             override suspend fun invoke(arguments: JSONObject, invocation: AgentToolInvocation): AgentToolResult =
                 AgentToolResult(AgentToolStatus.SUCCEEDED, "Page text and source URL saved.", "Evidence saved.", "evidence:web-1")
+            override suspend fun verifyPostcondition(arguments: JSONObject, invocation: AgentToolInvocation, result: AgentToolResult) =
+                verifiedTestResult(result, "The test confirms page evidence was saved under the returned ID.")
         }
         val model = AgentModelProvider { systemPrompt, _ ->
             systemPrompts += systemPrompt
@@ -371,6 +385,86 @@ class AgentExecutionEngineTest {
         assertFalse(systemPrompts.first().contains("browser.capture_evidence"))
         assertTrue(systemPrompts[1].contains("browser.capture_evidence"))
         assertTrue(systemPrompts[2].contains("browser.capture_evidence"))
+    }
+
+    @Test
+    fun successfulReadOnlyResultWithoutVerifierFailsAndAllowsReplanning() = runBlocking {
+        var modelCalls = 0
+        val responses = ArrayDeque(
+            listOf(
+                """{"type":"tool_call","tool":"workspace.search","arguments":{"query":"records"}}""",
+                """{"type":"final","content":"I can answer without claiming that the unverified search succeeded."}"""
+            )
+        )
+        val model = AgentModelProvider { _, _ -> modelCalls++; responses.removeFirst() }
+        val adapter = object : AgentCapabilityAdapter {
+            override val definition = AgentToolDefinition("workspace.search", "Search saved records.", schema)
+            override fun isAvailable() = true
+            override suspend fun invoke(arguments: JSONObject, invocation: AgentToolInvocation) =
+                AgentToolResult(AgentToolStatus.SUCCEEDED, "A result was returned.")
+        }
+        val events = mutableListOf<AgentExecutionEvent>()
+        val result = AgentExecutionEngine(model, listOf(adapter)).execute("Search records") { events += it }
+
+        assertEquals(AgentRunStatus.FINISHED, result.status)
+        assertEquals(2, modelCalls)
+        assertEquals(1, result.toolCalls)
+        assertEquals(0, result.successfulToolCalls)
+        assertTrue(events.any { it.type == AgentExecutionEventType.TOOL_FAILED && it.status == AgentToolStatus.FAILED.name })
+        assertTrue(events.none { it.type == AgentExecutionEventType.TOOL_FINISHED })
+    }
+
+    @Test
+    fun localWriteWithoutPostconditionVerifierStopsForReview() = runBlocking {
+        var modelCalls = 0
+        val model = AgentModelProvider { _, _ ->
+            modelCalls++
+            """{"type":"tool_call","tool":"workspace.save_note","arguments":{"query":"unused"}}"""
+        }
+        val adapter = object : AgentCapabilityAdapter {
+            override val definition = AgentToolDefinition(
+                "workspace.save_note", "Save a local note.", schema,
+                executionClass = AgentToolExecutionClass.LOCAL_WRITE
+            )
+            override fun isAvailable() = true
+            override suspend fun invoke(arguments: JSONObject, invocation: AgentToolInvocation) =
+                AgentToolResult(AgentToolStatus.SUCCEEDED, "Saved note.", evidenceReference = "evidence:note-1")
+        }
+        val events = mutableListOf<AgentExecutionEvent>()
+        val result = AgentExecutionEngine(model, listOf(adapter)).execute("Save a note") { events += it }
+
+        assertEquals(AgentRunStatus.NEEDS_REVIEW, result.status)
+        assertEquals(1, modelCalls)
+        assertEquals(1, result.toolCalls)
+        assertEquals(0, result.successfulToolCalls)
+        assertTrue(events.any { it.type == AgentExecutionEventType.RUN_NEEDS_REVIEW })
+        assertTrue(result.finalMessage.contains("review"))
+    }
+
+    @Test
+    fun writePostconditionMustMatchReturnedEvidenceReference() = runBlocking {
+        var modelCalls = 0
+        val model = AgentModelProvider { _, _ ->
+            modelCalls++
+            """{"type":"tool_call","tool":"workspace.save_note","arguments":{"query":"unused"}}"""
+        }
+        val adapter = object : AgentCapabilityAdapter {
+            override val definition = AgentToolDefinition(
+                "workspace.save_note", "Save a local note.", schema,
+                executionClass = AgentToolExecutionClass.LOCAL_WRITE
+            )
+            override fun isAvailable() = true
+            override suspend fun invoke(arguments: JSONObject, invocation: AgentToolInvocation) =
+                AgentToolResult(AgentToolStatus.SUCCEEDED, "Saved note.", evidenceReference = "evidence:note-1")
+            override suspend fun verifyPostcondition(arguments: JSONObject, invocation: AgentToolInvocation, result: AgentToolResult) =
+                AgentToolPostconditionVerification(true, "The note was checked after saving.", "evidence:note-2")
+        }
+        val result = AgentExecutionEngine(model, listOf(adapter)).execute("Save a note")
+
+        assertEquals(AgentRunStatus.NEEDS_REVIEW, result.status)
+        assertEquals(1, modelCalls)
+        assertEquals(0, result.successfulToolCalls)
+        assertTrue(result.finalMessage.contains("review"))
     }
 
     @Test
@@ -392,6 +486,8 @@ class AgentExecutionEngineTest {
                 capabilityCalls++
                 return AgentToolResult(AgentToolStatus.SUCCEEDED, "Search result returned.")
             }
+            override suspend fun verifyPostcondition(arguments: JSONObject, invocation: AgentToolInvocation, result: AgentToolResult) =
+                verifiedTestResult(result, "The test confirms the search result was observed.")
         }
         val result = AgentExecutionEngine(model, listOf(adapter)).execute("Search records") { event ->
             if (event.type == AgentExecutionEventType.TOOL_FINISHED) error("event store unavailable")
