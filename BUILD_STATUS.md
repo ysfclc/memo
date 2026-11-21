@@ -245,3 +245,9 @@ The action inbox and first top-level stop control are present in source. Static/
 - Action-ledger completion occurs only in the adapter postcondition after evidence verification. Changed page, hash mismatch, cancellation or uncertain outcome stops at `NEEDS_REVIEW` without replay.
 - New exact-head CI is pending for the updated branch. The earlier integration baseline run `44952865406` passed source/runner checks, Android unit tests, lint, APK assembly, identity/signature and emulator install-over-existing data preservation, but it predates the artifact and browser prompt additions.
 - Physical-device approval/rejection/stale-page/uncertain-send acceptance remains pending. No release APK is claimed.
+
+## M3.A4-S9 — Consent-gated stable browser response capture (updated integration head)
+
+- Added `browser.capture_response`, available only when browser-page sharing consent is enabled and a completed approved prompt submission is present.
+- It verifies the original prompt baseline, waits for a new stable response, saves encrypted response evidence and returns the response as explicitly untrusted source material. It never resends a prompt; baseline loss/timeout becomes NEEDS_REVIEW.
+- Runtime policy and source-verifier regression guards added. Exact-head CI is pending for this newer head; physical-device response/consent acceptance is pending. No release APK is claimed.
