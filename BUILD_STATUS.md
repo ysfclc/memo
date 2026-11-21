@@ -251,3 +251,10 @@ The action inbox and first top-level stop control are present in source. Static/
 - Added `browser.capture_response`, available only when browser-page sharing consent is enabled and a completed approved prompt submission is present.
 - It verifies the original prompt baseline, waits for a new stable response, saves encrypted response evidence and returns the response as explicitly untrusted source material. It never resends a prompt; baseline loss/timeout becomes NEEDS_REVIEW.
 - Runtime policy and source-verifier regression guards added. Exact-head CI is pending for this newer head; physical-device response/consent acceptance is pending. No release APK is claimed.
+
+## M3.B1-S1 artifact slice — exact-head CI PASS
+
+- Run: `44953421742` — commit `ae6ef31976d7f35339715a16933ec73e21210af5`.
+- Passed: source checksum/invariant verification, remote-runner tests, core/app unit tests, lint, debug APK assembly, package/version identity, APK signature verification, and emulator install-over-existing with app-private data preservation.
+- Release-signing job was skipped; this was not a canonical release APK. Physical-device acceptance remains pending.
+- This run predates the subsequent approved browser prompt/response additions. Those changes require the newer exact-head CI run.
