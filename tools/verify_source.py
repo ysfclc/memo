@@ -522,7 +522,7 @@ for marker in (
 ):
     if marker not in studio_artifact_tests:
         fail(f"Studio artifact policy regression coverage is missing: {marker}")
-for marker in ('"STUDIO_ARTIFACT"', "Your generated artifacts", "artifactType"):
+for marker in ('"STUDIO_ARTIFACT"', "Your generated artifacts", "artifactType", '"BROWSER_PROMPT_SUBMISSION"', '"BROWSER_PROMPT_RESPONSE"', "Browser research evidence"):
     if marker not in talk_ui:
         fail(f"Studio does not expose Talk-created artifacts for review: {marker}")
 print("PASS: Talk can save source-linked private Markdown drafts through the registered workspace runtime; digest, bounds and Studio review surface are guarded")
