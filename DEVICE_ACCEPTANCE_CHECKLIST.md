@@ -62,3 +62,19 @@ Record device model, Android version, APK SHA-256, GitHub Actions run URL, test 
 - [ ] Repeat after opening/closing the keyboard, changing language, switching tabs, returning from a detail screen, and with long/empty content.
 - [ ] Record device, Android version, exact APK SHA-256, commit SHA, screenshots/video, and pass/fail for each screen. A CI build, static source check or emulator test alone does not count as physical-device acceptance.
 - [ ] If any check fails or has not been run, mark the candidate NOT RELEASE-VERIFIED. Do not ask the user to install it as an update.
+
+## Talk — approved browser prompt submission
+
+Run on a physical device with an authenticated visible browser session and a page containing a supported text composer.
+
+- [ ] Ask Talk to send a specific prompt. The approval inbox shows the exact HTTPS destination, runtime/capability and full prompt before the user can approve.
+- [ ] Reject the proposal. Confirm no text is sent, the action is marked REJECTED, no BROWSER_PROMPT_SUBMISSION evidence is created and the run does not claim success.
+- [ ] Approve the exact proposal. Confirm the visible composer receives only that prompt, the visible send control is activated, the exact prompt appears as a submitted message and the composer is cleared.
+- [ ] Confirm the encrypted BROWSER_PROMPT_SUBMISSION record contains the exact prompt, prompt digest, page snapshot digest, source conversation/message and action ID/hash; confirm the action ledger reaches COMPLETED only after evidence read-back.
+- [ ] Change the visible page after approval but before execution. Confirm the action does not send to the new page and becomes NEEDS_REVIEW.
+- [ ] Interrupt the app or browser during submission. Confirm the action/run becomes NEEDS_REVIEW and Memo never automatically resends the prompt after restart.
+- [ ] Cause an uncertain send or evidence write/read-back failure. Confirm the result is NEEDS_REVIEW, with no false success and no automatic retry.
+- [ ] With browser-page sharing consent disabled, confirm the prompt can be submitted only after exact approval but page response text is not exposed to the model. Enable consent separately and verify response capture is then available.
+- [ ] Repeat approval/rejection flow in English, Polish and Turkish; check keyboard resize, scroll position, Talk↔Live navigation and action inbox accessibility.
+
+A passing emulator build is not a substitute for these physical-device checks. Record device model, Android version, app version, exact source commit, APK SHA-256 and observed action/evidence IDs.
