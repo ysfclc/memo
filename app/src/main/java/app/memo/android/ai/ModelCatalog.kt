@@ -1,6 +1,10 @@
 package app.memo.android.ai
 
 import java.io.File
+import java.io.StringReader
+import java.io.StringWriter
+import java.util.Properties
+import java.util.UUID
 
 /** Model weights are downloaded on demand and are never bundled inside the APK. */
 data class ModelCatalogEntry(
@@ -73,4 +77,105 @@ object ModelCatalog {
             ramNote = "About 2.59 GB on disk. Published Galaxy S26 Ultra benchmarks measured about 1.7 GB CPU memory or 676 MB GPU memory; your phone may need more or fail to load."
         )
     )
+}
+
+
+/** Immutable source identity stored beside an interrupted model download. */
+data class ModelDownloadCheckpoint(
+    val modelId: String,
+    val sourceUrl: String,
+    val expectedSha256: String,
+    val expectedBytes: Long,
+    val etag: String = "",
+    val lastModified: String = ""
+) {
+    fun matches(entry: ModelCatalogEntry): Boolean =
+        modelId == entry.id && sourceUrl == entry.downloadUrl &&
+            expectedSha256.equals(entry.expectedSha256, ignoreCase = true) && expectedBytes == entry.expectedBytes
+}
+
+object ModelDownloadCheckpointCodec {
+    fun encode(checkpoint: ModelDownloadCheckpoint): String {
+        val properties = Properties().apply {
+            setProperty("modelId", checkpoint.modelId)
+            setProperty("sourceUrl", checkpoint.sourceUrl)
+            setProperty("expectedSha256", checkpoint.expectedSha256)
+            setProperty("expectedBytes", checkpoint.expectedBytes.toString())
+            setProperty("etag", checkpoint.etag)
+            setProperty("lastModified", checkpoint.lastModified)
+        }
+        return StringWriter().also { properties.store(it, "Memo resumable model download") }.toString()
+    }
+
+    fun decode(raw: String): ModelDownloadCheckpoint? = runCatching {
+        val properties = Properties().apply { load(StringReader(raw)) }
+        ModelDownloadCheckpoint(
+            modelId = properties.getProperty("modelId")?.takeIf(String::isNotBlank) ?: return null,
+            sourceUrl = properties.getProperty("sourceUrl")?.takeIf(String::isNotBlank) ?: return null,
+            expectedSha256 = properties.getProperty("expectedSha256")?.takeIf { Regex("^[0-9a-fA-F]{64}$").matches(it) } ?: return null,
+            expectedBytes = properties.getProperty("expectedBytes")?.toLongOrNull()?.takeIf { it > 0L } ?: return null,
+            etag = properties.getProperty("etag", ""),
+            lastModified = properties.getProperty("lastModified", "")
+        )
+    }.getOrNull()
+}
+
+object ModelDownloadResumePolicy {
+    private val contentRangePattern = Regex("^bytes\\s+(\\d+)-(\\d+)/(\\d+|\\*)$", RegexOption.IGNORE_CASE)
+
+    fun canAppend(
+        offset: Long,
+        responseCode: Int,
+        contentRange: String?,
+        savedEtag: String,
+        responseEtag: String,
+        savedLastModified: String,
+        responseLastModified: String
+    ): Boolean {
+        if (offset <= 0L || responseCode != 206) return false
+        val match = contentRangePattern.matchEntire(contentRange?.trim().orEmpty()) ?: return false
+        if (match.groupValues[1].toLongOrNull() != offset) return false
+        if (savedEtag.isNotBlank() && savedEtag != responseEtag) return false
+        if (savedEtag.isBlank() && savedLastModified.isNotBlank() && savedLastModified != responseLastModified) return false
+        return true
+    }
+
+    fun contentRangeTotal(contentRange: String?): Long? {
+        val match = contentRangePattern.matchEntire(contentRange?.trim().orEmpty()) ?: return null
+        return match.groupValues[3].takeIf { it != "*" }?.toLongOrNull()
+    }
+}
+
+object ModelFileDiscovery {
+    fun scan(
+        directories: List<File>,
+        catalogEntries: List<ModelCatalogEntry> = ModelCatalog.entries,
+        minimumBytes: Long = 64L * 1024 * 1024
+    ): List<InstalledModel> {
+        val seenPaths = mutableSetOf<String>()
+        val seenIds = mutableSetOf<String>()
+        return directories.asSequence()
+            .filter { it.exists() && it.isDirectory }
+            .flatMap { it.listFiles()?.asSequence() ?: emptySequence() }
+            .filter { file ->
+                file.isFile && file.extension.equals("litertlm", ignoreCase = true) &&
+                    !file.name.endsWith(".partial", ignoreCase = true) && file.length() >= minimumBytes
+            }
+            .mapNotNull { file ->
+                val canonical = runCatching { file.canonicalFile }.getOrDefault(file.absoluteFile)
+                val path = canonical.path
+                if (!seenPaths.add(path)) return@mapNotNull null
+                val catalogEntry = catalogEntries.firstOrNull { it.fileName.equals(file.name, ignoreCase = true) }
+                val id = catalogEntry?.id ?: "custom-" + UUID.nameUUIDFromBytes(path.toByteArray()).toString().take(12)
+                if (!seenIds.add(id)) return@mapNotNull null
+                InstalledModel(
+                    id = id,
+                    name = catalogEntry?.name ?: file.nameWithoutExtension,
+                    bytes = file.length(),
+                    isCatalogModel = catalogEntry != null,
+                    file = canonical
+                )
+            }
+            .toList()
+    }
 }
