@@ -563,7 +563,7 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 
 ### M3.A4-S9 — Consent-gated stable browser response capture
 
-- [~] Added `browser.capture_response` to the Talk tool set only when the user has separately enabled browser-page sharing. It requires the exact evidence ID from the previously approved `browser.submit_prompt` call and verifies that the submission action is already COMPLETED.
+- [~] Added `browser.capture_response` to the Talk tool set only when page content is permitted for the selected model (local-model processing stays on-device; remote providers require separate per-request consent). It requires the exact evidence ID from the previously approved `browser.submit_prompt` call and verifies that the submission action is already COMPLETED.
 - Uses the browser's submission baseline to detect a new assistant response, not an older answer. The response must be new, stable across repeated polls and associated with the same-origin page; lost baseline, unsupported page structure or timeout stops for review and never resends the prompt.
 - Saves the response as encrypted `BROWSER_PROMPT_RESPONSE` evidence with prompt-submission reference, prompt/response/page digests, source conversation/message provenance and run/call IDs. Studio exposes both the approved prompt and response under Browser research evidence. The postcondition reads back the exact response and source binding before returning it to Talk as explicitly labelled untrusted external content.
 - This adapter is a local evidence write, not a new external side effect; runtime policy does not require external-action approval. It is not advertised when page-sharing consent is disabled.
