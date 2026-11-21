@@ -133,8 +133,14 @@ if "agentScope.launch" in talk_screen or "var agentJob" in talk_screen:
 for marker in ("Approve exact action", "onApproveAgentAction", "onRejectAgentAction", "agent-run:"):
     if marker not in approval_inbox:
         fail(f"approval inbox is missing the Talk exact-action decision flow: {marker}")
-if "onApproveAgentAction = { id -> viewModel.approveAgentActionDurably(id) }" not in app_navigation:
+if "val accepted = viewModel.approveAgentActionDurably(id)" not in app_navigation:
     fail("the root approval inbox does not call the durable Talk approval API")
+if "val accepted = viewModel.rejectAgentActionDurably(id, reason)" not in app_navigation:
+    fail("the root approval inbox does not call the durable Talk rejection API")
+if "scope.launch" not in app_navigation:
+    fail("approval decisions are not owned by the app-level coroutine scope")
+if "actionScope" in approval_inbox or "rememberCoroutineScope" in approval_inbox:
+    fail("approval decisions are owned by the disposable inbox destination")
 if "viewModel.stopAgentExecution()" not in app_navigation:
     fail("the product-wide stop action does not cancel the ViewModel-owned Talk execution")
 print("PASS: Talk execution survives destination changes, waits on the encrypted exact-content approval broker, and exposes approve/reject controls")
