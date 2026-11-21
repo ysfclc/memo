@@ -258,3 +258,9 @@ The action inbox and first top-level stop control are present in source. Static/
 - Passed: source checksum/invariant verification, remote-runner tests, core/app unit tests, lint, debug APK assembly, package/version identity, APK signature verification, and emulator install-over-existing with app-private data preservation.
 - Release-signing job was skipped; this was not a canonical release APK. Physical-device acceptance remains pending.
 - This run predates the subsequent approved browser prompt/response additions. Those changes require the newer exact-head CI run.
+
+## M3.A4-S8 — approved browser prompt submission CI PASS
+
+- Run: 44954196829 — commit 23073011b9c411945c12531ce8483ac0a6d2b4b5.
+- Passed: source checksum/invariant verification, remote runner, core/app unit tests, lint, debug APK assembly, package/version identity, signature verification and emulator install-over-existing data preservation.
+- Release-signing job was skipped. This run predates M3.A4-S9 response capture and the latest Studio browser-evidence visibility changes. The newer response-capable head needs its own exact-head CI. Physical-device external-action acceptance remains pending.
