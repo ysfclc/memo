@@ -139,6 +139,12 @@ Every action has explicit lifecycle state, bounded execution and cancellation. R
 
 "Complete" means the required postcondition was observed and its evidence was saved. A model saying that it succeeded is not evidence. A tool returning success is not enough when the result can be independently checked.
 
+
+
+**Shared Talk postcondition gate.** Every adapter that returns `SUCCEEDED` must also return an explicit bounded postcondition verification. The engine runs it under a timeout, compares any result evidence reference with the verifier's reference, and counts/records `TOOL_FINISHED` only after verification. A missing, failed, mismatched or timed-out read-only verification becomes `FAILED` and may be re-planned; the same uncertainty for a local/external/destructive action becomes `NEEDS_REVIEW` and stops the run. Write verification must read the actual persisted/runtime state, not repeat the adapter's success claim. The current six Talk adapters implement this protocol; it is not yet universal across other runtimes.
+
+**Write interruption review.** Cancellation after a non-read-only capability has started but before its verified completion event is recorded ends the run as `NEEDS_REVIEW`, not `CANCELLED`. A write adapter that returns `FAILED` after start is likewise review-only; neither case is re-planned or replayed.
+
 Created outputs must be real, accessible artifacts with truthful type, location/reference, provenance and integrity information where applicable. A PDF request must produce a readable PDF file; an image request must produce an actual image artifact; a code request must produce inspectable changes and relevant test evidence. If the required provider or capability is missing, say so and offer a real alternative. Never substitute explanatory text while implying that an artifact was created.
 
 Live must show the actual shared run state and allow the user to inspect, approve, pause, resume, cancel or take over where supported. Work remains the durable user-owned record; artifacts and evidence must not disappear into provider-specific chat history.
