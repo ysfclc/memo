@@ -462,6 +462,48 @@ talk_ui = (ROOT / "app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt").r
 for marker in ("shareBrowserPageRemotely", "includeBrowserPageContent", "AndroidView(", "browser.webView", "showAgentBrowserPane"):
     if marker not in talk_ui:
         fail(f"Talk browser visibility or separate remote-page privacy control is missing: {marker}")
+for marker in (
+    "data class AgentToolPostconditionVerification(",
+    "suspend fun verifyPostcondition(",
+    "adapter.verifyPostcondition(decision.arguments, invocation, toolResult)",
+    "verification.evidenceReference != toolResult.evidenceReference",
+    "POSTCONDITION VERIFIED:",
+    "A capability may be reported as successful only after its adapter returns a verified postcondition",
+):
+    if marker not in agent_engine:
+        fail(f"shared Talk engine does not enforce verified capability outcomes: {marker}")
+if agent_tools.count("override suspend fun verifyPostcondition(") != 6:
+    fail("each of the six current Talk adapters must implement an explicit postcondition verifier")
+for marker in (
+    "deterministic recomputation from the permitted candidate set",
+    "exact note title, content and digest",
+    "exact typed record, properties, source conversation/message",
+    "navigationEvidenceReference(page.url)",
+    "lastCapturedContentDigest",
+    "read back from encrypted workspace evidence",
+):
+    if marker not in agent_tools:
+        fail(f"current Talk adapter verification is incomplete: {marker}")
+for marker in (
+    "successfulReadOnlyResultWithoutVerifierFailsAndAllowsReplanning",
+    "localWriteWithoutPostconditionVerifierStopsForReview",
+    "writePostconditionMustMatchReturnedEvidenceReference",
+):
+    if marker not in agent_engine_tests:
+        fail(f"shared Talk postcondition regression coverage is missing: {marker}")
+print("PASS: capability success is gated by explicit postcondition verification; unverified reads fail and uncertain writes require review")
+for marker in ("writeOutcomeUncertainOnCancellation", "AgentExecutionEventType.RUN_NEEDS_REVIEW"):
+    if marker not in agent_engine:
+        fail(f"write interruption can be misclassified as cancellation without review: {marker}")
+for marker in (
+    "cancellationDuringLocalWriteInvocationRequiresReview",
+    "cancellationDuringLocalWriteVerificationRequiresReview",
+    "failedWriteAdapterStopsForReviewInsteadOfReplanning",
+):
+    if marker not in agent_engine_tests:
+        fail(f"write-interruption safety regression coverage is missing: {marker}")
+print("PASS: started/uncertain writes stop for review on cancellation or adapter failure; they are not replayed")
+
 print("PASS: runtime-backed per-turn capability discovery, approval-policy matching, user-supplied HTTPS browser navigation, encrypted page evidence and separate remote-page consent are enforced and tested")
 
 
