@@ -461,6 +461,9 @@ fun agentEventTranscriptMessage(
 ): String {
     val key = when (event.type) {
         app.memo.android.orchestration.AgentExecutionEventType.RUN_STARTED -> "Memo started an execution."
+        app.memo.android.orchestration.AgentExecutionEventType.TOOL_APPROVAL_REQUESTED -> "Waiting for approval: ${event.toolId}"
+        app.memo.android.orchestration.AgentExecutionEventType.TOOL_APPROVAL_GRANTED -> "Approval recorded: ${event.toolId}"
+        app.memo.android.orchestration.AgentExecutionEventType.TOOL_APPROVAL_REJECTED -> "Action not approved: ${event.toolId}"
         app.memo.android.orchestration.AgentExecutionEventType.TOOL_STARTED -> "Using capability: ${event.toolId}"
         app.memo.android.orchestration.AgentExecutionEventType.TOOL_FINISHED -> "Capability finished: ${event.toolId}"
         app.memo.android.orchestration.AgentExecutionEventType.TOOL_FAILED -> "Capability did not succeed: ${event.toolId}"
