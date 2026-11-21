@@ -238,3 +238,10 @@ The action inbox and first top-level stop control are present in source. Static/
 - Studio lists Talk-created drafts. The existing Evidence dialog supports edit/revision history, copy and Markdown export; user edits refresh the content digest and increment the version.
 - Added core policy tests and source-verifier/runtime-registration guards.
 - Exact-head Android CI: pending for the updated PR #20 head. No phone acceptance or release APK claimed. Supported output is Markdown text only; file/code, PDF/media and publishing remain open.
+
+## M3.A4-S8 — Approved browser prompt submission (updated integration head)
+
+- `browser.submit_prompt` is wired into Talk as an `EXTERNAL_WRITE` capability with exact destination/prompt approval, one-use action-ledger consumption, visible composer submission verification and encrypted evidence read-back.
+- Action-ledger completion occurs only in the adapter postcondition after evidence verification. Changed page, hash mismatch, cancellation or uncertain outcome stops at `NEEDS_REVIEW` without replay.
+- New exact-head CI is pending for the updated branch. The earlier integration baseline run `44952865406` passed source/runner checks, Android unit tests, lint, APK assembly, identity/signature and emulator install-over-existing data preservation, but it predates the artifact and browser prompt additions.
+- Physical-device approval/rejection/stale-page/uncertain-send acceptance remains pending. No release APK is claimed.
