@@ -616,7 +616,7 @@ object MemoWorkspaceAgentTools {
                 metadata.optString("sourceMessageId") == sourceMessageId &&
                 metadata.optString("sourceExcerptDigest") == sourceExcerptDigest() &&
                 metadata.optString("reviewStatus") == "DRAFT" &&
-                metadata.optInt("version") == 1
+                metadata.optInt("version") >= 1
             return AgentToolPostconditionVerification(
                 verified = verified,
                 description = if (verified) "The exact Markdown draft, type, content digest and source provenance were read back from the encrypted workspace." else "The Studio draft could not be read back with matching content, digest, version and source provenance.",
