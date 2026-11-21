@@ -558,6 +558,12 @@ for marker in ('id = "browser.capture_response"', "BrowserPromptResponseAdapter(
         fail(f"Consent-gated stable browser response capture is incomplete: {marker}")
 if "add(BrowserPromptResponseAdapter(" not in agent_tools:
     fail("Stable browser response capture must be wired only into the consent-enabled Talk tool set")
+consent_block_start = agent_tools.find("if (includeBrowserPageContent)")
+consent_block_end = agent_tools.find("\n            }", consent_block_start)
+if consent_block_start < 0 or consent_block_end < 0 or "add(BrowserPromptResponseAdapter(" not in agent_tools[consent_block_start:consent_block_end]:
+    fail("Browser response capture must be gated by explicit browser-page sharing consent")
+if "var lastPromptResponseSubmissionEvidenceId" not in agent_tools or "scope.lastPromptResponseSubmissionEvidenceId = submissionId" not in agent_tools:
+    fail("Browser response evidence must be idempotent for each prompt submission")
 print("PASS: browser prompt submission is exact-content approved, one-use, durably audited and visibly verified")
 
 
