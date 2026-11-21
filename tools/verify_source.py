@@ -499,6 +499,11 @@ for marker in ("data class StudioArtifactDraft(", "object StudioArtifactPolicy",
         fail(f"Studio artifact validation/digest contract is incomplete: {marker}")
 if 'STUDIO_ARTIFACT' not in workspace_view_model or 'setOf("WORK_ARTIFACT", "ARTIFACT_DRAFT", "SELF_MODEL_ARTIFACT", "STUDIO_ARTIFACT")' not in workspace_view_model:
     fail("Talk-created Studio drafts must be editable through the existing revision-preserving artifact lifecycle")
+for marker in ("StudioArtifactPolicy.prepare(cleanTitle, artifactType, cleanContent)", "metadata.put(\"contentDigest\", revisedDraft.contentDigest)", "metadata.put(\"version\", metadata.optInt(\"version\", 1) + 1)"):
+    if marker not in workspace_view_model:
+        fail(f"Studio artifact edits must refresh the content digest and revision version: {marker}")
+if "studioArtifactSaveIsRegisteredAsAReversibleLocalWorkspaceWrite" not in agent_registry_tests:
+    fail("Studio artifact runtime must be explicitly registered as a reversible local write")
 for marker in (
     'RuntimeCapability("workspace.save_artifact"',
     'id = "workspace.save_artifact"',
