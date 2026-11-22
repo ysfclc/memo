@@ -244,7 +244,7 @@ b88784a0fa6e1eb07eb82600015b77d9fa0db1d8df84677f7c1c81f4dfc2f057  ./tools/verify
 42582314e95e2a681bf28b7d99ed33ba9430e8b69a9cb2bd22c5e445aba1afc8  ./docs/UI_REGRESSION_CONTRACT.md
 d5c069daba62f0ebade21e8b43b080e94893e2a923c08877a60f61c1113a475c  ./docs/checkpoints/2026-11-21-agent-postcondition-baseline.md
 15b294b23a16627b6439d718c97ebb7177b3f0e85b0010d59e744a59f1d5a5ab  ./docs/checkpoints/2026-11-21-agent-postcondition-verification.md
-3ad8c9930171189f97f065db1c123bf2c47addd18b02b3876057cf6a8b6682b0  ./docs/checkpoints/2026-11-21-product-build-integration.md
+43631d1a740a401c6fd0ad596ace77e597de0fefb26cb55dd631e9018bd433f1  ./docs/checkpoints/2026-11-21-product-build-integration.md
 5b8ad2fdbdbc59de1f30a93e84c9aac3501f31eccff085ea1f4087038cf63252  ./core/src/main/kotlin/app/memo/android/data/StudioArtifactPolicy.kt
 59cafe26bad1eea6328d8676279a1d146f6461d52d77c03f5e1e6bdc5bec2393  ./core/src/test/kotlin/app/memo/android/data/StudioArtifactPolicyTest.kt
 dcde97556b6b130448c7f0c44236f7b021f09e97bfec1cf8596f015c074181af  ./docs/checkpoints/2026-11-21-studio-artifact-slice.md
