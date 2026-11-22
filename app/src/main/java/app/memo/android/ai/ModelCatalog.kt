@@ -33,7 +33,8 @@ data class DownloadStatus(
     val bytesRead: Long = 0,
     val totalBytes: Long = 0,
     val stage: String = "Preparing download",
-    val error: String? = null
+    val error: String? = null,
+    val canResume: Boolean = false
 ) {
     val progress: Float? get() = if (totalBytes > 0) (bytesRead.toFloat() / totalBytes).coerceIn(0f, 1f) else null
 }
