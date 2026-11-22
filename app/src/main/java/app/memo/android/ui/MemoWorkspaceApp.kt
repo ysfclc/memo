@@ -1065,7 +1065,11 @@ private fun HomeScreen(
     val reviewEntities = snapshot.entities.count { it.reviewStatus == "PROPOSED" }
     val reviewJobs = snapshot.jobs.count { it.status in setOf("WAITING_FOR_USER", "NEEDS_REVIEW", "FAILED") }
     val reviewTasks = snapshot.tasks.count { it.status in setOf(TaskStatus.NEEDS_REVIEW, TaskStatus.FAILED, TaskStatus.BLOCKED) }
-    val reviewCount = reviewEntities + reviewJobs + reviewTasks
+    val reviewAgentRuns = snapshot.agentRuns
+        .filter { it.status == "NEEDS_REVIEW" }
+        .sortedByDescending { it.updatedAt }
+        .take(4)
+    val reviewCount = reviewEntities + reviewJobs + reviewTasks + reviewAgentRuns.size
     val latestConversation = snapshot.conversations.maxByOrNull { it.updatedAt }
     val attentionTasks = snapshot.tasks
         .filter { it.status in setOf(TaskStatus.QUEUED, TaskStatus.RUNNING, TaskStatus.NEEDS_REVIEW, TaskStatus.FAILED) }
@@ -1237,11 +1241,29 @@ private fun HomeScreen(
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                         Text("Needs your decision", style = MaterialTheme.typography.titleMedium)
                         Text(
-                            if (reviewCount > 0) "$reviewCount item(s) need review across proposed records, jobs and interrupted work. Suggestions remain separate from accepted truth."
+                            if (reviewCount > 0) "$reviewCount item(s) need review across proposed records, jobs, tasks and Memo runs. Suggestions remain separate from accepted truth."
                             else "Nothing is waiting for review. Proposed records and uncertain runs stay separate until you decide.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                    }
+                }
+                reviewAgentRuns.forEach { run ->
+                    TextButton(
+                        onClick = { onOpenConversation(run.conversationId) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text("Memo run needs review · ${run.goal}", maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            Text(
+                                run.recoveryReason.ifBlank { run.stage }.ifBlank { "Inspect the saved execution trace before continuing." },
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text("Open execution conversation", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                        }
                     }
                 }
                 Spacer(Modifier.height(MemoTokens.Spacing.xs))
