@@ -26,8 +26,8 @@
 ## Verification
 - Upstream postcondition branch exact-head CI: PASS (run `44907881554`).
 - Latest main source snapshot CI: PASS (run `44927379252`, as recorded in `BUILD_STATUS.md`).
-- Integration branch CI: PENDING.
-- Local Android build: NOT RUN; no checked-out working tree/Android SDK is available in this environment.
+- Integration branch CI: PASS on exact head `2a5a7a76ea845f000792233bf0a8fb060d165687` (Actions run `44998474952`, run #1147). Source verification, remote-runner tests, core/app unit tests, lint, debug APK assembly, package/version identity, CI signature verification and emulator install-over-existing app-private data preservation all passed. The run used the checked-out integration-branch source; isolated final signing and release artifact publication were skipped.
+- Local Android build: NOT RUN; exact-head GitHub Actions build/test gates passed instead.
 - Device acceptance: PENDING.
 
 ## Next implementation priorities
