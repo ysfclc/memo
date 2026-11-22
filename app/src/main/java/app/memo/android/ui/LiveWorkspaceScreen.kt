@@ -299,7 +299,7 @@ private fun AgentRunEventSummary(event: AgentRunEventRecord) {
         }
         if (event.toolId.isNotBlank()) AgentRunEventField("Action", event.toolId, language)
         if (event.target.isNotBlank()) AgentRunEventField("Target", event.target, language)
-        if (event.rationale.isNotBlank()) AgentRunEventField("Rationale", event.rationale, language)
+        if (event.rationale.isNotBlank()) AgentRunEventField("Purpose", event.rationale, language)
         if (event.result.isNotBlank()) AgentRunEventField("Result", event.result, language)
         if (event.evidenceReference.isNotBlank()) AgentRunEventField("Evidence", event.evidenceReference, language)
         Spacer(Modifier.height(4.dp))
