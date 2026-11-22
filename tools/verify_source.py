@@ -210,7 +210,7 @@ for marker in ("agentRunRecordsRoundTripWithExactRunAndConversationIdentity", "a
         fail(f"schema-v8 run persistence/recovery test is missing: {marker}")
 if "val runtimeId: String = \"app.memo\"" not in agent_engine or "val target: String = \"\"" not in agent_engine or "val rationale: String = \"\"" not in agent_engine or "val result: String = \"\"" not in agent_engine:
     fail("execution events must preserve bounded runtime, target, rationale and result context")
-for marker in ('label("Runtime")', 'label("Target")', 'label("Rationale")', 'label("Result")', 'label("Evidence")'):
+for marker in ('label("Runtime")', 'label("Target")', 'label("Purpose")', 'label("Result")', 'label("Evidence")'):
     if marker not in agent_event_transcript:
         fail(f"safe execution transcript is missing structured event metadata: {marker}")
 print("PASS: Talk execution has a schema-v8 encrypted event journal, verified lifecycle persistence and an expandable Live timeline with action purpose, result and evidence")
