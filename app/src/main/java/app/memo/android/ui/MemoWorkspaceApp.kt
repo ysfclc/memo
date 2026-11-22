@@ -1065,11 +1065,12 @@ private fun HomeScreen(
     val reviewEntities = snapshot.entities.count { it.reviewStatus == "PROPOSED" }
     val reviewJobs = snapshot.jobs.count { it.status in setOf("WAITING_FOR_USER", "NEEDS_REVIEW", "FAILED") }
     val reviewTasks = snapshot.tasks.count { it.status in setOf(TaskStatus.NEEDS_REVIEW, TaskStatus.FAILED, TaskStatus.BLOCKED) }
+    val reviewAgentRunCount = snapshot.agentRuns.count { it.status == "NEEDS_REVIEW" }
     val reviewAgentRuns = snapshot.agentRuns
         .filter { it.status == "NEEDS_REVIEW" }
         .sortedByDescending { it.updatedAt }
         .take(4)
-    val reviewCount = reviewEntities + reviewJobs + reviewTasks + reviewAgentRuns.size
+    val reviewCount = reviewEntities + reviewJobs + reviewTasks + reviewAgentRunCount
     val latestConversation = snapshot.conversations.maxByOrNull { it.updatedAt }
     val attentionTasks = snapshot.tasks
         .filter { it.status in setOf(TaskStatus.QUEUED, TaskStatus.RUNNING, TaskStatus.NEEDS_REVIEW, TaskStatus.FAILED) }
