@@ -31,8 +31,8 @@
 - Device acceptance: PENDING.
 
 ## Next implementation priorities
-1. Run and inspect CI on this exact integration branch.
-2. Continue the single Talk → shared dispatcher → real capability → observed result path; next capability slice must be a reusable file/artifact operation with verified file contents and hash, not a special-purpose workflow.
+1. **Completed 22 November:** exact integration head `2a5a7a76ea845f000792233bf0a8fb060d165687` passed Actions run `44998474952` (run #1147); source, runner, unit, lint, APK assembly/identity and emulator install-over-existing gates passed. Isolated release signing and artifact publication were skipped.
+2. **In progress:** verified Studio file export on `feature/verified-studio-file-export-2026-11-22`. This adds bounded text export, safe filenames and SHA-256 read-back verification for the user-selected document URI. Exact-head CI and physical-device provider acceptance remain pending.
 3. Connect the durable run lifecycle to cross-runtime Live state and interruption reconciliation.
 4. Add generic browser surface actions only after the shared approval, evidence and postcondition boundaries are satisfied.
 5. Preserve the full Work/Studio/voice/local-model/social requirements; do not mark the product complete from these foundations.
