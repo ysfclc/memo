@@ -181,11 +181,21 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         }
         if (current.agentRuns.any { it.id == runId }) return false
         val record = AgentRunRecord(id = runId, conversationId = conversationId, goal = cleanGoal, modelId = modelId.take(160))
+            .appendTimelineEvent(
+                AgentRunEventRecord(
+                    eventType = "RUN_CREATED",
+                    runtimeId = "app.memo",
+                    target = cleanGoal.take(200),
+                    rationale = "The user started this task from Talk.",
+                    summary = "Talk execution created",
+                    status = "RUNNING"
+                )
+            )
         val next = current.copy(agentRuns = listOf(record) + current.agentRuns)
         _snapshot.value = next
         persist(next)
         return persistAgentRunAndVerify(runId) { saved ->
-            saved.agentRuns.any { it.id == runId && it.status == "RUNNING" && it.conversationId == conversationId }
+            saved.agentRuns.any { it.id == runId && it.status == "RUNNING" && it.conversationId == conversationId && it.events.lastOrNull()?.eventType == "RUN_CREATED" }
         }
     }
 
@@ -223,6 +233,14 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             val storedConversation = saved.conversations.firstOrNull { it.id == conversationId }
             storedRun?.lastEventType == event.type.name &&
                 storedRun.status == updatedRun.status &&
+                storedRun.events.lastOrNull()?.let { savedEvent ->
+                    savedEvent.eventType == event.type.name &&
+                        savedEvent.runtimeId == event.runtimeId &&
+                        savedEvent.target == event.target.take(200) &&
+                        savedEvent.rationale == event.rationale.take(400) &&
+                        savedEvent.result == event.result.take(800) &&
+                        savedEvent.evidenceReference == event.evidenceReference.take(500)
+                } == true &&
                 storedConversation?.messages?.any { it.id == message.id && it.sourceType == "AGENT_EVENT" } == true
         }) null else "The execution event and matching run state could not be read back from the encrypted workspace."
     }
@@ -260,6 +278,18 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             successfulToolCalls = result.successfulToolCalls.coerceIn(0, result.toolCalls.coerceIn(0, 1_000)),
             recoveryReason = if (finalStatus == "NEEDS_REVIEW") cleanMessage.take(800) else "",
             updatedAt = now, finishedAt = now
+        ).appendTimelineEvent(
+            AgentRunEventRecord(
+                eventType = "RUN_RESULT_SAVED",
+                runtimeId = "app.memo",
+                target = run.goal.take(200),
+                rationale = "The final response and terminal run state were committed together.",
+                summary = "Final response saved to the originating conversation.",
+                result = cleanMessage.take(800),
+                status = finalStatus,
+                evidenceReference = run.lastEvidenceReference,
+                at = now
+            )
         )
         val updatedConversation = conversation.copy(messages = conversation.messages + message, updatedAt = now)
         val next = current.copy(
@@ -273,6 +303,7 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             val savedConversation = saved.conversations.firstOrNull { it.id == run.conversationId }
             savedRun?.status == finalStatus &&
                 savedRun.finalMessage == cleanMessage.take(4_000) &&
+                savedRun.events.lastOrNull()?.let { it.eventType == "RUN_RESULT_SAVED" && it.result == cleanMessage.take(800) } == true &&
                 savedConversation?.messages?.any { it.id == message.id && it.content == cleanMessage } == true
         }) null else "The final response and Memo run status could not be read back from the encrypted workspace."
     }
@@ -297,11 +328,25 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         val updated = run.copy(
             status = status, stage = reason.take(800), pendingApprovalCallId = "",
             recoveryReason = reason.take(800), updatedAt = now, finishedAt = now
+        ).appendTimelineEvent(
+            AgentRunEventRecord(
+                eventType = "RUN_INTERRUPTED",
+                runtimeId = "app.memo",
+                target = run.goal.take(200),
+                rationale = "Execution stopped before a terminal result could be committed; no action was replayed.",
+                summary = "Memo run interrupted",
+                result = reason.take(800),
+                status = status,
+                evidenceReference = run.lastEvidenceReference,
+                at = now
+            )
         )
         val next = current.copy(agentRuns = current.agentRuns.map { if (it.id == runId) updated else it })
         _snapshot.value = next
         persist(next)
-        if (!persistAgentRunAndVerify(runId) { saved -> saved.agentRuns.firstOrNull { it.id == runId }?.status == status }) {
+        if (!persistAgentRunAndVerify(runId) { saved ->
+            saved.agentRuns.firstOrNull { it.id == runId }?.let { it.status == status && it.events.lastOrNull()?.eventType == "RUN_INTERRUPTED" } == true
+        }) {
             _vaultError.value = "Memo could not verify the final state of an interrupted execution."
         }
     }
