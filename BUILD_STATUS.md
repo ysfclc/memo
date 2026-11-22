@@ -270,3 +270,12 @@ The action inbox and first top-level stop control are present in source. Static/
 - Run: 44954878877 — commit bac787645ee85958132d56e8524c53325b536c06.
 - Passed: source verification, remote runner, Android unit tests, lint, debug APK assembly, package/version identity, APK signature verification and emulator install-over-existing app-private data preservation.
 - Release artifact preparation and isolated signing were skipped. Physical-device browser consent, provider DOM, approve/reject and uncertain-send acceptance remain pending.
+
+
+## M3.B1-S2 — Verified user-directed Studio Markdown export
+
+- Added a core export policy for bounded UTF-8 text payloads, safe filenames, supported text MIME types and SHA-256 digests.
+- Studio export writes only to the user-selected Android document URI, then reopens that same URI and verifies the exact bytes before reporting success.
+- A write error, unreadable destination, truncated file or digest mismatch is reported as unverified. No arbitrary filesystem access, new plaintext storage, PDF/binary generation or background export is claimed.
+- Core tests cover filename sanitization, MIME/size limits, UTF-8, exact digest read-back and failure cases.
+- Source branch: `feature/verified-studio-file-export-2026-11-22`; exact-head CI pending. No release APK or physical-device acceptance is claimed.
