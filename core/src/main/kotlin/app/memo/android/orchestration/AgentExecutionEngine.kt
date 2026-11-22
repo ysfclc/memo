@@ -350,7 +350,7 @@ class AgentExecutionEngine(
                                     rationale = definition.description,
                                     result = "The external action was not started."
                                 )
-                                event(AgentExecutionEventType.RUN_NEEDS_REVIEW, message, toolId = definition.id, callId = callId, status = "NEEDS_REVIEW")
+                                event(AgentExecutionEventType.RUN_NEEDS_REVIEW, message, toolId = definition.id, callId = callId, status = "NEEDS_REVIEW", runtimeId = definition.runtimeId, target = eventTarget, rationale = definition.description, result = toolResult.summary, evidenceReference = toolResult.evidenceReference)
                                 return result(AgentRunStatus.NEEDS_REVIEW, message)
                             }
                             event(
@@ -408,7 +408,11 @@ class AgentExecutionEngine(
                                             "An in-flight local write was interrupted. Inspect Memo's workspace before retrying because its final state may be uncertain.",
                                             toolId = definition.id,
                                             callId = callId,
-                                            status = "NEEDS_REVIEW"
+                                            status = "NEEDS_REVIEW",
+                                            runtimeId = definition.runtimeId,
+                                            target = eventTarget,
+                                            rationale = definition.description,
+                                            result = "The in-flight write was interrupted; inspect before retrying."
                                         )
                                     }
                                 }
@@ -463,7 +467,11 @@ class AgentExecutionEngine(
                                             callId = callId,
                                             status = if (definition.executionClass == AgentToolExecutionClass.READ_ONLY) "FAILED" else "NEEDS_REVIEW",
                                             toolVersion = definition.version,
-                                            evidenceReference = toolResult.evidenceReference
+                                            evidenceReference = toolResult.evidenceReference,
+                                            runtimeId = definition.runtimeId,
+                                            target = eventTarget,
+                                            rationale = definition.description,
+                                            result = "Postcondition verification was interrupted."
                                         )
                                     }
                                 }
@@ -521,7 +529,11 @@ class AgentExecutionEngine(
                             callId = callId,
                             status = toolResult.status.name,
                             toolVersion = definition.version,
-                            evidenceReference = toolResult.evidenceReference
+                            evidenceReference = toolResult.evidenceReference,
+                            runtimeId = definition.runtimeId,
+                            target = eventTarget,
+                            rationale = definition.description,
+                            result = toolResult.summary
                         )
                         // Clear uncertainty only after a completion/block event has been recorded.
                         if (definition.executionClass != AgentToolExecutionClass.READ_ONLY &&
@@ -530,6 +542,9 @@ class AgentExecutionEngine(
                             interruptedWriteToolId = ""
                             interruptedWriteCallId = ""
                             interruptedWriteEvidenceReference = ""
+                            interruptedWriteRuntimeId = "app.memo"
+                            interruptedWriteTarget = ""
+                            interruptedWriteRationale = ""
                         }
                         if (toolResult.status == AgentToolStatus.NEEDS_REVIEW) {
                             val message = "A capability has an uncertain or approval-gated outcome. Review it before continuing: ${toolResult.summary}"
@@ -557,7 +572,11 @@ class AgentExecutionEngine(
                         toolId = interruptedWriteToolId,
                         callId = interruptedWriteCallId,
                         status = if (requiresReview) "NEEDS_REVIEW" else "CANCELLED",
-                        evidenceReference = interruptedWriteEvidenceReference
+                        evidenceReference = interruptedWriteEvidenceReference,
+                    runtimeId = interruptedWriteRuntimeId,
+                    target = interruptedWriteTarget,
+                    rationale = interruptedWriteRationale,
+                    result = message
                     )
                 }
             }
@@ -570,13 +589,13 @@ class AgentExecutionEngine(
                 "Memo could not record the execution state. No capability was started."
             }
             withContext(NonCancellable) {
-                runCatching { event(AgentExecutionEventType.RUN_NEEDS_REVIEW, message, status = status.name) }
+                runCatching { event(AgentExecutionEventType.RUN_NEEDS_REVIEW, message, status = status.name, target = "Talk execution", rationale = "An execution event could not be durably recorded after a capability may have started.", result = message) }
             }
             return result(status, message)
         } catch (error: Throwable) {
             val message = (error.message?.takeIf { it.isNotBlank() } ?: "The agent execution failed.").take(700)
             withContext(NonCancellable) {
-                runCatching { event(AgentExecutionEventType.RUN_FAILED, message, status = "EXECUTION_ERROR") }
+                runCatching { event(AgentExecutionEventType.RUN_FAILED, message, status = "EXECUTION_ERROR", target = "Talk execution", rationale = "The execution engine stopped after an unexpected error.", result = message) }
             }
             return result(AgentRunStatus.FAILED, message)
         }
