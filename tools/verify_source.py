@@ -184,6 +184,8 @@ for marker in (
     "finishAgentRunDurably(",
     "closeUnfinishedAgentRunDurably(",
     "persistAgentRunAndVerify(",
+    "persistLatestSnapshotAndReadSafely()",
+    "check(verified == restored)",
 ):
     if marker not in agent_broker:
         fail(f"Talk durable run journal is missing: {marker}")
