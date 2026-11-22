@@ -279,3 +279,14 @@ The action inbox and first top-level stop control are present in source. Static/
 - A write error, unreadable destination, truncated file or digest mismatch is reported as unverified. No arbitrary filesystem access, new plaintext storage, PDF/binary generation or background export is claimed.
 - Core tests cover filename sanitization, MIME/size limits, UTF-8, exact digest read-back and failure cases.
 - Exact-head GitHub Actions run #1149 (`45002690812`) passed on source commit `060853bd8e2ff07cb1445980430461e048067e7f`; the documentation-updated PR head `a7eb5e5787b70f7517dbbe5acf490e71da52ac52` also passed run #1150 (`45003595826`). Both passed source invariants, remote-runner tests, Android unit tests, lint, debug APK assembly, APK identity/signature checks and emulator install-over-existing data preservation. Isolated final signing and release artifact publication were skipped. Physical-device export acceptance remains pending; no production-signed APK is claimed.
+
+## M3.B2-S1 — Durable Talk event journal and expandable Live timeline (source implementation; exact-head CI pending)
+
+- `AgentRunRecord` now owns a bounded chronological event journal (48 records per run) with event type/status, timestamp, runtime ID, capability ID/version, call ID, display target, declared capability purpose, result summary and evidence reference.
+- The same encrypted workspace snapshot commits the event, run-state reduction and transcript message; event read-back is checked before the engine is allowed to continue.
+- Run creation, engine events, final-result commit, interrupted closeout and application-restart recovery are recorded. Startup and both backup-import paths verify the recovered encrypted snapshot after write before unlocking/confirming restore. Restart recovery adds a `RUN_RECOVERED_NEEDS_REVIEW` event and does not replay any step.
+- Live exposes an expandable per-run timeline. Old schema-v7 backups remain importable; legacy runs have no reconstructed/fabricated event history and display an explicit empty-history state.
+- The stored `rationale` field is surfaced in Live as **Purpose**: the capability's declared, user-safe description, not hidden model chain-of-thought. Targets use display titles or capability IDs, not raw tool arguments or secret payloads.
+- Core lifecycle/schema tests, event metadata tests, Polish label tests and offline source guards were added. Exact-head Android CI and physical-device timeline/restart acceptance remain pending.
+- This is the Talk-run timeline slice, not the complete cross-runtime Live control room. Independent browser/app session event streams, pause/resume/takeover, universal action gate and global stop acceptance remain open.
+
