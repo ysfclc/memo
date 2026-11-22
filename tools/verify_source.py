@@ -108,6 +108,7 @@ if "could not be confirmed" not in app_navigation or "Verify its final state" no
 print("PASS: top-level stop requests local AI/browser/native cancellation, marks uncertain external actions for review, and reports remote cancellation honestly")
 
 agent_broker = (ROOT / "app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt").read_text()
+agent_event_transcript = (ROOT / "app/src/main/java/app/memo/android/ai/MemoWorkspaceAgentTools.kt").read_text()
 talk_screen = (ROOT / "app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt").read_text()
 for marker in (
     "fun launchAgentExecution(",
@@ -210,7 +211,7 @@ for marker in ("agentRunRecordsRoundTripWithExactRunAndConversationIdentity", "a
 if "val runtimeId: String = \"app.memo\"" not in agent_engine or "val target: String = \"\"" not in agent_engine or "val rationale: String = \"\"" not in agent_engine or "val result: String = \"\"" not in agent_engine:
     fail("execution events must preserve bounded runtime, target, rationale and result context")
 for marker in ('label("Runtime")', 'label("Target")', 'label("Rationale")', 'label("Result")', 'label("Evidence")'):
-    if marker not in agent_broker:
+    if marker not in agent_event_transcript:
         fail(f"safe execution transcript is missing structured event metadata: {marker}")
 print("PASS: Talk execution has a schema-v8 encrypted event journal, verified lifecycle persistence and an expandable Live timeline with action purpose, result and evidence")
 
