@@ -273,7 +273,7 @@ class AgentExecutionEngine(
                     }
                     is AgentDecision.Invalid -> {
                         observations += "PROTOCOL ERROR: ${decision.reason} Return exactly one valid JSON object using the required protocol. No tool was executed."
-                        event(AgentExecutionEventType.TOOL_FAILED, "The model returned an invalid action request; no capability was invoked.", status = "INVALID_MODEL_DECISION", target = "Talk execution", rationale = "The model response did not match Memo's required action protocol.", result = decision.reason)
+                        event(AgentExecutionEventType.TOOL_FAILED, "The model returned an invalid action request; no capability was invoked.", status = "INVALID_MODEL_DECISION", target = "Talk execution", rationale = "The model response did not match Memo's required action protocol.", result = "No capability was invoked because the action request failed protocol validation.")
                     }
                     is AgentDecision.ToolCall -> {
                         if (toolCalls >= config.maxToolCalls) {
@@ -294,7 +294,7 @@ class AgentExecutionEngine(
                         if (validationError != null) {
                             val observation = "INVALID TOOL INPUT for '${definition.id}': $validationError No action was executed. Correct the arguments or choose another capability."
                             observations += observation
-                            event(AgentExecutionEventType.TOOL_FAILED, "Memo rejected invalid input for ${definition.id}; no action was executed.", toolId = definition.id, status = "INVALID_INPUT", runtimeId = definition.runtimeId, target = definition.id, rationale = definition.description, result = validationError)
+                            event(AgentExecutionEventType.TOOL_FAILED, "Memo rejected invalid input for ${definition.id}; no action was executed.", toolId = definition.id, status = "INVALID_INPUT", runtimeId = definition.runtimeId, target = definition.id, rationale = definition.description, result = "No action was executed because input validation failed.")
                             continue
                         }
 
@@ -317,7 +317,7 @@ class AgentExecutionEngine(
                                 val approvalError = adapter.approvalFailure(decision.arguments)
                                     ?: "Memo could not construct an exact, bounded approval envelope for this capability."
                                 val message = "Execution paused for review: " + approvalError
-                                event(AgentExecutionEventType.RUN_NEEDS_REVIEW, message, toolId = definition.id, callId = callId, status = "NEEDS_REVIEW", runtimeId = definition.runtimeId, target = definition.id, rationale = definition.description, result = approvalError)
+                                event(AgentExecutionEventType.RUN_NEEDS_REVIEW, message, toolId = definition.id, callId = callId, status = "NEEDS_REVIEW", runtimeId = definition.runtimeId, target = definition.id, rationale = definition.description, result = "No external action was started because the approval envelope was invalid.")
                                 return result(AgentRunStatus.NEEDS_REVIEW, message)
                             }
                             eventTarget = envelope!!.title
