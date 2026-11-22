@@ -247,7 +247,28 @@ private fun AgentRunSummary(run: AgentRunRecord, onOpenConversation: () -> Unit,
                     Text(run.successfulToolCalls.toString(), style = MaterialTheme.typography.bodyMedium)
                 }
             }
-            if (run.recoveryReason.isNotBlank()) Text(run.recoveryReason, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (run.lastEventType.isNotBlank()) {
+                Text("Last durable event", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(run.lastEventType.replace('_', ' ').lowercase().replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.bodySmall)
+            }
+            if (run.lastToolId.isNotBlank()) {
+                Text("Last capability", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(run.lastToolId, style = MaterialTheme.typography.bodySmall)
+            }
+            if (run.lastEvidenceReference.isNotBlank()) {
+                Text("Last evidence reference", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(run.lastEvidenceReference, style = MaterialTheme.typography.bodySmall, maxLines = 2)
+            }
+            if (run.pendingApprovalCallId.isNotBlank()) {
+                MemoStatusTag(label = "Approval call requires inspection", tone = MemoStatusTone.WARNING)
+                Text("A pending approval reference is recorded. It is not reusable after restart.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (run.recoveryReason.isNotBlank()) {
+                Text(run.recoveryReason, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (run.status == "NEEDS_REVIEW") {
+                Text("This run is preserved as history. Memo will not replay its last step automatically.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TextButton(onClick = onOpenConversation) { Text("Open conversation") }
                 if (run.status in setOf("WAITING_FOR_APPROVAL", "NEEDS_REVIEW")) {
