@@ -297,3 +297,14 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 
 - Run 44954878877 on commit bac787645ee85958132d56e8524c53325b536c06 passed source verification, remote-runner tests, Android unit tests, lint, debug APK assembly, package/version identity, signature verification and emulator install-over-existing app-private data preservation.
 - Release artifact preparation and isolated release signing were skipped. The run does not prove physical-device browser behavior. Later local/remote consent wording and metadata-only changes are documented separately; no functional browser adapter changes followed this validated source slice.
+
+
+### 2026-11-22 — M3.B2-S1 — Per-run Live execution timeline
+
+- **Requirements:** MEMO-LIVE-001, MEMO-ORCH-001, MEMO-RECOVERY-001.
+- **Baseline:** integration branch `build/product-core-integration-2026-11-21`, exact parent `a9de80ef22b4ab2b6939d68db32b7a36c9ee316a`; current Memo 1 repository only. No Memo-2 changes.
+- **Implementation:** added a read-only Live projection that finds `AGENT_EVENT` messages in the run's originating encrypted conversation by the exact Run ID field in the final metadata line, orders them by their persisted timestamps, and presents the most recent four events. Each event retains its saved summary and status/evidence metadata. Live also shows run start/update times, the saved final response and the latest evidence reference. The conversation link remains the full durable trace.
+- **Compatibility:** no schema or backup changes; no new store or event journal; package ID, encryption format, Keystore aliases, storage paths and signing configuration are unchanged.
+- **Tests:** new app unit tests cover exact run correlation, combined metadata fields, event source filtering, chronological ordering, missing conversations and EN/PL/TR timeline labels.
+- **Verification:** exact-head GitHub Actions validation pending. No local Gradle/Android SDK build or physical-device acceptance was performed in this run. No release APK is claimed.
+- **Remaining:** cross-runtime Live event projection/control, pause/resume/takeover, global stop/action gate and physical-device acceptance.

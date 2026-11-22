@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import app.memo.android.ui.MemoText as Text
+import androidx.compose.material3.Text as RawText
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -22,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import app.memo.android.data.ActionApprovalRecord
 import app.memo.android.data.AgentRunRecord
+import app.memo.android.data.ChatMessageRecord
 import app.memo.android.data.AppSnapshot
 import app.memo.android.data.TaskRecord
 import app.memo.android.data.TaskStatus
@@ -117,7 +119,7 @@ fun LiveWorkspaceScreen(
             item { EmptyState("No Memo executions yet", "Your Talk runs will appear here with their last durable stage and recovery state.") }
         } else {
             items(recentAgentRuns, key = { "agent-run-${it.id}" }) { run ->
-                AgentRunSummary(run, onOpenConversation = { onOpenTalk(run.conversationId) }, onOpenApprovals = onOpenApprovals)
+                AgentRunSummary(run, eventMessages = agentRunTimelineMessages(snapshot, run), onOpenConversation = { onOpenTalk(run.conversationId) }, onOpenApprovals = onOpenApprovals)
             }
         }
         item { MemoSectionHeading("Work in motion", supporting = "Resumable plans and tasks that need attention") }
@@ -217,8 +219,27 @@ fun LiveWorkspaceScreen(
 }
 
 
+internal fun agentRunTimelineMessages(snapshot: AppSnapshot, run: AgentRunRecord): List<ChatMessageRecord> {
+    val conversation = snapshot.conversations.firstOrNull { it.id == run.conversationId } ?: return emptyList()
+    val runMarker = "Run ID: ${run.id}"
+    return conversation.messages
+        .asSequence()
+        .filter { it.sourceType == "AGENT_EVENT" }
+        .filter { message ->
+            val metadataLine = message.content.lineSequence().lastOrNull()?.trim().orEmpty()
+            metadataLine == runMarker || metadataLine.startsWith("$runMarker · ")
+        }
+        .sortedBy { it.createdAt }
+        .toList()
+}
+
 @Composable
-private fun AgentRunSummary(run: AgentRunRecord, onOpenConversation: () -> Unit, onOpenApprovals: () -> Unit) {
+private fun AgentRunSummary(
+    run: AgentRunRecord,
+    eventMessages: List<ChatMessageRecord>,
+    onOpenConversation: () -> Unit,
+    onOpenApprovals: () -> Unit
+) {
     val tone = when (run.status) {
         "NEEDS_REVIEW", "WAITING_FOR_APPROVAL" -> MemoStatusTone.WARNING
         "FAILED" -> MemoStatusTone.ERROR
@@ -247,7 +268,50 @@ private fun AgentRunSummary(run: AgentRunRecord, onOpenConversation: () -> Unit,
                     Text(run.successfulToolCalls.toString(), style = MaterialTheme.typography.bodyMedium)
                 }
             }
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text("Started", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(formatLiveTime(run.createdAt), style = MaterialTheme.typography.bodySmall)
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text("Updated", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(formatLiveTime(run.updatedAt), style = MaterialTheme.typography.bodySmall)
+                }
+            }
             if (run.recoveryReason.isNotBlank()) Text(run.recoveryReason, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (run.finalMessage.isNotBlank()) {
+                Text("Recorded final result", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                RawText(run.finalMessage, style = MaterialTheme.typography.bodySmall, maxLines = 4)
+            }
+            if (run.lastEvidenceReference.isNotBlank()) {
+                Text("Latest evidence reference", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                RawText(run.lastEvidenceReference, style = MaterialTheme.typography.bodySmall)
+            }
+            MemoSectionHeading(
+                "Execution timeline",
+                supporting = "Recorded state, rationale, result and evidence for this run"
+            )
+            if (eventMessages.isEmpty()) {
+                Text(
+                    "No detailed event records are available. Open the originating conversation to inspect the full trace.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                eventMessages.takeLast(4).asReversed().forEach { event ->
+                    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text(formatLiveTime(event.createdAt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        RawText(event.content, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+                if (eventMessages.size > 4) {
+                    Text(
+                        "Showing the latest four events. Open the conversation for the full trace.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TextButton(onClick = onOpenConversation) { Text("Open conversation") }
                 if (run.status in setOf("WAITING_FOR_APPROVAL", "NEEDS_REVIEW")) {
