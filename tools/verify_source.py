@@ -202,7 +202,7 @@ for marker in ("eventsRecordApprovalToolAndTerminalLifecycle", "rejectedOrUncert
         fail(f"agent run lifecycle regression coverage is missing: {marker}")
 for marker in ("agentRunRecordsRoundTripWithExactRunAndConversationIdentity", "agentRunEventJournalRoundTripsStructuredActionContext", "schemaSevenRunRecordsImportWithEmptyEventHistory", "schemaSixBackupMigratesWithoutAgentRunRecords", "interruptedAgentRunsRecoverToReviewAndTerminalRunsStayTerminal"):
     if marker not in workspace_schema_test:
-        fail(f"schema-v7 run persistence/recovery test is missing: {marker}")
+        fail(f"schema-v8 run persistence/recovery test is missing: {marker}")
 if "val runtimeId: String = \"app.memo\"" not in agent_engine or "val rationale: String = \"\"" not in agent_engine or "val result: String = \"\"" not in agent_engine:
     fail("execution events must preserve bounded runtime, rationale and result context")
 print("PASS: Talk execution has a schema-v8 encrypted run record, bounded structured event journal/readback, truthful Live state and no-replay recovery")
