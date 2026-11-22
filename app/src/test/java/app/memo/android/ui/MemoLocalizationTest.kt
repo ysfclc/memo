@@ -101,6 +101,30 @@ class MemoLocalizationTest {
     }
 
     @Test
+    fun talkRunInspectionDetailsTranslateInPolishAndTurkish() {
+        assertEquals("Ostatnie trwałe zdarzenie", MemoLocalization.translate("Last durable event", "PL"))
+        assertEquals("Son kalıcı olay", MemoLocalization.translate("Last durable event", "TR"))
+        assertEquals("Ostatnia funkcja", MemoLocalization.translate("Last capability", "PL"))
+        assertEquals("Son yetenek", MemoLocalization.translate("Last capability", "TR"))
+        assertEquals("Ostatnie odwołanie do dowodu", MemoLocalization.translate("Last evidence reference", "PL"))
+        assertEquals("Son kanıt referansı", MemoLocalization.translate("Last evidence reference", "TR"))
+        assertEquals("Wywołanie zatwierdzenia wymaga sprawdzenia", MemoLocalization.translate("Approval call requires inspection", "PL"))
+        assertEquals("Onay çağrısı inceleme gerektiriyor", MemoLocalization.translate("Approval call requires inspection", "TR"))
+        assertTrue(MemoLocalization.translate(
+            "A pending approval reference is recorded. It is not reusable after restart.", "PL"
+        ).contains("Nie można go ponownie użyć"))
+        assertTrue(MemoLocalization.translate(
+            "A pending approval reference is recorded. It is not reusable after restart.", "TR"
+        ).contains("tekrar kullanılamaz"))
+        assertTrue(MemoLocalization.translate(
+            "This run is preserved as history. Memo will not replay its last step automatically.", "PL"
+        ).contains("nie odtworzy automatycznie"))
+        assertTrue(MemoLocalization.translate(
+            "This run is preserved as history. Memo will not replay its last step automatically.", "TR"
+        ).contains("otomatik olarak yeniden yürütmez"))
+    }
+
+    @Test
     fun userContentAndUnknownStringsRemainUntouched() {
         val userText = "I met a person called Deniz at the event."
         assertEquals(userText, MemoLocalization.translate(userText, "TR"))
