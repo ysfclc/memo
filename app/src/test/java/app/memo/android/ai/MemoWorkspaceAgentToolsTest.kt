@@ -28,4 +28,55 @@ class MemoWorkspaceAgentToolsTest {
             assertTrue(transcript.contains("browser.submit"))
         }
     }
+    @Test
+    fun transcriptCarriesStructuredActionContextWithoutToolArguments() {
+        val transcript = agentEventTranscriptMessage(
+            AgentExecutionEvent(
+                runId = "run-2",
+                type = AgentExecutionEventType.TOOL_FINISHED,
+                summary = "Capability finished.",
+                toolId = "browser.submit_prompt",
+                callId = "call-2",
+                status = "SUCCEEDED",
+                toolVersion = 3,
+                evidenceReference = "evidence:response-2",
+                runtimeId = "runtime.browser",
+                target = "Send reviewed prompt",
+                rationale = "Send the exact prompt after explicit approval.",
+                result = "A visible response was captured."
+            ),
+            "en"
+        )
+        assertTrue(transcript.contains("Runtime: runtime.browser"))
+        assertTrue(transcript.contains("Target: Send reviewed prompt"))
+        assertTrue(transcript.contains("Purpose: Send the exact prompt after explicit approval."))
+        assertTrue(transcript.contains("Result: A visible response was captured."))
+        assertTrue(transcript.contains("Evidence: evidence:response-2"))
+        assertTrue(!transcript.contains("payload"))
+    }
+
+    @Test
+    fun transcriptLocalizesStructuredMetadataLabels() {
+        val transcript = agentEventTranscriptMessage(
+            AgentExecutionEvent(
+                runId = "run-pl",
+                type = AgentExecutionEventType.TOOL_FINISHED,
+                summary = "Capability finished.",
+                toolId = "browser.submit_prompt",
+                status = "SUCCEEDED",
+                evidenceReference = "evidence:pl",
+                runtimeId = "runtime.browser",
+                target = "Send reviewed prompt",
+                rationale = "Send the exact prompt after explicit approval.",
+                result = "A visible response was captured."
+            ),
+            "PL"
+        )
+        assertTrue(transcript.contains("Środowisko uruchomieniowe: runtime.browser"))
+        assertTrue(transcript.contains("Cel: Send reviewed prompt"))
+        assertTrue(transcript.contains("Cel działania: Send the exact prompt after explicit approval."))
+        assertTrue(transcript.contains("Wynik: A visible response was captured."))
+        assertTrue(transcript.contains("Dowód: evidence:pl"))
+    }
+
 }
