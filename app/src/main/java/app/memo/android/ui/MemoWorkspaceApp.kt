@@ -144,6 +144,7 @@ import app.memo.android.ai.ModelRuntimeUiState
 import app.memo.android.browser.BrowserSession
 import app.memo.android.browser.TaskCallbacks
 import app.memo.android.data.AppSnapshot
+import app.memo.android.data.ArtifactExportPolicy
 import app.memo.android.data.ActivityRecord
 import app.memo.android.data.EvidenceRecord
 import app.memo.android.data.MemoWorkspaceViewModel
@@ -354,17 +355,39 @@ fun MemoWorkspaceApp(
         val artifact = pendingArtifactExport
         pendingArtifactExport = null
         if (uri != null && artifact != null) {
-            val markdown = buildString {
-                append("# ").append(artifact.title).append("\n\n")
-                append("- Type: ").append(artifact.kind).append("\n")
-                append("- Created/edited: ").append(formatDate(artifact.capturedAt)).append("\n")
-                if (artifact.sourceUrl.isNotBlank()) append("- Source: ").append(artifact.sourceUrl).append("\n")
-                if (artifact.summary.isNotBlank()) append("\n").append(artifact.summary).append("\n")
-                append("\n---\n\n").append(artifact.content)
+            runCatching {
+                val markdown = buildString {
+                    append("# ").append(artifact.title).append("\n\n")
+                    append("- Type: ").append(artifact.kind).append("\n")
+                    append("- Created/edited: ").append(formatDate(artifact.capturedAt)).append("\n")
+                    if (artifact.sourceUrl.isNotBlank()) append("- Source: ").append(artifact.sourceUrl).append("\n")
+                    if (artifact.summary.isNotBlank()) append("\n").append(artifact.summary).append("\n")
+                    append("\n---\n\n").append(artifact.content)
+                }
+                val payload = ArtifactExportPolicy.prepare(
+                    fileName = artifact.title,
+                    mimeType = "text/markdown",
+                    content = markdown
+                )
+                val output = context.contentResolver.openOutputStream(uri, "wt")
+                    ?: error("The selected destination could not be opened.")
+                output.use {
+                    it.write(payload.bytes)
+                    it.flush()
+                }
+                val verified = context.contentResolver.openInputStream(uri)?.use {
+                    ArtifactExportPolicy.verify(payload.sha256, it)
+                } ?: error("The exported file could not be read back for verification.")
+                check(verified) {
+                    "The exported file did not match its expected SHA-256. Memo cannot mark this export as verified."
+                }
+                payload
+            }.onSuccess { payload ->
+                viewModel.log("Studio artifact export verified · SHA-256 ${payload.sha256}")
+                snack("Artifact exported and verified · SHA-256 ${payload.sha256.take(12)}…")
+            }.onFailure {
+                snack("Artifact export not verified: ${(it.message ?: "Unknown error").take(160)}")
             }
-            runCatching { context.contentResolver.openOutputStream(uri)?.use { it.write(markdown.toByteArray(Charsets.UTF_8)) } ?: error("The selected destination could not be opened.") }
-                .onSuccess { snack("Artifact exported as Markdown.") }
-                .onFailure { snack("Artifact export failed: ${(it.message ?: "Unknown error").take(160)}") }
         }
     }
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -718,7 +741,7 @@ fun MemoWorkspaceApp(
                 snack("Artifact copied to the clipboard.")
             }
         },
-        onExport = { item -> pendingArtifactExport = item; artifactExportLauncher.launch(item.title.take(64).ifBlank { "memo-artifact" } + ".md") },
+        onExport = { item -> pendingArtifactExport = item; artifactExportLauncher.launch(ArtifactExportPolicy.suggestedFileName(item.title.ifBlank { "memo-artifact" }, "text/markdown")) },
         onSave = { title, content ->
             val item = evidenceDetail
             if (item == null) false else viewModel.updateWorkArtifact(item.id, title, content).fold(
