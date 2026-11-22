@@ -98,4 +98,5 @@ A passing emulator build is not a substitute for these physical-device checks. R
 - [ ] Run an approval-gated browser capability. Verify the timeline records the approval request before execution, the approval decision, capability start, verified finish and evidence.
 - [ ] Force-stop Memo while a Talk run is active, reopen it and inspect Live. Verify a `RUN_RECOVERED_NEEDS_REVIEW` event appears, the run is marked for review and no interrupted step is replayed.
 - [ ] Reopen Live again after recovery. Verify recovery is not appended repeatedly and event sequence numbers remain monotonic.
-- [ ] Import a schema-v7 backup containing a prior Talk run. Verify the run summary remains available and Live explicitly reports that no detailed event history was saved; do not fabricate historical events.
+- [ ] Import a schema-v7 backup containing a completed Talk run. Verify the run summary remains available and Live explicitly reports that no detailed event history was saved; do not fabricate historical events.
+- [ ] Import a schema-v7 backup containing an active Talk run. Verify import persists one `RUN_RECOVERED_NEEDS_REVIEW` event before reporting success, and no interrupted step is replayed.
