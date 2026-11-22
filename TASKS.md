@@ -551,6 +551,16 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - Validation: `StudioArtifactPolicyTest` covers normalization, bounds and digest binding; `AgentCapabilityRegistryTest` covers the local reversible runtime policy; source verifier guards adapter, postcondition, editability and Studio listing. Exact-head CI run `44953421742` on commit `ae6ef31976d7f35339715a16933ec73e21210af5` passed source verification, remote-runner tests, core/app unit tests, lint, debug APK assembly, package/signature checks and emulator install-over-existing data preservation. Physical-device acceptance remains pending.
 
 
+### M3.B1-S2 — Verified user-directed Studio file export
+
+- **Requirements:** MEMO-STUDIO-001, MEMO-ARTIFACT-001, MEMO-CAP-001.
+- **Outcome:** A Talk-created private Studio draft can become a real Markdown file at a destination explicitly selected by the user, and Memo only reports a verified export after reading the destination back.
+- **Implementation:** Add a reusable core export policy with a small text MIME allowlist, safe filename generation, UTF-8 byte preservation, a 1 MiB bound and SHA-256 preparation. The Studio export flow writes to the URI returned by Android's CreateDocument picker, reopens that same URI and verifies the exact bytes against the expected digest.
+- **Safety:** No arbitrary filesystem paths, background export, overwrite of user-selected existing files outside the picker contract, remote transfer or new plaintext app storage. Export remains a user-initiated action. A write/read-back error or digest mismatch is reported as unverified; Memo must not claim success.
+- **Tests:** MIME allowlist, filename sanitization, UTF-8 preservation, size bounds, exact digest match, truncation/modification rejection and fail-closed oversized/unreadable verification.
+- **Status:** Source implemented on `feature/verified-studio-file-export-2026-11-22`; exact-head Android CI and device acceptance pending. This is a verified Markdown export slice, not general filesystem access or PDF/binary generation.
+
+
 ### M3.A4-S8 — Approved browser prompt submission
 
 - [~] Added `browser.submit_prompt` as the first external-write adapter in the shared Talk dispatcher. It is registered as `EXTERNAL_WRITE` and cannot execute without explicit approval of the exact HTTPS destination and exact prompt payload.
