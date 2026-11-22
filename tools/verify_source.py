@@ -158,6 +158,7 @@ agent_engine = (ROOT / "core/src/main/kotlin/app/memo/android/orchestration/Agen
 agent_run_test = (ROOT / "core/src/test/kotlin/app/memo/android/data/AgentRunLifecycleTest.kt").read_text()
 workspace_schema_test = (ROOT / "core/src/test/kotlin/app/memo/android/data/WorkspaceSchemaV3Test.kt").read_text()
 live_screen = (ROOT / "app/src/main/java/app/memo/android/ui/LiveWorkspaceScreen.kt").read_text()
+localization = (ROOT / "app/src/main/java/app/memo/android/ui/MemoLocalization.kt").read_text()
 for marker in (
     "data class AgentRunEventRecord(",
     "data class AgentRunRecord(",
@@ -197,6 +198,9 @@ for marker in (
 for marker in ("Memo executions", "AgentRunSummary(", "AgentRunEventSummary(", "Recent execution events", "run.events.forEach", "event.rationale", "event.result", "event.evidenceReference", "formatLiveTime(event.at)", "run.recoveryReason", "Open conversation", "FINALIZING", "Saving result"):
     if marker not in live_screen:
         fail(f"Live does not expose persisted Memo run state: {marker}")
+for marker in ("Recent execution events", "Show timeline", "Hide timeline", "Runtime", "Target", "Rationale", "Result", "Evidence", "Run created", "Recovered after restart"):
+    if f'"{marker}" to' not in localization:
+        fail(f"Live execution timeline localization is missing: {marker}")
 for marker in ("eventsRecordApprovalToolAndTerminalLifecycle", "rejectedOrUncertainToolOutcomesRequireReview", "eventsFromAnotherRunAreRejected", "eventJournalIsBoundedAndKeepsMonotonicSequence"):
     if marker not in agent_run_test:
         fail(f"agent run lifecycle regression coverage is missing: {marker}")
