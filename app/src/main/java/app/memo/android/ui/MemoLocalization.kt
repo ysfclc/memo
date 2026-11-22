@@ -29,6 +29,13 @@ object MemoLocalization {
 
     private val translations: Map<String, Pair<String, String>> = mapOf(
 
+
+        "Android does not allow silent access to other apps' private model folders. Use Import only for a file outside Memo's scanned folders that Android lets you access." to ("Android nie pozwala na cichy dostęp do prywatnych folderów modeli innych aplikacji. Użyj Importuj tylko dla pliku spoza skanowanych folderów Memo, do którego Android pozwala uzyskać dostęp." to "Android, diğer uygulamaların özel model klasörlerine sessiz erişime izin vermez. Memo'nun taradığı klasörler dışındaki, Android'in erişim izni verdiği bir dosya için İçe Aktar seçeneğini kullan."),
+        "Discard" to ("Odrzuć" to "Sil"),
+        "Import one model file" to ("Importuj jeden plik modelu" to "Bir model dosyası içe aktar"),
+        "Memo scans its private model folder and app-owned external model folders automatically. Weights download only when you tap Install and are never included inside the APK." to ("Memo automatycznie skanuje prywatny folder modeli oraz zewnętrzne foldery należące do aplikacji. Wagi są pobierane dopiero po naciśnięciu Instaluj i nie są dołączane do APK." to "Memo özel model klasörünü ve uygulamaya ait harici model klasörlerini otomatik tarar. Model ağırlıkları yalnızca Yükle'ye dokunduğunda indirilir ve APK içine eklenmez."),
+        "Pause and keep progress" to ("Wstrzymaj i zachowaj postęp" to "Duraklat ve ilerlemeyi koru"),
+        "Resume download" to ("Wznów pobieranie" to "İndirmeye devam et"),
         "MEMO ACTION" to ("DZIAŁANIE MEMO" to "MEMO İŞLEMİ"),
         "Memo's visible browser session" to ("Widoczna sesja przeglądarki Memo" to "Memo'nun görünür tarayıcı oturumu"),
         "Opening the user-supplied page…" to ("Otwieranie strony podanej przez użytkownika…" to "Kullanıcının sağladığı sayfa açılıyor…"),
