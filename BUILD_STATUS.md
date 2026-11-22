@@ -284,7 +284,7 @@ The action inbox and first top-level stop control are present in source. Static/
 
 - `AgentRunRecord` now owns a bounded chronological event journal (48 records per run) with event type/status, timestamp, runtime ID, capability ID/version, call ID, display target, declared capability purpose, result summary and evidence reference.
 - The same encrypted workspace snapshot commits the event, run-state reduction and transcript message; event read-back is checked before the engine is allowed to continue.
-- Run creation, engine events, final-result commit, interrupted closeout and application-restart recovery are recorded. Restart recovery adds a `RUN_RECOVERED_NEEDS_REVIEW` event and does not replay any step.
+- Run creation, engine events, final-result commit, interrupted closeout and application-restart recovery are recorded. Startup and both backup-import paths verify the recovered encrypted snapshot after write before unlocking/confirming restore. Restart recovery adds a `RUN_RECOVERED_NEEDS_REVIEW` event and does not replay any step.
 - Live exposes an expandable per-run timeline. Old schema-v7 backups remain importable; legacy runs have no reconstructed/fabricated event history and display an explicit empty-history state.
 - The stored `rationale` field is surfaced in Live as **Purpose**: the capability's declared, user-safe description, not hidden model chain-of-thought. Targets use display titles or capability IDs, not raw tool arguments or secret payloads.
 - Core lifecycle/schema tests, event metadata tests, Polish label tests and offline source guards were added. Exact-head Android CI and physical-device timeline/restart acceptance remain pending.
