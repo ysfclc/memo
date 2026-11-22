@@ -112,6 +112,10 @@ data class AgentExecutionEvent(
     val status: String = "",
     val toolVersion: Int = 0,
     val evidenceReference: String = "",
+    val runtimeId: String = "app.memo",
+    val target: String = "",
+    val rationale: String = "",
+    val result: String = "",
     val at: Long = System.currentTimeMillis()
 )
 
@@ -190,6 +194,9 @@ class AgentExecutionEngine(
         var interruptedWriteToolId = ""
         var interruptedWriteCallId = ""
         var interruptedWriteEvidenceReference = ""
+        var interruptedWriteRuntimeId = "app.memo"
+        var interruptedWriteTarget = ""
+        var interruptedWriteRationale = ""
 
         suspend fun event(
             type: AgentExecutionEventType,
@@ -198,7 +205,11 @@ class AgentExecutionEngine(
             callId: String = "",
             status: String = "",
             toolVersion: Int = 0,
-            evidenceReference: String = ""
+            evidenceReference: String = "",
+            runtimeId: String = "app.memo",
+            target: String = "",
+            rationale: String = "",
+            result: String = ""
         ) {
             try {
                 onEvent(
@@ -210,7 +221,11 @@ class AgentExecutionEngine(
                         callId = callId,
                         status = status,
                         toolVersion = toolVersion,
-                        evidenceReference = evidenceReference.take(500)
+                        evidenceReference = evidenceReference.take(500),
+                        runtimeId = runtimeId.take(120),
+                        target = target.take(200),
+                        rationale = rationale.take(400),
+                        result = result.take(800)
                     )
                 )
             } catch (error: CancellationException) {
@@ -225,11 +240,11 @@ class AgentExecutionEngine(
         )
 
         try {
-            event(AgentExecutionEventType.RUN_STARTED, "Memo started an agent execution.")
+            event(AgentExecutionEventType.RUN_STARTED, "Memo started an agent execution.", target = "Talk execution", rationale = "The user initiated a task in Talk.")
             while (modelCalls < config.maxModelCalls) {
                 if (System.nanoTime() - startedNanos > config.maxDurationMs * 1_000_000L) {
                     val message = "The execution time budget was reached. Completed tool results are preserved; no unfinished action was replayed."
-                    event(AgentExecutionEventType.RUN_LIMIT_REACHED, message)
+                    event(AgentExecutionEventType.RUN_LIMIT_REACHED, message, target = "Talk execution", rationale = "The configured execution budget was reached.", result = message)
                     return result(AgentRunStatus.ITERATION_LIMIT, message)
                 }
                 // Readiness can change after an earlier step (for example, capture after navigation).
@@ -241,36 +256,36 @@ class AgentExecutionEngine(
                 modelCalls++
                 if (generated == null) {
                     val message = "The selected model did not respond before the execution timeout. No further action was started."
-                    event(AgentExecutionEventType.RUN_FAILED, message, status = "MODEL_TIMEOUT")
+                    event(AgentExecutionEventType.RUN_FAILED, message, status = "MODEL_TIMEOUT", target = "Talk execution", rationale = "The model did not respond before its configured timeout.", result = message)
                     return result(AgentRunStatus.FAILED, message)
                 }
                 if (generated.isBlank()) {
                     val message = "The selected model returned an empty response. No action was executed."
-                    event(AgentExecutionEventType.RUN_FAILED, message, status = "EMPTY_MODEL_RESPONSE")
+                    event(AgentExecutionEventType.RUN_FAILED, message, status = "EMPTY_MODEL_RESPONSE", target = "Talk execution", rationale = "The model returned no usable response.", result = message)
                     return result(AgentRunStatus.FAILED, message)
                 }
 
                 when (val decision = AgentDecisionParser.parse(generated)) {
                     is AgentDecision.Final -> {
                         val answer = decision.content.trim().ifBlank { "The model finished without returning a response." }
-                        event(AgentExecutionEventType.RUN_FINISHED, "Memo finished this execution turn.")
+                        event(AgentExecutionEventType.RUN_FINISHED, "Memo finished this execution turn.", target = "Talk execution", rationale = "The model returned a final response for the user's task.", result = answer)
                         return result(AgentRunStatus.FINISHED, answer)
                     }
                     is AgentDecision.Invalid -> {
                         observations += "PROTOCOL ERROR: ${decision.reason} Return exactly one valid JSON object using the required protocol. No tool was executed."
-                        event(AgentExecutionEventType.TOOL_FAILED, "The model returned an invalid action request; no capability was invoked.", status = "INVALID_MODEL_DECISION")
+                        event(AgentExecutionEventType.TOOL_FAILED, "The model returned an invalid action request; no capability was invoked.", status = "INVALID_MODEL_DECISION", target = "Talk execution", rationale = "The model response did not match Memo's required action protocol.", result = "No capability was invoked because the action request failed protocol validation.")
                     }
                     is AgentDecision.ToolCall -> {
                         if (toolCalls >= config.maxToolCalls) {
                             val message = "The tool-call budget was reached. Completed results are preserved; the remaining work was not started."
-                            event(AgentExecutionEventType.RUN_LIMIT_REACHED, message)
+                            event(AgentExecutionEventType.RUN_LIMIT_REACHED, message, target = "Talk execution", rationale = "The configured execution budget was reached.", result = message)
                             return result(AgentRunStatus.ITERATION_LIMIT, message)
                         }
                         val adapter = capabilityRegistry.resolve(decision.toolId)
                         if (adapter == null || !runCatching { adapter.isAvailable() }.getOrDefault(false)) {
                             val observation = "CAPABILITY UNAVAILABLE: '${decision.toolId}' is not in Memo's currently callable capability set. Choose another available capability or explain the limitation."
                             observations += observation
-                            event(AgentExecutionEventType.TOOL_FAILED, observation, toolId = decision.toolId, status = "UNAVAILABLE")
+                            event(AgentExecutionEventType.TOOL_FAILED, observation, toolId = decision.toolId, status = "UNAVAILABLE", target = decision.toolId, rationale = "The requested capability is not available in the current runtime.", result = "No action was executed.")
                             continue
                         }
 
@@ -279,7 +294,7 @@ class AgentExecutionEngine(
                         if (validationError != null) {
                             val observation = "INVALID TOOL INPUT for '${definition.id}': $validationError No action was executed. Correct the arguments or choose another capability."
                             observations += observation
-                            event(AgentExecutionEventType.TOOL_FAILED, "Memo rejected invalid input for ${definition.id}; no action was executed.", toolId = definition.id, status = "INVALID_INPUT")
+                            event(AgentExecutionEventType.TOOL_FAILED, "Memo rejected invalid input for ${definition.id}; no action was executed.", toolId = definition.id, status = "INVALID_INPUT", runtimeId = definition.runtimeId, target = definition.id, rationale = definition.description, result = "No action was executed because input validation failed.")
                             continue
                         }
 
@@ -288,6 +303,7 @@ class AgentExecutionEngine(
                             definition.executionClass == AgentToolExecutionClass.DESTRUCTIVE
                         val callId = UUID.randomUUID().toString()
                         val invocation = AgentToolInvocation(runId, callId, runId + ":" + callId)
+                        var eventTarget = definition.id
                         val grant = if (approvalRequired) {
                             val envelope = adapter.approvalEnvelope(decision.arguments)
                             val envelopeValid = envelope != null &&
@@ -301,16 +317,21 @@ class AgentExecutionEngine(
                                 val approvalError = adapter.approvalFailure(decision.arguments)
                                     ?: "Memo could not construct an exact, bounded approval envelope for this capability."
                                 val message = "Execution paused for review: " + approvalError
-                                event(AgentExecutionEventType.RUN_NEEDS_REVIEW, message, toolId = definition.id, callId = callId, status = "NEEDS_REVIEW")
+                                event(AgentExecutionEventType.RUN_NEEDS_REVIEW, message, toolId = definition.id, callId = callId, status = "NEEDS_REVIEW", runtimeId = definition.runtimeId, target = definition.id, rationale = definition.description, result = "No external action was started because the approval envelope was invalid.")
                                 return result(AgentRunStatus.NEEDS_REVIEW, message)
                             }
+                            eventTarget = envelope!!.title
                             event(
                                 AgentExecutionEventType.TOOL_APPROVAL_REQUESTED,
                                 "Waiting for exact user approval before " + definition.id + ".",
                                 toolId = definition.id,
                                 callId = callId,
                                 status = "PENDING_APPROVAL",
-                                toolVersion = definition.version
+                                toolVersion = definition.version,
+                                runtimeId = definition.runtimeId,
+                                target = eventTarget,
+                                rationale = definition.description,
+                                result = "Waiting for explicit user approval."
                             )
                             val approved = withTimeoutOrNull(config.approvalTimeoutMs) {
                                 onApprovalRequired(AgentApprovalRequest(runId, callId, definition.version, envelope!!))
@@ -323,9 +344,13 @@ class AgentExecutionEngine(
                                     toolId = definition.id,
                                     callId = callId,
                                     status = "NOT_APPROVED",
-                                    toolVersion = definition.version
+                                    toolVersion = definition.version,
+                                    runtimeId = definition.runtimeId,
+                                    target = eventTarget,
+                                    rationale = definition.description,
+                                    result = "The external action was not started."
                                 )
-                                event(AgentExecutionEventType.RUN_NEEDS_REVIEW, message, toolId = definition.id, callId = callId, status = "NEEDS_REVIEW")
+                                event(AgentExecutionEventType.RUN_NEEDS_REVIEW, message, toolId = definition.id, callId = callId, status = "NEEDS_REVIEW", runtimeId = definition.runtimeId, target = eventTarget, rationale = definition.description, result = "The external action was not started.")
                                 return result(AgentRunStatus.NEEDS_REVIEW, message)
                             }
                             event(
@@ -334,18 +359,35 @@ class AgentExecutionEngine(
                                 toolId = definition.id,
                                 callId = callId,
                                 status = "APPROVED",
-                                toolVersion = definition.version
+                                toolVersion = definition.version,
+                                runtimeId = definition.runtimeId,
+                                target = eventTarget,
+                                rationale = definition.description,
+                                result = "One-use approval recorded; the capability must still verify its ledger gate."
                             )
                             approved
                         } else null
 
                         toolCalls++
-                        event(AgentExecutionEventType.TOOL_STARTED, "Starting " + definition.id + ".", toolId = definition.id, callId = callId, status = "RUNNING", toolVersion = definition.version)
+                        event(
+                            AgentExecutionEventType.TOOL_STARTED,
+                            "Starting " + definition.id + ".",
+                            toolId = definition.id,
+                            callId = callId,
+                            status = "RUNNING",
+                            toolVersion = definition.version,
+                            runtimeId = definition.runtimeId,
+                            target = eventTarget,
+                            rationale = definition.description
+                        )
                         if (definition.executionClass != AgentToolExecutionClass.READ_ONLY) {
                             writeOutcomeUncertainOnCancellation = true
                             interruptedWriteToolId = definition.id
                             interruptedWriteCallId = callId
                             interruptedWriteEvidenceReference = ""
+                            interruptedWriteRuntimeId = definition.runtimeId
+                            interruptedWriteTarget = eventTarget
+                            interruptedWriteRationale = definition.description
                         }
 
                         var toolResult = try {
@@ -366,7 +408,11 @@ class AgentExecutionEngine(
                                             "An in-flight local write was interrupted. Inspect Memo's workspace before retrying because its final state may be uncertain.",
                                             toolId = definition.id,
                                             callId = callId,
-                                            status = "NEEDS_REVIEW"
+                                            status = "NEEDS_REVIEW",
+                                            runtimeId = definition.runtimeId,
+                                            target = eventTarget,
+                                            rationale = definition.description,
+                                            result = "The in-flight write was interrupted; inspect before retrying."
                                         )
                                     }
                                 }
@@ -421,7 +467,11 @@ class AgentExecutionEngine(
                                             callId = callId,
                                             status = if (definition.executionClass == AgentToolExecutionClass.READ_ONLY) "FAILED" else "NEEDS_REVIEW",
                                             toolVersion = definition.version,
-                                            evidenceReference = toolResult.evidenceReference
+                                            evidenceReference = toolResult.evidenceReference,
+                                            runtimeId = definition.runtimeId,
+                                            target = eventTarget,
+                                            rationale = definition.description,
+                                            result = "Postcondition verification was interrupted."
                                         )
                                     }
                                 }
@@ -479,7 +529,11 @@ class AgentExecutionEngine(
                             callId = callId,
                             status = toolResult.status.name,
                             toolVersion = definition.version,
-                            evidenceReference = toolResult.evidenceReference
+                            evidenceReference = toolResult.evidenceReference,
+                            runtimeId = definition.runtimeId,
+                            target = eventTarget,
+                            rationale = definition.description,
+                            result = toolResult.summary
                         )
                         // Clear uncertainty only after a completion/block event has been recorded.
                         if (definition.executionClass != AgentToolExecutionClass.READ_ONLY &&
@@ -488,17 +542,20 @@ class AgentExecutionEngine(
                             interruptedWriteToolId = ""
                             interruptedWriteCallId = ""
                             interruptedWriteEvidenceReference = ""
+                            interruptedWriteRuntimeId = "app.memo"
+                            interruptedWriteTarget = ""
+                            interruptedWriteRationale = ""
                         }
                         if (toolResult.status == AgentToolStatus.NEEDS_REVIEW) {
                             val message = "A capability has an uncertain or approval-gated outcome. Review it before continuing: ${toolResult.summary}"
-                            event(AgentExecutionEventType.RUN_NEEDS_REVIEW, message, toolId = definition.id, callId = callId, status = "NEEDS_REVIEW")
+                            event(AgentExecutionEventType.RUN_NEEDS_REVIEW, message, toolId = definition.id, callId = callId, status = "NEEDS_REVIEW", runtimeId = definition.runtimeId, target = eventTarget, rationale = definition.description, result = toolResult.summary, evidenceReference = toolResult.evidenceReference)
                             return result(AgentRunStatus.NEEDS_REVIEW, message)
                         }
                     }
                 }
             }
             val message = "Memo reached the model-call limit before the model returned a final answer. Completed tool results are preserved; ask Memo to continue."
-            event(AgentExecutionEventType.RUN_LIMIT_REACHED, message)
+            event(AgentExecutionEventType.RUN_LIMIT_REACHED, message, target = "Talk execution", rationale = "The configured execution budget was reached.", result = message)
             return result(AgentRunStatus.ITERATION_LIMIT, message)
         } catch (cancelled: CancellationException) {
             withContext(NonCancellable) {
@@ -515,7 +572,11 @@ class AgentExecutionEngine(
                         toolId = interruptedWriteToolId,
                         callId = interruptedWriteCallId,
                         status = if (requiresReview) "NEEDS_REVIEW" else "CANCELLED",
-                        evidenceReference = interruptedWriteEvidenceReference
+                        evidenceReference = interruptedWriteEvidenceReference,
+                    runtimeId = interruptedWriteRuntimeId,
+                    target = interruptedWriteTarget,
+                    rationale = interruptedWriteRationale,
+                    result = message
                     )
                 }
             }
@@ -528,13 +589,13 @@ class AgentExecutionEngine(
                 "Memo could not record the execution state. No capability was started."
             }
             withContext(NonCancellable) {
-                runCatching { event(AgentExecutionEventType.RUN_NEEDS_REVIEW, message, status = status.name) }
+                runCatching { event(AgentExecutionEventType.RUN_NEEDS_REVIEW, message, status = status.name, target = "Talk execution", rationale = "An execution event could not be durably recorded after a capability may have started.", result = message) }
             }
             return result(status, message)
         } catch (error: Throwable) {
             val message = (error.message?.takeIf { it.isNotBlank() } ?: "The agent execution failed.").take(700)
             withContext(NonCancellable) {
-                runCatching { event(AgentExecutionEventType.RUN_FAILED, message, status = "EXECUTION_ERROR") }
+                runCatching { event(AgentExecutionEventType.RUN_FAILED, message, status = "EXECUTION_ERROR", target = "Talk execution", rationale = "The execution engine stopped after an unexpected error.", result = message) }
             }
             return result(AgentRunStatus.FAILED, message)
         }
