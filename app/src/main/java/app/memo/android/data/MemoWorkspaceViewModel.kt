@@ -233,20 +233,7 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             val storedConversation = saved.conversations.firstOrNull { it.id == conversationId }
             storedRun?.lastEventType == event.type.name &&
                 storedRun.status == updatedRun.status &&
-                storedRun.events.lastOrNull()?.let { savedEvent ->
-                    savedEvent.eventType == event.type.name &&
-                        savedEvent.runtimeId == event.runtimeId.take(120) &&
-                        savedEvent.toolId == event.toolId.take(80) &&
-                        savedEvent.callId == event.callId.take(128) &&
-                        savedEvent.toolVersion == event.toolVersion.coerceIn(0, 10_000) &&
-                        savedEvent.target == event.target.take(200) &&
-                        savedEvent.rationale == event.rationale.take(400) &&
-                        savedEvent.summary == event.summary.take(800) &&
-                        savedEvent.result == event.result.take(800) &&
-                        savedEvent.status == event.status.ifBlank { updatedRun.status }.take(32) &&
-                        savedEvent.evidenceReference == event.evidenceReference.take(500) &&
-                        savedEvent.at == event.at.coerceAtLeast(0L)
-                } == true &&
+                storedRun.events.lastOrNull() == updatedRun.events.lastOrNull() &&
                 storedConversation?.messages?.any { it.id == message.id && it.sourceType == "AGENT_EVENT" } == true
         }) null else "The execution event and matching run state could not be read back from the encrypted workspace."
     }
@@ -309,7 +296,7 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             val savedConversation = saved.conversations.firstOrNull { it.id == run.conversationId }
             savedRun?.status == finalStatus &&
                 savedRun.finalMessage == cleanMessage.take(4_000) &&
-                savedRun.events.lastOrNull()?.let { it.eventType == "RUN_RESULT_SAVED" && it.result == cleanMessage.take(800) && it.status == finalStatus && it.at == now } == true &&
+                savedRun.events.lastOrNull() == updatedRun.events.lastOrNull() &&
                 savedConversation?.messages?.any { it.id == message.id && it.content == cleanMessage } == true
         }) null else "The final response and Memo run status could not be read back from the encrypted workspace."
     }
@@ -352,7 +339,7 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         persist(next)
         if (!persistAgentRunAndVerify(runId) { saved ->
             saved.agentRuns.firstOrNull { it.id == runId }?.let { run ->
-                run.status == status && run.events.lastOrNull()?.let { it.eventType == "RUN_INTERRUPTED" && it.status == status && it.result == reason.take(800) && it.at == now } == true
+                run.status == status && run.events.lastOrNull() == updated.events.lastOrNull()
             } == true
         }) {
             _vaultError.value = "Memo could not verify the final state of an interrupted execution."
