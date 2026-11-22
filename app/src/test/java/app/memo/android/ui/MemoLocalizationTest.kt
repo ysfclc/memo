@@ -92,6 +92,16 @@ class MemoLocalizationTest {
         assertEquals("Sonuç kaydediliyor", MemoLocalization.translate("Saving result", "TR"))
         assertEquals("Wymaga sprawdzenia", MemoLocalization.translate("Needs review", "PL"))
         assertEquals("İnceleme gerekiyor", MemoLocalization.translate("Needs review", "TR"))
+        assertEquals("Ostatnie zdarzenia wykonania", MemoLocalization.translate("Recent execution events", "PL"))
+        assertEquals("Son yürütme olayları", MemoLocalization.translate("Recent execution events", "TR"))
+        assertEquals("Pokaż oś czasu", MemoLocalization.translate("Show timeline", "PL"))
+        assertEquals("Zaman çizelgesini göster", MemoLocalization.translate("Show timeline", "TR"))
+        assertEquals("Cel działania", MemoLocalization.translate("Purpose", "PL"))
+        assertEquals("Eylemin amacı", MemoLocalization.translate("Purpose", "TR"))
+        assertEquals("Wynik", MemoLocalization.translate("Result", "PL"))
+        assertEquals("Sonuç", MemoLocalization.translate("Result", "TR"))
+        assertEquals("Dowód", MemoLocalization.translate("Evidence", "PL"))
+        assertEquals("Kanıt", MemoLocalization.translate("Evidence", "TR"))
         assertTrue(MemoLocalization.translate(
             "Memo restarted during this run. Review saved events and any action that may have started. No step was replayed.", "PL"
         ).contains("Żaden krok nie został odtworzony"))
