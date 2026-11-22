@@ -27,6 +27,7 @@ import app.memo.android.data.TaskRecord
 import app.memo.android.runtime.BrowserUrlPolicy
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -366,6 +367,139 @@ class BrowserSession(
             }
             withTimeout(20_000L) { pending.await() }
         }
+
+    /**
+     * Submit only the exact prompt that was shown in the approval request to the visible page composer.
+     * The page URL is rechecked after approval; submission is verified before a page snapshot is returned.
+     */
+    suspend fun submitPromptForAgent(prompt: String, expectedUrl: String): BrowserPageCapture =
+        withContext(Dispatchers.Main.immediate) {
+            val cleanPrompt = prompt.trim()
+            require(cleanPrompt.isNotBlank() && cleanPrompt.length <= 12_000) {
+                "The approved prompt must contain 1–12,000 characters."
+            }
+            val target = BrowserUrlPolicy.normalizeHttpsUrl(expectedUrl)
+                ?: throw IllegalArgumentException("Prompt submission requires the exact public HTTPS page shown for approval.")
+            check(canCaptureForAgent) { "The visible browser session is busy or unavailable for an approved prompt." }
+            check(sameAgentPageTarget(target, currentUrl) && sameAgentPageTarget(target, webView.url.orEmpty())) {
+                "The visible browser page changed after approval. The prompt was not sent."
+            }
+
+            isSendingPrompt = true
+            sendMessage = "Submitting the approved prompt…"
+            try {
+                val prepared = evaluateAgentScript(BrowserScripts.preparePrompt(cleanPrompt))
+                check(prepared.optBoolean("ok")) {
+                    prepared.optString("reason").ifBlank { "Memo could not identify a visible text composer. Nothing was sent." }
+                }
+                check(sameAgentPageTarget(target, currentUrl) && sameAgentPageTarget(target, webView.url.orEmpty())) {
+                    "The browser page changed while preparing the approved prompt. Nothing was sent."
+                }
+
+                val sent = evaluateAgentScript(BrowserScripts.sendPreparedPrompt(cleanPrompt))
+                check(sent.optBoolean("ok") && sent.optBoolean("clicked")) {
+                    sent.optString("reason").ifBlank { "Memo could not verify a send control. The submission outcome is uncertain." }
+                }
+
+                val deadline = System.currentTimeMillis() + 20_000L
+                var verification: JSONObject? = null
+                while (System.currentTimeMillis() < deadline) {
+                    verification = evaluateAgentScript(
+                        BrowserScripts.verifyPromptSubmission(cleanPrompt, preserveState = true)
+                    )
+                    if (verification.optBoolean("verified")) break
+                    delay(750L)
+                }
+                check(verification?.optBoolean("verified") == true) {
+                    verification?.optString("reason")?.ifBlank {
+                        "The send control was activated, but Memo could not verify the exact prompt appeared in the conversation. Inspect the page before retrying."
+                    } ?: "The prompt submission outcome is uncertain. Inspect the page before retrying."
+                }
+
+                val afterUrl = BrowserUrlPolicy.normalizeHttpsUrl(currentUrl)
+                    ?: throw IllegalStateException("The browser left the supported HTTPS page after prompt submission.")
+                check(BrowserUrlPolicy.isSameOriginHttpsLink(target, afterUrl)) {
+                    "The page changed to another origin after submission. Inspect the browser before continuing."
+                }
+                isSendingPrompt = false
+                val captureDeadline = System.currentTimeMillis() + 15_000L
+                while (!canCaptureForAgent && System.currentTimeMillis() < captureDeadline) delay(250L)
+                check(canCaptureForAgent) {
+                    "The prompt was visibly submitted, but the page did not settle for evidence capture. Inspect it before retrying."
+                }
+                val capture = captureCurrentPageForAgent(afterUrl)
+                sendMessage = "Approved prompt submission verified."
+                capture
+            } finally {
+                isSendingPrompt = false
+            }
+        }
+
+    /**
+     * Wait for the new assistant response associated with the exact prompt previously submitted by Talk.
+     * The browser script compares against its submission baseline, so an older answer cannot be returned.
+     */
+    suspend fun captureAssistantResponseForAgent(
+        prompt: String,
+        expectedUrl: String
+    ): Pair<String, BrowserPageCapture> = withContext(Dispatchers.Main.immediate) {
+        val cleanPrompt = prompt.trim()
+        require(cleanPrompt.isNotBlank()) { "A prompt submission is required before capturing a response." }
+        val target = BrowserUrlPolicy.normalizeHttpsUrl(expectedUrl)
+            ?: throw IllegalArgumentException("Response capture requires the original HTTPS destination.")
+        check(canCaptureForAgent && BrowserUrlPolicy.isSameOriginHttpsLink(target, currentUrl)) {
+            "The visible browser page is unavailable or has moved away from the approved prompt destination."
+        }
+        val submission = evaluateAgentScript(
+            BrowserScripts.verifyPromptSubmission(cleanPrompt, preserveState = true)
+        )
+        check(submission.optBoolean("verified")) {
+            "Memo could not verify the original prompt baseline. Inspect the provider conversation manually; do not resend."
+        }
+
+        val deadline = System.currentTimeMillis() + 35_000L
+        var response = ""
+        var lastReason = "Waiting for a new, stable assistant response."
+        while (System.currentTimeMillis() < deadline) {
+            val poll = evaluateAgentScript(BrowserScripts.pollAssistantResponse)
+            when (poll.optString("status")) {
+                "COMPLETED" -> {
+                    response = poll.optString("response").trim()
+                    if (response.isNotBlank()) break
+                    lastReason = "The provider reported completion without readable response text."
+                }
+                "NEEDS_REVIEW" -> throw IllegalStateException(
+                    poll.optString("reason").ifBlank { "The provider response baseline needs manual review." }
+                )
+                "PENDING" -> lastReason = poll.optString("reason").ifBlank { lastReason }
+                else -> throw IllegalStateException("The provider returned an unsupported response state.")
+            }
+            delay(1_000L)
+        }
+        check(response.length >= 24) {
+            "$lastReason The response did not become stable within 35 seconds. Inspect the page; the prompt will not be resent."
+        }
+        val afterUrl = BrowserUrlPolicy.normalizeHttpsUrl(currentUrl)
+            ?: throw IllegalStateException("The browser left the supported HTTPS page while waiting for a response.")
+        check(BrowserUrlPolicy.isSameOriginHttpsLink(target, afterUrl)) {
+            "The provider response appeared after the browser moved to another origin. Inspect the page manually."
+        }
+        val capture = captureCurrentPageForAgent(afterUrl)
+        response.take(14_000) to capture
+    }
+
+    private suspend fun evaluateAgentScript(script: String): JSONObject {
+        val pending = CompletableDeferred<JSONObject>()
+        webView.evaluateJavascript(script) { raw ->
+            try {
+                check(!disposed) { "The browser session closed during an approved prompt action." }
+                pending.complete(JSONObject(decodeJsString(raw)))
+            } catch (error: Throwable) {
+                pending.completeExceptionally(error)
+            }
+        }
+        return withTimeout(15_000L) { pending.await() }
+    }
 
     /**
      * Open a same-origin HTTPS anchor observed in the most recent captured page.

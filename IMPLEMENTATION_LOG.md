@@ -228,6 +228,83 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - **Recovery:** on unlock/import, nonterminal runs (including FINALIZING) become NEEDS_REVIEW; pending approval references are cleared and the saved recovery note explicitly says that no step was replayed. Runs with uncertain capability starts remain review-only. No automatic execution resume was added.
 - **UI:** Live includes a recent Memo executions section with status, last recorded stage, model/capability counters, recovery reason, and links to conversation/approval review.
 - **Tests:** deterministic-clock event reducer, exact event/run identity, approval/tool lifecycle, uncertain outcome, FINALIZING crash-window recovery, schema-v7 round-trip, schema-v6 migration, Council backup v7 assertion, restart recovery and PL/TR translations.
-- **Validation:** CI #1040/#1041 stopped at source verification on stale launcher/Live markers; both guards were corrected. CI #1042 passed source/runner checks and compiled core but failed two core tests (timestamp fixture and Council schema-6 expectation), now corrected. CI #1043 reached Android compilation and reported three unresolved `AgentExecutionEventType` references in the ViewModel closeout; the missing import and regression guard are added here. Exact-head CI remains pending. Parent S5 head a6ed188c passed CI #1039 including Android tests/lint/assembly/signature and install-over-existing preservation.
+- **Validation:** CI run `44901392061` on source commit `adf58109af909358940e7361251669377e2a84d5` subsequently completed with all observed jobs successful, including source/runner checks, core and app unit tests, lint, debug/instrumentation assembly, APK identity/signature and install-over-existing data preservation. This supersedes the earlier exact-head pending note for S6; physical-device acceptance remains open. PR-event APK publication/re-signing was skipped, so no release APK is claimed.
 - **Known limitation:** MemoWorkspaceAgentTools still does not expose an end-to-end external-write adapter. This milestone makes the generic run lifecycle durable/observable; it does not claim a submitted/sent action can yet be executed from every Talk request.
 - **Status:** [~] source implementation; exact-head CI and physical-device acceptance required.
+
+
+### 2026-11-21 — M3.A4-S7 — Shared capability postcondition verification
+
+- **Requirement:** MEMO-ORCH-001, MEMO-AGENT-001, MEMO-CAP-001, MEMO-LIVE-001.
+- **Baseline:** main `a6c893c7808c5f042f9fe3cb8254b5ac5b90a2c4`; source head `adf58109af909358940e7361251669377e2a84d5`; baseline checkpoint `docs/checkpoints/2026-11-21-agent-postcondition-baseline.md`. Work is on `agent/postcondition-verification-20261121`; no changes were merged to main.
+- **Files changed:** `core/src/main/kotlin/app/memo/android/orchestration/AgentExecutionEngine.kt`, `core/src/test/kotlin/app/memo/android/orchestration/AgentExecutionEngineTest.kt`, `app/src/main/java/app/memo/android/ai/MemoWorkspaceAgentTools.kt`, `tools/verify_source.py`, task/gap/traceability/invariant/product/build documents and checkpoints.
+- **Implementation:** introduced `AgentToolPostconditionVerification` and a default-null verifier contract on `AgentCapabilityAdapter`. The shared engine invokes verification under the capability timeout, requires observable output, checks the evidence reference, and only counts/records `TOOL_FINISHED` after verification. Missing/failed/mismatched read-only verification becomes `FAILED` and may be re-planned; local/external/destructive uncertainty becomes `NEEDS_REVIEW`. Write verification must match the invocation's evidence ID.
+- **Adapters:** search recomputes its bounded result and source IDs; note/proposal verifiers read exact workspace records; browser navigation compares the returned URL/title to the settled visible WebView; capture reopens encrypted evidence and checks source/content/link digests. A failed navigation clears old capture state before trying a new destination.
+- **Tests:** six engine regressions cover missing read verifier, missing write verifier, mismatched write evidence, cancellation during write invocation, cancellation during write postcondition verification, and a write adapter returning `FAILED`. The latter three stop for review without re-planning. Existing successful adapter tests now provide test verifiers; the source verifier checks the protocol, all six adapters and interruption guards.
+- **Compatibility:** no workspace/backup schema, encryption key, application identity, signing or external approval policy changed.
+- **Validation:** PR exact-head CI run `44907881554` passed on `bfe40a182b1e283699a8c4c36bf9c612f83981c7`: source verifier, remote-runner tests, core/app unit tests, lint, debug/instrumentation assembly, APK identity/signature and install-over-existing data preservation. No local Gradle/Android SDK checkout; release signing skipped, so no canonical release APK is claimed.
+- **Status:** `[~]` source implementation and exact-head CI verified; physical-device acceptance pending.
+
+### 2026-11-21 — WP-INTEGRATION-001 — Bring verified execution integrity and UI release gates onto current main
+
+- **Baseline:** `main` at `d80f19ae6ff956392cbe11c2b1aaead1758a7d19`; preserved the current Talk/Work scrolling repair from `d189a732416c241d1e5d94d6a20d6a7e11345034`.
+- **Integrated source:** M3.A4-S7 shared capability postcondition verification from `agent/postcondition-verification-20261121` (exact source head `bfe40a182b1e283699a8c4c36bf9c612f83981c7`). Its exact-head Actions run `44907881554` completed successfully. The integration branch carries the same implementation and tests; it still requires its own CI run.
+- **Integrated release governance:** binding UI regression contract, real-device Talk/Work scroll checklist and release-candidate integrity rules from `governance/memo-ui-regression-release-gate`.
+- **Compatibility:** no workspace schema, backup schema, encryption format, Keystore alias, package/application identity, signing material or runtime permission was changed by this integration.
+- **Verification:** upstream S7 exact-head CI PASS; current-main source import CI `44927379252` PASS as recorded in the import note; integration-branch CI pending. No local Android SDK/Gradle build and no physical-device acceptance are claimed.
+- **Status:** `[~]` integrated on a dedicated branch; awaiting exact-head CI and device acceptance. Do not merge to main or distribute an APK without explicit review and the required acceptance gates.
+
+### 2026-11-21 — M3.B1-S1 — Talk-created private Markdown artifacts
+
+- **Capability:** added `workspace.save_artifact` to `RuntimeRegistry` and `MemoWorkspaceAgentTools`. It is a reversible local workspace write, not an external side effect. The artifact type is descriptive metadata and does not route to a specialized workflow.
+- **Contract:** `StudioArtifactPolicy` validates bounded title/type/content and computes a canonical SHA-256 digest. The adapter stores a `STUDIO_ARTIFACT` in the encrypted evidence store with source conversation/message, source excerpt digest, content digest, version, draft status and run/call/idempotency metadata.
+- **Verification:** the shared Talk engine requires the artifact ID, exact content digest and source provenance to be read back from the encrypted workspace before success. Duplicate drafts are reused only for the same content and source message; uncertain writes stop for review.
+- **Studio:** the Studio list now includes Talk-created drafts. The existing Evidence dialog opens them for edit, revision history, copy and Markdown export. User edits refresh the content digest and increment the version; source captures remain immutable.
+- **Tests/source gates:** added `StudioArtifactPolicyTest` for normalization, size limits and digest binding; added a runtime registration test; extended `tools/verify_source.py` to guard the adapter, verifier, Studio listing, edit allowlist and digest/version updates.
+- **Boundary:** private Markdown text only. No filesystem code execution, PDF/image/video generation, publishing or external submission is claimed. Exact-head CI and physical-device acceptance pending.
+
+### 2026-11-21 — M3.A4-S8 — Approved browser prompt submission from Talk
+
+- **Capability:** added `browser.submit_prompt` to `MemoWorkspaceAgentTools` using the existing `runtime.browser` registration. It is classified `EXTERNAL_WRITE` and requires exact human approval; no unapproved invocation path sends a prompt.
+- **Approval binding:** `AgentApprovalEnvelope` contains the normalized HTTPS destination and exact prompt. The adapter recomputes `ActionApprovalLedger.contentHash`, rechecks page availability after approval, and durably consumes the one-use action grant before touching the visible browser.
+- **Visible action:** `BrowserSession.submitPromptForAgent` rechecks the same page, uses the existing visible-composer prepare/send scripts, verifies the exact prompt appears as a submitted message and the composer is cleared, then captures the settled page for a digest.
+- **Evidence/action lifecycle:** saves encrypted `BROWSER_PROMPT_SUBMISSION` evidence with exact prompt, prompt digest, page digest, source conversation/message, action ID/hash and run/call IDs. The shared postcondition verifies the evidence and in-progress action record, then durably completes the action ledger against the evidence reference.
+- **Failure policy:** changed/stale page, approval hash mismatch, uncertain send, cancellation, evidence write/read-back failure or action completion mismatch becomes `NEEDS_REVIEW`; the prompt is never automatically replayed.
+- **Boundary:** visible text composer only; no general controls/forms, file uploads, provider response polling or native app actions. Reading page responses remains behind the separate page-content consent.
+- **Validation:** explicit runtime policy regression and source-verifier guards added. Exact-head Android CI and physical-device acceptance pending.
+
+### 2026-11-21 — M3.A4-S9 — Consent-gated stable browser response capture
+
+- **Capability:** added `browser.capture_response` only to the Talk tool set when the user has separately enabled browser-page sharing. It requires the exact BROWSER_PROMPT_SUBMISSION evidence ID from the prior approved prompt action and verifies the action ledger is COMPLETED.
+- **Baseline and stability:** `BrowserSession.captureAssistantResponseForAgent` re-verifies the original prompt submission baseline, polls the shared stable-response script with bounded provider-specific selectors, requires a new response, and captures the settled page. A lost baseline, unsupported structure or 35-second timeout returns NEEDS_REVIEW; it never resends the prompt.
+- **Evidence:** persists a `BROWSER_PROMPT_RESPONSE` record with prompt-submission reference, action ID, prompt/response/page digests, source conversation/message, run/call IDs and capture timestamp. The postcondition reads back the exact response and source binding.
+- **Studio visibility:** Studio now lists both BROWSER_PROMPT_SUBMISSION and BROWSER_PROMPT_RESPONSE records under Browser research evidence; each opens in the existing evidence viewer.
+- **Trust boundary:** response text is returned with an explicit UNTRUSTED EXTERNAL RESPONSE label. The adapter is not advertised without page-sharing consent and is a local evidence write, not another external side effect.
+- **Boundary:** provider-specific stable response detection only; arbitrary page events, general controls/forms, uploads and native-app actions remain open.
+- **Validation:** runtime policy regression and source-verifier guards added. Exact-head Android CI and physical-device acceptance pending.
+
+#### CI result — M3.B1-S1 artifact slice
+
+- Run `44953421742` on commit `ae6ef31976d7f35339715a16933ec73e21210af5` passed: source invariants/checksum verification, remote runner, core and app unit tests, lint, debug APK assembly, package/version identity, APK signature verification, and emulator install-over-existing with app-private data preservation.
+- The run predates the subsequent M3.A4-S8/S9 browser prompt/response additions. It does not prove those later adapters, physical-device behavior or release signing.
+
+#### CI result — M3.A4-S8 approved browser prompt submission
+
+- Run 44954196829 on commit 23073011b9c411945c12531ce8483ac0a6d2b4b5 passed source checksum/invariant verification, remote-runner tests, core/app unit tests, lint, debug APK assembly, package/version identity, APK signature verification and emulator install-over-existing with app-private data preservation.
+- Release-signing job was skipped. This run includes the prompt-submission adapter but predates M3.A4-S9 response capture and the later Studio browser-evidence list. Physical-device approval/rejection/stale-page/uncertain-send acceptance remains pending.
+
+#### CI result — M3.A4-S9 consent-gated browser response capture
+
+- Run 44954878877 on commit bac787645ee85958132d56e8524c53325b536c06 passed source verification, remote-runner tests, Android unit tests, lint, debug APK assembly, package/version identity, signature verification and emulator install-over-existing app-private data preservation.
+- Release artifact preparation and isolated release signing were skipped. The run does not prove physical-device browser behavior. Later local/remote consent wording and metadata-only changes are documented separately; no functional browser adapter changes followed this validated source slice.
+
+
+### 2026-11-22 — M3.B2-S1 — Per-run Live execution timeline
+
+- **Requirements:** MEMO-LIVE-001, MEMO-ORCH-001, MEMO-RECOVERY-001.
+- **Baseline:** integration branch `build/product-core-integration-2026-11-21`, exact parent `a9de80ef22b4ab2b6939d68db32b7a36c9ee316a`; current Memo 1 repository only. No Memo-2 changes.
+- **Implementation:** added a read-only Live projection that finds `AGENT_EVENT` messages in the run's originating encrypted conversation by the exact Run ID field in the final metadata line, orders them by their persisted timestamps, and presents the most recent four events. Each event retains its saved summary and status/evidence metadata. Live also shows run start/update times, the saved final response and the latest evidence reference. The conversation link remains the full durable trace.
+- **Compatibility:** no schema or backup changes; no new store or event journal; package ID, encryption format, Keystore aliases, storage paths and signing configuration are unchanged.
+- **Tests:** new app unit tests cover exact run correlation, combined metadata fields, event source filtering, chronological ordering, missing conversations and EN/PL/TR timeline labels.
+- **Verification:** exact-head GitHub Actions validation pending. No local Gradle/Android SDK build or physical-device acceptance was performed in this run. No release APK is claimed.
+- **Remaining:** cross-runtime Live event projection/control, pause/resume/takeover, global stop/action gate and physical-device acceptance.

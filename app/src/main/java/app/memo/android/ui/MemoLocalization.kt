@@ -29,6 +29,13 @@ object MemoLocalization {
 
     private val translations: Map<String, Pair<String, String>> = mapOf(
 
+
+        "Android does not allow silent access to other apps' private model folders. Use Import only for a file outside Memo's scanned folders that Android lets you access." to ("Android nie pozwala na cichy dostęp do prywatnych folderów modeli innych aplikacji. Użyj Importuj tylko dla pliku spoza skanowanych folderów Memo, do którego Android pozwala uzyskać dostęp." to "Android, diğer uygulamaların özel model klasörlerine sessiz erişime izin vermez. Memo'nun taradığı klasörler dışındaki, Android'in erişim izni verdiği bir dosya için İçe Aktar seçeneğini kullan."),
+        "Discard" to ("Odrzuć" to "Sil"),
+        "Import one model file" to ("Importuj jeden plik modelu" to "Bir model dosyası içe aktar"),
+        "Memo scans its private model folder and app-owned external model folders automatically. Weights download only when you tap Install and are never included inside the APK." to ("Memo automatycznie skanuje prywatny folder modeli oraz zewnętrzne foldery należące do aplikacji. Wagi są pobierane dopiero po naciśnięciu Instaluj i nie są dołączane do APK." to "Memo özel model klasörünü ve uygulamaya ait harici model klasörlerini otomatik tarar. Model ağırlıkları yalnızca Yükle'ye dokunduğunda indirilir ve APK içine eklenmez."),
+        "Pause and keep progress" to ("Wstrzymaj i zachowaj postęp" to "Duraklat ve ilerlemeyi koru"),
+        "Resume download" to ("Wznów pobieranie" to "İndirmeye devam et"),
         "MEMO ACTION" to ("DZIAŁANIE MEMO" to "MEMO İŞLEMİ"),
         "Memo's visible browser session" to ("Widoczna sesja przeglądarki Memo" to "Memo'nun görünür tarayıcı oturumu"),
         "Opening the user-supplied page…" to ("Otwieranie strony podanej przez użytkownika…" to "Kullanıcının sağladığı sayfa açılıyor…"),
@@ -71,6 +78,14 @@ object MemoLocalization {
         "Model calls" to ("Wywołania modelu" to "Model çağrıları"),
         "Capability calls" to ("Wywołania funkcji" to "Yetenek çağrıları"),
         "Succeeded" to ("Udane" to "Başarılı"),
+        "Started" to ("Rozpoczęto" to "Başlangıç"),
+        "Updated" to ("Zaktualizowano" to "Güncellendi"),
+        "Recorded final result" to ("Zapisany wynik końcowy" to "Kaydedilen son sonuç"),
+        "Latest evidence reference" to ("Najnowsze odwołanie do dowodu" to "En son kanıt referansı"),
+        "Execution timeline" to ("Oś czasu wykonania" to "Yürütme zaman çizelgesi"),
+        "Recorded state, rationale, result and evidence for this run" to ("Zapisany stan, uzasadnienie, wynik i dowody tego uruchomienia" to "Bu çalıştırmanın kayıtlı durumu, gerekçesi, sonucu ve kanıtı"),
+        "No detailed event records are available. Open the originating conversation to inspect the full trace." to ("Brak szczegółowych zapisów zdarzeń. Otwórz rozmowę źródłową, aby sprawdzić pełny ślad." to "Ayrıntılı olay kayıtları yok. Tam izi incelemek için kaynak sohbeti aç."),
+        "Showing the latest four events. Open the conversation for the full trace." to ("Pokazano cztery najnowsze zdarzenia. Otwórz rozmowę, aby zobaczyć pełny ślad." to "En son dört olay gösteriliyor. Tam iz için sohbeti aç."),
         "Open conversation" to ("Otwórz rozmowę" to "Sohbeti aç"),
         "Review actions" to ("Sprawdź działania" to "Eylemleri incele"),
         "Running" to ("W toku" to "Çalışıyor"),
@@ -185,6 +200,9 @@ object MemoLocalization {
         "Sources" to ("Źródła" to "Kaynaklar"),
         "saved evidence" to ("zapisane dowody" to "kaydedilmiş kanıtlar"),
         "Needs your decision" to ("Wymaga Twojej decyzji" to "Kararını bekliyor"),
+        "Memo run needs review" to ("Uruchomienie Memo wymaga sprawdzenia" to "Memo çalıştırması inceleme bekliyor"),
+        "Inspect the saved execution trace before continuing." to ("Przed kontynuacją sprawdź zapisany ślad wykonania." to "Devam etmeden önce kaydedilen yürütme kaydını inceleyin."),
+        "Open execution conversation" to ("Otwórz rozmowę wykonania" to "Yürütme sohbetini aç"),
         "Nothing is waiting for review. Proposed records and uncertain runs stay separate until you decide." to ("Nic nie czeka na sprawdzenie. Proponowane rekordy i niepewne uruchomienia pozostają oddzielone do Twojej decyzji." to "İnceleme bekleyen bir şey yok. Önerilen kayıtlar ve belirsiz çalışmalar sen karar verene kadar ayrı kalır."),
         "Review connected work" to ("Sprawdź powiązaną pracę" to "Bağlantılı işleri incele"),
         "Open work graph" to ("Otwórz graf pracy" to "İş grafiğini aç"),
@@ -587,6 +605,19 @@ object MemoLocalization {
         "Today" to ("Dzisiaj" to "Bugün"),
         "Your active work, from the encrypted workspace." to ("Twoja aktywna praca z zaszyfrowanego obszaru roboczego." to "Şifrelenmiş çalışma alanınızdaki etkin işleriniz."),
         "Steps run in order. Launch, wait and delay are available. Tap and Back are temporarily disabled until exact-action approval is ready; existing drafts containing them must be edited before saving." to ("Kroki są wykonywane po kolei. Dostępne są uruchamianie, oczekiwanie i opóźnienie. Dotknięcie i Wstecz są tymczasowo wyłączone do czasu wdrożenia zatwierdzania dokładnych działań; istniejące wersje robocze zawierające te kroki trzeba edytować przed zapisaniem." to "Adımlar sırayla çalışır. Başlatma, bekleme ve gecikme kullanılabilir. Tam eylem onayı hazır olana kadar Dokun ve Geri geçici olarak devre dışıdır; bunları içeren mevcut taslaklar kaydedilmeden önce düzenlenmelidir."),
+
+        "Artifact exported and verified" to ("Artefakt został wyeksportowany i zweryfikowany" to "Dosya dışa aktarıldı ve doğrulandı"),
+        "Artifact export not verified" to ("Nie udało się zweryfikować eksportu artefaktu" to "Dosya dışa aktarımı doğrulanamadı"),
+        "Studio artifact export verified" to ("Eksport artefaktu Studio zweryfikowano" to "Studio dosya dışa aktarımı doğrulandı"),
+        "The selected destination could not be opened." to ("Nie można otworzyć wybranego miejsca docelowego." to "Seçilen hedef açılamadı."),
+        "The exported file could not be read back for verification." to ("Nie można ponownie odczytać wyeksportowanego pliku w celu weryfikacji." to "Dışa aktarılan dosya doğrulama için yeniden okunamadı."),
+        "The exported file did not match its expected SHA-256. Memo cannot mark this export as verified." to ("Wyeksportowany plik nie zgadza się z oczekiwaną sumą SHA-256. Memo nie może oznaczyć eksportu jako zweryfikowanego." to "Dışa aktarılan dosya beklenen SHA-256 değeriyle eşleşmedi. Memo bu dışa aktarımı doğrulanmış olarak işaretleyemez."),
+        "The exported artifact exceeds the 1 MiB limit." to ("Eksportowany artefakt przekracza limit 1 MiB." to "Dışa aktarılan dosya 1 MiB sınırını aşıyor."),
+        "An exported artifact cannot be empty." to ("Eksportowany artefakt nie może być pusty." to "Dışa aktarılan dosya boş olamaz."),
+        "An artifact filename is required." to ("Nazwa pliku artefaktu jest wymagana." to "Dosya adı gereklidir."),
+        "Unsupported artifact export type." to ("Nieobsługiwany typ eksportu artefaktu." to "Desteklenmeyen dosya dışa aktarma türü."),
+        "Unknown error" to ("Nieznany błąd" to "Bilinmeyen hata")
+
     )
 
     fun translate(text: String, language: String): String {

@@ -38,4 +38,62 @@ class InterruptedTaskRecoveryTest {
         assertTrue(restored.activity.first().message.contains("0 interrupted tasks"))
         assertTrue(restored.activity.first().message.contains("1 interrupted job"))
     }
+
+    @Test
+    fun activeAgentRunsBecomeReviewableAfterProcessRestartWithoutReplay() {
+        val activeStatuses = listOf("RUNNING", "WAITING_FOR_APPROVAL", "TOOL_RUNNING", "FINALIZING")
+        val activeRuns = activeStatuses.map { status ->
+            AgentRunRecord(
+                conversationId = "conversation-$status",
+                goal = "Complete a useful task",
+                status = status,
+                stage = "Last durable checkpoint: $status",
+                lastEventType = if (status == "TOOL_RUNNING") "TOOL_STARTED" else "RUN_STARTED",
+                lastToolId = if (status == "TOOL_RUNNING") "workspace.save_note" else "",
+                pendingApprovalCallId = if (status == "WAITING_FOR_APPROVAL") "call-pending" else ""
+            )
+        }
+        val completed = AgentRunRecord(
+            conversationId = "conversation-completed",
+            goal = "Already finished",
+            status = "COMPLETED",
+            finalMessage = "Saved result"
+        )
+
+        val restored = AppSnapshot(agentRuns = activeRuns + completed).recoverInterruptedTasks()
+
+        activeRuns.forEach { previous ->
+            val recovered = restored.agentRuns.single { it.id == previous.id }
+            assertEquals("NEEDS_REVIEW", recovered.status)
+            assertEquals("Interrupted by application restart", recovered.stage)
+            assertTrue(recovered.recoveryReason.contains("No step was replayed"))
+            assertEquals("", recovered.pendingApprovalCallId)
+            assertTrue(recovered.finishedAt > 0L)
+            assertEquals(previous.lastToolId, recovered.lastToolId)
+        }
+        assertEquals(completed, restored.agentRuns.single { it.id == completed.id })
+        assertTrue(restored.activity.first().message.contains("4 interrupted Memo runs"))
+    }
+
+    @Test
+    fun terminalAgentRunsAndSnapshotsWithoutActiveRunsRemainUnchanged() {
+        val completed = AgentRunRecord(
+            conversationId = "conversation-1",
+            goal = "Finished task",
+            status = "COMPLETED",
+            finalMessage = "Done",
+            finishedAt = 123L
+        )
+        val failed = AgentRunRecord(
+            conversationId = "conversation-2",
+            goal = "Failed task",
+            status = "FAILED",
+            finalMessage = "Failed",
+            finishedAt = 456L
+        )
+        val snapshot = AppSnapshot(agentRuns = listOf(completed, failed))
+
+        assertEquals(snapshot, snapshot.recoverInterruptedTasks())
+    }
+
 }
