@@ -80,3 +80,13 @@ After device acceptance, prioritize the durable shared Talk execution path and s
 - Emulator/instrumented update/data preservation: verified by CI.
 - Physical-device acceptance: not yet performed.
 - Product completeness: not achieved.
+
+
+## Follow-up source audit (same session)
+
+- Inspected current-main Talk ViewModel, MemoWorkspaceAgentTools, and AgentExecutionEngine source.
+- Actual callable adapters in MemoWorkspaceAgentTools are workspace search, save note, propose record, browser navigation, browser page capture and open observed link (browser adapters only when a session exists). No generic external-write adapter is exposed by this catalogue. This matches the documented limitation and avoids advertising unsupported actions.
+- Talk ViewModel now owns the execution job, cancellation state, approval waiters and durable encrypted run records; this is a foundation, not proof that the full model-directed arbitrary-task loop is complete.
+- TASKS.md still carries a stale S6 exact-head-CI status after the successful 21 November CI run that compiled, packaged and passed the encrypted-data upgrade test. This is a project-ledger defect; source/build evidence should be considered stronger than the stale task prose. Status reconciliation remains outstanding.
+- The repository already has a canonical root `DEVICE_ACCEPTANCE_CHECKLIST.md`. Use that checklist rather than creating a second one. A duplicate audit-branch checklist was briefly created and removed to avoid parallel instructions.
+- The audit branch includes a baseline report; the branch has not been merged to main.
