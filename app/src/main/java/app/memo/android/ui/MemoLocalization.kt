@@ -594,6 +594,19 @@ object MemoLocalization {
         "Today" to ("Dzisiaj" to "Bugün"),
         "Your active work, from the encrypted workspace." to ("Twoja aktywna praca z zaszyfrowanego obszaru roboczego." to "Şifrelenmiş çalışma alanınızdaki etkin işleriniz."),
         "Steps run in order. Launch, wait and delay are available. Tap and Back are temporarily disabled until exact-action approval is ready; existing drafts containing them must be edited before saving." to ("Kroki są wykonywane po kolei. Dostępne są uruchamianie, oczekiwanie i opóźnienie. Dotknięcie i Wstecz są tymczasowo wyłączone do czasu wdrożenia zatwierdzania dokładnych działań; istniejące wersje robocze zawierające te kroki trzeba edytować przed zapisaniem." to "Adımlar sırayla çalışır. Başlatma, bekleme ve gecikme kullanılabilir. Tam eylem onayı hazır olana kadar Dokun ve Geri geçici olarak devre dışıdır; bunları içeren mevcut taslaklar kaydedilmeden önce düzenlenmelidir."),
+
+        "Artifact exported and verified" to ("Artefakt został wyeksportowany i zweryfikowany" to "Dosya dışa aktarıldı ve doğrulandı"),
+        "Artifact export not verified" to ("Nie udało się zweryfikować eksportu artefaktu" to "Dosya dışa aktarımı doğrulanamadı"),
+        "Studio artifact export verified" to ("Eksport artefaktu Studio zweryfikowano" to "Studio dosya dışa aktarımı doğrulandı"),
+        "The selected destination could not be opened." to ("Nie można otworzyć wybranego miejsca docelowego." to "Seçilen hedef açılamadı."),
+        "The exported file could not be read back for verification." to ("Nie można ponownie odczytać wyeksportowanego pliku w celu weryfikacji." to "Dışa aktarılan dosya doğrulama için yeniden okunamadı."),
+        "The exported file did not match its expected SHA-256. Memo cannot mark this export as verified." to ("Wyeksportowany plik nie zgadza się z oczekiwaną sumą SHA-256. Memo nie może oznaczyć eksportu jako zweryfikowanego." to "Dışa aktarılan dosya beklenen SHA-256 değeriyle eşleşmedi. Memo bu dışa aktarımı doğrulanmış olarak işaretleyemez."),
+        "The exported artifact exceeds the 1 MiB limit." to ("Eksportowany artefakt przekracza limit 1 MiB." to "Dışa aktarılan dosya 1 MiB sınırını aşıyor."),
+        "An exported artifact cannot be empty." to ("Eksportowany artefakt nie może być pusty." to "Dışa aktarılan dosya boş olamaz."),
+        "An artifact filename is required." to ("Nazwa pliku artefaktu jest wymagana." to "Dosya adı gereklidir."),
+        "The artifact filename has no usable characters." to ("Nazwa pliku artefaktu nie zawiera prawidłowych znaków." to "Dosya adında kullanılabilir karakter yok."),
+        "Unsupported artifact export type." to ("Nieobsługiwany typ eksportu artefaktu." to "Desteklenmeyen dosya dışa aktarma türü.")
+
     )
 
     fun translate(text: String, language: String): String {
