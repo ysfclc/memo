@@ -212,15 +212,15 @@ class AgentExecutionEngineTest {
             AgentExecutionEventType.TOOL_FINISHED
         )))
         val approvalEvent = events.first { it.type == AgentExecutionEventType.TOOL_APPROVAL_REQUESTED }
-        assertEquals("browser.session", approvalEvent.runtimeId)
+        assertEquals("runtime.browser", approvalEvent.runtimeId)
         assertEquals(envelope.title, approvalEvent.target)
-        assertEquals("Send an exact reviewed prompt.", approvalEvent.rationale)
+        assertEquals("Send an exact reviewed prompt to the current page.", approvalEvent.rationale)
         assertEquals("Waiting for explicit user approval.", approvalEvent.result)
         val finishedEvent = events.first { it.type == AgentExecutionEventType.TOOL_FINISHED }
-        assertEquals("browser.session", finishedEvent.runtimeId)
+        assertEquals("runtime.browser", finishedEvent.runtimeId)
         assertEquals(envelope.title, finishedEvent.target)
-        assertEquals("Send an exact reviewed prompt.", finishedEvent.rationale)
-        assertEquals("The provider response was captured.", finishedEvent.result)
+        assertEquals("Send an exact reviewed prompt to the current page.", finishedEvent.rationale)
+        assertEquals("The visible conversation confirms the prompt.", finishedEvent.result)
     }
 
     @Test
