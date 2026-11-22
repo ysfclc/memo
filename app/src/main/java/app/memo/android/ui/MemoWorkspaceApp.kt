@@ -383,10 +383,10 @@ fun MemoWorkspaceApp(
                 }
                 payload
             }.onSuccess { payload ->
-                viewModel.log("Studio artifact export verified · SHA-256 ${payload.sha256}")
-                snack("Artifact exported and verified · SHA-256 ${payload.sha256.take(12)}…")
+                viewModel.log("${MemoLocalization.translate("Studio artifact export verified", uiLanguage)} · SHA-256 ${payload.sha256}")
+                snack("${MemoLocalization.translate("Artifact exported and verified", uiLanguage)} · SHA-256 ${payload.sha256.take(12)}…")
             }.onFailure {
-                snack("Artifact export not verified: ${(it.message ?: "Unknown error").take(160)}")
+                snack("${MemoLocalization.translate("Artifact export not verified", uiLanguage)}: ${MemoLocalization.translate(it.message ?: "Unknown error", uiLanguage).take(160)}")
             }
         }
     }
