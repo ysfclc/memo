@@ -1674,18 +1674,24 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
                 }
             }
             passphrase.fill('\u0000')
-            result.fold(
-                onSuccess = { imported ->
-                    _snapshot.value = imported
-                    setThemeMode(imported.themeMode)
+            if (result.isSuccess) {
+                val imported = result.getOrThrow()
+                _snapshot.value = imported
+                setThemeMode(imported.themeMode)
+                try {
+                    val verified = withContext(Dispatchers.IO) { persistLatestSnapshotAndReadSafely() }
+                    check(verified == imported) { "Imported recovery state did not pass encrypted read-after-write verification." }
                     _vaultError.value = null
                     _vaultReady.value = true
-                    persist(imported)
                     log("Workspace restored from an authenticated encrypted backup.")
                     onDone(null)
-                },
-                onFailure = { onDone(safeError(it, "Encrypted restore failed.")) }
-            )
+                } catch (error: Throwable) {
+                    _vaultError.value = safeError(error, "The imported encrypted workspace could not be verified after saving.")
+                    onDone(_vaultError.value)
+                }
+            } else {
+                onDone(safeError(result.exceptionOrNull() ?: IllegalStateException("Encrypted restore failed."), "Encrypted restore failed."))
+            }
         }
     }
 
@@ -1709,18 +1715,24 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
                     ActionApprovalLedger.invalidateImportedApprovals(AppSnapshot.fromJson(text)).recoverInterruptedTasks()
                 }
             }
-            result.fold(
-                onSuccess = { imported ->
-                    _snapshot.value = imported
-                    setThemeMode(imported.themeMode)
+            if (result.isSuccess) {
+                val imported = result.getOrThrow()
+                _snapshot.value = imported
+                setThemeMode(imported.themeMode)
+                try {
+                    val verified = withContext(Dispatchers.IO) { persistLatestSnapshotAndReadSafely() }
+                    check(verified == imported) { "Imported recovery state did not pass encrypted read-after-write verification." }
                     _vaultError.value = null
                     _vaultReady.value = true
-                    persist(imported)
                     log("Workspace restored from a JSON export.")
                     onDone(null)
-                },
-                onFailure = { onDone(safeError(it, "Import failed.")) }
-            )
+                } catch (error: Throwable) {
+                    _vaultError.value = safeError(error, "The imported workspace could not be verified after saving.")
+                    onDone(_vaultError.value)
+                }
+            } else {
+                onDone(safeError(result.exceptionOrNull() ?: IllegalStateException("Import failed."), "Import failed."))
+            }
         }
     }
 
