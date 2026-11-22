@@ -88,13 +88,14 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
                 val stored = withContext(Dispatchers.IO) { vault.read() }
                 val restored = stored?.recoverInterruptedTasks() ?: AppSnapshot()
                 _snapshot.value = restored
-                _vaultError.value = null
-                _vaultReady.value = true
                 if (stored == null) {
                     log("Workspace created on this device.")
                 } else if (restored != stored) {
-                    persist(restored)
+                    val verified = withContext(Dispatchers.IO) { persistLatestSnapshotAndReadSafely() }
+                    check(verified == restored) { "Recovered execution state did not pass encrypted read-after-write verification." }
                 }
+                _vaultError.value = null
+                _vaultReady.value = true
             } catch (error: Throwable) {
                 _vaultError.value = safeError(error, "The encrypted workspace could not be opened.")
                 _vaultReady.value = true
