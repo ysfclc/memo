@@ -186,6 +186,8 @@ for marker in (
     "persistAgentRunAndVerify(",
     "persistLatestSnapshotAndReadSafely()",
     "check(verified == restored)",
+    "check(verified == imported)",
+    "Imported recovery state did not pass encrypted read-after-write verification.",
 ):
     if marker not in agent_broker:
         fail(f"Talk durable run journal is missing: {marker}")
