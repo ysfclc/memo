@@ -91,8 +91,7 @@ object ArtifactExportPolicy {
                 }
             }
         }.trim('-', '_').take(72).trim('-', '_')
-        require(safe.isNotBlank()) { "The artifact filename has no usable characters." }
-        return safe
+        return safe.ifBlank { "memo-artifact" }
     }
 
     private fun sha256(bytes: ByteArray): String =
