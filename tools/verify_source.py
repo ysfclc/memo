@@ -159,13 +159,17 @@ agent_run_test = (ROOT / "core/src/test/kotlin/app/memo/android/data/AgentRunLif
 workspace_schema_test = (ROOT / "core/src/test/kotlin/app/memo/android/data/WorkspaceSchemaV3Test.kt").read_text()
 live_screen = (ROOT / "app/src/main/java/app/memo/android/ui/LiveWorkspaceScreen.kt").read_text()
 for marker in (
+    "data class AgentRunEventRecord(",
     "data class AgentRunRecord(",
     "val agentRuns: List<AgentRunRecord>",
+    "val events: List<AgentRunEventRecord>",
+    "const val MAX_AGENT_RUN_EVENTS_PER_RUN = 48",
+    "fun AgentRunRecord.appendTimelineEvent(",
     "fun AgentRunRecord.applyEvent(",
     "val interruptedAgentRuns = agentRuns.count { it.isActive }",
     'root.put("agentRuns"',
-    'root.put("schemaVersion", 7)',
-    "require(schema in 1..7)",
+    'root.put("schemaVersion", 8)',
+    "require(schema in 1..8)",
 ):
     if marker not in agent_models:
         fail(f"encrypted durable run model/recovery is missing: {marker}")
@@ -193,13 +197,15 @@ for marker in (
 for marker in ("Memo executions", "AgentRunSummary(", "run.recoveryReason", "Open conversation", "FINALIZING", "Saving result"):
     if marker not in live_screen:
         fail(f"Live does not expose persisted Memo run state: {marker}")
-for marker in ("eventsRecordApprovalToolAndTerminalLifecycle", "rejectedOrUncertainToolOutcomesRequireReview", "eventsFromAnotherRunAreRejected"):
+for marker in ("eventsRecordApprovalToolAndTerminalLifecycle", "rejectedOrUncertainToolOutcomesRequireReview", "eventsFromAnotherRunAreRejected", "eventJournalIsBoundedAndKeepsMonotonicSequence"):
     if marker not in agent_run_test:
         fail(f"agent run lifecycle regression coverage is missing: {marker}")
-for marker in ("agentRunRecordsRoundTripWithExactRunAndConversationIdentity", "schemaSixBackupMigratesWithoutAgentRunRecords", "interruptedAgentRunsRecoverToReviewAndTerminalRunsStayTerminal"):
+for marker in ("agentRunRecordsRoundTripWithExactRunAndConversationIdentity", "agentRunEventJournalRoundTripsStructuredActionContext", "schemaSevenRunRecordsImportWithEmptyEventHistory", "schemaSixBackupMigratesWithoutAgentRunRecords", "interruptedAgentRunsRecoverToReviewAndTerminalRunsStayTerminal"):
     if marker not in workspace_schema_test:
         fail(f"schema-v7 run persistence/recovery test is missing: {marker}")
-print("PASS: Talk execution has a schema-versioned encrypted run record, atomic event journal/readback, truthful Live state and no-replay recovery")
+if "val runtimeId: String = \"app.memo\"" not in agent_engine or "val rationale: String = \"\"" not in agent_engine or "val result: String = \"\"" not in agent_engine:
+    fail("execution events must preserve bounded runtime, rationale and result context")
+print("PASS: Talk execution has a schema-v8 encrypted run record, bounded structured event journal/readback, truthful Live state and no-replay recovery")
 
 if "import app.memo.android.orchestration.AgentExecutionEventType" not in agent_broker:
     fail("the ViewModel run closeout must import the engine event types it compares")
