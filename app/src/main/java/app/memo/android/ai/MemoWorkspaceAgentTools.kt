@@ -1240,15 +1240,19 @@ fun agentEventTranscriptMessage(
     }
     val metadata = buildList {
         if (event.runId.isNotBlank()) add("Run ID: ${event.runId}")
+        if (event.runtimeId.isNotBlank()) add("Runtime: ${event.runtimeId}")
         if (event.callId.isNotBlank()) add("Call ID: ${event.callId}")
         if (event.status.isNotBlank()) add("Status: ${event.status}")
         if (event.toolVersion > 0) add("Capability version: ${event.toolVersion}")
+        if (event.target.isNotBlank()) add("Target: ${event.target}")
+        if (event.rationale.isNotBlank()) add("Rationale: ${event.rationale}")
+        if (event.result.isNotBlank()) add("Result: ${event.result}")
         if (event.evidenceReference.isNotBlank()) add("Evidence: ${event.evidenceReference}")
     }
     val lines = listOf(
         app.memo.android.ui.MemoLocalization.translate(key, language),
         event.summary.takeIf { it.isNotBlank() },
-        metadata.takeIf { it.isNotEmpty() }?.joinToString(" · ")
+        metadata.takeIf { it.isNotEmpty() }?.joinToString("\n")
     ).filterNotNull()
     return lines.joinToString("\n").take(1_600)
 }
