@@ -278,4 +278,4 @@ The action inbox and first top-level stop control are present in source. Static/
 - Studio export writes only to the user-selected Android document URI, then reopens that same URI and verifies the exact bytes before reporting success.
 - A write error, unreadable destination, truncated file or digest mismatch is reported as unverified. No arbitrary filesystem access, new plaintext storage, PDF/binary generation or background export is claimed.
 - Core tests cover filename sanitization, MIME/size limits, UTF-8, exact digest read-back and failure cases.
-- Source branch: `feature/verified-studio-file-export-2026-11-22`; exact-head CI pending. No release APK or physical-device acceptance is claimed.
+- Exact-head GitHub Actions run #1149 (`45002690812`) passed on `060853bd8e2ff07cb1445980430461e048067e7f`: source invariants, remote-runner tests, Android unit tests, lint, debug APK assembly, APK identity/signature checks and emulator install-over-existing data preservation. Isolated final signing and release artifact publication were skipped. Physical-device export acceptance remains pending; no production-signed APK is claimed.
