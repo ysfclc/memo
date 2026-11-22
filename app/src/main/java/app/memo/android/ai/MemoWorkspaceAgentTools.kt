@@ -1246,7 +1246,7 @@ fun agentEventTranscriptMessage(
         if (event.status.isNotBlank()) add("${label("Status")}: ${event.status}")
         if (event.toolVersion > 0) add("${label("Capability version")}: ${event.toolVersion}")
         if (event.target.isNotBlank()) add("${label("Target")}: ${event.target}")
-        if (event.rationale.isNotBlank()) add("${label("Rationale")}: ${event.rationale}")
+        if (event.rationale.isNotBlank()) add("${label("Purpose")}: ${event.rationale}")
         if (event.result.isNotBlank()) add("${label("Result")}: ${event.result}")
         if (event.evidenceReference.isNotBlank()) add("${label("Evidence")}: ${event.evidenceReference}")
     }
