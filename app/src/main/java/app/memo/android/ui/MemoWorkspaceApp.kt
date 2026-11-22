@@ -1255,15 +1255,15 @@ private fun HomeScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                            Text("Memo run needs review · ${run.goal}", maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            Text("${MemoLocalization.translate("Memo run needs review", uiLanguage)} · ${run.goal}", maxLines = 2, overflow = TextOverflow.Ellipsis)
                             Text(
-                                run.recoveryReason.ifBlank { run.stage }.ifBlank { "Inspect the saved execution trace before continuing." },
+                                run.recoveryReason.ifBlank { run.stage }.ifBlank { MemoLocalization.translate("Inspect the saved execution trace before continuing.", uiLanguage) },
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis
                             )
-                            Text("Open execution conversation", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                            Text(MemoLocalization.translate("Open execution conversation", uiLanguage), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 }
