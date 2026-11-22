@@ -345,15 +345,17 @@ private fun agentRunEventStatusLabel(status: String): String = when (status) {
     "NOT_APPROVED" -> "Not approved"
     "SUCCEEDED", "COMPLETED" -> "Succeeded"
     "NEEDS_REVIEW" -> "Needs review"
-    "FAILED", "ERROR" -> "Failed"
+    "FAILED", "ERROR", "MODEL_TIMEOUT", "EMPTY_MODEL_RESPONSE", "EXECUTION_ERROR", "INVALID_MODEL_DECISION" -> "Failed"
+    "UNAVAILABLE" -> "Unavailable"
+    "INVALID_INPUT" -> "Invalid input"
     "CANCELLED" -> "Stopped"
     "FINALIZING" -> "Saving result"
     else -> status.replace('_', ' ').lowercase().ifBlank { "Recorded" }
 }
 
 private fun agentRunEventTone(status: String): MemoStatusTone = when (status) {
-    "NEEDS_REVIEW", "PENDING_APPROVAL", "WAITING_FOR_APPROVAL", "NOT_APPROVED" -> MemoStatusTone.WARNING
-    "FAILED", "ERROR" -> MemoStatusTone.ERROR
+    "NEEDS_REVIEW", "PENDING_APPROVAL", "WAITING_FOR_APPROVAL", "NOT_APPROVED", "UNAVAILABLE", "INVALID_INPUT" -> MemoStatusTone.WARNING
+    "FAILED", "ERROR", "MODEL_TIMEOUT", "EMPTY_MODEL_RESPONSE", "EXECUTION_ERROR", "INVALID_MODEL_DECISION" -> MemoStatusTone.ERROR
     "SUCCEEDED", "COMPLETED", "APPROVED" -> MemoStatusTone.SUCCESS
     else -> MemoStatusTone.INFO
 }
