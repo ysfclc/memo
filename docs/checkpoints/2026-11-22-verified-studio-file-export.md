@@ -26,7 +26,7 @@ A private Markdown artifact created through Talk can be exported to a real file 
 
 ## Tests
 - Added pure-core tests for filename sanitization, MIME allowlist, UTF-8 preservation, stable digest, exact read-back, changed/truncated content, invalid digest and size limits.
-- Exact-head CI for this feature branch: PENDING.
+- Exact-head CI: PASS — Actions run #1149 (`45002690812`) on commit `060853bd8e2ff07cb1445980430461e048067e7f`. Source invariants, remote-runner tests, Android unit tests, lint, debug APK assembly, APK identity/signature checks and emulator install-over-existing data preservation passed. Isolated release signing and artifact publication were skipped.
 - Physical-device export through at least one document provider: PENDING.
 
 ## Next
