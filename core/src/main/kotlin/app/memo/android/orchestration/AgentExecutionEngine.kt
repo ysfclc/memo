@@ -350,7 +350,7 @@ class AgentExecutionEngine(
                                     rationale = definition.description,
                                     result = "The external action was not started."
                                 )
-                                event(AgentExecutionEventType.RUN_NEEDS_REVIEW, message, toolId = definition.id, callId = callId, status = "NEEDS_REVIEW", runtimeId = definition.runtimeId, target = eventTarget, rationale = definition.description, result = toolResult.summary, evidenceReference = toolResult.evidenceReference)
+                                event(AgentExecutionEventType.RUN_NEEDS_REVIEW, message, toolId = definition.id, callId = callId, status = "NEEDS_REVIEW", runtimeId = definition.runtimeId, target = eventTarget, rationale = definition.description, result = "The external action was not started.")
                                 return result(AgentRunStatus.NEEDS_REVIEW, message)
                             }
                             event(
@@ -548,7 +548,7 @@ class AgentExecutionEngine(
                         }
                         if (toolResult.status == AgentToolStatus.NEEDS_REVIEW) {
                             val message = "A capability has an uncertain or approval-gated outcome. Review it before continuing: ${toolResult.summary}"
-                            event(AgentExecutionEventType.RUN_NEEDS_REVIEW, message, toolId = definition.id, callId = callId, status = "NEEDS_REVIEW")
+                            event(AgentExecutionEventType.RUN_NEEDS_REVIEW, message, toolId = definition.id, callId = callId, status = "NEEDS_REVIEW", runtimeId = definition.runtimeId, target = eventTarget, rationale = definition.description, result = toolResult.summary, evidenceReference = toolResult.evidenceReference)
                             return result(AgentRunStatus.NEEDS_REVIEW, message)
                         }
                     }
