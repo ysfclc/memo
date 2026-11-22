@@ -90,3 +90,28 @@ After device acceptance, prioritize the durable shared Talk execution path and s
 - TASKS.md still carries a stale S6 exact-head-CI status after the successful 21 November CI run that compiled, packaged and passed the encrypted-data upgrade test. This is a project-ledger defect; source/build evidence should be considered stronger than the stale task prose. Status reconciliation remains outstanding.
 - The repository already has a canonical root `DEVICE_ACCEPTANCE_CHECKLIST.md`. Use that checklist rather than creating a second one. A duplicate audit-branch checklist was briefly created and removed to avoid parallel instructions.
 - The audit branch includes a baseline report; the branch has not been merged to main.
+
+
+## Follow-up source audit — durable Talk run recovery
+
+Inspected on current main snapshot `d80f19ae6ff956392cbe11c2b1aaead1758a7d19`:
+
+- `MemoWorkspaceViewModel.unlockAndLoad()` loads the encrypted vault and calls `AppSnapshot.recoverInterruptedTasks()` before exposing the restored snapshot.
+- `AgentRunRecord` treats RUNNING, WAITING_FOR_APPROVAL, TOOL_RUNNING and FINALIZING as active. Recovery converts every such run to NEEDS_REVIEW, clears its pending approval call ID, records a recovery reason and finish timestamp, and does not replay a tool or model step.
+- The same recovery pass calls `ActionApprovalLedger.recoverAfterRestart`, so approval records are separately invalidated/flagged rather than being treated as permission to resume.
+- Existing lifecycle tests cover RUNNING, WAITING_FOR_APPROVAL, FINALIZING and preservation of a COMPLETED run in `WorkspaceSchemaV3Test.interruptedAgentRunsRecoverToReviewAndTerminalRunsStayTerminal`.
+- The current design is intentionally fail-closed after process death. It preserves the run record and transcript but does not offer a safe resume/continue operation from a verified checkpoint. This is a real remaining product gap, not a compile defect.
+- A second boundary remains: the reducer and run record persist lifecycle metadata and event transcript messages, but they are not a per-capability durable execution journal sufficient to replay or safely resume a partially completed multi-step goal. Do not implement automatic replay on top of this record.
+
+### Next engineering slice (not yet implemented)
+
+Design a user-controlled **inspect-and-continue** path, not automatic replay. It must:
+
+1. Show the exact last durable stage, completed capability summaries/evidence references, pending/uncertain action state and recovery reason.
+2. Require explicit user action to continue; never resume external writes or a tool call whose outcome is uncertain.
+3. Start a new continuation run linked to the prior run, using only persisted verified observations as context; do not reuse old call IDs, idempotency keys, approval grants or in-memory browser scope.
+4. Require the model to re-evaluate the remaining goal against currently available capabilities and current permissions, then obtain fresh approval for any external side effect.
+5. Preserve both run histories and make the relationship visible; do not mutate a terminal run back to RUNNING.
+6. Add JVM reducer/codec tests, ViewModel integration tests, process-death/emulator coverage and exact-head CI before considering device acceptance.
+
+No source code was changed in this follow-up audit. The above is an evidence-based implementation boundary and acceptance contract for the next slice.
