@@ -49,7 +49,7 @@ class MemoWorkspaceAgentToolsTest {
         )
         assertTrue(transcript.contains("Runtime: runtime.browser"))
         assertTrue(transcript.contains("Target: Send reviewed prompt"))
-        assertTrue(transcript.contains("Rationale: Send the exact prompt after explicit approval."))
+        assertTrue(transcript.contains("Purpose: Send the exact prompt after explicit approval."))
         assertTrue(transcript.contains("Result: A visible response was captured."))
         assertTrue(transcript.contains("Evidence: evidence:response-2"))
         assertTrue(!transcript.contains("payload"))
