@@ -1238,16 +1238,17 @@ fun agentEventTranscriptMessage(
         app.memo.android.orchestration.AgentExecutionEventType.RUN_FAILED -> "Execution failed."
         app.memo.android.orchestration.AgentExecutionEventType.RUN_CANCELLED -> "Execution cancelled. Completed results were retained."
     }
+    val label: (String) -> String = { value -> app.memo.android.ui.MemoLocalization.translate(value, language) }
     val metadata = buildList {
-        if (event.runId.isNotBlank()) add("Run ID: ${event.runId}")
-        if (event.runtimeId.isNotBlank()) add("Runtime: ${event.runtimeId}")
-        if (event.callId.isNotBlank()) add("Call ID: ${event.callId}")
-        if (event.status.isNotBlank()) add("Status: ${event.status}")
-        if (event.toolVersion > 0) add("Capability version: ${event.toolVersion}")
-        if (event.target.isNotBlank()) add("Target: ${event.target}")
-        if (event.rationale.isNotBlank()) add("Rationale: ${event.rationale}")
-        if (event.result.isNotBlank()) add("Result: ${event.result}")
-        if (event.evidenceReference.isNotBlank()) add("Evidence: ${event.evidenceReference}")
+        if (event.runId.isNotBlank()) add("${label("Run ID")}: ${event.runId}")
+        if (event.runtimeId.isNotBlank()) add("${label("Runtime")}: ${event.runtimeId}")
+        if (event.callId.isNotBlank()) add("${label("Call ID")}: ${event.callId}")
+        if (event.status.isNotBlank()) add("${label("Status")}: ${event.status}")
+        if (event.toolVersion > 0) add("${label("Capability version")}: ${event.toolVersion}")
+        if (event.target.isNotBlank()) add("${label("Target")}: ${event.target}")
+        if (event.rationale.isNotBlank()) add("${label("Rationale")}: ${event.rationale}")
+        if (event.result.isNotBlank()) add("${label("Result")}: ${event.result}")
+        if (event.evidenceReference.isNotBlank()) add("${label("Evidence")}: ${event.evidenceReference}")
     }
     val lines = listOf(
         app.memo.android.ui.MemoLocalization.translate(key, language),
