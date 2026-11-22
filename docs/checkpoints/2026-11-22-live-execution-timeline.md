@@ -15,7 +15,7 @@ Implement the first vertical slice of M3.B2: durable, structured Talk-run events
 - Events preserve type/status, sequence, timestamp, runtime ID, capability ID/version, call ID, display target, declared capability purpose, safe result summary and evidence reference.
 - The engine emits runtime/target/purpose/result context for capability lifecycle events. Targets are display titles or capability IDs; raw tool arguments and secret payloads are not copied into the timeline.
 - The ViewModel commits event journal updates with the run reducer and transcript record, then verifies the stored event read-back before continuing execution.
-- Run creation, final-result persistence, interrupted closeout and app-restart recovery are represented explicitly. Restart recovery records `RUN_RECOVERED_NEEDS_REVIEW`; no interrupted action is replayed.
+- Run creation, final-result persistence, interrupted closeout and app-restart recovery are represented explicitly. Startup and both backup-import paths read back the encrypted recovery snapshot before unlocking/confirming restore. Restart recovery records `RUN_RECOVERED_NEEDS_REVIEW`; no interrupted action is replayed.
 - Live exposes an expandable per-run timeline with state, timestamp, runtime, action, target, purpose, result and evidence.
 - Backup schema is now v8. Schema-v7 run records remain importable with an empty event list; Memo does not fabricate historical events for old runs.
 - The displayed purpose is the capability's declared user-safe description, not hidden model chain-of-thought.
