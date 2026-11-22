@@ -604,7 +604,6 @@ object MemoLocalization {
         "The exported artifact exceeds the 1 MiB limit." to ("Eksportowany artefakt przekracza limit 1 MiB." to "Dışa aktarılan dosya 1 MiB sınırını aşıyor."),
         "An exported artifact cannot be empty." to ("Eksportowany artefakt nie może być pusty." to "Dışa aktarılan dosya boş olamaz."),
         "An artifact filename is required." to ("Nazwa pliku artefaktu jest wymagana." to "Dosya adı gereklidir."),
-        "The artifact filename has no usable characters." to ("Nazwa pliku artefaktu nie zawiera prawidłowych znaków." to "Dosya adında kullanılabilir karakter yok."),
         "Unsupported artifact export type." to ("Nieobsługiwany typ eksportu artefaktu." to "Desteklenmeyen dosya dışa aktarma türü."),
         "Unknown error" to ("Nieznany błąd" to "Bilinmeyen hata")
 
