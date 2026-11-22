@@ -55,4 +55,28 @@ class MemoWorkspaceAgentToolsTest {
         assertTrue(!transcript.contains("payload"))
     }
 
+    @Test
+    fun transcriptLocalizesStructuredMetadataLabels() {
+        val transcript = agentEventTranscriptMessage(
+            AgentExecutionEvent(
+                runId = "run-pl",
+                type = AgentExecutionEventType.TOOL_FINISHED,
+                summary = "Capability finished.",
+                toolId = "browser.submit_prompt",
+                status = "SUCCEEDED",
+                evidenceReference = "evidence:pl",
+                runtimeId = "runtime.browser",
+                target = "Send reviewed prompt",
+                rationale = "Send the exact prompt after explicit approval.",
+                result = "A visible response was captured."
+            ),
+            "PL"
+        )
+        assertTrue(transcript.contains("Środowisko uruchomieniowe: runtime.browser"))
+        assertTrue(transcript.contains("Cel: Send reviewed prompt"))
+        assertTrue(transcript.contains("Uzasadnienie: Send the exact prompt after explicit approval."))
+        assertTrue(transcript.contains("Wynik: A visible response was captured."))
+        assertTrue(transcript.contains("Dowód: evidence:pl"))
+    }
+
 }
