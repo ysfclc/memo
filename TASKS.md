@@ -558,7 +558,7 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - **Implementation:** Add a reusable core export policy with a small text MIME allowlist, safe filename generation, UTF-8 byte preservation, a 1 MiB bound and SHA-256 preparation. The Studio export flow writes to the URI returned by Android's CreateDocument picker, reopens that same URI and verifies the exact bytes against the expected digest.
 - **Safety:** No arbitrary filesystem paths, background export, overwrite of user-selected existing files outside the picker contract, remote transfer or new plaintext app storage. Export remains a user-initiated action. A write/read-back error or digest mismatch is reported as unverified; Memo must not claim success.
 - **Tests:** MIME allowlist, filename sanitization, UTF-8 preservation, size bounds, exact digest match, truncation/modification rejection and fail-closed oversized/unreadable verification.
-- **Status:** Source implemented on `feature/verified-studio-file-export-2026-11-22`; exact-head Android CI and device acceptance pending. This is a verified Markdown export slice, not general filesystem access or PDF/binary generation.
+- **Status:** Source implemented; exact-head GitHub Actions run `45002690812` (run #1149) passed on commit `060853bd8e2ff07cb1445980430461e048067e7f`, including Android unit tests, lint, debug APK assembly, signature/identity checks and emulator install-over-existing data preservation. Physical-device acceptance remains pending. This is a verified Markdown export slice, not general filesystem access or PDF/binary generation.
 
 
 ### M3.A4-S8 — Approved browser prompt submission
