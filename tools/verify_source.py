@@ -199,7 +199,7 @@ for marker in (
 for marker in ("Memo executions", "AgentRunSummary(", "AgentRunEventSummary(", "Recent execution events", "run.events.forEach", "event.rationale", "event.result", "event.evidenceReference", "formatLiveTime(event.at)", "run.recoveryReason", "Open conversation", "FINALIZING", "Saving result"):
     if marker not in live_screen:
         fail(f"Live does not expose persisted Memo run state: {marker}")
-for marker in ("Recent execution events", "Show timeline", "Hide timeline", "Runtime", "Target", "Rationale", "Result", "Evidence", "Run created", "Recovered after restart"):
+for marker in ("Recent execution events", "Show timeline", "Hide timeline", "Runtime", "Target", "Purpose", "Result", "Evidence", "Run created", "Recovered after restart"):
     if f'"{marker}" to' not in localization:
         fail(f"Live execution timeline localization is missing: {marker}")
 for marker in ("eventsRecordApprovalToolAndTerminalLifecycle", "rejectedOrUncertainToolOutcomesRequireReview", "eventsFromAnotherRunAreRejected", "eventJournalIsBoundedAndKeepsMonotonicSequence"):
