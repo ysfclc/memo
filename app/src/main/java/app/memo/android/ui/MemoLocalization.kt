@@ -87,7 +87,7 @@ object MemoLocalization {
         "Status" to ("Stan" to "Durum"),
         "Capability version" to ("Wersja funkcji" to "Yetenek sürümü"),
         "Target" to ("Cel" to "Hedef"),
-        "Rationale" to ("Uzasadnienie" to "Gerekçe"),
+        "Purpose" to ("Cel działania" to "Eylemin amacı"),
         "Result" to ("Wynik" to "Sonuç"),
         "Action" to ("Działanie" to "Eylem"),
         "Timestamp" to ("Znacznik czasu" to "Zaman damgası"),
