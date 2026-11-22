@@ -56,8 +56,13 @@ class AgentExecutionEngineTest {
         assertEquals(1, result.successfulToolCalls)
         assertEquals(1, invocations)
         assertTrue(prompts.last().contains("Three records with source IDs."))
-        assertEquals("evidence:123", events.first { it.type == AgentExecutionEventType.TOOL_FINISHED }.evidenceReference)
-        assertEquals(1, events.first { it.type == AgentExecutionEventType.TOOL_FINISHED }.toolVersion)
+        val finishedEvent = events.first { it.type == AgentExecutionEventType.TOOL_FINISHED }
+        assertEquals("evidence:123", finishedEvent.evidenceReference)
+        assertEquals(1, finishedEvent.toolVersion)
+        assertEquals("app.workspace", finishedEvent.runtimeId)
+        assertEquals("workspace.search", finishedEvent.target)
+        assertEquals("Search saved records.", finishedEvent.rationale)
+        assertEquals("Found three records.", finishedEvent.result)
         assertEquals(
             listOf(AgentExecutionEventType.RUN_STARTED, AgentExecutionEventType.TOOL_STARTED, AgentExecutionEventType.TOOL_FINISHED, AgentExecutionEventType.RUN_FINISHED),
             events.map { it.type }
@@ -206,6 +211,16 @@ class AgentExecutionEngineTest {
             AgentExecutionEventType.TOOL_STARTED,
             AgentExecutionEventType.TOOL_FINISHED
         )))
+        val approvalEvent = events.first { it.type == AgentExecutionEventType.TOOL_APPROVAL_REQUESTED }
+        assertEquals("runtime.browser", approvalEvent.runtimeId)
+        assertEquals(envelope.title, approvalEvent.target)
+        assertEquals("Send an exact reviewed prompt to the current page.", approvalEvent.rationale)
+        assertEquals("Waiting for explicit user approval.", approvalEvent.result)
+        val finishedEvent = events.first { it.type == AgentExecutionEventType.TOOL_FINISHED }
+        assertEquals("runtime.browser", finishedEvent.runtimeId)
+        assertEquals(envelope.title, finishedEvent.target)
+        assertEquals("Send an exact reviewed prompt to the current page.", finishedEvent.rationale)
+        assertEquals("The visible conversation confirms the prompt.", finishedEvent.result)
     }
 
     @Test
