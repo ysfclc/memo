@@ -125,7 +125,7 @@ class AiRuntimeViewModel(application: Application) : AndroidViewModel(applicatio
 
     private fun modelSearchDirectories(): List<File> = buildList {
         add(modelsDir)
-        application.getExternalFilesDirs("models").filterNotNull().forEach { add(it) }
+        getApplication<Application>().getExternalFilesDirs("models").filterNotNull().forEach { add(it) }
     }.onEach { it.mkdirs() }.distinctBy { directory ->
         runCatching { directory.canonicalPath }.getOrDefault(directory.absolutePath)
     }
