@@ -194,7 +194,7 @@ for marker in (
 ):
     if marker not in talk_screen:
         fail(f"Talk execution is not bound to its durable run journal: {marker}")
-for marker in ("Memo executions", "AgentRunSummary(", "run.recoveryReason", "Open conversation", "FINALIZING", "Saving result"):
+for marker in ("Memo executions", "AgentRunSummary(", "AgentRunEventSummary(", "Recent execution events", "run.events.forEach", "event.rationale", "event.result", "event.evidenceReference", "formatLiveTime(event.at)", "run.recoveryReason", "Open conversation", "FINALIZING", "Saving result"):
     if marker not in live_screen:
         fail(f"Live does not expose persisted Memo run state: {marker}")
 for marker in ("eventsRecordApprovalToolAndTerminalLifecycle", "rejectedOrUncertainToolOutcomesRequireReview", "eventsFromAnotherRunAreRejected", "eventJournalIsBoundedAndKeepsMonotonicSequence"):
@@ -203,9 +203,12 @@ for marker in ("eventsRecordApprovalToolAndTerminalLifecycle", "rejectedOrUncert
 for marker in ("agentRunRecordsRoundTripWithExactRunAndConversationIdentity", "agentRunEventJournalRoundTripsStructuredActionContext", "schemaSevenRunRecordsImportWithEmptyEventHistory", "schemaSixBackupMigratesWithoutAgentRunRecords", "interruptedAgentRunsRecoverToReviewAndTerminalRunsStayTerminal"):
     if marker not in workspace_schema_test:
         fail(f"schema-v8 run persistence/recovery test is missing: {marker}")
-if "val runtimeId: String = \"app.memo\"" not in agent_engine or "val rationale: String = \"\"" not in agent_engine or "val result: String = \"\"" not in agent_engine:
-    fail("execution events must preserve bounded runtime, rationale and result context")
-print("PASS: Talk execution has a schema-v8 encrypted run record, bounded structured event journal/readback, truthful Live state and no-replay recovery")
+if "val runtimeId: String = \"app.memo\"" not in agent_engine or "val target: String = \"\"" not in agent_engine or "val rationale: String = \"\"" not in agent_engine or "val result: String = \"\"" not in agent_engine:
+    fail("execution events must preserve bounded runtime, target, rationale and result context")
+for marker in ('label("Runtime")', 'label("Target")', 'label("Rationale")', 'label("Result")', 'label("Evidence")'):
+    if marker not in agent_broker:
+        fail(f"safe execution transcript is missing structured event metadata: {marker}")
+print("PASS: Talk execution has a schema-v8 encrypted event journal, verified lifecycle persistence and an expandable Live timeline with action purpose, result and evidence")
 
 if "import app.memo.android.orchestration.AgentExecutionEventType" not in agent_broker:
     fail("the ViewModel run closeout must import the engine event types it compares")
