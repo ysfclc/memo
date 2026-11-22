@@ -23,6 +23,12 @@ class ArtifactExportPolicyTest {
     }
 
     @Test
+    fun usesSafeFallbackWhenTitleHasNoFilenameCharacters() {
+        assertEquals("memo-artifact.md", ArtifactExportPolicy.suggestedFileName("***", "text/markdown"))
+        assertEquals("memo-artifact.md", ArtifactExportPolicy.prepare("***", "text/markdown", "body").fileName)
+    }
+
+    @Test
     fun verifiesExactReadBackAndRejectsChangedOrTruncatedBytes() {
         val payload = ArtifactExportPolicy.prepare("report", "application/json", "{\"ok\":true}")
         assertEquals("report.json", payload.fileName)
