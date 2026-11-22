@@ -17,10 +17,15 @@ import androidx.compose.material3.OutlinedButton
 import app.memo.android.ui.MemoText as Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import app.memo.android.data.ActionApprovalRecord
+import app.memo.android.data.AgentRunEventRecord
 import app.memo.android.data.AgentRunRecord
 import app.memo.android.data.AppSnapshot
 import app.memo.android.data.TaskRecord
@@ -225,10 +230,12 @@ private fun AgentRunSummary(run: AgentRunRecord, onOpenConversation: () -> Unit,
         "COMPLETED" -> MemoStatusTone.SUCCESS
         else -> MemoStatusTone.INFO
     }
+    var showTimeline by remember(run.id) { mutableStateOf(false) }
     MemoPanel {
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(run.goal, style = MaterialTheme.typography.titleSmall, maxLines = 3)
             MemoStatusTag(label = agentRunStatusLabel(run.status), tone = tone)
+            Text(formatLiveTime(run.updatedAt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (run.stage.isNotBlank()) {
                 Text("Last recorded stage", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(run.stage, style = MaterialTheme.typography.bodySmall, maxLines = 3)
@@ -248,6 +255,20 @@ private fun AgentRunSummary(run: AgentRunRecord, onOpenConversation: () -> Unit,
                 }
             }
             if (run.recoveryReason.isNotBlank()) Text(run.recoveryReason, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            TextButton(onClick = { showTimeline = !showTimeline }) {
+                Text(if (showTimeline) "Hide timeline" else "Show timeline")
+                Text(" · ${run.events.size}")
+            }
+            if (showTimeline) {
+                if (run.events.isEmpty()) {
+                    Text("No detailed events were saved for this run", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else {
+                    MemoSectionHeading("Recent execution events")
+                    run.events.forEach { event ->
+                        AgentRunEventSummary(event)
+                    }
+                }
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TextButton(onClick = onOpenConversation) { Text("Open conversation") }
                 if (run.status in setOf("WAITING_FOR_APPROVAL", "NEEDS_REVIEW")) {
@@ -256,6 +277,87 @@ private fun AgentRunSummary(run: AgentRunRecord, onOpenConversation: () -> Unit,
             }
         }
     }
+}
+
+@Composable
+private fun AgentRunEventSummary(event: AgentRunEventRecord) {
+    val language = LocalMemoLanguage.current
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(start = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(3.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            MemoStatusTag(label = agentRunEventStatusLabel(event.status), tone = agentRunEventTone(event.status))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(agentRunEventTitle(event.eventType), style = MaterialTheme.typography.titleSmall)
+                Text(
+                    "#${event.sequence} · ${formatLiveTime(event.at)} · ${event.runtimeId}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        if (event.toolId.isNotBlank()) AgentRunEventField("Action", event.toolId, language)
+        if (event.target.isNotBlank()) AgentRunEventField("Target", event.target, language)
+        if (event.rationale.isNotBlank()) AgentRunEventField("Purpose", event.rationale, language)
+        if (event.result.isNotBlank()) AgentRunEventField("Result", event.result, language)
+        if (event.evidenceReference.isNotBlank()) AgentRunEventField("Evidence", event.evidenceReference, language)
+        Spacer(Modifier.height(4.dp))
+    }
+}
+
+@Composable
+private fun AgentRunEventField(label: String, value: String, language: String) {
+    Row(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.Top) {
+        Text(
+            MemoLocalization.translate(label, language) + ":",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(value, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f), maxLines = 4)
+    }
+}
+
+private fun agentRunEventTitle(eventType: String): String = when (eventType) {
+    "RUN_CREATED" -> "Run created"
+    "RUN_STARTED" -> "Execution started"
+    "TOOL_APPROVAL_REQUESTED" -> "Approval requested"
+    "TOOL_APPROVAL_GRANTED" -> "Approval granted"
+    "TOOL_APPROVAL_REJECTED" -> "Approval rejected"
+    "TOOL_STARTED" -> "Action started"
+    "TOOL_FINISHED" -> "Action completed"
+    "TOOL_FAILED" -> "Action failed"
+    "RUN_FINISHED" -> "Execution finished"
+    "RUN_LIMIT_REACHED" -> "Execution limit reached."
+    "RUN_NEEDS_REVIEW" -> "Execution paused for review."
+    "RUN_FAILED" -> "Execution failed."
+    "RUN_CANCELLED" -> "Execution cancelled. Completed results were retained."
+    "RUN_RESULT_SAVED" -> "Final response saved"
+    "RUN_INTERRUPTED" -> "Run interrupted"
+    "RUN_RECOVERED_NEEDS_REVIEW" -> "Recovered after restart"
+    else -> eventType.replace('_', ' ').lowercase().replaceFirstChar { it.uppercase() }
+}
+
+private fun agentRunEventStatusLabel(status: String): String = when (status) {
+    "RUNNING" -> "Running"
+    "PENDING_APPROVAL", "WAITING_FOR_APPROVAL" -> "Waiting for approval"
+    "APPROVED" -> "Approved"
+    "NOT_APPROVED" -> "Not approved"
+    "SUCCEEDED", "COMPLETED" -> "Succeeded"
+    "NEEDS_REVIEW" -> "Needs review"
+    "FAILED", "ERROR", "MODEL_TIMEOUT", "EMPTY_MODEL_RESPONSE", "EXECUTION_ERROR", "INVALID_MODEL_DECISION" -> "Failed"
+    "UNAVAILABLE" -> "Unavailable"
+    "INVALID_INPUT" -> "Invalid input"
+    "CANCELLED" -> "Stopped"
+    "FINALIZING" -> "Saving result"
+    else -> status.replace('_', ' ').lowercase().ifBlank { "Recorded" }
+}
+
+private fun agentRunEventTone(status: String): MemoStatusTone = when (status) {
+    "NEEDS_REVIEW", "PENDING_APPROVAL", "WAITING_FOR_APPROVAL", "NOT_APPROVED", "UNAVAILABLE", "INVALID_INPUT" -> MemoStatusTone.WARNING
+    "FAILED", "ERROR", "MODEL_TIMEOUT", "EMPTY_MODEL_RESPONSE", "EXECUTION_ERROR", "INVALID_MODEL_DECISION" -> MemoStatusTone.ERROR
+    "SUCCEEDED", "COMPLETED", "APPROVED" -> MemoStatusTone.SUCCESS
+    else -> MemoStatusTone.INFO
 }
 
 private fun agentRunStatusLabel(status: String): String = when (status) {
