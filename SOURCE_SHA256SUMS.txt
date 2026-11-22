@@ -2,7 +2,7 @@ d7e13280de3d7b2d47cd2a719bea6205dfc7cf2b7c2b902c576529f6a75cae3f  ./.circleci/co
 83a19f08a2fa66c1be3e22220cd4964aeb81bed8ddda3a3b769a3b1d3a874806  ./.github/workflows/build-apk.yml
 35d51b623486a63a825aeffa712fe00e73c069ff4db4cb783affe14783203641  ./.gitignore
 ad8a2b64e91da8f13d0ab9f0e5f4b19c5c3627b5a9ea126a8a1883cbf9f7770a  ./AGENTS.md
-b108df238621207ad1777d2530bc6434a1b220b49f52f7a0afb110695dcf73fa  ./BUILD_STATUS.md
+9a8bc368a65ca7eae276f6e49b797a6dd7b570c4ecb599fbab21750cb5164a5a  ./BUILD_STATUS.md
 1e587651d6846f4bfdb910e3f8f499766786b7d3ab64f6b033725a45a04a8276  ./CHANGELOG.md
 2aee5ab8aa8c837fab1d8597ae6d13bc61d2dffb0ac2ad8a969c397a8aace1f3  ./DEVELOPMENT_GOVERNANCE.md
 27a75bf71bfa1da44ba4c0fcf483b010cab683e19f33f308a150a248cdae81aa  ./DEVICE_ACCEPTANCE_CHECKLIST.md
@@ -38,8 +38,8 @@ f608bddf49f49c35679c84ac52d1fef8e66363af0ab6f00005adaccc87a36363  ./app/src/main
 c183dc442f015a51390223e80258a5d6e09baefaa1054e3f1ddb931bfebae5d3  ./app/src/main/java/app/memo/android/ui/AiScreens.kt
 36f69a25fe5dfb84b70f9f7ac570388114088db17a4e559c865daa42fa0e590d  ./app/src/main/java/app/memo/android/ui/AppsWorkspaceScreen.kt
 c23d9d73f947dca41834299207c98cb522fbcf627615454078dc3d0bd22b645f  ./app/src/main/java/app/memo/android/ui/BrowserWorkflowScreen.kt
-b6b1c321eb8734a7aea0f1d0eec446f8fac5a11136a49b240976de3f40eb2563  ./app/src/main/java/app/memo/android/ui/LiveWorkspaceScreen.kt
-2c3b97069878b4210bee79fd2bf440b2e7cd3667d4a8cc47dc9cc4fb277d1e2f  ./app/src/main/java/app/memo/android/ui/MemoLocalization.kt
+3a15c1cfb1773228b118bfc6369174fe290006212628e982f0e0db93e3febaf6  ./app/src/main/java/app/memo/android/ui/LiveWorkspaceScreen.kt
+ba063b2f11b41f82c8d48fe0fcb80913228a32c607188a1f8979134e051668ca  ./app/src/main/java/app/memo/android/ui/MemoLocalization.kt
 7233cd4ac760ec24636c103294097c17e5a59d3772dda297a1034ba4f4941598  ./app/src/main/java/app/memo/android/ui/MemoPrimitives.kt
 fa5bd8f42d1349b9794601db776a3e137f933e5eac8caa0d7d9b50ace9979ac0  ./app/src/main/java/app/memo/android/ui/MemoTheme.kt
 23c6e367c5c6c113add96f7dcfc7e6a0884b7a9fa4753f5302ddd2d3485db603  ./app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt
@@ -75,7 +75,7 @@ e4926a3e06cfe3df0f92d657d0b193d12c75856dcc1192d731bb0ee344d36ff7  ./app/src/main
 34e605e53c6619a0a97bc82288e8fbf8962a568a92ffaa55f75529f40751b220  ./app/src/test/java/app/memo/android/ai/MemoWorkspaceAgentToolsTest.kt
 48cfc42eb077f2947710c0dd0b4f769e392a8f9083a5599c8fd9b95ad4e9f823  ./app/src/test/java/app/memo/android/ai/ModelCatalogTest.kt
 b8356e5805b218704a74d664343346ac8867637840cc698cfdb20dc4a1d12805  ./app/src/test/java/app/memo/android/browser/BrowserWorkflowPromptsTest.kt
-351dc66e56bbc186d7cd73f2fec7c6a1a22559dd7db93fb8e4abd65288e29f25  ./app/src/test/java/app/memo/android/ui/MemoLocalizationTest.kt
+91b9dafba2f4d14c8d1d907377014030682800f35e652d6ab9c35ba8a5daee06  ./app/src/test/java/app/memo/android/ui/MemoLocalizationTest.kt
 37e2bc9ac428a67193eea44dd9223fa77bca9bc220d49e638cd31591282b63fe  ./app/src/test/java/com/synthos/runtime/engine/WorkflowPolicyTest.java
 21acd1687a0a9180acdd7ade75f2f3e378a4d229e71865ccf8ddb344c0c20bf7  ./build.gradle
 65d89e7226d918bcea5cf0e986e3f2d18f8e184ed28640e73c154486ff9d484a  ./core/build.gradle
@@ -134,6 +134,7 @@ b7351eeb4468efd15800c206c1b8bd9c9b01d965a3440599f3198e86975ac2ed  ./docs/archite
 aaa4872056b173c9dadfc3923a8ba033205a0543c413198002163e4a692adf0a  ./docs/checkpoints/2026-11-09-workflow-governance.md
 be9b017e902818c1e89e26a5a01a6654b8df08ef7961287c28c8eca383c852fa  ./docs/checkpoints/2026-11-10-m7-a1-account-research.md
 ab46f2ab3f38a7731d627286fda34e09827f86936fc68c03e759a29bea3ad77c  ./docs/checkpoints/2026-11-10-mainline-consolidation.md
+9d929ecb033f25aaa77fa9c53b6e8ab38fec6412368c05eed75a4f760a672209  ./docs/checkpoints/2026-11-22-release-baseline-audit.md
 cbe1afa32d47f7b98208613a5f6491fcf26894fa4f770994060b8f19e115b3a3  ./docs/ci/CIRCLECI_SETUP.md
 9074340701a3573c2aecf74a6fe83574dbf5aa9085472bd4e55f892f5e6b3eca  ./docs/handoff/MEMO-FRESH-START-MASTER-LEDGER.md
 46c91211bdbb83187f2c2c15bf764547bebd9af9f578ba21bf5643bfdfb057ec  ./docs/handoff/Memo-Phase-1-CI-Diagnostics.md
