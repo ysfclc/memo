@@ -370,11 +370,11 @@ class AiRuntimeViewModel(application: Application) : AndroidViewModel(applicatio
             require(partial.length() >= entry.minimumBytes) {
                 "The model download is too small. The transfer may have been interrupted or the provider served an unexpected file."
             }
-            if (hasVerifiedTotal) {
-                require(partial.length() == total) {
+            if (hasVerifiedTotal && partial.length() != total) {
+                throw IOException(
                     "The model transfer is incomplete (" + partial.length() / 1_000_000L +
                         " bytes received, " + total + " expected). Resume the download."
-                }
+                )
             }
             val actualHash = sha256(partial)
             if (!actualHash.equals(entry.expectedSha256, ignoreCase = true)) {
