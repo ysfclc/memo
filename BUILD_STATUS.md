@@ -286,7 +286,7 @@ The action inbox and first top-level stop control are present in source. Static/
 - The same encrypted workspace snapshot commits the event, run-state reduction and transcript message; event read-back is checked before the engine is allowed to continue.
 - Run creation, engine events, final-result commit, interrupted closeout and application-restart recovery are recorded. Restart recovery adds a `RUN_RECOVERED_NEEDS_REVIEW` event and does not replay any step.
 - Live exposes an expandable per-run timeline. Old schema-v7 backups remain importable; legacy runs have no reconstructed/fabricated event history and display an explicit empty-history state.
-- The `rationale` value is the capability's declared, user-safe purpose/description—not hidden model chain-of-thought. Targets use display titles or capability IDs, not raw tool arguments or secret payloads.
+- The stored `rationale` field is surfaced in Live as **Purpose**: the capability's declared, user-safe description, not hidden model chain-of-thought. Targets use display titles or capability IDs, not raw tool arguments or secret payloads.
 - Core lifecycle/schema tests, event metadata tests, Polish label tests and offline source guards were added. Exact-head Android CI and physical-device timeline/restart acceptance remain pending.
 - This is the Talk-run timeline slice, not the complete cross-runtime Live control room. Independent browser/app session event streams, pause/resume/takeover, universal action gate and global stop acceptance remain open.
 
