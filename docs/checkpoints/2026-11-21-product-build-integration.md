@@ -32,7 +32,7 @@
 
 ## Next implementation priorities
 1. **Completed 22 November:** exact integration head `2a5a7a76ea845f000792233bf0a8fb060d165687` passed Actions run `44998474952` (run #1147); source, runner, unit, lint, APK assembly/identity and emulator install-over-existing gates passed. Isolated release signing and artifact publication were skipped.
-2. **In progress:** verified Studio file export on `feature/verified-studio-file-export-2026-11-22`. This adds bounded text export, safe filenames and SHA-256 read-back verification for the user-selected document URI. Exact-head CI and physical-device provider acceptance remain pending.
+2. **Completed source + CI validation:** verified Studio file export on integration head `060853bd8e2ff07cb1445980430461e048067e7f`; Actions run #1149 passed source checks, remote-runner tests, Android unit tests, lint, debug APK assembly, signature/identity checks and emulator install-over-existing data preservation. Physical-device provider acceptance remains pending.
 3. Connect the durable run lifecycle to cross-runtime Live state and interruption reconciliation.
 4. Add generic browser surface actions only after the shared approval, evidence and postcondition boundaries are satisfied.
 5. Preserve the full Work/Studio/voice/local-model/social requirements; do not mark the product complete from these foundations.
