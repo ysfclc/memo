@@ -26,7 +26,7 @@ c183dc442f015a51390223e80258a5d6e09baefaa1054e3f1ddb931bfebae5d3  ./app/src/main
 c23d9d73f947dca41834299207c98cb522fbcf627615454078dc3d0bd22b645f  ./app/src/main/java/app/memo/android/ui/BrowserWorkflowScreen.kt
 f78be77d6fa771c78d14e15a0e2e1e1bad49d384637546ee596e47941b251472  ./app/src/main/java/app/memo/android/ui/components/Primitives.kt
 b6b1c321eb8734a7aea0f1d0eec446f8fac5a11136a49b240976de3f40eb2563  ./app/src/main/java/app/memo/android/ui/LiveWorkspaceScreen.kt
-b3b95774bb83c38a1ef6093e381dea3b190b10bc7b2c0646e7bccb185a95e7d7  ./app/src/main/java/app/memo/android/ui/MemoLocalization.kt
+b120d914237311ca391f15953c63a2ff39329b9c3e36c2f382cfbe87d9ec49db  ./app/src/main/java/app/memo/android/ui/MemoLocalization.kt
 7233cd4ac760ec24636c103294097c17e5a59d3772dda297a1034ba4f4941598  ./app/src/main/java/app/memo/android/ui/MemoPrimitives.kt
 fa5bd8f42d1349b9794601db776a3e137f933e5eac8caa0d7d9b50ace9979ac0  ./app/src/main/java/app/memo/android/ui/MemoTheme.kt
 9ff03d626ef0cff441c1a1d4b40045277aff5d31ce59e956fe468dea36042729  ./app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt
@@ -70,7 +70,7 @@ fd521f4ad87f6d460b0c43730207761f671b7ba41c2e345f03071cfeb8c7a493  ./BUILD_STATUS
 71bead65b0eb040e63e6cc17e4e0001b03cd0d570222127d294f35cda8d00b2a  ./core/src/main/kotlin/app/memo/android/automation/TaskRules.kt
 ff0fd84c7c2854420f9d0744a68ff223b96ff28f5bf08a6ee004cdd176064784  ./core/src/main/kotlin/app/memo/android/context/WorkspaceContextRetriever.kt
 9e83b69b59d9b25ff7d1fa4a8f369920a215f16d142c3c01b7bf17ec2abc3372  ./core/src/main/kotlin/app/memo/android/data/ActionApprovalLedger.kt
-4d406abae38ebb741123a0f0587758f4b4144bbe80bb4c1f4ebc7492c5790934  ./core/src/main/kotlin/app/memo/android/data/ArtifactExportPolicy.kt
+20eb25bcacc6dec9176ff30924783af374adf930a7f736be5433513a6546c4c2  ./core/src/main/kotlin/app/memo/android/data/ArtifactExportPolicy.kt
 40aafbc0c7d0babae78efefc88fc04f24e826228f2cf7eba1048bc6d58e84cf4  ./core/src/main/kotlin/app/memo/android/data/ConversationMutationPolicy.kt
 68f92f98b3b26405168c5c0fffb5a9ec42181c95b5ff721e30990c554bf7e87f  ./core/src/main/kotlin/app/memo/android/data/EncryptedBackupCodec.kt
 a06ef4b47be8e47c47779ae161f12b57adc927ee50bef825723a6eb34753b181  ./core/src/main/kotlin/app/memo/android/data/EntityEditPolicy.kt
@@ -91,7 +91,7 @@ de444be35a3e7b27ba4115d45098c02332ff745afcda90b4371aa6031d2771bb  ./core/src/mai
 bba2c2a4e5760e31fcf4fc1f675be0d1ac8f20c42fb8f0bb2f03b9fafa938eca  ./core/src/test/kotlin/app/memo/android/context/WorkspaceContextRetrieverTest.kt
 0c87bc669ef7c446aaf994a75345614b0ab79eada367a09b5eb124cd781b2c38  ./core/src/test/kotlin/app/memo/android/data/ActionApprovalLedgerTest.kt
 b178dcae6ce883aa885baa7eb6a2fbdc94a1dcfa9a5146fc33f06b03a9b44d8c  ./core/src/test/kotlin/app/memo/android/data/AgentRunLifecycleTest.kt
-b8c3d57b7b4deb4b271a9b246b8154b2cb42becbf63bab6ab02008c6b6b4c178  ./core/src/test/kotlin/app/memo/android/data/ArtifactExportPolicyTest.kt
+56f92a3db22f8f51e569cb90fd025da86f6072cd3c457330e280a56d4acbd09b  ./core/src/test/kotlin/app/memo/android/data/ArtifactExportPolicyTest.kt
 cc9e534ddd4af131a3dfdab210a0ca9ad11dc9d21a062bb184c9530653157856  ./core/src/test/kotlin/app/memo/android/data/ConversationMutationPolicyTest.kt
 b372e940ae4b52905cbf9f7ae4baf37314ba1b255a05a2100884ceb9fbbac327  ./core/src/test/kotlin/app/memo/android/data/CouncilBackupTest.kt
 71de8840406ad5ae191b0495a6a97c14fe7789710279153d39edbdd5d4630a9e  ./core/src/test/kotlin/app/memo/android/data/EncryptedBackupCodecTest.kt
