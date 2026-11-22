@@ -25,6 +25,8 @@ class AgentRunLifecycleTest {
             at = 10L
         ))
         assertEquals("RUNNING", started.status)
+        assertEquals("RUN_STARTED", started.events.single().eventType)
+        assertEquals("app.memo", started.events.single().runtimeId)
 
         val waiting = started.applyEvent(AgentExecutionEvent(
             runId = started.id,
@@ -36,6 +38,8 @@ class AgentRunLifecycleTest {
         ))
         assertEquals("WAITING_FOR_APPROVAL", waiting.status)
         assertEquals("call-1", waiting.pendingApprovalCallId)
+        assertEquals("TOOL_APPROVAL_REQUESTED", waiting.events.last().eventType)
+        assertEquals("browser.submit_prompt", waiting.events.last().toolId)
 
         val granted = waiting.applyEvent(AgentExecutionEvent(
             runId = waiting.id,
@@ -71,6 +75,9 @@ class AgentRunLifecycleTest {
         assertEquals("RUNNING", toolFinished.status)
         assertEquals(1, toolFinished.successfulToolCalls)
         assertEquals("evidence:response-1", toolFinished.lastEvidenceReference)
+        assertEquals("TOOL_FINISHED", toolFinished.events.last().eventType)
+        assertEquals("evidence:response-1", toolFinished.events.last().evidenceReference)
+        assertEquals("Provider response observed", toolFinished.events.last().summary)
 
         val completed = toolFinished.applyEvent(AgentExecutionEvent(
             runId = toolFinished.id,
@@ -81,6 +88,8 @@ class AgentRunLifecycleTest {
         assertEquals("FINALIZING", completed.status)
         assertTrue(completed.isActive)
         assertEquals(0L, completed.finishedAt)
+        assertEquals("RUN_FINISHED", completed.events.last().eventType)
+        assertEquals(6, completed.events.last().sequence)
         val finalResultSaved = completed.copy(status = "COMPLETED", finishedAt = 60L)
         assertFalse(finalResultSaved.isActive)
     }
@@ -123,6 +132,24 @@ class AgentRunLifecycleTest {
         ))
         assertEquals("FINALIZING", uncertainFinalizing.status)
         assertTrue(uncertainFinalizing.isActive)
+    }
+
+    @Test
+    fun eventJournalIsBoundedAndKeepsMonotonicSequence() {
+        val recorded = (1..(MAX_AGENT_RUN_EVENTS_PER_RUN + 3)).fold(run()) { current, index ->
+            current.appendTimelineEvent(
+                AgentRunEventRecord(
+                    eventType = "TOOL_FINISHED",
+                    summary = "Event $index",
+                    status = "SUCCEEDED",
+                    at = index.toLong()
+                )
+            )
+        }
+        assertEquals(MAX_AGENT_RUN_EVENTS_PER_RUN, recorded.events.size)
+        assertEquals(4, recorded.events.first().sequence)
+        assertEquals(MAX_AGENT_RUN_EVENTS_PER_RUN + 3, recorded.events.last().sequence)
+        assertEquals("Event ${MAX_AGENT_RUN_EVENTS_PER_RUN + 3}", recorded.events.last().summary)
     }
 
     @Test
