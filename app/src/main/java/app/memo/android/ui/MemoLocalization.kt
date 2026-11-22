@@ -103,6 +103,8 @@ object MemoLocalization {
         "Run interrupted" to ("Uruchomienie przerwane" to "Çalıştırma kesintiye uğradı"),
         "Recovered after restart" to ("Odzyskano po ponownym uruchomieniu" to "Yeniden başlatma sonrası kurtarıldı"),
         "Not approved" to ("Nie zatwierdzono" to "Onaylanmadı"),
+        "Unavailable" to ("Niedostępne" to "Kullanılamıyor"),
+        "Invalid input" to ("Nieprawidłowe dane wejściowe" to "Geçersiz girdi"),
         "Recorded" to ("Zapisano" to "Kaydedildi"),
         "Succeeded" to ("Udane" to "Başarılı"),
         "Open conversation" to ("Otwórz rozmowę" to "Sohbeti aç"),
