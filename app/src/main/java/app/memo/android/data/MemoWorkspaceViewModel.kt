@@ -88,13 +88,14 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
                 val stored = withContext(Dispatchers.IO) { vault.read() }
                 val restored = stored?.recoverInterruptedTasks() ?: AppSnapshot()
                 _snapshot.value = restored
-                _vaultError.value = null
-                _vaultReady.value = true
                 if (stored == null) {
                     log("Workspace created on this device.")
                 } else if (restored != stored) {
-                    persist(restored)
+                    val verified = withContext(Dispatchers.IO) { persistLatestSnapshotAndReadSafely() }
+                    check(verified == restored) { "Recovered execution state did not pass encrypted read-after-write verification." }
                 }
+                _vaultError.value = null
+                _vaultReady.value = true
             } catch (error: Throwable) {
                 _vaultError.value = safeError(error, "The encrypted workspace could not be opened.")
                 _vaultReady.value = true
@@ -181,11 +182,21 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         }
         if (current.agentRuns.any { it.id == runId }) return false
         val record = AgentRunRecord(id = runId, conversationId = conversationId, goal = cleanGoal, modelId = modelId.take(160))
+            .appendTimelineEvent(
+                AgentRunEventRecord(
+                    eventType = "RUN_CREATED",
+                    runtimeId = "app.memo",
+                    target = cleanGoal.take(200),
+                    rationale = "The user started this task from Talk.",
+                    summary = "Talk execution created",
+                    status = "RUNNING"
+                )
+            )
         val next = current.copy(agentRuns = listOf(record) + current.agentRuns)
         _snapshot.value = next
         persist(next)
         return persistAgentRunAndVerify(runId) { saved ->
-            saved.agentRuns.any { it.id == runId && it.status == "RUNNING" && it.conversationId == conversationId }
+            saved.agentRuns.any { it.id == runId && it.status == "RUNNING" && it.conversationId == conversationId && it.events.lastOrNull()?.eventType == "RUN_CREATED" }
         }
     }
 
@@ -223,6 +234,7 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             val storedConversation = saved.conversations.firstOrNull { it.id == conversationId }
             storedRun?.lastEventType == event.type.name &&
                 storedRun.status == updatedRun.status &&
+                storedRun.events.lastOrNull() == updatedRun.events.lastOrNull() &&
                 storedConversation?.messages?.any { it.id == message.id && it.sourceType == "AGENT_EVENT" } == true
         }) null else "The execution event and matching run state could not be read back from the encrypted workspace."
     }
@@ -260,6 +272,18 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             successfulToolCalls = result.successfulToolCalls.coerceIn(0, result.toolCalls.coerceIn(0, 1_000)),
             recoveryReason = if (finalStatus == "NEEDS_REVIEW") cleanMessage.take(800) else "",
             updatedAt = now, finishedAt = now
+        ).appendTimelineEvent(
+            AgentRunEventRecord(
+                eventType = "RUN_RESULT_SAVED",
+                runtimeId = "app.memo",
+                target = run.goal.take(200),
+                rationale = "The final response and terminal run state were committed together.",
+                summary = "Final response saved to the originating conversation.",
+                result = cleanMessage.take(800),
+                status = finalStatus,
+                evidenceReference = run.lastEvidenceReference,
+                at = now
+            )
         )
         val updatedConversation = conversation.copy(messages = conversation.messages + message, updatedAt = now)
         val next = current.copy(
@@ -273,6 +297,7 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             val savedConversation = saved.conversations.firstOrNull { it.id == run.conversationId }
             savedRun?.status == finalStatus &&
                 savedRun.finalMessage == cleanMessage.take(4_000) &&
+                savedRun.events.lastOrNull() == updatedRun.events.lastOrNull() &&
                 savedConversation?.messages?.any { it.id == message.id && it.content == cleanMessage } == true
         }) null else "The final response and Memo run status could not be read back from the encrypted workspace."
     }
@@ -297,11 +322,27 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         val updated = run.copy(
             status = status, stage = reason.take(800), pendingApprovalCallId = "",
             recoveryReason = reason.take(800), updatedAt = now, finishedAt = now
+        ).appendTimelineEvent(
+            AgentRunEventRecord(
+                eventType = "RUN_INTERRUPTED",
+                runtimeId = "app.memo",
+                target = run.goal.take(200),
+                rationale = "Execution stopped before a terminal result could be committed; no action was replayed.",
+                summary = "Memo run interrupted",
+                result = reason.take(800),
+                status = status,
+                evidenceReference = run.lastEvidenceReference,
+                at = now
+            )
         )
         val next = current.copy(agentRuns = current.agentRuns.map { if (it.id == runId) updated else it })
         _snapshot.value = next
         persist(next)
-        if (!persistAgentRunAndVerify(runId) { saved -> saved.agentRuns.firstOrNull { it.id == runId }?.status == status }) {
+        if (!persistAgentRunAndVerify(runId) { saved ->
+            saved.agentRuns.firstOrNull { it.id == runId }?.let { run ->
+                run.status == status && run.events.lastOrNull() == updated.events.lastOrNull()
+            } == true
+        }) {
             _vaultError.value = "Memo could not verify the final state of an interrupted execution."
         }
     }
@@ -1633,18 +1674,24 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
                 }
             }
             passphrase.fill('\u0000')
-            result.fold(
-                onSuccess = { imported ->
-                    _snapshot.value = imported
-                    setThemeMode(imported.themeMode)
+            if (result.isSuccess) {
+                val imported = result.getOrThrow()
+                _snapshot.value = imported
+                setThemeMode(imported.themeMode)
+                try {
+                    val verified = withContext(Dispatchers.IO) { persistLatestSnapshotAndReadSafely() }
+                    check(verified == imported) { "Imported recovery state did not pass encrypted read-after-write verification." }
                     _vaultError.value = null
                     _vaultReady.value = true
-                    persist(imported)
                     log("Workspace restored from an authenticated encrypted backup.")
                     onDone(null)
-                },
-                onFailure = { onDone(safeError(it, "Encrypted restore failed.")) }
-            )
+                } catch (error: Throwable) {
+                    _vaultError.value = safeError(error, "The imported encrypted workspace could not be verified after saving.")
+                    onDone(_vaultError.value)
+                }
+            } else {
+                onDone(safeError(result.exceptionOrNull() ?: IllegalStateException("Encrypted restore failed."), "Encrypted restore failed."))
+            }
         }
     }
 
@@ -1668,18 +1715,24 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
                     ActionApprovalLedger.invalidateImportedApprovals(AppSnapshot.fromJson(text)).recoverInterruptedTasks()
                 }
             }
-            result.fold(
-                onSuccess = { imported ->
-                    _snapshot.value = imported
-                    setThemeMode(imported.themeMode)
+            if (result.isSuccess) {
+                val imported = result.getOrThrow()
+                _snapshot.value = imported
+                setThemeMode(imported.themeMode)
+                try {
+                    val verified = withContext(Dispatchers.IO) { persistLatestSnapshotAndReadSafely() }
+                    check(verified == imported) { "Imported recovery state did not pass encrypted read-after-write verification." }
                     _vaultError.value = null
                     _vaultReady.value = true
-                    persist(imported)
                     log("Workspace restored from a JSON export.")
                     onDone(null)
-                },
-                onFailure = { onDone(safeError(it, "Import failed.")) }
-            )
+                } catch (error: Throwable) {
+                    _vaultError.value = safeError(error, "The imported workspace could not be verified after saving.")
+                    onDone(_vaultError.value)
+                }
+            } else {
+                onDone(safeError(result.exceptionOrNull() ?: IllegalStateException("Import failed."), "Import failed."))
+            }
         }
     }
 
