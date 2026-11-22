@@ -30,8 +30,8 @@ class WorkspaceSchemaV3Test {
         assertEquals("WAITING_FOR_USER", restored.jobs.single().status)
         assertEquals("COMPLETED", restored.jobs.single().steps.single().status)
         assertEquals("USER_CHECKPOINT", restored.jobs.single().steps.single().checkpointKind)
-        assertEquals(7, org.json.JSONObject(snapshot.toJson()).optInt("schemaVersion"))
-        assertEquals("7.0.0", org.json.JSONObject(snapshot.toJson()).optString("schemaSemver"))
+        assertEquals(8, org.json.JSONObject(snapshot.toJson()).optInt("schemaVersion"))
+        assertEquals("8.0.0", org.json.JSONObject(snapshot.toJson()).optString("schemaSemver"))
     }
 
     @Test fun interruptedJobsAreRecoveredIntoReviewState() {
@@ -54,7 +54,7 @@ class WorkspaceSchemaV3Test {
         val restored = AppSnapshot.fromJson(root.toString())
         assertEquals("USER_CHECKPOINT", restored.jobs.single().steps.single().checkpointKind)
         assertEquals(false, restored.jobs.single().steps.single().requiresApproval)
-        assertEquals(7, org.json.JSONObject(restored.toJson()).optInt("schemaVersion"))
+        assertEquals(8, org.json.JSONObject(restored.toJson()).optInt("schemaVersion"))
     }
 
     @Test fun agentRunRecordsRoundTripWithExactRunAndConversationIdentity() {
@@ -79,7 +79,58 @@ class WorkspaceSchemaV3Test {
         )
         val restored = AppSnapshot.fromJson(source.toJson())
         assertEquals(run, restored.agentRuns.single())
-        assertEquals(7, org.json.JSONObject(source.toJson()).optInt("schemaVersion"))
+        assertEquals(8, org.json.JSONObject(source.toJson()).optInt("schemaVersion"))
+    }
+
+    @Test fun agentRunEventJournalRoundTripsStructuredActionContext() {
+        val run = AgentRunRecord(
+            id = "run-events-1",
+            conversationId = "conversation-1",
+            goal = "Submit an approved provider prompt",
+            status = "COMPLETED",
+            events = listOf(
+                AgentRunEventRecord(
+                    id = "event-1",
+                    sequence = 1,
+                    eventType = "TOOL_FINISHED",
+                    runtimeId = "browser.session",
+                    toolId = "browser.submit_prompt",
+                    callId = "call-1",
+                    toolVersion = 2,
+                    target = "Provider prompt",
+                    rationale = "Submit the exact prompt after user approval.",
+                    summary = "Provider prompt submitted.",
+                    result = "A response was captured and verified.",
+                    status = "SUCCEEDED",
+                    evidenceReference = "evidence:response-1",
+                    at = 50L
+                )
+            )
+        )
+        val restored = AppSnapshot(
+            conversations = listOf(ConversationRecord(id = "conversation-1", title = "Run journal")),
+            agentRuns = listOf(run)
+        ).let { AppSnapshot.fromJson(it.toJson()) }
+        assertEquals(run, restored.agentRuns.single())
+        assertEquals("browser.session", restored.agentRuns.single().events.single().runtimeId)
+        assertEquals("Submit the exact prompt after user approval.", restored.agentRuns.single().events.single().rationale)
+        assertEquals("evidence:response-1", restored.agentRuns.single().events.single().evidenceReference)
+    }
+
+    @Test fun schemaSevenRunRecordsImportWithEmptyEventHistory() {
+        val source = AppSnapshot(
+            conversations = listOf(ConversationRecord(id = "conversation-1", title = "Legacy run")),
+            agentRuns = listOf(AgentRunRecord(id = "run-legacy", conversationId = "conversation-1", goal = "Review a legacy run"))
+        )
+        val root = org.json.JSONObject(source.toJson())
+        root.put("schemaVersion", 7)
+        root.put("schemaSemver", "7.0.0")
+        root.put("minimumReaderVersion", 7)
+        root.getJSONArray("agentRuns").getJSONObject(0).remove("events")
+        val restored = AppSnapshot.fromJson(root.toString())
+        assertEquals("run-legacy", restored.agentRuns.single().id)
+        assertTrue(restored.agentRuns.single().events.isEmpty())
+        assertEquals(8, org.json.JSONObject(restored.toJson()).optInt("schemaVersion"))
     }
 
     @Test fun schemaSixBackupMigratesWithoutAgentRunRecords() {
@@ -90,7 +141,7 @@ class WorkspaceSchemaV3Test {
         root.remove("agentRuns")
         val restored = AppSnapshot.fromJson(root.toString())
         assertTrue(restored.agentRuns.isEmpty())
-        assertEquals(7, org.json.JSONObject(restored.toJson()).optInt("schemaVersion"))
+        assertEquals(8, org.json.JSONObject(restored.toJson()).optInt("schemaVersion"))
     }
 
     @Test fun interruptedAgentRunsRecoverToReviewAndTerminalRunsStayTerminal() {
@@ -104,6 +155,11 @@ class WorkspaceSchemaV3Test {
         assertEquals("", recovered.agentRuns[1].pendingApprovalCallId)
         assertTrue(recovered.agentRuns[0].recoveryReason.contains("No step was replayed"))
         assertTrue(recovered.agentRuns[0].finishedAt > 0L)
+        assertEquals("RUN_RECOVERED_NEEDS_REVIEW", recovered.agentRuns[0].events.last().eventType)
+        assertEquals("NEEDS_REVIEW", recovered.agentRuns[0].events.last().status)
+        assertEquals("RUN_RECOVERED_NEEDS_REVIEW", recovered.agentRuns[1].events.last().eventType)
+        assertEquals("RUN_RECOVERED_NEEDS_REVIEW", recovered.agentRuns[2].events.last().eventType)
+        assertTrue(recovered.recoverInterruptedTasks().agentRuns[0].events.size == recovered.agentRuns[0].events.size)
         assertEquals("NEEDS_REVIEW", recovered.agentRuns[2].status)
         assertTrue(recovered.agentRuns[2].recoveryReason.contains("No step was replayed"))
         assertEquals("COMPLETED", recovered.agentRuns[3].status)
