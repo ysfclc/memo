@@ -21,6 +21,7 @@ private const val MAX_RELATIONSHIPS = 4_000
 private const val MAX_JOBS = 240
 private const val MAX_JOB_STEPS = 100
 const val MAX_AGENT_RUNS = 240
+const val MAX_AGENT_RUN_EVENTS_PER_RUN = 48
 private const val MAX_ACTION_APPROVALS = ActionApprovalLedger.MAX_ACTIONS
 private const val MAX_ACTION_AUDIT_EVENTS = ActionApprovalLedger.MAX_EVENTS
 private const val MAX_CONTENT_CHARS = 15_000
@@ -204,6 +205,23 @@ data class WorkJobRecord(
 )
 
 
+data class AgentRunEventRecord(
+    val id: String = newId(),
+    val sequence: Int = 0,
+    val eventType: String,
+    val runtimeId: String = "app.memo",
+    val toolId: String = "",
+    val callId: String = "",
+    val toolVersion: Int = 0,
+    val target: String = "",
+    val rationale: String = "",
+    val summary: String = "",
+    val result: String = "",
+    val status: String = "",
+    val evidenceReference: String = "",
+    val at: Long = nowMillis()
+)
+
 data class AgentRunRecord(
     val id: String = newId(),
     val conversationId: String,
@@ -222,10 +240,31 @@ data class AgentRunRecord(
     val successfulToolCalls: Int = 0,
     val createdAt: Long = nowMillis(),
     val updatedAt: Long = nowMillis(),
-    val finishedAt: Long = 0L
+    val finishedAt: Long = 0L,
+    val events: List<AgentRunEventRecord> = emptyList()
 ) {
     val isActive: Boolean
         get() = status in ACTIVE_AGENT_RUN_STATUSES
+}
+
+fun AgentRunRecord.appendTimelineEvent(event: AgentRunEventRecord): AgentRunRecord {
+    val normalized = event.copy(
+        id = event.id.take(128).ifBlank { newId() },
+        sequence = (events.lastOrNull()?.sequence ?: 0) + 1,
+        eventType = event.eventType.take(48),
+        runtimeId = event.runtimeId.take(120),
+        toolId = event.toolId.take(80),
+        callId = event.callId.take(128),
+        toolVersion = event.toolVersion.coerceIn(0, 10_000),
+        target = event.target.take(200),
+        rationale = event.rationale.take(400),
+        summary = event.summary.take(800),
+        result = event.result.take(800),
+        status = event.status.take(32),
+        evidenceReference = event.evidenceReference.take(500),
+        at = event.at.coerceAtLeast(0L)
+    )
+    return copy(events = (events + normalized).takeLast(MAX_AGENT_RUN_EVENTS_PER_RUN))
 }
 
 private val ACTIVE_AGENT_RUN_STATUSES = setOf("RUNNING", "WAITING_FOR_APPROVAL", "TOOL_RUNNING", "FINALIZING")
@@ -261,7 +300,7 @@ fun AgentRunRecord.applyEvent(event: AgentExecutionEvent): AgentRunRecord {
         AgentExecutionEventType.RUN_CANCELLED -> ""
         else -> pendingApprovalCallId
     }
-    return copy(
+    val updated = copy(
         status = nextStatus,
         stage = event.summary.take(800),
         lastEventType = event.type.name,
@@ -273,6 +312,22 @@ fun AgentRunRecord.applyEvent(event: AgentExecutionEvent): AgentRunRecord {
         recoveryReason = if (nextStatus == "NEEDS_REVIEW") event.summary.take(800) else "",
         updatedAt = maxOf(updatedAt, event.at),
         finishedAt = if (terminal) maxOf(createdAt, event.at) else 0L
+    )
+    return updated.appendTimelineEvent(
+        AgentRunEventRecord(
+            eventType = event.type.name,
+            runtimeId = event.runtimeId,
+            toolId = event.toolId,
+            callId = event.callId,
+            toolVersion = event.toolVersion,
+            target = event.target,
+            rationale = event.rationale,
+            summary = event.summary,
+            result = event.result,
+            status = event.status.ifBlank { nextStatus },
+            evidenceReference = event.evidenceReference,
+            at = event.at
+        )
     )
 }
 
@@ -314,14 +369,28 @@ data class AppSnapshot(
                 ) else job
             },
             agentRuns = agentRuns.map { run ->
-                if (run.isActive) run.copy(
-                    status = "NEEDS_REVIEW",
-                    stage = "Interrupted by application restart",
-                    pendingApprovalCallId = "",
-                    recoveryReason = "Memo restarted during this run. Review saved events and any action that may have started. No step was replayed.",
-                    updatedAt = nowMillis(),
-                    finishedAt = nowMillis()
-                ) else run
+                if (run.isActive) {
+                    val reason = "Memo restarted during this run. Review saved events and any action that may have started. No step was replayed."
+                    run.copy(
+                        status = "NEEDS_REVIEW",
+                        stage = "Interrupted by application restart",
+                        pendingApprovalCallId = "",
+                        recoveryReason = reason,
+                        updatedAt = nowMillis(),
+                        finishedAt = nowMillis()
+                    ).appendTimelineEvent(
+                        AgentRunEventRecord(
+                            eventType = "RUN_RECOVERED_NEEDS_REVIEW",
+                            runtimeId = "app.memo",
+                            target = run.goal.take(200),
+                            rationale = "The application restarted while this run was active; no step was replayed.",
+                            summary = "Interrupted by application restart",
+                            result = reason,
+                            status = "NEEDS_REVIEW",
+                            evidenceReference = run.lastEvidenceReference
+                        )
+                    )
+                } else run
             },
             activity = (listOf(ActivityRecord(
                 message = "Recovered ${interrupted} interrupted ${if (interrupted == 1) "task" else "tasks"}, ${interruptedJobs} interrupted ${if (interruptedJobs == 1) "job" else "jobs"}, ${interruptedAgentRuns} interrupted Memo ${if (interruptedAgentRuns == 1) "run" else "runs"}, and invalidated or flagged ${actionCandidates} pending external ${if (actionCandidates == 1) "action" else "actions"}. Review is required before resuming.",
@@ -344,6 +413,11 @@ data class AppSnapshot(
         require(agentRuns.size <= MAX_AGENT_RUNS) { "Workspace contains too many Memo execution records for a safe backup." }
         require(agentRuns.all { it.id.isNotBlank() && it.id.length <= 128 && it.conversationId.isNotBlank() && it.conversationId.length <= 128 && it.goal.isNotBlank() && it.goal.length <= 6_000 && it.modelId.length <= 160 && it.stage.length <= 800 && it.finalMessage.length <= 4_000 && it.recoveryReason.length <= 800 && it.pendingApprovalCallId.length <= 128 }) { "A Memo execution record exceeds the safe backup limits." }
         require(agentRuns.all { it.status in VALID_AGENT_RUN_STATUSES && it.modelCalls in 0..20 && it.toolCalls in 0..1_000 && it.successfulToolCalls in 0..it.toolCalls }) { "A Memo execution record has invalid lifecycle state or counters." }
+        require(agentRuns.all { run ->
+            run.events.size <= MAX_AGENT_RUN_EVENTS_PER_RUN &&
+                run.events.all { it.id.isNotBlank() && it.id.length <= 128 && it.sequence > 0 && it.eventType.isNotBlank() && it.eventType.length <= 48 && it.runtimeId.length <= 120 && it.toolId.length <= 80 && it.callId.length <= 128 && it.toolVersion in 0..10_000 && it.target.length <= 200 && it.rationale.length <= 400 && it.summary.length <= 800 && it.result.length <= 800 && it.status.length <= 32 && it.evidenceReference.length <= 500 && it.at >= 0L } &&
+                run.events.zipWithNext().all { (first, second) -> first.sequence < second.sequence }
+        }) { "A Memo execution event journal exceeds the safe backup limits or has invalid ordering." }
         require(ActionApprovalLedger.verifyLedger(this)) { "The action ledger or audit chain failed verification; export is blocked to preserve evidence of tampering." }
         // Estimate escaped JSON size before constructing the full object tree. Every UTF-8 code point costs
         // at most four bytes; control characters may expand to six ASCII bytes when JSON-escaped.
@@ -425,6 +499,11 @@ data class AppSnapshot(
             add(run.lastEventType); add(run.lastToolId); add(run.pendingApprovalCallId); add(run.lastEvidenceReference)
             add(run.finalMessage); add(run.recoveryReason); add(run.modelCalls.toString()); add(run.toolCalls.toString())
             add(run.successfulToolCalls.toString()); add(run.createdAt.toString()); add(run.updatedAt.toString()); add(run.finishedAt.toString())
+            run.events.forEach { event ->
+                add(event.id); add(event.sequence.toString()); add(event.eventType); add(event.runtimeId); add(event.toolId); add(event.callId)
+                add(event.toolVersion.toString()); add(event.target); add(event.rationale); add(event.summary); add(event.result)
+                add(event.status); add(event.evidenceReference); add(event.at.toString())
+            }
         }
         return total
     }
@@ -441,9 +520,9 @@ data class AppSnapshot(
         councilRunLimit: Int
     ): String {
         val root = JSONObject()
-        root.put("schemaVersion", 7)
-        root.put("schemaSemver", "7.0.0")
-        root.put("minimumReaderVersion", 7)
+        root.put("schemaVersion", 8)
+        root.put("schemaSemver", "8.0.0")
+        root.put("minimumReaderVersion", 8)
         root.put("exportedAt", nowMillis())
         root.put("themeMode", themeMode)
         root.put("tasks", JSONArray().apply {
@@ -682,6 +761,26 @@ data class AppSnapshot(
                     put("createdAt", run.createdAt)
                     put("updatedAt", run.updatedAt)
                     put("finishedAt", run.finishedAt)
+                    put("events", JSONArray().apply {
+                        run.events.forEach { event ->
+                            put(JSONObject().apply {
+                                put("id", event.id.take(128))
+                                put("sequence", event.sequence.coerceAtLeast(1))
+                                put("eventType", event.eventType.take(48))
+                                put("runtimeId", event.runtimeId.take(120))
+                                put("toolId", event.toolId.take(80))
+                                put("callId", event.callId.take(128))
+                                put("toolVersion", event.toolVersion.coerceIn(0, 10_000))
+                                put("target", event.target.take(200))
+                                put("rationale", event.rationale.take(400))
+                                put("summary", event.summary.take(800))
+                                put("result", event.result.take(800))
+                                put("status", event.status.take(32))
+                                put("evidenceReference", event.evidenceReference.take(500))
+                                put("at", event.at.coerceAtLeast(0L))
+                            })
+                        }
+                    })
                 })
             }
         })
@@ -693,13 +792,13 @@ data class AppSnapshot(
             require(raw.toByteArray(Charsets.UTF_8).size <= MAX_WORKSPACE_BACKUP_BYTES) { "Import file is larger than 40 MB." }
             val root = JSONObject(raw)
             val schema = root.optInt("schemaVersion", 0)
-            require(schema in 1..7) { "This backup format is not supported." }
+            require(schema in 1..8) { "This backup format is not supported." }
             val schemaSemver = root.safeString("schemaSemver")
             if (schemaSemver.isNotBlank()) {
                 val major = schemaSemver.substringBefore('.').toIntOrNull()
                 require(major == schema) { "Backup schema version metadata is inconsistent." }
             }
-            require(root.optInt("minimumReaderVersion", schema).coerceAtLeast(1) <= 7) { "This backup requires a newer Memo reader." }
+            require(root.optInt("minimumReaderVersion", schema).coerceAtLeast(1) <= 8) { "This backup requires a newer Memo reader." }
 
             val usedTaskIds = mutableSetOf<String>()
             val tasks = root.optJSONArray("tasks").toTypedRecords(MAX_TASKS) { row ->
@@ -929,7 +1028,28 @@ data class AppSnapshot(
                     successfulToolCalls = row.optInt("successfulToolCalls", 0).coerceIn(0, row.optInt("toolCalls", 0).coerceIn(0, 1_000)),
                     createdAt = row.optLong("createdAt", nowMillis()),
                     updatedAt = row.optLong("updatedAt", nowMillis()),
-                    finishedAt = row.optLong("finishedAt", 0L).coerceAtLeast(0L)
+                    finishedAt = row.optLong("finishedAt", 0L).coerceAtLeast(0L),
+                    events = if (schema < 8) emptyList() else row.optJSONArray("events")
+                        .toTypedRecords(MAX_AGENT_RUN_EVENTS_PER_RUN) { eventRow ->
+                            AgentRunEventRecord(
+                                id = eventRow.safeString("id").ifBlank { newId() }.take(128),
+                                sequence = eventRow.optInt("sequence", 0).coerceAtLeast(0),
+                                eventType = eventRow.safeString("eventType").take(48),
+                                runtimeId = eventRow.safeString("runtimeId").take(120),
+                                toolId = eventRow.safeString("toolId").take(80),
+                                callId = eventRow.safeString("callId").take(128),
+                                toolVersion = eventRow.optInt("toolVersion", 0).coerceIn(0, 10_000),
+                                target = eventRow.safeString("target").take(200),
+                                rationale = eventRow.safeString("rationale").take(400),
+                                summary = eventRow.safeString("summary").take(800),
+                                result = eventRow.safeString("result").take(800),
+                                status = eventRow.safeString("status").take(32),
+                                evidenceReference = eventRow.safeString("evidenceReference").take(500),
+                                at = eventRow.optLong("at", nowMillis()).coerceAtLeast(0L)
+                            )
+                        }.filter { it.sequence > 0 && it.eventType.isNotBlank() }
+                        .distinctBy { it.sequence }
+                        .sortedBy { it.sequence }
                 )
             }
             val theme = root.safeString("themeMode").uppercase().takeIf { it in setOf("SYSTEM", "LIGHT", "DARK") } ?: "SYSTEM"
