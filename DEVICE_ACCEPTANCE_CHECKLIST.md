@@ -1,15 +1,16 @@
 # Memo — device acceptance checklist
 
-Run this after GitHub Actions produces the debug APK. These tests cannot be substituted by a successful source ZIP check.
+Run this after GitHub Actions produces the pinned-certificate release APK (`Memo-Android-release.apk`). These tests cannot be substituted by a successful source ZIP check.
 
 ## Core workspace
 
-- [ ] Install the APK and open Memo; the app launches without a crash.
+- [ ] Confirm the package ID is `app.memo.android` and the pinned signing certificate matches the previous installation; install over the existing app, never uninstall.
+- [ ] Install the release APK and open Memo; the app launches without a crash.
 - [ ] Authenticate with the Android device credential/biometric prompt and lock Memo again.
 - [ ] Create, rename, reopen and delete a chat; force-stop/reopen and confirm persistence.
 - [ ] Import a small text file and Android shared text; confirm the captured text is a source, not silently executed instructions.
 - [ ] Create an entity, connect a relationship and export a workspace backup; restore a test backup only after reviewing the replace warning.
-- [ ] Confirm remote inference does not happen until the per-request remote-consent control is enabled.
+- [ ] On a fresh install, if no model is ready, install a supported local model or configure a provider before testing Talk; confirm remote inference never starts without per-request consent.
 
 ## Frontier browser workflow
 
