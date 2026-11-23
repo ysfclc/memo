@@ -579,6 +579,7 @@ fun MemoWorkspaceApp(
                     AppTab.LIVE -> LiveWorkspaceScreen(
                         snapshot = snapshot,
                         browserState = browser.workflowState,
+                        uiLanguage = uiLanguage,
                         onOpenBrowser = { tab = AppTab.BROWSER; toolSection = ToolSection.BROWSER },
                         onOpenApps = { tab = AppTab.APPS },
                         onOpenApprovals = { tab = AppTab.APPROVALS },
