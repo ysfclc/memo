@@ -344,12 +344,17 @@ if "incoming/memo.zip" not in workflow:
     fail("GitHub workflow does not use the canonical incoming/memo.zip source upload")
 if "Memo-Android-Repository.zip" in workflow:
     fail("GitHub workflow must not depend on a legacy root-level source ZIP")
-for task in (":core:test", ":app:testDebugUnitTest", ":app:lintDebug", ":app:assembleDebug", ":app:assembleDebugAndroidTest"):
+for task in (":core:test", ":app:testDebugUnitTest", ":app:lintDebug", ":app:lintRelease", ":app:assembleDebug", ":app:assembleRelease", ":app:assembleReleaseAndroidTest"):
     if task not in workflow:
         fail(f"GitHub workflow missing Android gate: {task}")
 if any(alternate in workflow for alternate in ("Memo-Android-source.zip", "Memo-Android-Download-Fresh.zip")):
     fail("GitHub workflow must not fall back to an alternate/stale ZIP")
-if "Expected exactly one Android Gradle project root" not in workflow or "Memo-Android-debug-APK" not in workflow:
+if "testBuildType 'release'" not in app_gradle:
+    fail("encrypted-store install-upgrade instrumentation must target the normal release package")
+for marker in ("app/build/outputs/apk/release/app-release.apk", "app/build/outputs/apk/androidTest/release/app-release-androidTest.apk", "Memo-Android-release.apk", "app.memo.android"):
+    if marker not in workflow:
+        fail(f"normal release package build/signing/delivery contract is missing: {marker}")
+if "Expected exactly one Android Gradle project root" not in workflow or "Memo-Android-APKs" not in workflow:
     fail("GitHub workflow is missing canonical-root or artifact-delivery checks")
 if "sha256sum -c SOURCE_SHA256SUMS.txt" not in workflow or "Memo-Source-Archive-SHA256.txt" not in workflow:
     fail("GitHub workflow is missing source-integrity verification/receipt")
@@ -376,7 +381,7 @@ if native_store.index("decryptPayload(legacyPayload)") > native_store.index("wri
 for marker in ("phase=seed", "phase=verify", "memo-storage-upgrade-acceptance", "File(target.filesDir, TEST_DIRECTORY)", "legacyWorkspace.writeBytes(workspace.readBytes())", "First launch after the in-place update", "AtomicFile backup was not restored", "Corrupt primary", "Unknown formats"):
     if marker not in upgrade_test:
         fail(f"encrypted-store upgrade instrumentation coverage is missing: {marker}")
-for marker in ("app-debug-androidTest.apk", "run_store_acceptance_phase seed", "run_store_acceptance_phase verify", 'adb install -r "$CURRENT_APK"'):
+for marker in ("app-release-androidTest.apk", "run_store_acceptance_phase seed", "run_store_acceptance_phase verify", 'adb install -r "$CURRENT_APK"'):
     if marker not in workflow:
         fail(f"CI does not execute the encrypted-store in-place upgrade test: {marker}")
 print("PASS: encrypted workspace/native store separation, authenticate-before-copy migration, legacy preservation, and in-place upgrade instrumentation are wired")
