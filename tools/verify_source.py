@@ -107,6 +107,31 @@ if "could not be confirmed" not in app_navigation or "Verify its final state" no
     fail("guest runner cancellation must remain explicitly best-effort and evidence-sensitive")
 print("PASS: top-level stop requests local AI/browser/native cancellation, marks uncertain external actions for review, and reports remote cancellation honestly")
 
+print("PASS: Talk execution remains ViewModel-owned and brokered")
+
+continuation_policy = (ROOT / "core/src/main/kotlin/app/memo/android/data/AgentRunContinuationPolicy.kt").read_text()
+continuation_tests = (ROOT / "core/src/test/kotlin/app/memo/android/data/AgentRunContinuationPolicyTest.kt").read_text()
+run_model = (ROOT / "core/src/main/kotlin/app/memo/android/data/Models.kt").read_text()
+live_runs = (ROOT / "app/src/main/java/app/memo/android/ui/LiveWorkspaceScreen.kt").read_text()
+for marker in ("status != \"NEEDS_REVIEW\"", "pendingApprovalCallId.isNotBlank()", "toolCalls > run.successfulToolCalls", "Previous actions and approvals will not be replayed"):
+    if marker not in continuation_policy:
+        fail(f"Talk continuation safety policy is missing: {marker}")
+for marker in ("allowsInterruptedRunBeforeAnyCapabilityStarted", "rejectsAnInvocationWhoseOutcomeMayBeUncertain", "rejectsAnyPersistedApprovalReference", "rejectsActiveAndTerminalRuns"):
+    if marker not in continuation_tests:
+        fail(f"Talk continuation policy regression coverage is missing: {marker}")
+for marker in ("val parentRunId: String = \"\"", 'put("parentRunId", run.parentRunId.take(128))', 'parentRunId = row.safeString("parentRunId").take(128)'):
+    if marker not in run_model:
+        fail(f"durable parent-run linkage is missing: {marker}")
+for marker in ("AgentRunContinuationPolicy.assess(run)", "onContinueRun", "Continue in Talk", "run.parentRunId"):
+    if marker not in live_runs:
+        fail(f"Live interrupted-run inspection is missing: {marker}")
+for marker in ("initialContinuationRunId", "PRIOR TALK RUN — UNTRUSTED SAVED OBSERVATIONS", "continuationOfRunId = initialContinuationRunId", "onInitialContinuationConsumed()"):
+    if marker not in talk_screen:
+        fail(f"Talk continuation draft/launch integration is missing: {marker}")
+print("PASS: interrupted Talk runs continue only through explicit review, a fresh linked run ID, current capability discovery and new approvals")
+
+
+
 agent_broker = (ROOT / "app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt").read_text()
 talk_screen = (ROOT / "app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt").read_text()
 for marker in (
@@ -120,7 +145,8 @@ for marker in (
     if marker not in agent_broker:
         fail(f"durable Talk approval broker is missing: {marker}")
 for marker in (
-    "viewModel.launchAgentExecution(selectedConversation.id, userText, selectedModelId)",
+    "viewModel.launchAgentExecution(",
+    "continuationOfRunId = initialContinuationRunId",
     "onApprovalRequired = { request ->",
     "viewModel.awaitAgentApproval(selectedConversation.id, request)",
     "viewModel.updateAgentExecutionStage(event.summary)",
