@@ -568,7 +568,18 @@ fun MemoWorkspaceApp(
                         viewModel = viewModel,
                         browser = browser,
                         selectedConversationId = activeConversationId,
-                        onSelectConversation = { activeConversationId = it },
+                        onSelectConversation = { id ->
+                            if (pendingContinuationRunId.isNotBlank()) {
+                                val parentConversationId = snapshot.agentRuns.firstOrNull {
+                                    it.id == pendingContinuationRunId
+                                }?.conversationId
+                                if (id != parentConversationId) {
+                                    pendingContinuationRunId = ""
+                                    pendingChatPrompt = ""
+                                }
+                            }
+                            activeConversationId = id
+                        },
                         initialPrompt = pendingChatPrompt,
                         onInitialPromptConsumed = { pendingChatPrompt = "" },
                         initialContinuationRunId = pendingContinuationRunId,
