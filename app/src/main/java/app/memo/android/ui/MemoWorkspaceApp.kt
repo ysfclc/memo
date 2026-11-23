@@ -215,6 +215,7 @@ fun MemoWorkspaceApp(
     var tab by remember { mutableStateOf(AppTab.HOME) }
     var activeConversationId by remember { mutableStateOf<String?>(null) }
     var pendingChatPrompt by remember { mutableStateOf("") }
+    var pendingContinuationRunId by remember { mutableStateOf("") }
     var toolSection by remember { mutableStateOf(ToolSection.BROWSER) }
     var workSectionRequest by remember { mutableStateOf("TODAY") }
     LaunchedEffect(initialWorkspace) {
@@ -566,6 +567,8 @@ fun MemoWorkspaceApp(
                         onSelectConversation = { activeConversationId = it },
                         initialPrompt = pendingChatPrompt,
                         onInitialPromptConsumed = { pendingChatPrompt = "" },
+                        initialContinuationRunId = pendingContinuationRunId,
+                        onInitialContinuationConsumed = { pendingContinuationRunId = "" },
                         onOpenModels = { tab = AppTab.MODELS },
                         onOpenWork = { tab = AppTab.WORK },
                         onOpenCouncil = { tab = AppTab.COUNCIL },
@@ -581,6 +584,16 @@ fun MemoWorkspaceApp(
                         onOpenApprovals = { tab = AppTab.APPROVALS },
                         onOpenWork = { tab = AppTab.WORK },
                         onOpenTalk = { id -> activeConversationId = id; tab = AppTab.HOME },
+                        onContinueRun = { run ->
+                            pendingContinuationRunId = run.id
+                            activeConversationId = run.conversationId
+                            pendingChatPrompt = buildString {
+                                append("Continue my previous goal: ")
+                                append(run.goal)
+                                append("\n\nThis is a new execution, not a replay. Reassess the current state from saved conversation and evidence. Do not assume any prior action succeeded unless its outcome is independently verified. Do not repeat uncertain side effects. Discover current capabilities and obtain fresh approval for any consequential action.")
+                            }.take(6_000)
+                            tab = AppTab.HOME
+                        },
                         onResumeTask = { task -> runTask(task, browser, callbacks, onOpenBrowser = { tab = AppTab.BROWSER; toolSection = ToolSection.BROWSER }) }
                     )
                     AppTab.STUDIO -> SelfModelStudioScreen(
