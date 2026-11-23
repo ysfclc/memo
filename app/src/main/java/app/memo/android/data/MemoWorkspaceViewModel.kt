@@ -1487,7 +1487,7 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         val current = _snapshot.value
         val existing = current.evidence.firstOrNull { it.id == id }
             ?: return Result.failure(IllegalArgumentException("This artifact no longer exists."))
-        if (existing.kind !in setOf("WORK_ARTIFACT", "ARTIFACT_DRAFT", "SELF_MODEL_ARTIFACT")) {
+        if (existing.kind !in setOf("WORK_ARTIFACT", "ARTIFACT_DRAFT", "SELF_MODEL_ARTIFACT", "STUDIO_ARTIFACT")) {
             return Result.failure(IllegalStateException("Captured source evidence is immutable. Only Memo-created artifacts can be edited."))
         }
         if (existing.content == cleanContent && existing.title == cleanTitle) return Result.success(Unit)
@@ -1496,6 +1496,14 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         history.put(org.json.JSONObject().put("title", existing.title).put("content", existing.content.take(24_000)).put("savedAt", nowMillis()))
         while (history.length() > 5) history.remove(0)
         metadata.put("revisionHistory", history)
+        if (existing.kind == "STUDIO_ARTIFACT") {
+            val artifactType = metadata.optString("artifactType")
+            val revisedDraft = runCatching { StudioArtifactPolicy.prepare(cleanTitle, artifactType, cleanContent) }
+                .getOrElse { error -> return Result.failure(IllegalArgumentException(error.message ?: "The Studio draft no longer passes artifact validation.", error)) }
+            metadata.put("contentDigest", revisedDraft.contentDigest)
+            metadata.put("format", "MARKDOWN")
+            metadata.put("reviewStatus", "DRAFT")
+        }
         metadata.put("version", metadata.optInt("version", 1) + 1)
         metadata.put("lastEditedAt", nowMillis())
         metadata.put("editedBy", "user")

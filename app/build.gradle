@@ -13,6 +13,9 @@ def memoUploadKeyPassword = System.getenv('MEMO_UPLOAD_KEY_PASSWORD')
 def memoHasUploadSigning = [memoUploadStoreFile, memoUploadStorePassword, memoUploadKeyAlias, memoUploadKeyPassword].every { it != null && !it.trim().isEmpty() }
 
 android {
+    // Run encrypted-store upgrade instrumentation against the normal release package.
+    testBuildType 'release'
+
     signingConfigs {
         if (memoHasUploadSigning) {
             memoUpload {

@@ -144,6 +144,7 @@ import app.memo.android.ai.ModelRuntimeUiState
 import app.memo.android.browser.BrowserSession
 import app.memo.android.browser.TaskCallbacks
 import app.memo.android.data.AppSnapshot
+import app.memo.android.data.ArtifactExportPolicy
 import app.memo.android.data.ActivityRecord
 import app.memo.android.data.EvidenceRecord
 import app.memo.android.data.MemoWorkspaceViewModel
@@ -354,17 +355,39 @@ fun MemoWorkspaceApp(
         val artifact = pendingArtifactExport
         pendingArtifactExport = null
         if (uri != null && artifact != null) {
-            val markdown = buildString {
-                append("# ").append(artifact.title).append("\n\n")
-                append("- Type: ").append(artifact.kind).append("\n")
-                append("- Created/edited: ").append(formatDate(artifact.capturedAt)).append("\n")
-                if (artifact.sourceUrl.isNotBlank()) append("- Source: ").append(artifact.sourceUrl).append("\n")
-                if (artifact.summary.isNotBlank()) append("\n").append(artifact.summary).append("\n")
-                append("\n---\n\n").append(artifact.content)
+            runCatching {
+                val markdown = buildString {
+                    append("# ").append(artifact.title).append("\n\n")
+                    append("- Type: ").append(artifact.kind).append("\n")
+                    append("- Created/edited: ").append(formatDate(artifact.capturedAt)).append("\n")
+                    if (artifact.sourceUrl.isNotBlank()) append("- Source: ").append(artifact.sourceUrl).append("\n")
+                    if (artifact.summary.isNotBlank()) append("\n").append(artifact.summary).append("\n")
+                    append("\n---\n\n").append(artifact.content)
+                }
+                val payload = ArtifactExportPolicy.prepare(
+                    fileName = artifact.title,
+                    mimeType = "text/markdown",
+                    content = markdown
+                )
+                val output = context.contentResolver.openOutputStream(uri, "wt")
+                    ?: error("The selected destination could not be opened.")
+                output.use {
+                    it.write(payload.bytes)
+                    it.flush()
+                }
+                val verified = context.contentResolver.openInputStream(uri)?.use {
+                    ArtifactExportPolicy.verify(payload.sha256, it)
+                } ?: error("The exported file could not be read back for verification.")
+                check(verified) {
+                    "The exported file did not match its expected SHA-256. Memo cannot mark this export as verified."
+                }
+                payload
+            }.onSuccess { payload ->
+                viewModel.log("${MemoLocalization.translate("Studio artifact export verified", uiLanguage)} · SHA-256 ${payload.sha256}")
+                snack("${MemoLocalization.translate("Artifact exported and verified", uiLanguage)} · SHA-256 ${payload.sha256.take(12)}…")
+            }.onFailure {
+                snack("${MemoLocalization.translate("Artifact export not verified", uiLanguage)}: ${MemoLocalization.translate(it.message ?: "Unknown error", uiLanguage).take(160)}")
             }
-            runCatching { context.contentResolver.openOutputStream(uri)?.use { it.write(markdown.toByteArray(Charsets.UTF_8)) } ?: error("The selected destination could not be opened.") }
-                .onSuccess { snack("Artifact exported as Markdown.") }
-                .onFailure { snack("Artifact export failed: ${(it.message ?: "Unknown error").take(160)}") }
         }
     }
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -718,7 +741,7 @@ fun MemoWorkspaceApp(
                 snack("Artifact copied to the clipboard.")
             }
         },
-        onExport = { item -> pendingArtifactExport = item; artifactExportLauncher.launch(item.title.take(64).ifBlank { "memo-artifact" } + ".md") },
+        onExport = { item -> pendingArtifactExport = item; artifactExportLauncher.launch(ArtifactExportPolicy.suggestedFileName(item.title.ifBlank { "memo-artifact" }, "text/markdown")) },
         onSave = { title, content ->
             val item = evidenceDetail
             if (item == null) false else viewModel.updateWorkArtifact(item.id, title, content).fold(
@@ -1042,7 +1065,12 @@ private fun HomeScreen(
     val reviewEntities = snapshot.entities.count { it.reviewStatus == "PROPOSED" }
     val reviewJobs = snapshot.jobs.count { it.status in setOf("WAITING_FOR_USER", "NEEDS_REVIEW", "FAILED") }
     val reviewTasks = snapshot.tasks.count { it.status in setOf(TaskStatus.NEEDS_REVIEW, TaskStatus.FAILED, TaskStatus.BLOCKED) }
-    val reviewCount = reviewEntities + reviewJobs + reviewTasks
+    val reviewAgentRunCount = snapshot.agentRuns.count { it.status == "NEEDS_REVIEW" }
+    val reviewAgentRuns = snapshot.agentRuns
+        .filter { it.status == "NEEDS_REVIEW" }
+        .sortedByDescending { it.updatedAt }
+        .take(4)
+    val reviewCount = reviewEntities + reviewJobs + reviewTasks + reviewAgentRunCount
     val latestConversation = snapshot.conversations.maxByOrNull { it.updatedAt }
     val attentionTasks = snapshot.tasks
         .filter { it.status in setOf(TaskStatus.QUEUED, TaskStatus.RUNNING, TaskStatus.NEEDS_REVIEW, TaskStatus.FAILED) }
@@ -1214,11 +1242,29 @@ private fun HomeScreen(
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                         Text("Needs your decision", style = MaterialTheme.typography.titleMedium)
                         Text(
-                            if (reviewCount > 0) "$reviewCount item(s) need review across proposed records, jobs and interrupted work. Suggestions remain separate from accepted truth."
+                            if (reviewCount > 0) "$reviewCount item(s) need review across proposed records, jobs, tasks and Memo runs. Suggestions remain separate from accepted truth."
                             else "Nothing is waiting for review. Proposed records and uncertain runs stay separate until you decide.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                    }
+                }
+                reviewAgentRuns.forEach { run ->
+                    TextButton(
+                        onClick = { onOpenConversation(run.conversationId) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text("${MemoLocalization.translate("Memo run needs review", uiLanguage)} · ${run.goal}", maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            Text(
+                                run.recoveryReason.ifBlank { run.stage }.ifBlank { MemoLocalization.translate("Inspect the saved execution trace before continuing.", uiLanguage) },
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(MemoLocalization.translate("Open execution conversation", uiLanguage), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                        }
                     }
                 }
                 Spacer(Modifier.height(MemoTokens.Spacing.xs))

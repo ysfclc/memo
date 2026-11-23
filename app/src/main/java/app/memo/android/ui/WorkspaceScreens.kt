@@ -1456,7 +1456,8 @@ fun SelfModelStudioScreen(
     val approvedFacts = facts.filter { it.reviewStatus == "APPROVED" }
     val proposedFacts = facts.filter { it.reviewStatus == "PROPOSED" }
     val sources = snapshot.evidence.filter { it.kind == "SELF_MODEL_SOURCE" }.sortedByDescending { it.capturedAt }
-    val artifacts = snapshot.evidence.filter { it.kind == "SELF_MODEL_ARTIFACT" }.sortedByDescending { it.capturedAt }
+    val artifacts = snapshot.evidence.filter { it.kind in setOf("SELF_MODEL_ARTIFACT", "STUDIO_ARTIFACT") }.sortedByDescending { it.capturedAt }
+    val browserEvidence = snapshot.evidence.filter { it.kind in setOf("BROWSER_PROMPT_SUBMISSION", "BROWSER_PROMPT_RESPONSE") }.sortedByDescending { it.capturedAt }
     var sourceTitle by remember { mutableStateOf("Career profile source") }
     var sourceText by remember { mutableStateOf("") }
     var targetNotes by remember { mutableStateOf("") }
@@ -1669,7 +1670,7 @@ fun SelfModelStudioScreen(
                 MemoPageHeader(
                     title = "Studio",
                     eyebrow = "MEMO / STUDIO",
-                    description = "Create private, evidence-backed artifacts from facts you approve. Nothing is submitted or published."
+                    description = "Create private drafts, review browser research evidence, and build evidence-backed personal artifacts. External browser actions require separate approval."
                 )
             }
             item {
@@ -1780,14 +1781,37 @@ fun SelfModelStudioScreen(
                             Column(Modifier.weight(1f)) {
                                 Text(artifact.title, style = MaterialTheme.typography.titleSmall)
                                 Text(artifact.summary.ifBlank { artifact.content.take(160) }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 3, overflow = TextOverflow.Ellipsis)
-                                Text("Local draft · review required · ${formatWorkspaceDate(artifact.capturedAt)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
+                                val artifactType = runCatching { org.json.JSONObject(artifact.metadata).optString("artifactType") }.getOrDefault("")
+                                val artifactStatus = listOfNotNull(
+                                    artifactType.takeIf { it.isNotBlank() },
+                                    "Local draft",
+                                    "review required",
+                                    formatWorkspaceDate(artifact.capturedAt)
+                                ).joinToString(" · ")
+                                Text(artifactStatus, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
                             }
                             Icon(Icons.Rounded.OpenInNew, null, tint = MaterialTheme.colorScheme.primary)
                         }
                     }
                 }
             }
-            if (facts.isEmpty() && sources.isEmpty() && artifacts.isEmpty()) {
+            if (browserEvidence.isNotEmpty()) {
+                item { MemoSectionHeading("Browser research evidence", supporting = "Approved prompts and stable external responses saved in the encrypted workspace") }
+                items(browserEvidence, key = { it.id }) { record ->
+                    MemoPanel(modifier = Modifier.clickable { onOpenEvidence(record.id) }) {
+                        Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(Icons.Rounded.Description, null, tint = MaterialTheme.colorScheme.primary)
+                            Column(Modifier.weight(1f)) {
+                                Text(record.title, style = MaterialTheme.typography.titleSmall)
+                                Text(record.summary.ifBlank { record.content.take(180) }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                                Text((if (record.kind == "BROWSER_PROMPT_RESPONSE") "External response" else "Approved prompt") + " · " + formatWorkspaceDate(record.capturedAt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.tertiary)
+                            }
+                            Icon(Icons.Rounded.OpenInNew, null, tint = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+                }
+            }
+            if (facts.isEmpty() && sources.isEmpty() && artifacts.isEmpty() && browserEvidence.isEmpty()) {
                 item { EmptyState("Your Self Model starts with evidence you trust", "Paste a CV or profile above, extract claims locally, and approve facts one by one. You can also add a confirmed fact manually. Nothing is sent to a cloud model by Artifact Studio.") }
             }
         }

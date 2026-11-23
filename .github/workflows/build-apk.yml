@@ -551,7 +551,7 @@ jobs:
             exit 1
           fi
 
-      - name: Run Android unit tests, lint and assemble the debug APK
+      - name: Run Android unit tests, lint and assemble debug/release APKs
         id: android_build
         shell: bash
         run: |
@@ -561,8 +561,10 @@ jobs:
             :core:test \
             :app:testDebugUnitTest \
             :app:lintDebug \
+            :app:lintRelease \
             :app:assembleDebug \
-            :app:assembleDebugAndroidTest 2>&1 | tee -a "$MEMO_BUILD_LOG"
+            :app:assembleRelease \
+            :app:assembleReleaseAndroidTest 2>&1 | tee -a "$MEMO_BUILD_LOG"
 
       - name: Verify APK identity and signature
         id: apk_verify
@@ -588,7 +590,7 @@ jobs:
           if not (code or default_code) or not name:
               raise SystemExit('Could not read versionCode default/versionName from app Gradle file')
           print(os.environ.get('GITHUB_RUN_NUMBER') or (code or default_code).group(1))
-          print(name.group(1) + '-debug')
+          print(name.group(1))
           PY
           )"
           mapfile -t VERSION_PARTS <<< "$VERSION_FIELDS"
@@ -600,14 +602,29 @@ jobs:
             exit 1
           fi
           [[ "$PACKAGE_LINE" == *"versionCode='${VERSION_PARTS[0]}'"* ]] || { echo '::error::APK versionCode differs from source.'; exit 1; }
-          [[ "$PACKAGE_LINE" == *"versionName='${VERSION_PARTS[1]}'"* ]] || { echo '::error::APK versionName differs from source.'; exit 1; }
+          [[ "$PACKAGE_LINE" == *"versionName='${VERSION_PARTS[1]}-debug'"* ]] || { echo '::error::Debug APK versionName differs from source.'; exit 1; }
           "$APKSIGNER" verify --verbose "$APK" 2>&1 | tee -a "$MEMO_BUILD_LOG"
+
+          RELEASE_APK="$MEMO_PROJECT_DIR/app/build/outputs/apk/release/app-release.apk"
+          test -s "$RELEASE_APK" || { echo '::error::Release APK was not produced.'; exit 1; }
+          RELEASE_BADGING="$("$AAPT" dump badging "$RELEASE_APK")"
+          RELEASE_PACKAGE_LINE="$(printf '%s\n' "$RELEASE_BADGING" | grep -m1 '^package:')"
+          [[ "$RELEASE_PACKAGE_LINE" == *"name='app.memo.android'"* ]] || {
+            echo '::error::Release APK must use the normal app.memo.android application ID.'
+            printf '%s\n' "$RELEASE_PACKAGE_LINE"
+            exit 1
+          }
+          [[ "$RELEASE_PACKAGE_LINE" == *"versionCode='${VERSION_PARTS[0]}'"* ]] || { echo '::error::Release APK versionCode differs from source.'; exit 1; }
+          [[ "$RELEASE_PACKAGE_LINE" == *"versionName='${VERSION_PARTS[1]}'"* ]] || { echo '::error::Release APK versionName differs from source.'; exit 1; }
+          "$APKSIGNER" verify --verbose "$RELEASE_APK" 2>&1 | tee -a "$MEMO_BUILD_LOG"
           {
             echo 'Memo build APK identity verification: PASS'
-            echo 'Package: app.memo.android.debug'
+            echo 'Debug package: app.memo.android.debug'
+            echo 'Release package: app.memo.android'
             echo "Version code: ${VERSION_PARTS[0]}"
-            echo "Version name: ${VERSION_PARTS[1]}"
-            echo 'Build/test signature: ephemeral CI debug key; final signing is isolated.'
+            echo "Debug version name: ${VERSION_PARTS[1]}-debug"
+            echo "Release version name: ${VERSION_PARTS[1]}"
+            echo 'Build/test signatures: ephemeral CI debug key; final pinned signing is isolated.'
           } | tee "$RUNNER_TEMP/Memo-APK-Identity.txt" | tee -a "$MEMO_BUILD_LOG"
 
       - name: Prove install-over-existing preserves app-private data
@@ -616,7 +633,7 @@ jobs:
         run: |
           set -euo pipefail
           cd "$MEMO_PROJECT_DIR"
-          APK="$MEMO_PROJECT_DIR/app/build/outputs/apk/debug/app-debug.apk"
+          APK="$MEMO_PROJECT_DIR/app/build/outputs/apk/release/app-release.apk"
           CURRENT_APK="$RUNNER_TEMP/Memo-current.apk"
           BASELINE_APK="$RUNNER_TEMP/Memo-baseline.apk"
           cp "$APK" "$CURRENT_APK"
@@ -627,15 +644,15 @@ jobs:
             exit 1
           fi
 
-          MEMO_VERSION_CODE="$BASELINE_CODE" gradle --no-daemon :app:assembleDebug 2>&1 | tee -a "$MEMO_BUILD_LOG"
+          MEMO_VERSION_CODE="$BASELINE_CODE" gradle --no-daemon :app:assembleRelease 2>&1 | tee -a "$MEMO_BUILD_LOG"
           cp "$APK" "$BASELINE_APK"
-          MEMO_VERSION_CODE="$CURRENT_CODE" gradle --no-daemon :app:assembleDebug 2>&1 | tee -a "$MEMO_BUILD_LOG"
+          MEMO_VERSION_CODE="$CURRENT_CODE" gradle --no-daemon :app:assembleRelease 2>&1 | tee -a "$MEMO_BUILD_LOG"
           cp "$CURRENT_APK" "$APK"
 
           AAPT="$ANDROID_HOME/build-tools/35.0.0/aapt"
           BASELINE_META="$("$AAPT" dump badging "$BASELINE_APK" | grep -m1 '^package:')"
           CURRENT_META="$("$AAPT" dump badging "$CURRENT_APK" | grep -m1 '^package:')"
-          [[ "$BASELINE_META" == *"name='app.memo.android.debug'"* && "$CURRENT_META" == *"name='app.memo.android.debug'"* ]] || {
+          [[ "$BASELINE_META" == *"name='app.memo.android'"* && "$CURRENT_META" == *"name='app.memo.android'"* ]] || {
             echo '::error::Install-upgrade package identity changed between builds.'
             exit 1
           }
@@ -709,12 +726,12 @@ jobs:
           adb shell settings put global transition_animation_scale 0
           adb shell settings put global animator_duration_scale 0
 
-          INSTRUMENTATION_APK="$MEMO_PROJECT_DIR/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk"
+          INSTRUMENTATION_APK="$MEMO_PROJECT_DIR/app/build/outputs/apk/androidTest/release/app-release-androidTest.apk"
           test -s "$INSTRUMENTATION_APK" || {
             echo '::error::Encrypted-store Android instrumentation APK was not produced.'
             exit 1
           }
-          TEST_RUNNER='app.memo.android.debug.test/androidx.test.runner.AndroidJUnitRunner'
+          TEST_RUNNER='app.memo.android.test/androidx.test.runner.AndroidJUnitRunner'
           run_store_acceptance_phase() {
             local phase="$1"
             local output="$RUNNER_TEMP/Memo-store-$phase.txt"
@@ -731,19 +748,10 @@ jobs:
           adb install "$INSTRUMENTATION_APK" 2>&1 | tee -a "$MEMO_BUILD_LOG"
           run_store_acceptance_phase seed
 
-          # Keep the old sentinel as a supplemental generic sandbox check; encrypted-store
-          # acceptance above/below proves the actual Keystore-backed data can be reopened.
-          adb shell "run-as app.memo.android.debug sh -c 'mkdir -p files/.memo-upgrade-test && printf \"%s\" \"memo-private-data-survives-update\" > files/.memo-upgrade-test/sentinel'"
-
           adb install -r "$CURRENT_APK" 2>&1 | tee -a "$MEMO_BUILD_LOG"
           run_store_acceptance_phase verify
 
-          PRESERVED="$(adb shell run-as app.memo.android.debug cat files/.memo-upgrade-test/sentinel | tr -d '\r')"
-          [[ "$PRESERVED" == 'memo-private-data-survives-update' ]] || {
-            echo '::error::App-private data did not survive the in-place APK update.'
-            exit 1
-          }
-          echo 'PASS: signed in-place upgrade preserved app-private data and both real encrypted Memo stores; legacy recovery and corruption tests passed.' | tee -a "$MEMO_BUILD_LOG"
+          echo 'PASS: normal release-package in-place upgrade preserved both encrypted Memo stores; legacy recovery and corruption tests passed.' | tee -a "$MEMO_BUILD_LOG"
 
       - name: Update build status and create a permanent import note
         if: success() && github.event_name != 'pull_request'
@@ -781,7 +789,10 @@ jobs:
           - \`:app:testDebugUnitTest\`: PASS
           - \`:app:lintDebug\`: PASS
           - \`:app:assembleDebug\`: PASS
-          - APK package/version and CI debug-signature verification: PASS
+          - \`:app:assembleRelease\`: PASS
+          - \`:app:assembleReleaseAndroidTest\`: PASS
+          - \`:app:lintRelease\`: PASS
+          - Debug and release APK package/version and CI-signature verification: PASS
           - Build/test signature: ephemeral CI debug key; final pinned signing is isolated.
 
           For ZIP imports, the original upload remains immutable in Git history. Direct-source verification never re-extracts the historical ZIP. The extracted project is an exact snapshot; the live workflow, Git metadata, incoming upload and permanent import notes are preserved.
@@ -804,8 +815,8 @@ jobs:
 
           - Source revision: \`$MEMO_UPLOAD_COMMIT\`
           - Archive SHA-256: \`$MEMO_ARCHIVE_SHA\`
-          - Required source, runner, JVM, lint and APK identity gates: PASS
-          - Build/test signature: ephemeral CI debug key; final pinned signing is isolated.
+          - Required source, runner, JVM, debug/release lint, release instrumentation and APK identity gates: PASS
+          - Release package: `app.memo.android`; final pinned signing is isolated.
           - Workflow run: $MEMO_RUN_URL
           STATUS
           fi
@@ -834,7 +845,7 @@ jobs:
             -print0 | sort -z | xargs -0 -r sha256sum > SOURCE_SHA256SUMS.txt
           sha256sum -c SOURCE_SHA256SUMS.txt 2>&1 | tee -a "$MEMO_BUILD_LOG"
 
-      - name: Prepare debug APK, integrated repository ZIP and checksums
+      - name: Prepare debug/release APKs, integrated repository ZIP and checksums
         id: delivery
         if: success() && github.event_name != 'pull_request'
         shell: bash
@@ -845,8 +856,10 @@ jobs:
           rm -rf "$DELIVERY"
           mkdir -p "$DELIVERY"
           APK='app/build/outputs/apk/debug/app-debug.apk'
-          test -s "$APK"
+          RELEASE_APK='app/build/outputs/apk/release/app-release.apk'
+          test -s "$APK" && test -s "$RELEASE_APK"
           cp "$APK" "$DELIVERY/Memo-Android-debug-ci-signed.apk"
+          cp "$RELEASE_APK" "$DELIVERY/Memo-Android-release-ci-signed.apk"
           cp "$RUNNER_TEMP/Memo-Source-SHA256.txt" "$DELIVERY/Memo-Source-Archive-SHA256.txt"
 
           REPO_ZIP="$DELIVERY/Memo-Android-Integrated-Repository.zip"
@@ -856,16 +869,17 @@ jobs:
                '*/.externalNativeBuild/*' '*/captures/*' '*/.venv/*' '*/venv/*' \
                '*/local.properties' '*/.env' '*/.env.*' '*/.jks' '*/.keystore' \
                '*/.p12' '*/.pfx' '*/.pem' '*/.key' '*/delivery/*'
-          (cd "$DELIVERY" && sha256sum Memo-Android-debug-ci-signed.apk Memo-Android-Integrated-Repository.zip Memo-Source-Archive-SHA256.txt > SHA256SUMS.txt)
+          (cd "$DELIVERY" && sha256sum Memo-Android-debug-ci-signed.apk Memo-Android-release-ci-signed.apk Memo-Android-Integrated-Repository.zip Memo-Source-Archive-SHA256.txt > SHA256SUMS.txt)
           echo "Prepared APK and full integrated repository snapshot." | tee -a "$MEMO_BUILD_LOG"
 
-      - name: Upload CI-debug-signed build/test APK for isolated re-signing
+      - name: Upload CI-signed APK variants for isolated re-signing
         if: always() && steps.delivery.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
-          name: Memo-Android-ci-debug-APK
+          name: Memo-Android-ci-APKs
           path: |
             ${{ runner.temp }}/memo-delivery/Memo-Android-debug-ci-signed.apk
+            ${{ runner.temp }}/memo-delivery/Memo-Android-release-ci-signed.apk
             ${{ runner.temp }}/memo-delivery/Memo-Source-Archive-SHA256.txt
           if-no-files-found: error
           compression-level: 0
@@ -903,7 +917,7 @@ jobs:
 
 
   sign:
-    name: Sign the verified APK in an isolated job
+    name: Sign the verified APK variants in an isolated job
     needs: build
     if: github.event_name != 'pull_request'
     permissions:
@@ -911,10 +925,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Download the CI-debug-signed APK artifact
+      - name: Download the CI-signed APK variants
         uses: actions/download-artifact@v4
         with:
-          name: Memo-Android-ci-debug-APK
+          name: Memo-Android-ci-APKs
           path: ${{ runner.temp }}/memo-unsigned
 
       - name: Set up Android build tools
@@ -944,57 +958,69 @@ jobs:
             echo '::error::All four persistent Memo signing secrets must be configured.'
             exit 1
           fi
-          INPUT="$RUNNER_TEMP/memo-unsigned/Memo-Android-debug-ci-signed.apk"
+          INPUT_DEBUG="$RUNNER_TEMP/memo-unsigned/Memo-Android-debug-ci-signed.apk"
+          INPUT_RELEASE="$RUNNER_TEMP/memo-unsigned/Memo-Android-release-ci-signed.apk"
           SOURCE_SHA="$RUNNER_TEMP/memo-unsigned/Memo-Source-Archive-SHA256.txt"
           KEYSTORE="$RUNNER_TEMP/memo-upload-signing.jks"
-          ALIGNED="$RUNNER_TEMP/Memo-Android-debug-aligned.apk"
+          ALIGNED_DEBUG="$RUNNER_TEMP/Memo-Android-debug-aligned.apk"
+          ALIGNED_RELEASE="$RUNNER_TEMP/Memo-Android-release-aligned.apk"
           DELIVERY="$RUNNER_TEMP/memo-signed"
           mkdir -p "$DELIVERY"
-          SIGNED="$DELIVERY/Memo-Android-debug.apk"
-          test -s "$INPUT" && test -s "$SOURCE_SHA"
+          SIGNED_DEBUG="$DELIVERY/Memo-Android-debug.apk"
+          SIGNED_RELEASE="$DELIVERY/Memo-Android-release.apk"
+          test -s "$INPUT_DEBUG" && test -s "$INPUT_RELEASE" && test -s "$SOURCE_SHA"
           printf '%s' "$MEMO_UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
           test -s "$KEYSTORE"
-          trap 'rm -f "$KEYSTORE" "$ALIGNED"' EXIT
+          trap 'rm -f "$KEYSTORE" "$ALIGNED_DEBUG" "$ALIGNED_RELEASE"' EXIT
           keytool -list -keystore "$KEYSTORE" -storepass "$MEMO_UPLOAD_STORE_PASSWORD" -alias "$MEMO_UPLOAD_KEY_ALIAS" >/dev/null
           BUILD_TOOLS="$ANDROID_HOME/build-tools/35.0.0"
           AAPT="$BUILD_TOOLS/aapt"
           ZIPALIGN="$BUILD_TOOLS/zipalign"
           APKSIGNER="$BUILD_TOOLS/apksigner"
           test -x "$AAPT" && test -x "$ZIPALIGN" && test -x "$APKSIGNER"
-          "$ZIPALIGN" -f -p 4 "$INPUT" "$ALIGNED"
-          "$APKSIGNER" sign --ks "$KEYSTORE" --ks-key-alias "$MEMO_UPLOAD_KEY_ALIAS" --ks-pass env:MEMO_UPLOAD_STORE_PASSWORD --key-pass env:MEMO_UPLOAD_KEY_PASSWORD --out "$SIGNED" "$ALIGNED"
-          BADGING="$("$AAPT" dump badging "$SIGNED")"
-          PACKAGE_LINE="$(printf '%s\n' "$BADGING" | grep -m1 '^package:')"
-          [[ "$PACKAGE_LINE" == *"name='app.memo.android.debug'"* ]] || {
-            echo '::error::Signed APK application ID changed.'
-            printf '%s\n' "$PACKAGE_LINE"
-            exit 1
-          }
-          "$ZIPALIGN" -c -p 4 "$SIGNED"
-          SIGNATURE="$("$APKSIGNER" verify --verbose --print-certs "$SIGNED" 2>&1)"
-          printf '%s\n' "$SIGNATURE"
-          CERT="$(printf '%s\n' "$SIGNATURE" | sed -nE 's/.*certificate SHA-256 digest: ([0-9a-fA-F]+).*/\1/p' | head -n1 | tr '[:upper:]' '[:lower:]')"
           EXPECTED_MEMO_CERT_SHA256='a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a'
-          [[ "$CERT" == "$EXPECTED_MEMO_CERT_SHA256" ]] || {
-            echo '::error::Persistent Memo signing certificate mismatch. Refusing to publish an incompatible APK.'
-            exit 1
-          }
           {
             echo 'Memo APK identity verification: PASS'
-            echo 'Package: app.memo.android.debug'
-            echo "Certificate SHA-256: $CERT"
+            echo 'Debug package: app.memo.android.debug'
+            echo 'Release package: app.memo.android'
+            echo "Certificate SHA-256: $EXPECTED_MEMO_CERT_SHA256"
             echo 'Signing mode: pinned persistent upload keystore (isolated signing job)'
           } > "$DELIVERY/Memo-APK-Identity.txt"
+          sign_one() {
+            local input="$1" aligned="$2" signed="$3" expected_package="$4"
+            "$ZIPALIGN" -f -p 4 "$input" "$aligned"
+            "$APKSIGNER" sign --ks "$KEYSTORE" --ks-key-alias "$MEMO_UPLOAD_KEY_ALIAS" --ks-pass env:MEMO_UPLOAD_STORE_PASSWORD --key-pass env:MEMO_UPLOAD_KEY_PASSWORD --out "$signed" "$aligned"
+            local badging package_line signature cert
+            badging="$("$AAPT" dump badging "$signed")"
+            package_line="$(printf '%s\n' "$badging" | grep -m1 '^package:')"
+            [[ "$package_line" == *"name='$expected_package'"* ]] || {
+              echo "::error::Signed APK application ID changed; expected $expected_package."
+              printf '%s\n' "$package_line"
+              return 1
+            }
+            "$ZIPALIGN" -c -p 4 "$signed"
+            signature="$("$APKSIGNER" verify --verbose --print-certs "$signed" 2>&1)"
+            cert="$(printf '%s\n' "$signature" | sed -nE 's/.*certificate SHA-256 digest: ([0-9a-fA-F]+).*/\1/p' | head -n1 | tr '[:upper:]' '[:lower:]')"
+            [[ "$cert" == "$EXPECTED_MEMO_CERT_SHA256" ]] || {
+              echo '::error::Persistent Memo signing certificate mismatch. Refusing to publish an incompatible APK.'
+              return 1
+            }
+            printf '%s\n' "$signature"
+            echo "Verified pinned signature: $expected_package"
+          }
+          sign_one "$INPUT_DEBUG" "$ALIGNED_DEBUG" "$SIGNED_DEBUG" "app.memo.android.debug"
+          sign_one "$INPUT_RELEASE" "$ALIGNED_RELEASE" "$SIGNED_RELEASE" "app.memo.android"
           cp "$SOURCE_SHA" "$DELIVERY/Memo-Source-Archive-SHA256.txt"
-          (cd "$DELIVERY" && sha256sum Memo-Android-debug.apk Memo-APK-Identity.txt Memo-Source-Archive-SHA256.txt > SHA256SUMS.txt)
-          rm -f "$KEYSTORE" "$ALIGNED"
+          (cd "$DELIVERY" && sha256sum Memo-Android-debug.apk Memo-Android-release.apk Memo-APK-Identity.txt Memo-Source-Archive-SHA256.txt > SHA256SUMS.txt)
+          rm -f "$KEYSTORE" "$ALIGNED_DEBUG" "$ALIGNED_RELEASE"
 
-      - name: Upload final pinned-certificate APK
+      - name: Upload final pinned-certificate APK variants
         uses: actions/upload-artifact@v4
         with:
-          name: Memo-Android-debug-APK
+          name: Memo-Android-APKs
           path: |
             ${{ runner.temp }}/memo-signed/Memo-Android-debug.apk
+            ${{ runner.temp }}/memo-signed/Memo-Android-release.apk
             ${{ runner.temp }}/memo-signed/Memo-APK-Identity.txt
             ${{ runner.temp }}/memo-signed/Memo-Source-Archive-SHA256.txt
             ${{ runner.temp }}/memo-signed/SHA256SUMS.txt
@@ -1151,7 +1177,7 @@ jobs:
             echo '- Build/test ran without signing secrets or repository write credentials.'
             echo '- Persistent signing ran in an isolated job with no repository write permission.'
             echo '- Source handoff commit ran in a separate job with no signing secrets and no project-code execution.'
-            echo '- Final APK artifact: **Memo-Android-debug-APK**'
+            echo '- Final APK artifact: **Memo-Android-APKs** (debug and release variants)'
             echo '- Integrated repository artifact: **Memo-Android-Integrated-Repository**'
           } >> "$GITHUB_STEP_SUMMARY"
 
