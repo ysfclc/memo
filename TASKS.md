@@ -528,3 +528,15 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - **Validation:** CI #1040/#1041 stopped at source verification on stale launcher/Live markers; both guards were corrected. CI #1042 passed source verifier/runner tests and compiled core, then reported two core-test failures (timestamp fixture and old Council schema assertion); both were corrected. CI #1043 then reached Android compilation and reported three unresolved references caused by the missing `AgentExecutionEventType` import in the ViewModel closeout. The import and a matching source-verifier guard are added here; exact-head CI remains pending. Parent S5 head a6ed188c passed CI #1039; PR-event APK publication/re-signing remains skipped.
 - **Known gap:** no external-write adapter is currently exposed by MemoWorkspaceAgentTools; this milestone makes the execution lifecycle durable/visible, not every external action executable. Physical-device behavior remains unverified.
 - **Status:** [~] source implementation pending exact-head CI and device acceptance.
+
+
+### 2026-11-23 — M3.A4-S7 — User-controlled continuation of interrupted Talk runs
+
+- **Requirements:** MEMO-ORCH-001, MEMO-AGENT-001, MEMO-RECOVERY-001.
+- **Change:** added a fail-closed continuation eligibility policy. Only a `NEEDS_REVIEW` run with a valid conversation/goal, no pending approval reference and no unresolved capability invocation may be continued.
+- **Live/Talk:** Live now exposes `Continue in Talk` only when the policy permits it. The action opens the original conversation with an editable draft; it does not execute automatically. The prior run's goal, recovery reason, last durable stage and evidence reference are labelled as untrusted saved observations for a fresh model decision.
+- **Durability:** a continuation creates a new run ID and persists an additive `parentRunId` link. The original terminal run and its transcript remain unchanged. The ViewModel rechecks the policy immediately before creating the new run. No old call ID, approval grant or browser execution scope is reused.
+- **Tests:** added JVM policy coverage for safe eligibility, active/terminal states, uncertain capability outcomes, approval references and missing identity. Added schema round-trip coverage for parent-run linkage and compatibility with earlier schema-7 backups that do not contain the optional field.
+- **Safety boundary:** an invocation without a verified completion blocks continuation. This is intentionally conservative because the current durable run summary cannot prove whether an unsuccessful invocation was read-only or consequential.
+- **Validation:** exact-head CI is pending. No emulator or physical-device acceptance is claimed.
+- **Status:** [~] source integration complete; exact-head CI and device acceptance pending.
