@@ -33,6 +33,7 @@ import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.PauseCircle
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.StopCircle
@@ -425,9 +426,9 @@ fun ModelsScreen(runtime: AiRuntimeViewModel, onShowMessage: (String) -> Unit) {
                 Spacer(Modifier.width(8.dp))
                 Column(Modifier.weight(1f)) {
                     Text("Local models", style = MaterialTheme.typography.titleLarge)
-                    Text("Weights download only when you tap Install. They are never included inside the APK.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Memo scans its private model folder and app-owned external model folders automatically. Weights download only when you tap Install and are never included inside the APK.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                IconButton(onClick = runtime::refreshModels) { Icon(Icons.Rounded.Refresh, contentDescription = "Refresh installed models") }
+                IconButton(onClick = runtime::refreshModels) { Icon(Icons.Rounded.Refresh, contentDescription = "Scan accessible model folders") }
             }
             state.installedModels.filterNot { it.isCatalogModel }.forEach { installed ->
                 Divider(color = MaterialTheme.colorScheme.outlineVariant)
@@ -448,12 +449,14 @@ fun ModelsScreen(runtime: AiRuntimeViewModel, onShowMessage: (String) -> Unit) {
                     download = download,
                     onInstall = { runtime.installModel(entry.id) },
                     onCancel = { runtime.cancelModelDownload(entry.id) },
-                    onDelete = { runtime.deleteModel(entry.id) }
+                    onDelete = { runtime.deleteModel(entry.id) },
+                    onDiscardPartial = { runtime.discardPartialModelDownload(entry.id) }
                 )
             }
             OutlinedButton(onClick = { importLauncher.launch(arrayOf("application/octet-stream", "application/x-binary", "*/*")) }, modifier = Modifier.fillMaxWidth()) {
-                Icon(Icons.Rounded.FolderOpen, contentDescription = null); Spacer(Modifier.width(8.dp)); Text("Import .litertlm model file")
+                Icon(Icons.Rounded.FolderOpen, contentDescription = null); Spacer(Modifier.width(8.dp)); Text("Import one model file")
             }
+            Text("Android does not allow silent access to other apps' private model folders. Use Import only for a file outside Memo's scanned folders that Android lets you access.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text("Compatibility note: the built-in models use Google LiteRT-LM. A random GGUF file or an Ollama model folder cannot be loaded directly in this runtime; import a compatible .litertlm artifact.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
@@ -506,7 +509,8 @@ private fun ModelCatalogCard(
     download: app.memo.android.ai.DownloadStatus?,
     onInstall: () -> Unit,
     onCancel: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onDiscardPartial: () -> Unit
 ) {
     SurfaceCard {
         Row(verticalAlignment = Alignment.Top) {
@@ -522,7 +526,19 @@ private fun ModelCatalogCard(
             val progress = download.progress
             if (progress != null) LinearProgressIndicator(progress = progress, modifier = Modifier.fillMaxWidth()) else LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             Text("${download.stage} · ${formatBytes(download.bytesRead)} / ${formatBytes(download.totalBytes)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Rounded.StopCircle, null); Spacer(Modifier.width(6.dp)); Text("Cancel download") }
+            download.error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
+            if (download.canResume) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    Button(onClick = onInstall, modifier = Modifier.weight(1f)) {
+                        Icon(Icons.Rounded.PlayArrow, null); Spacer(Modifier.width(6.dp)); Text("Resume download")
+                    }
+                    TextButton(onClick = onDiscardPartial) { Text("Discard") }
+                }
+            } else {
+                OutlinedButton(onClick = onCancel, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Rounded.PauseCircle, null); Spacer(Modifier.width(6.dp)); Text("Pause and keep progress")
+                }
+            }
         } else if (installed) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Ready for Council", modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.tertiary, style = MaterialTheme.typography.labelMedium)

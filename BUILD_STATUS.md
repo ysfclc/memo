@@ -1,3 +1,16 @@
+# Current PR candidate — 21 November 2026
+
+## M3.A4-S7 — Shared capability postcondition verification (CI passed; device acceptance pending)
+
+- PR #17: `https://github.com/ysfclc/memo/pull/17`; branch `agent/postcondition-verification-20261121`; baseline main `a6c893c7808c5f042f9fe3cb8254b5ac5b90a2c4`.
+- The shared Talk engine requires explicit adapter postcondition verification before counting a capability as successful. Read-only verification failure is a failed observation and can be re-planned; local/external/destructive uncertainty stops for review. Writes require matching invocation/result/verifier evidence IDs.
+- The six current workspace/browser adapters verify deterministic search output, encrypted note/record read-back, settled browser navigation and capture digests. Six engine regressions cover missing/mismatched postconditions, cancellation during write invocation/verification, and write adapter failure without re-planning. Source verifier guards the protocol
+- Baseline source commit `adf58109af909358940e7361251669377e2a84d5` was validated by Actions run `44901392061`; observed jobs passed source/runner tests, Android unit tests, lint, debug/instrumentation assembly, APK identity/signature and install-over-existing preservation. This is baseline evidence only, not S7 validation.
+- Exact-head CI run `44907881554` passed on `bfe40a182b1e283699a8c4c36bf9c612f83981c7`: source verifier, runner tests, core/app unit tests, lint, debug/instrumentation assembly, identity/signature and install-over-existing preservation. Write-interruption review hardening is included
+- **Local:** no Gradle/Android SDK or checked-out project tree, so no local test/lint/build was run.
+- **Release:** no canonical release APK produced. Available CI debug identity `app.memo.android.debug` is not an update for `app.memo.android`; physical-device acceptance remains open.
+
+---
 # Verified APK evidence — 8 November 2026
 
 - **Workflow:** [Memo Android build #223](https://github.com/ysfclc/memo/actions/runs/42530596381), run ID `42530596381`, completed successfully.
@@ -15,12 +28,12 @@ This dated evidence supersedes older historical statements below that say no APK
 
 # Build and verification status — 8 November 2026
 
-## Current source increment — typed TaskSpec DAG proposal boundary (CI pending)
+## Current source increment — typed TaskSpec DAG proposal boundary (CI verified; execution integration pending)
 
 - Added the canonical typed TaskSpec contract, dynamic fan-out/join DAG compiler and exact-runtime capability assembly.
 - Added a strict parser for untrusted model task proposals. Runtime/capability mismatches, malformed contracts, cycles, invalid budgets and unapproved external writes fail closed. Memo generates idempotency keys itself.
 - Added core JVM regression tests and static source-verifier checks. Existing schema-v1 graph serialization is preserved.
-- This is not yet connected to Talk's model planner and does not execute tasks. Durable node state, runtime dispatch, policy integration, pause/resume and postcondition evidence remain future P2 work.
+- Exact-head integration CI run #1149 (`45002690812`) passed on `060853bd8e2ff07cb1445980430461e048067e7f`, including core/app tests, lint, APK assembly and emulator install-over-existing data preservation. This is not yet connected to Talk's model planner and does not execute tasks. Durable node state, runtime dispatch, policy integration, pause/resume and postcondition evidence remain future P2 work.
 
 ### Previous source increment — encrypted storage isolation (acceptance pending)
 
@@ -211,10 +224,58 @@ The action inbox and first top-level stop control are present in source. Static/
 - Build/test signature: ephemeral CI debug key; final pinned signing is isolated.
 - Workflow run: https://github.com/ysfclc/memo/actions/runs/44927379252
 
-## Automated import — 2026-11-22 19:33:21 UTC
+## Product integration candidate — 21 November 2026
 
-- Source revision: `9e16d18801e98049474dc9cbc282a1f52cad6a6f`
-- Archive SHA-256: `004b2179731b1fc56f2905c4dd25c14ef29f7f47267785d2189911a976da2df5`
-- Required source, runner, JVM, lint and APK identity gates: PASS
-- Build/test signature: ephemeral CI debug key; final pinned signing is isolated.
-- Workflow run: https://github.com/ysfclc/memo/actions/runs/45060946098
+- Integration branch: `build/product-core-integration-2026-11-21`, based on current main `d80f19ae6ff956392cbe11c2b1aaead1758a7d19`.
+- Integrated M3.A4-S7 shared capability postcondition verification from PR #17. Exact source head `bfe40a182b1e283699a8c4c36bf9c612f83981c7` passed Actions run `44907881554` (source verifier, remote runner, core/app unit tests, lint, debug/instrumentation APK assembly, package/signature and emulator install-over-existing data preservation).
+- Preserved the current main Talk/Work scrolling repair and added the binding UI regression/device acceptance gate from PR #18.
+- Exact-head integration CI run #1149 (`45002690812`) passed on source head `060853bd8e2ff07cb1445980430461e048067e7f`; documentation-updated head `a7eb5e5787b70f7517dbbe5acf490e71da52ac52` passed run #1150 (`45003595826`). No canonical release APK or physical-device acceptance is claimed.
+
+## M3.B1-S1 — Talk-created private Markdown artifacts (integration branch)
+
+- Added `workspace.save_artifact` as a registered local-write capability in the shared Talk dispatcher.
+- Saves encrypted `STUDIO_ARTIFACT` records with source conversation/message provenance, source excerpt digest, content digest, version and DRAFT status. The shared engine requires exact read-back verification before reporting success.
+- Studio lists Talk-created drafts. The existing Evidence dialog supports edit/revision history, copy and Markdown export; user edits refresh the content digest and increment the version.
+- Added core policy tests and source-verifier/runtime-registration guards.
+- Exact-head Android CI run #1149 (`45002690812`) passed on `060853bd8e2ff07cb1445980430461e048067e7f`; documentation-updated head also passed run #1150. No phone acceptance or release APK claimed. Supported output is Markdown text only; file/code, PDF/media and publishing remain open.
+
+## M3.A4-S8 — Approved browser prompt submission (updated integration head)
+
+- `browser.submit_prompt` is wired into Talk as an `EXTERNAL_WRITE` capability with exact destination/prompt approval, one-use action-ledger consumption, visible composer submission verification and encrypted evidence read-back.
+- Action-ledger completion occurs only in the adapter postcondition after evidence verification. Changed page, hash mismatch, cancellation or uncertain outcome stops at `NEEDS_REVIEW` without replay.
+- Exact-head integration CI run #1149 (`45002690812`) passed on `060853bd8e2ff07cb1445980430461e048067e7f`, including source verification, remote runner, Android unit tests, lint, APK assembly, identity/signature and emulator install-over-existing data preservation. Physical-device approval/rejection/stale-page/uncertain-send acceptance remains pending.
+- Physical-device approval/rejection/stale-page/uncertain-send acceptance remains pending. No release APK is claimed.
+
+## M3.A4-S9 — Consent-gated stable browser response capture (updated integration head)
+
+- Added `browser.capture_response`, available only when browser-page sharing consent is enabled and a completed approved prompt submission is present.
+- It verifies the original prompt baseline, waits for a new stable response, saves encrypted response evidence and returns the response as explicitly untrusted source material. It never resends a prompt; baseline loss/timeout becomes NEEDS_REVIEW.
+- Studio exposes both submission and response records in a dedicated Browser research evidence section. Runtime policy and source-verifier regression guards added. Exact-head integration CI run #1149 passed on `060853bd8e2ff07cb1445980430461e048067e7f`; physical-device response/consent acceptance remains pending. No release APK is claimed.
+
+## M3.B1-S1 artifact slice — exact-head CI PASS
+
+- Run: `44953421742` — commit `ae6ef31976d7f35339715a16933ec73e21210af5`.
+- Passed: source checksum/invariant verification, remote-runner tests, core/app unit tests, lint, debug APK assembly, package/version identity, APK signature verification, and emulator install-over-existing with app-private data preservation.
+- Release-signing job was skipped; this was not a canonical release APK. Physical-device acceptance remains pending.
+- This run predates the subsequent approved browser prompt/response additions. Those changes require the newer exact-head CI run.
+
+## M3.A4-S8 — approved browser prompt submission CI PASS
+
+- Run: 44954196829 — commit 23073011b9c411945c12531ce8483ac0a6d2b4b5.
+- Passed: source checksum/invariant verification, remote runner, core/app unit tests, lint, debug APK assembly, package/version identity, signature verification and emulator install-over-existing data preservation.
+- Release-signing job was skipped. This run predates M3.A4-S9 response capture and the latest Studio browser-evidence visibility changes. The newer response-capable head needs its own exact-head CI. Physical-device external-action acceptance remains pending.
+
+## M3.A4-S9 — integrated browser prompt/response CI PASS
+
+- Run: 44954878877 — commit bac787645ee85958132d56e8524c53325b536c06.
+- Passed: source verification, remote runner, Android unit tests, lint, debug APK assembly, package/version identity, APK signature verification and emulator install-over-existing app-private data preservation.
+- Release artifact preparation and isolated signing were skipped. Physical-device browser consent, provider DOM, approve/reject and uncertain-send acceptance remain pending.
+
+
+## M3.B1-S2 — Verified user-directed Studio Markdown export
+
+- Added a core export policy for bounded UTF-8 text payloads, safe filenames, supported text MIME types and SHA-256 digests.
+- Studio export writes only to the user-selected Android document URI, then reopens that same URI and verifies the exact bytes before reporting success.
+- A write error, unreadable destination, truncated file or digest mismatch is reported as unverified. No arbitrary filesystem access, new plaintext storage, PDF/binary generation or background export is claimed.
+- Core tests cover filename sanitization, MIME/size limits, UTF-8, exact digest read-back and failure cases.
+- Exact-head GitHub Actions run #1149 (`45002690812`) passed on source commit `060853bd8e2ff07cb1445980430461e048067e7f`; the documentation-updated PR head `a7eb5e5787b70f7517dbbe5acf490e71da52ac52` also passed run #1150 (`45003595826`). Both passed source invariants, remote-runner tests, Android unit tests, lint, debug APK assembly, APK identity/signature checks and emulator install-over-existing data preservation. Isolated final signing and release artifact publication were skipped. Physical-device export acceptance remains pending; no production-signed APK is claimed.

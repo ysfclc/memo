@@ -462,6 +462,124 @@ talk_ui = (ROOT / "app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt").r
 for marker in ("shareBrowserPageRemotely", "includeBrowserPageContent", "AndroidView(", "browser.webView", "showAgentBrowserPane"):
     if marker not in talk_ui:
         fail(f"Talk browser visibility or separate remote-page privacy control is missing: {marker}")
+for marker in (
+    "data class AgentToolPostconditionVerification(",
+    "suspend fun verifyPostcondition(",
+    "adapter.verifyPostcondition(decision.arguments, invocation, toolResult)",
+    "verification.evidenceReference != toolResult.evidenceReference",
+    "POSTCONDITION VERIFIED:",
+    "A capability may be reported as successful only after its adapter returns a verified postcondition",
+):
+    if marker not in agent_engine:
+        fail(f"shared Talk engine does not enforce verified capability outcomes: {marker}")
+if agent_tools.count("override suspend fun verifyPostcondition(") != 9:
+    fail("each of the nine current Talk adapters must implement an explicit postcondition verifier")
+for marker in (
+    "deterministic recomputation from the permitted candidate set",
+    "exact note title, content and digest",
+    "exact typed record, properties, source conversation/message",
+    "navigationEvidenceReference(page.url)",
+    "lastCapturedContentDigest",
+    "read back from encrypted workspace evidence",
+):
+    if marker not in agent_tools:
+        fail(f"current Talk adapter verification is incomplete: {marker}")
+for marker in (
+    "successfulReadOnlyResultWithoutVerifierFailsAndAllowsReplanning",
+    "localWriteWithoutPostconditionVerifierStopsForReview",
+    "writePostconditionMustMatchReturnedEvidenceReference",
+):
+    if marker not in agent_engine_tests:
+        fail(f"shared Talk postcondition regression coverage is missing: {marker}")
+studio_artifact_policy = (ROOT / "core/src/main/kotlin/app/memo/android/data/StudioArtifactPolicy.kt").read_text()
+studio_artifact_tests = (ROOT / "core/src/test/kotlin/app/memo/android/data/StudioArtifactPolicyTest.kt").read_text()
+workspace_view_model = (ROOT / "app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt").read_text()
+for marker in ("data class StudioArtifactDraft(", "object StudioArtifactPolicy", "fun prepare(", "MessageDigest.getInstance(\"SHA-256\")"):
+    if marker not in studio_artifact_policy:
+        fail(f"Studio artifact validation/digest contract is incomplete: {marker}")
+if 'STUDIO_ARTIFACT' not in workspace_view_model or 'setOf("WORK_ARTIFACT", "ARTIFACT_DRAFT", "SELF_MODEL_ARTIFACT", "STUDIO_ARTIFACT")' not in workspace_view_model:
+    fail("Talk-created Studio drafts must be editable through the existing revision-preserving artifact lifecycle")
+for marker in ("StudioArtifactPolicy.prepare(cleanTitle, artifactType, cleanContent)", "metadata.put(\"contentDigest\", revisedDraft.contentDigest)", "metadata.put(\"version\", metadata.optInt(\"version\", 1) + 1)"):
+    if marker not in workspace_view_model:
+        fail(f"Studio artifact edits must refresh the content digest and revision version: {marker}")
+if "studioArtifactSaveIsRegisteredAsAReversibleLocalWorkspaceWrite" not in agent_registry_tests:
+    fail("Studio artifact runtime must be explicitly registered as a reversible local write")
+for marker in (
+    'RuntimeCapability("workspace.save_artifact"',
+    'id = "workspace.save_artifact"',
+    "StudioArtifactPolicy.prepare",
+    'kind = "STUDIO_ARTIFACT"',
+    "sourceExcerptDigest",
+    "CONTENT SHA-256:",
+):
+    if marker not in runtime_registry + agent_tools:
+        fail(f"Talk-to-Studio artifact capability is missing its runtime, persistence or evidence contract: {marker}")
+for marker in (
+    "fun normalizesDescriptiveTypeAndProducesStableDigest",
+    "fun digestBindsTitleTypeAndContent",
+    "fun rejectsBlankAndOversizedArtifactFields",
+    "fun acceptsNewArtifactTypesWithoutAddingSpecializedWorkflows",
+):
+    if marker not in studio_artifact_tests:
+        fail(f"Studio artifact policy regression coverage is missing: {marker}")
+for marker in ('"STUDIO_ARTIFACT"', "Your generated artifacts", "artifactType", '"BROWSER_PROMPT_SUBMISSION"', '"BROWSER_PROMPT_RESPONSE"', "Browser research evidence"):
+    if marker not in talk_ui:
+        fail(f"Studio does not expose Talk-created artifacts for review: {marker}")
+print("PASS: Talk can save source-linked private Markdown drafts through the registered workspace runtime; digest, bounds and Studio review surface are guarded")
+for marker in (
+    'RuntimeCapability("browser.submit_prompt"',
+    'id = "browser.submit_prompt"',
+    "AgentApprovalEnvelope(",
+    "ActionApprovalLedger.contentHash(",
+    "beginExternalActionDurably(",
+    "completeExternalActionDurably(",
+    "markExternalActionNeedsReviewDurably(",
+    "BROWSER_PROMPT_SUBMISSION",
+    "submitPromptForAgent(",
+):
+    if marker not in runtime_registry + agent_tools:
+        fail(f"Approved browser prompt submission is missing its exact approval/evidence boundary: {marker}")
+for marker in (
+    "suspend fun submitPromptForAgent(",
+    "BrowserScripts.preparePrompt(cleanPrompt)",
+    "BrowserScripts.sendPreparedPrompt(cleanPrompt)",
+    "BrowserScripts.verifyPromptSubmission(cleanPrompt, preserveState = true)",
+):
+    if marker not in browser_session:
+        fail(f"Browser prompt submission must use the visible, verified composer path: {marker}")
+if "fun verifyPromptSubmission" not in browser_scripts:
+    fail("The browser prompt submission verifier is missing")
+if "browserPromptSubmissionIsAnExplicitlyApprovedExternalWrite" not in agent_registry_tests:
+    fail("Browser prompt submission must have a regression test for explicit external-write approval")
+if "browserResponseCaptureDoesNotAuthorizeExternalSideEffects" not in agent_registry_tests:
+    fail("Browser response capture must remain read-only and non-approvable as an external write")
+for marker in ('id = "browser.capture_response"', "BrowserPromptResponseAdapter(", "UNTRUSTED EXTERNAL RESPONSE", "captureAssistantResponseForAgent(", "BrowserScripts.pollAssistantResponse"):
+    if marker not in agent_tools + browser_session:
+        fail(f"Consent-gated stable browser response capture is incomplete: {marker}")
+if "add(BrowserPromptResponseAdapter(" not in agent_tools:
+    fail("Stable browser response capture must be wired only into the consent-enabled Talk tool set")
+consent_block_start = agent_tools.find("if (includeBrowserPageContent)")
+consent_block_end = agent_tools.find("\n            }", consent_block_start)
+if consent_block_start < 0 or consent_block_end < 0 or "add(BrowserPromptResponseAdapter(" not in agent_tools[consent_block_start:consent_block_end]:
+    fail("Browser response capture must be gated by explicit browser-page sharing consent")
+if "var lastPromptResponseSubmissionEvidenceId" not in agent_tools or "scope.lastPromptResponseSubmissionEvidenceId = submissionId" not in agent_tools:
+    fail("Browser response evidence must be idempotent for each prompt submission")
+print("PASS: browser prompt submission is exact-content approved and visibly verified; response capture is consent-gated, baseline-bound and idempotent")
+
+
+print("PASS: capability success is gated by explicit postcondition verification; unverified reads fail and uncertain writes require review")
+for marker in ("writeOutcomeUncertainOnCancellation", "AgentExecutionEventType.RUN_NEEDS_REVIEW"):
+    if marker not in agent_engine:
+        fail(f"write interruption can be misclassified as cancellation without review: {marker}")
+for marker in (
+    "cancellationDuringLocalWriteInvocationRequiresReview",
+    "cancellationDuringLocalWriteVerificationRequiresReview",
+    "failedWriteAdapterStopsForReviewInsteadOfReplanning",
+):
+    if marker not in agent_engine_tests:
+        fail(f"write-interruption safety regression coverage is missing: {marker}")
+print("PASS: started/uncertain writes stop for review on cancellation or adapter failure; they are not replayed")
+
 print("PASS: runtime-backed per-turn capability discovery, approval-policy matching, user-supplied HTTPS browser navigation, encrypted page evidence and separate remote-page consent are enforced and tested")
 
 

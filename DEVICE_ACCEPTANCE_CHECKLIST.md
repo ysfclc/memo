@@ -53,3 +53,41 @@ Record device model, Android version, APK SHA-256, GitHub Actions run URL, test 
 - [ ] Verify the reminder re-schedules after reboot/timezone/time change; test with battery saver and record any OEM delay rather than assuming exact timing.
 - [ ] Complete and fail a bounded native workflow; confirm one generic workflow notification per terminal transition and no duplicate notification on ordinary refreshes.
 - [ ] Tap a Memo notification while locked. Confirm Memo still requires its normal workspace unlock before private content is accessible.
+
+## UI regression gate — mandatory for every release candidate
+
+- [ ] Verify the exact candidate commit preserves the Talk and Work page-level scrolling contract in docs/UI_REGRESSION_CONTRACT.md; inspect source diffs for all affected screens and shared layout primitives.
+- [ ] On a real phone, scroll Talk from the top header through every section to the bottom. Confirm all page content moves as one continuous surface; no clipped cards, trapped nested scroll regions, fixed sections hiding content, or overlapping composer/navigation.
+- [ ] Repeat for Work across Today, Entities, Archive, Plans and all filters/actions. Confirm the full page remains reachable and each intended horizontal chip row scrolls horizontally without hijacking vertical page scroll.
+- [ ] Repeat after opening/closing the keyboard, changing language, switching tabs, returning from a detail screen, and with long/empty content.
+- [ ] Record device, Android version, exact APK SHA-256, commit SHA, screenshots/video, and pass/fail for each screen. A CI build, static source check or emulator test alone does not count as physical-device acceptance.
+- [ ] If any check fails or has not been run, mark the candidate NOT RELEASE-VERIFIED. Do not ask the user to install it as an update.
+
+## Talk — approved browser prompt submission
+
+Run on a physical device with an authenticated visible browser session and a page containing a supported text composer.
+
+- [ ] Ask Talk to send a specific prompt. The approval inbox shows the exact HTTPS destination, runtime/capability and full prompt before the user can approve.
+- [ ] Reject the proposal. Confirm no text is sent, the action is marked REJECTED, no BROWSER_PROMPT_SUBMISSION evidence is created and the run does not claim success.
+- [ ] Approve the exact proposal. Confirm the visible composer receives only that prompt, the visible send control is activated, the exact prompt appears as a submitted message and the composer is cleared.
+- [ ] Confirm the encrypted BROWSER_PROMPT_SUBMISSION record contains the exact prompt, prompt digest, page snapshot digest, source conversation/message and action ID/hash; confirm the action ledger reaches COMPLETED only after evidence read-back.
+- [ ] Change the visible page after approval but before execution. Confirm the action does not send to the new page and becomes NEEDS_REVIEW.
+- [ ] Interrupt the app or browser during submission. Confirm the action/run becomes NEEDS_REVIEW and Memo never automatically resends the prompt after restart.
+- [ ] Cause an uncertain send or evidence write/read-back failure. Confirm the result is NEEDS_REVIEW, with no false success and no automatic retry.
+- [ ] when page content is permitted for the selected model disabled, confirm the prompt can be submitted only after exact approval but page response text is not exposed to the model. Enable consent separately and verify response capture is then available.
+- [ ] Repeat approval/rejection flow in English, Polish and Turkish; check keyboard resize, scroll position, Talk↔Live navigation and action inbox accessibility.
+
+A passing emulator build is not a substitute for these physical-device checks. Record device model, Android version, app version, exact source commit, APK SHA-256 and observed action/evidence IDs.
+
+## Talk — consent-gated browser response capture
+
+- [ ] With a remote model selected and browser-page sharing disabled, confirm browser.capture_response is not advertised and no response text is returned to Talk.
+- [ ] With a local model selected, confirm response capture remains on-device and does not require or trigger remote-sharing consent.
+- [ ] Enable browser-page sharing explicitly, submit a prompt through the approved flow, and pass the exact submission evidence ID to browser.capture_response.
+- [ ] Confirm the returned response is new relative to the submission baseline, stable across repeated polls, and not a prior answer from the conversation.
+- [ ] Confirm response evidence is encrypted and contains the submission evidence ID, prompt/response/page digests, source conversation/message and run/call provenance.
+- [ ] Confirm Studio exposes both the approved prompt and captured response under Browser research evidence, and both open the exact encrypted record.
+- [ ] Confirm the response is labelled untrusted external content in Talk and instructions embedded in it are not executed.
+- [ ] Interrupt the response stream or navigate away. Confirm NEEDS_REVIEW, no prompt resubmission and no false completed response evidence.
+- [ ] Test an unsupported provider DOM and a response that never stabilizes. Confirm timeout/baseline loss becomes NEEDS_REVIEW rather than an empty successful response.
+- [ ] With a remote model selected, revoke/disable page-sharing consent and confirm the response adapter disappears from the available tool set.

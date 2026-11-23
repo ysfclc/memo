@@ -31,6 +31,8 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import java.io.BufferedOutputStream
+import java.io.IOException
 import java.security.MessageDigest
 import java.net.HttpURLConnection
 import java.net.URI
@@ -121,25 +123,294 @@ class AiRuntimeViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch { runCatching { localRunner.release() } }
     }
 
+    private fun modelSearchDirectories(): List<File> = buildList {
+        add(modelsDir)
+        getApplication<Application>().getExternalFilesDirs("models").filterNotNull().forEach { add(it) }
+    }.onEach { it.mkdirs() }.distinctBy { directory ->
+        runCatching { directory.canonicalPath }.getOrDefault(directory.absolutePath)
+    }
+
+    private fun partialModelFile(entry: ModelCatalogEntry): File =
+        File(modelsDir, entry.fileName + ".partial")
+
+    private fun partialModelCheckpointFile(entry: ModelCatalogEntry): File =
+        File(modelsDir, entry.fileName + ".partial.meta")
+
+    private fun readDownloadCheckpoint(entry: ModelCatalogEntry, partial: File): ModelDownloadCheckpoint? {
+        val metadataFile = partialModelCheckpointFile(entry)
+        if (!partial.isFile || partial.length() <= 0L) {
+            metadataFile.delete()
+            return null
+        }
+        val checkpoint = runCatching {
+            ModelDownloadCheckpointCodec.decode(metadataFile.readText())
+        }.getOrNull()
+        if (checkpoint == null || !checkpoint.matches(entry) ||
+            partial.length() > entry.expectedBytes + 64_000_000L
+        ) {
+            partial.delete()
+            metadataFile.delete()
+            return null
+        }
+        return checkpoint
+    }
+
+    private fun writeDownloadCheckpoint(entry: ModelCatalogEntry, etag: String, lastModified: String) {
+        val metadataFile = partialModelCheckpointFile(entry)
+        val temporary = File(metadataFile.parentFile, metadataFile.name + ".tmp")
+        val checkpoint = ModelDownloadCheckpoint(
+            modelId = entry.id,
+            sourceUrl = entry.downloadUrl,
+            expectedSha256 = entry.expectedSha256,
+            expectedBytes = entry.expectedBytes,
+            etag = etag,
+            lastModified = lastModified
+        )
+        temporary.writeText(ModelDownloadCheckpointCodec.encode(checkpoint))
+        if (metadataFile.exists()) metadataFile.delete()
+        check(temporary.renameTo(metadataFile)) { "Model download checkpoint could not be saved." }
+    }
+
+    private fun openModelConnection(
+        entry: ModelCatalogEntry,
+        offset: Long,
+        checkpoint: ModelDownloadCheckpoint?
+    ): HttpURLConnection {
+        val url = URL(entry.downloadUrl)
+        require(url.protocol.equals("https", true)) { "Model downloads must use HTTPS." }
+        return (url.openConnection() as HttpURLConnection).apply {
+            instanceFollowRedirects = true
+            connectTimeout = 20_000
+            readTimeout = 45_000
+            requestMethod = "GET"
+            setRequestProperty("User-Agent", "Memo-Android/2.0")
+            setRequestProperty("Accept-Encoding", "identity")
+            if (offset > 0L) {
+                setRequestProperty("Range", "bytes=$offset-")
+                val validator = checkpoint?.etag?.takeIf { it.isNotBlank() }
+                    ?: checkpoint?.lastModified?.takeIf { it.isNotBlank() }
+                if (validator != null) setRequestProperty("If-Range", validator)
+            }
+        }
+    }
+
+    private suspend fun downloadCatalogModel(entry: ModelCatalogEntry) {
+        modelsDir.mkdirs()
+        val destination = File(modelsDir, entry.fileName)
+        if (destination.exists()) {
+            val existingHash = if (destination.length() >= entry.minimumBytes) sha256(destination) else ""
+            if (existingHash.equals(entry.expectedSha256, ignoreCase = true)) return
+            destination.delete()
+        }
+
+        val partial = partialModelFile(entry)
+        val metadataFile = partialModelCheckpointFile(entry)
+        var checkpoint = readDownloadCheckpoint(entry, partial)
+        var offset = if (checkpoint != null) partial.length() else 0L
+        if (checkpoint == null) {
+            partial.delete()
+            metadataFile.delete()
+        }
+
+        if (offset >= entry.expectedBytes && partial.length() >= entry.minimumBytes) {
+            if (sha256(partial).equals(entry.expectedSha256, ignoreCase = true)) {
+                if (destination.exists()) destination.delete()
+                if (!partial.renameTo(destination)) throw IOException("Verified model could not be finalized; tap Resume to retry.")
+                metadataFile.delete()
+                return
+            }
+            partial.delete()
+            metadataFile.delete()
+            offset = 0L
+            checkpoint = null
+        }
+
+        val stats = StatFs(modelsDir.absolutePath)
+        val requiredBytes = (entry.expectedBytes - offset).coerceAtLeast(0L) + 180_000_000L
+        if (stats.availableBytes < requiredBytes) {
+            throw IOException("Not enough free storage to continue. Keep at least " +
+                (requiredBytes / 1_000_000L) + " MB free, then resume the download.")
+        }
+
+        var connection = openModelConnection(entry, offset, checkpoint)
+        try {
+            connection.connect()
+            var responseCode = connection.responseCode
+            if (responseCode == 416 && offset > 0L) {
+                connection.disconnect()
+                if (partial.length() >= entry.minimumBytes &&
+                    sha256(partial).equals(entry.expectedSha256, ignoreCase = true)
+                ) {
+                    if (destination.exists()) destination.delete()
+                    if (!partial.renameTo(destination)) throw IOException("Verified model could not be finalized; tap Resume to retry.")
+                    metadataFile.delete()
+                    return
+                }
+                partial.delete()
+                metadataFile.delete()
+                offset = 0L
+                checkpoint = null
+                connection = openModelConnection(entry, 0L, null)
+                connection.connect()
+                responseCode = connection.responseCode
+            }
+
+            if (responseCode == 408 || responseCode == 429 || responseCode in 500..599) {
+                throw IOException("Model server returned HTTP $responseCode. The downloaded bytes have been kept; resume when the connection is stable.")
+            }
+
+            var append = false
+            if (offset > 0L && responseCode == 206) {
+                val canAppend = ModelDownloadResumePolicy.canAppend(
+                    offset = offset,
+                    responseCode = responseCode,
+                    contentRange = connection.getHeaderField("Content-Range"),
+                    savedEtag = checkpoint?.etag.orEmpty(),
+                    responseEtag = connection.getHeaderField("ETag").orEmpty(),
+                    savedLastModified = checkpoint?.lastModified.orEmpty(),
+                    responseLastModified = connection.getHeaderField("Last-Modified").orEmpty()
+                )
+                if (canAppend) {
+                    append = true
+                } else {
+                    connection.disconnect()
+                    partial.delete()
+                    metadataFile.delete()
+                    offset = 0L
+                    checkpoint = null
+                    connection = openModelConnection(entry, 0L, null)
+                    connection.connect()
+                    responseCode = connection.responseCode
+                }
+            } else if (offset > 0L && responseCode == 200) {
+                // Server ignored Range/If-Range and sent a full body: safely restart from byte zero.
+                partial.delete()
+                metadataFile.delete()
+                offset = 0L
+            } else if (offset == 0L && responseCode == 206 &&
+                ModelDownloadResumePolicy.contentRangeStart(connection.getHeaderField("Content-Range")) == 0L
+            ) {
+                append = false
+            }
+
+            if (responseCode == 206 && !append &&
+                ModelDownloadResumePolicy.contentRangeStart(connection.getHeaderField("Content-Range")) != 0L
+            ) {
+                throw IllegalStateException("Model server returned a partial range that does not start at byte zero. The file was not installed.")
+            }
+            if (responseCode == 408 || responseCode == 429 || responseCode in 500..599) {
+                throw IOException("Model server returned HTTP $responseCode. Try resuming later.")
+            }
+            if (responseCode !in 200..299) {
+                throw IllegalStateException("Model server returned HTTP $responseCode. The partial download was not trusted.")
+            }
+            require(connection.url.protocol.equals("https", true)) {
+                "Model download redirected away from HTTPS and was blocked."
+            }
+
+            val responseEtag = connection.getHeaderField("ETag").orEmpty()
+            val responseLastModified = connection.getHeaderField("Last-Modified").orEmpty()
+            val contentRange = connection.getHeaderField("Content-Range")
+            val reportedSize = connection.contentLengthLong
+            val rangeTotal = ModelDownloadResumePolicy.contentRangeTotal(contentRange)
+            val hasVerifiedTotal = rangeTotal != null || reportedSize > 0L
+            val total = rangeTotal ?: if (reportedSize > 0L) {
+                if (append) offset + reportedSize else reportedSize
+            } else entry.expectedBytes
+            writeDownloadCheckpoint(entry, responseEtag, responseLastModified)
+
+            val stage = if (append) "Resuming model weights" else "Downloading model weights"
+            var bytesRead = if (append) offset else 0L
+            var lastUpdate = 0L
+            var lastCheckpointBytes = bytesRead
+            _uiState.update {
+                it.copy(downloads = it.downloads + (entry.id to DownloadStatus(
+                    modelId = entry.id,
+                    bytesRead = bytesRead,
+                    totalBytes = total,
+                    stage = stage
+                )))
+            }
+
+            connection.inputStream.use { input ->
+                FileOutputStream(partial, append).use { fileOutput ->
+                    BufferedOutputStream(fileOutput).use { output ->
+                        val buffer = ByteArray(128 * 1024)
+                        while (true) {
+                            kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                            val count = input.read(buffer)
+                            if (count < 0) break
+                            output.write(buffer, 0, count)
+                            bytesRead += count
+                            val now = System.currentTimeMillis()
+                            if (now - lastUpdate > 250L) {
+                                lastUpdate = now
+                                _uiState.update {
+                                    it.copy(downloads = it.downloads + (entry.id to DownloadStatus(
+                                        modelId = entry.id,
+                                        bytesRead = bytesRead,
+                                        totalBytes = total,
+                                        stage = stage
+                                    )))
+                                }
+                            }
+                            if (bytesRead - lastCheckpointBytes >= 2L * 1024 * 1024) {
+                                output.flush()
+                                fileOutput.fd.sync()
+                                writeDownloadCheckpoint(entry, responseEtag, responseLastModified)
+                                lastCheckpointBytes = bytesRead
+                            }
+                        }
+                        output.flush()
+                        fileOutput.fd.sync()
+                    }
+                }
+            }
+
+            require(partial.length() >= entry.minimumBytes) {
+                "The model download is too small. The transfer may have been interrupted or the provider served an unexpected file."
+            }
+            if (hasVerifiedTotal && partial.length() != total) {
+                throw IOException(
+                    "The model transfer is incomplete (" + partial.length() / 1_000_000L +
+                        " bytes received, " + total + " expected). Resume the download."
+                )
+            }
+            val actualHash = sha256(partial)
+            if (!actualHash.equals(entry.expectedSha256, ignoreCase = true)) {
+                partial.delete()
+                metadataFile.delete()
+                throw IllegalStateException("Model integrity check failed. The file does not match the pinned catalogue checksum and was not installed.")
+            }
+            if (destination.exists()) destination.delete()
+            if (!partial.renameTo(destination)) {
+                throw IOException("Verified model could not be moved into the installed-model folder; tap Resume to retry.")
+            }
+            metadataFile.delete()
+        } finally {
+            connection.disconnect()
+        }
+    }
+
     fun refreshModels() {
         viewModelScope.launch(Dispatchers.IO) {
-            modelsDir.mkdirs()
-            val entries = ModelCatalog.entries
-            val installed = modelsDir.listFiles()
-                ?.filter { it.isFile && it.extension.equals("litertlm", true) && !it.name.endsWith(".partial") }
-                .orEmpty()
-                .mapNotNull { file ->
-                    val catalog = entries.firstOrNull { it.fileName == file.name }
-                    if (file.length() < 64L * 1024 * 1024) null else InstalledModel(
-                        id = catalog?.id ?: "custom-${file.nameWithoutExtension.take(90)}",
-                        name = catalog?.name ?: file.nameWithoutExtension.take(100).replace('_', ' '),
-                        file = file,
-                        bytes = file.length(),
-                        isCatalogModel = catalog != null
-                    )
-                }
+            val installed = ModelFileDiscovery.scan(modelSearchDirectories())
                 .sortedWith(compareBy<InstalledModel> { !it.isCatalogModel }.thenBy { it.name.lowercase(Locale.ROOT) })
-            _uiState.update { it.copy(installedModels = installed) }
+            val resumable = ModelCatalog.entries.mapNotNull { entry ->
+                val partial = partialModelFile(entry)
+                val checkpoint = readDownloadCheckpoint(entry, partial)
+                if (checkpoint == null) null else DownloadStatus(
+                    modelId = entry.id,
+                    bytesRead = partial.length(),
+                    totalBytes = entry.expectedBytes,
+                    stage = "Paused — tap Resume",
+                    canResume = true
+                )
+            }.associateBy { it.modelId }
+            _uiState.update { state ->
+                val active = state.downloads.filterKeys { downloadJobs[it]?.isActive == true }
+                state.copy(installedModels = installed, downloads = active + resumable.filterKeys { it !in active })
+            }
         }
     }
 
@@ -148,88 +419,69 @@ class AiRuntimeViewModel(application: Application) : AndroidViewModel(applicatio
         if (downloadJobs[modelId]?.isActive == true) return
         downloadJobs[modelId] = viewModelScope.launch {
             try {
-                _uiState.update { it.copy(downloads = it.downloads + (modelId to DownloadStatus(modelId, stage = "Checking storage")), lastError = null) }
-                withContext(Dispatchers.IO) {
-                    modelsDir.mkdirs()
-                    val stats = StatFs(modelsDir.absolutePath)
-                    require(stats.availableBytes >= entry.expectedBytes + 180_000_000L) {
-                        "Not enough free storage. Keep at least ${(entry.expectedBytes + 180_000_000L) / 1_000_000} MB free before installing this model."
-                    }
-                    val destination = File(modelsDir, entry.fileName)
-                    if (destination.exists()) {
-                        val existingHash = if (destination.length() >= entry.minimumBytes) sha256(destination) else ""
-                        if (existingHash.equals(entry.expectedSha256, ignoreCase = true)) return@withContext
-                        destination.delete()
-                    }
-                    val partial = File(modelsDir, entry.fileName + ".partial")
-                    partial.delete()
-                    val url = URL(entry.downloadUrl)
-                    require(url.protocol.equals("https", true)) { "Model downloads must use HTTPS." }
-                    val connection = (url.openConnection() as HttpURLConnection).apply {
-                        instanceFollowRedirects = true
-                        connectTimeout = 20_000
-                        readTimeout = 45_000
-                        requestMethod = "GET"
-                        setRequestProperty("User-Agent", "Memo-Android/2.0")
-                    }
-                    try {
-                        connection.connect()
-                        require(connection.responseCode in 200..299) { "Model server returned HTTP ${connection.responseCode}." }
-                        require(connection.url.protocol.equals("https", true)) { "Model download redirected away from HTTPS and was blocked." }
-                        val reportedSize = connection.contentLengthLong
-                        val total = if (reportedSize > 0) reportedSize else entry.expectedBytes
-                        _uiState.update { it.copy(downloads = it.downloads + (modelId to DownloadStatus(modelId, 0, total, "Downloading model weights"))) }
-                        connection.inputStream.use { input ->
-                            FileOutputStream(partial).buffered().use { output ->
-                                val buffer = ByteArray(128 * 1024)
-                                var bytesRead = 0L
-                                var lastUpdate = 0L
-                                while (true) {
-                                    kotlinx.coroutines.currentCoroutineContext().ensureActive()
-                                    val count = input.read(buffer)
-                                    if (count < 0) break
-                                    output.write(buffer, 0, count)
-                                    bytesRead += count
-                                    val now = System.currentTimeMillis()
-                                    if (now - lastUpdate > 250) {
-                                        lastUpdate = now
-                                        _uiState.update { it.copy(downloads = it.downloads + (modelId to DownloadStatus(modelId, bytesRead, total, "Downloading model weights"))) }
-                                    }
-                                }
-                                output.flush()
-                            }
-                        }
-                        require(reportedSize <= 0L || partial.length() == reportedSize) {
-                            "The model download is incomplete (${partial.length() / 1_000_000} MB received, ${reportedSize / 1_000_000} MB expected). Try again on a stable connection."
-                        }
-                        require(partial.length() >= entry.minimumBytes) {
-                            "The downloaded model is too small (${partial.length() / 1_000_000} MB). The transfer may have been interrupted or the provider served an unexpected file."
-                        }
-                        val actualHash = sha256(partial)
-                        require(actualHash.equals(entry.expectedSha256, ignoreCase = true)) {
-                            "Model integrity check failed. The downloaded file does not match the verified catalogue checksum; it was not installed."
-                        }
-                        if (destination.exists()) destination.delete()
-                        require(partial.renameTo(destination)) { "Downloaded model could not be moved into the installed-model folder." }
-                    } finally {
-                        connection.disconnect()
-                    }
+                _uiState.update {
+                    it.copy(downloads = it.downloads + (modelId to DownloadStatus(
+                        modelId = modelId,
+                        stage = if (partialModelFile(entry).exists()) "Preparing to resume" else "Checking storage"
+                    )), lastError = null)
                 }
+                withContext(Dispatchers.IO) { downloadCatalogModel(entry) }
                 _uiState.update { it.copy(downloads = it.downloads - modelId, stage = "Model installed") }
                 refreshModels()
             } catch (cancelled: CancellationException) {
-                withContext(NonCancellable + Dispatchers.IO) { File(modelsDir, entry.fileName + ".partial").delete() }
-                _uiState.update { state -> state.copy(
-                    downloads = state.downloads - modelId,
-                    stage = if (locked) "Workspace locked" else "Download cancelled"
-                ) }
+                val canResume = withContext(NonCancellable + Dispatchers.IO) {
+                    val partial = partialModelFile(entry)
+                    readDownloadCheckpoint(entry, partial) != null && partial.length() > 0L
+                }
+                _uiState.update { state ->
+                    val downloads = if (canResume) state.downloads + (modelId to DownloadStatus(
+                        modelId = modelId,
+                        bytesRead = partialModelFile(entry).length(),
+                        totalBytes = entry.expectedBytes,
+                        stage = "Paused — tap Resume",
+                        canResume = true
+                    )) else state.downloads - modelId
+                    state.copy(
+                        downloads = downloads,
+                        stage = if (locked) "Workspace locked" else if (canResume) "Download paused" else "Download cancelled"
+                    )
+                }
                 throw cancelled
             } catch (error: Throwable) {
-                withContext(Dispatchers.IO) { File(modelsDir, entry.fileName + ".partial").delete() }
-                _uiState.update { it.copy(downloads = it.downloads - modelId, lastError = safeMessage(error), stage = "Model install failed") }
+                val canResume = withContext(Dispatchers.IO) {
+                    val partial = partialModelFile(entry)
+                    val checkpoint = readDownloadCheckpoint(entry, partial)
+                    val keep = error is IOException && checkpoint != null && partial.length() > 0L
+                    if (!keep) {
+                        partial.delete()
+                        partialModelCheckpointFile(entry).delete()
+                    }
+                    keep
+                }
+                _uiState.update { state ->
+                    val downloads = if (canResume) state.downloads + (modelId to DownloadStatus(
+                        modelId = modelId,
+                        bytesRead = partialModelFile(entry).length(),
+                        totalBytes = entry.expectedBytes,
+                        stage = "Paused — tap Resume",
+                        error = safeMessage(error),
+                        canResume = true
+                    )) else state.downloads - modelId
+                    state.copy(downloads = downloads, lastError = safeMessage(error), stage = "Model install failed")
+                }
             } finally {
                 downloadJobs.remove(modelId)
             }
+        }
+    }
+
+    fun discardPartialModelDownload(modelId: String) {
+        if (downloadJobs[modelId]?.isActive == true) return
+        val entry = ModelCatalog.entries.firstOrNull { it.id == modelId } ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            partialModelFile(entry).delete()
+            partialModelCheckpointFile(entry).delete()
+            _uiState.update { it.copy(downloads = it.downloads - modelId) }
         }
     }
 
@@ -311,6 +563,10 @@ class AiRuntimeViewModel(application: Application) : AndroidViewModel(applicatio
                 withContext(Dispatchers.IO) {
                     val model = _uiState.value.installedModels.firstOrNull { it.id == modelId } ?: return@withContext
                     require(model.file.delete()) { "Could not delete the model file." }
+                    ModelCatalog.entries.firstOrNull { it.id == modelId }?.let { entry ->
+                        partialModelFile(entry).delete()
+                        partialModelCheckpointFile(entry).delete()
+                    }
                 }
                 refreshModels()
             }.onFailure { _uiState.update { state -> state.copy(lastError = safeMessage(it)) } }
