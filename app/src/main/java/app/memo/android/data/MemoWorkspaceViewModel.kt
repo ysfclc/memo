@@ -187,12 +187,12 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         }
         if (continuationOfRunId.isNotBlank()) {
             if (parentRun == null) {
-                _vaultError.value = "The interrupted Talk run is no longer available in this conversation."
+                log("The interrupted Talk run is no longer available in this conversation.", "WARN")
                 return false
             }
             val assessment = AgentRunContinuationPolicy.assess(parentRun)
             if (!assessment.allowed) {
-                _vaultError.value = assessment.reason
+                log(assessment.reason, "WARN")
                 return false
             }
         }
