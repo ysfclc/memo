@@ -113,6 +113,7 @@ continuation_policy = (ROOT / "core/src/main/kotlin/app/memo/android/data/AgentR
 continuation_tests = (ROOT / "core/src/test/kotlin/app/memo/android/data/AgentRunContinuationPolicyTest.kt").read_text()
 run_model = (ROOT / "core/src/main/kotlin/app/memo/android/data/Models.kt").read_text()
 live_runs = (ROOT / "app/src/main/java/app/memo/android/ui/LiveWorkspaceScreen.kt").read_text()
+talk_screen = (ROOT / "app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt").read_text()
 for marker in ("status != \"NEEDS_REVIEW\"", "pendingApprovalCallId.isNotBlank()", "toolCalls > run.successfulToolCalls", "Previous actions and approvals will not be replayed"):
     if marker not in continuation_policy:
         fail(f"Talk continuation safety policy is missing: {marker}")
