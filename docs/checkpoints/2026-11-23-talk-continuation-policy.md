@@ -2,7 +2,7 @@
 
 ## Scope
 
-This increment adds a pure, deterministic eligibility policy for continuing an interrupted Talk run as a new run. It does not resume or replay the old run and does not yet expose a user-facing Continue action.
+This increment adds a pure, deterministic eligibility policy and a user-controlled Live → Talk continuation path. The user reviews the interrupted run in Live, opens the originating conversation with a prefilled editable draft, and explicitly sends it to start a new run. The new run stores an additive `parentRunId`; the prior terminal record is not modified.
 
 ## Policy
 
@@ -30,9 +30,12 @@ No previous call ID, idempotency key, browser scope or approval grant may be reu
 ## Verification
 
 - Added JVM policy tests for safe eligibility, active/terminal states, uncertain tool outcomes, stale approval references and missing source identity.
-- Full Gradle/CI verification is pending for this branch.
-- No UI integration, ViewModel continuation launcher, process-death emulator test or physical-device acceptance is claimed.
+- Added additive `parentRunId` serialization with backward compatibility for schema-7 backups that predate the field.
+- Live exposes Continue in Talk only when the policy allows it; unsafe cases show the blocking reason.
+- Talk prepopulates an editable draft, labels it as a continuation, supplies prior run metadata as untrusted context, and requests current capability discovery/fresh approval.
+- The ViewModel rechecks eligibility at durable run creation and persists the new run before execution.
+- Exact-head Gradle/CI verification is pending. No physical-device acceptance is claimed.
 
 ## Next implementation
 
-Integrate the policy into Live's durable run inspection, add explicit user review and a new-run continuation launcher in the ViewModel, persist the parent-run relationship additively, and test that old run history and approval records remain unchanged.
+Add ViewModel-level continuation tests, verify linked-run import/export and process-death behavior on the emulator, and inspect the exact-head CI result. Physical-device acceptance remains separate.
