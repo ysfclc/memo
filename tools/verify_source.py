@@ -126,7 +126,7 @@ for marker in ("val parentRunId: String = \"\"", 'put("parentRunId", run.parentR
 for marker in ("AgentRunContinuationPolicy.assess(run)", "onContinueRun", "Continue in Talk", "run.parentRunId"):
     if marker not in live_runs:
         fail(f"Live interrupted-run inspection is missing: {marker}")
-for marker in ("initialContinuationRunId", "PRIOR TALK RUN — UNTRUSTED SAVED OBSERVATIONS", "continuationOfRunId = initialContinuationRunId", "onInitialContinuationConsumed()"):
+for marker in ("initialContinuationRunId", "PRIOR TALK RUN — UNTRUSTED SAVED OBSERVATIONS", "selectedModelId == REMOTE_MODEL_ID && !shareWorkspaceContextRemotely", "continuationOfRunId = initialContinuationRunId", "onInitialContinuationConsumed()"):
     if marker not in talk_screen:
         fail(f"Talk continuation draft/launch integration is missing: {marker}")
 print("PASS: interrupted Talk runs continue only through explicit review, a fresh linked run ID, current capability discovery and new approvals")
