@@ -25,7 +25,7 @@ The policy's positive result is not an execution grant. A future continuation mu
 6. obtain fresh approval for any external side effect;
 7. retain both run histories and never mutate the old terminal record.
 
-No previous call ID, idempotency key, browser scope or approval grant may be reused.
+No previous call ID, idempotency key or approval grant may be reused. A fresh adapter is built for the new run against the current browser session; any consequential action still requires fresh approval.
 
 ## Verification
 
