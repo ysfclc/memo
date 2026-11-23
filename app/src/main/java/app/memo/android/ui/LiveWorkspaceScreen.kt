@@ -36,6 +36,7 @@ import java.util.Locale
 fun LiveWorkspaceScreen(
     snapshot: AppSnapshot,
     browserState: BrowserWorkflowUiState,
+    uiLanguage: String,
     onOpenBrowser: () -> Unit,
     onOpenApps: () -> Unit,
     onOpenApprovals: () -> Unit,
@@ -277,7 +278,8 @@ private fun AgentRunSummary(
                 Text("A pending approval reference is recorded. It is not reusable after restart.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (run.parentRunId.isNotBlank()) {
-                Text("Continues prior run · ${run.parentRunId.take(8)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Continues prior run", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(run.parentRunId.take(8), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (run.recoveryReason.isNotBlank()) {
                 Text(run.recoveryReason, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -291,7 +293,7 @@ private fun AgentRunSummary(
                         Text("Continue in Talk")
                     }
                 } else {
-                    Text(continuation.reason, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                    Text(MemoLocalization.translate(continuation.reason, uiLanguage), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
