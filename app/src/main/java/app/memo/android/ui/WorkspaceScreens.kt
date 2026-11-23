@@ -691,7 +691,7 @@ fun ChatsWorkspaceScreen(
                                         it.id == initialContinuationRunId && it.conversationId == selectedConversation.id
                                     }
                                 }
-                                val continuationAssessment = continuationParent?.let(AgentRunContinuationPolicy::assess)
+                                val continuationAssessment = continuationParent?.let { AgentRunContinuationPolicy.assess(it) }
                                 if (initialContinuationRunId.isNotBlank() &&
                                     (continuationParent == null || continuationAssessment?.allowed != true)
                                 ) {
