@@ -422,7 +422,7 @@ data class AppSnapshot(
             add(event.previousHash); add(event.eventHash); add(event.details)
         }
         agentRuns.forEach { run ->
-            add(run.id); add(run.conversationId); add(run.goal); add(run.modelId); add(run.status); add(run.stage)
+            add(run.id); add(run.conversationId); add(run.goal); add(run.parentRunId); add(run.modelId); add(run.status); add(run.stage)
             add(run.lastEventType); add(run.lastToolId); add(run.pendingApprovalCallId); add(run.lastEvidenceReference)
             add(run.finalMessage); add(run.recoveryReason); add(run.modelCalls.toString()); add(run.toolCalls.toString())
             add(run.successfulToolCalls.toString()); add(run.createdAt.toString()); add(run.updatedAt.toString()); add(run.finishedAt.toString())
