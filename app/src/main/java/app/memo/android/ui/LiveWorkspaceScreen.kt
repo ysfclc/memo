@@ -124,7 +124,8 @@ fun LiveWorkspaceScreen(
                     run,
                     onOpenConversation = { onOpenTalk(run.conversationId) },
                     onOpenApprovals = onOpenApprovals,
-                    onContinueRun = { onContinueRun(run) }
+                    onContinueRun = { onContinueRun(run) },
+                    uiLanguage = uiLanguage
                 )
             }
         }
@@ -230,7 +231,8 @@ private fun AgentRunSummary(
     run: AgentRunRecord,
     onOpenConversation: () -> Unit,
     onOpenApprovals: () -> Unit,
-    onContinueRun: () -> Unit
+    onContinueRun: () -> Unit,
+    uiLanguage: String
 ) {
     val continuation = AgentRunContinuationPolicy.assess(run)
     val tone = when (run.status) {
