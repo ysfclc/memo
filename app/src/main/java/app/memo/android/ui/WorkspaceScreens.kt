@@ -176,7 +176,7 @@ fun ChatsWorkspaceScreen(
     LaunchedEffect(selectedConversationId, initialPrompt) {
         if (selectedConversationId != null && initialPrompt.isNotBlank()) {
             draft = initialPrompt.take(6_000)
-            onInitialPromptConsumed()
+            if (initialContinuationRunId.isBlank()) onInitialPromptConsumed()
         }
     }
     var selectedModelId by remember(selectedConversationId) { mutableStateOf("") }
@@ -866,7 +866,10 @@ fun ChatsWorkspaceScreen(
                                     onShowMessage("Another Memo execution is already active, or the encrypted workspace is unavailable.")
                                 } else {
                                     draft = ""
-                                    if (initialContinuationRunId.isNotBlank()) onInitialContinuationConsumed()
+                                    if (initialContinuationRunId.isNotBlank()) {
+                                        onInitialContinuationConsumed()
+                                        onInitialPromptConsumed()
+                                    }
                                 }
                             },
                             enabled = !agentRunning && !runtimeState.running && draft.isNotBlank() && modelOptions.isNotEmpty() && (selectedModelId != REMOTE_MODEL_ID || allowRemote),
