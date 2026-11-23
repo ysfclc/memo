@@ -396,7 +396,11 @@ fun MemoWorkspaceApp(
     BackHandler(enabled = tab != AppTab.HOME || evidenceDetail != null || activeConversationId != null) {
         when {
             evidenceDetail != null -> evidenceDetail = null
-            tab == AppTab.HOME && activeConversationId != null -> activeConversationId = null
+            tab == AppTab.HOME && activeConversationId != null -> {
+                activeConversationId = null
+                pendingContinuationRunId = ""
+                pendingChatPrompt = ""
+            }
             tab in setOf(AppTab.BROWSER, AppTab.APPS, AppTab.APPROVALS) -> tab = AppTab.LIVE
             tab != AppTab.HOME -> { activeConversationId = null; tab = AppTab.HOME }
         }
@@ -584,7 +588,12 @@ fun MemoWorkspaceApp(
                         onOpenApps = { tab = AppTab.APPS },
                         onOpenApprovals = { tab = AppTab.APPROVALS },
                         onOpenWork = { tab = AppTab.WORK },
-                        onOpenTalk = { id -> activeConversationId = id; tab = AppTab.HOME },
+                        onOpenTalk = {
+                            pendingContinuationRunId = ""
+                            pendingChatPrompt = ""
+                            activeConversationId = it
+                            tab = AppTab.HOME
+                        },
                         onContinueRun = { run ->
                             pendingContinuationRunId = run.id
                             activeConversationId = run.conversationId
