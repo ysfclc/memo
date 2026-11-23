@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import app.memo.android.data.ActionApprovalRecord
 import app.memo.android.data.AgentRunRecord
+import app.memo.android.data.AgentRunContinuationPolicy
 import app.memo.android.data.AppSnapshot
 import app.memo.android.data.TaskRecord
 import app.memo.android.data.TaskStatus
@@ -40,6 +41,7 @@ fun LiveWorkspaceScreen(
     onOpenApprovals: () -> Unit,
     onOpenWork: () -> Unit,
     onOpenTalk: (String) -> Unit,
+    onContinueRun: (AgentRunRecord) -> Unit,
     onResumeTask: (TaskRecord) -> Unit
 ) {
     val activeJobs = snapshot.jobs
@@ -117,7 +119,12 @@ fun LiveWorkspaceScreen(
             item { EmptyState("No Memo executions yet", "Your Talk runs will appear here with their last durable stage and recovery state.") }
         } else {
             items(recentAgentRuns, key = { "agent-run-${it.id}" }) { run ->
-                AgentRunSummary(run, onOpenConversation = { onOpenTalk(run.conversationId) }, onOpenApprovals = onOpenApprovals)
+                AgentRunSummary(
+                    run,
+                    onOpenConversation = { onOpenTalk(run.conversationId) },
+                    onOpenApprovals = onOpenApprovals,
+                    onContinueRun = { onContinueRun(run) }
+                )
             }
         }
         item { MemoSectionHeading("Work in motion", supporting = "Resumable plans and tasks that need attention") }
@@ -218,7 +225,13 @@ fun LiveWorkspaceScreen(
 
 
 @Composable
-private fun AgentRunSummary(run: AgentRunRecord, onOpenConversation: () -> Unit, onOpenApprovals: () -> Unit) {
+private fun AgentRunSummary(
+    run: AgentRunRecord,
+    onOpenConversation: () -> Unit,
+    onOpenApprovals: () -> Unit,
+    onContinueRun: () -> Unit
+) {
+    val continuation = AgentRunContinuationPolicy.assess(run)
     val tone = when (run.status) {
         "NEEDS_REVIEW", "WAITING_FOR_APPROVAL" -> MemoStatusTone.WARNING
         "FAILED" -> MemoStatusTone.ERROR
@@ -263,11 +276,23 @@ private fun AgentRunSummary(run: AgentRunRecord, onOpenConversation: () -> Unit,
                 MemoStatusTag(label = "Approval call requires inspection", tone = MemoStatusTone.WARNING)
                 Text("A pending approval reference is recorded. It is not reusable after restart.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+            if (run.parentRunId.isNotBlank()) {
+                Text("Continues prior run · ${run.parentRunId.take(8)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
             if (run.recoveryReason.isNotBlank()) {
                 Text(run.recoveryReason, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (run.status == "NEEDS_REVIEW") {
                 Text("This run is preserved as history. Memo will not replay its last step automatically.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
+            }
+            if (run.status == "NEEDS_REVIEW") {
+                if (continuation.allowed) {
+                    OutlinedButton(onClick = onContinueRun, modifier = Modifier.fillMaxWidth().height(MemoTokens.Spacing.minimumTouch)) {
+                        Text("Continue in Talk")
+                    }
+                } else {
+                    Text(continuation.reason, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 TextButton(onClick = onOpenConversation) { Text("Open conversation") }
