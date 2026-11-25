@@ -31,7 +31,7 @@ ec8439171caf5ca4666715ee5861925c0d4fe7ba09ff3641c49492d1c14abcee  ./app/src/main
 dc09d57a5ef35f0678c788f4a057ca2e58da82a2731f0dba19f6e895c6d582d3  ./app/src/main/java/app/memo/android/browser/BrowserSession.kt
 1cfc5334fc1c4da3afe944e915b2370b1f8ec65c7496ef5dd1f2cbf98b50cd33  ./app/src/main/java/app/memo/android/browser/BrowserWorkflow.kt
 3e6b51759f9929c47d39a109898bc7554bb0f721206683a93b5373a0d61c7795  ./app/src/main/java/app/memo/android/data/EncryptedVault.kt
-b2a8293975e85a5ca904defde0b1db669e02184f5130b7b9b012d4a7e9b6d2aa  ./app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt
+bc3c36e4bf682ffc09bfb14a4c8d2c74559858bafdc7b248a0bfc264329137b9  ./app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt
 f608bddf49f49c35679c84ac52d1fef8e66363af0ab6f00005adaccc87a36363  ./app/src/main/java/app/memo/android/notifications/MemoNotificationCenter.kt
 5becd4fe59b752a4390ad8dbc245574774cbf15fbe64fc9e5e4b43237a8315c1  ./app/src/main/java/app/memo/android/runtime/MemoRuntimeBridge.java
 02713cd3555c0bbd4a1a2c73c6b506a1adeae1a41f7094f32bb001309e843072  ./app/src/main/java/app/memo/android/ui/ActionApprovalInboxScreen.kt
@@ -39,11 +39,11 @@ f608bddf49f49c35679c84ac52d1fef8e66363af0ab6f00005adaccc87a36363  ./app/src/main
 36f69a25fe5dfb84b70f9f7ac570388114088db17a4e559c865daa42fa0e590d  ./app/src/main/java/app/memo/android/ui/AppsWorkspaceScreen.kt
 c23d9d73f947dca41834299207c98cb522fbcf627615454078dc3d0bd22b645f  ./app/src/main/java/app/memo/android/ui/BrowserWorkflowScreen.kt
 0c0b67957772e951e98a0bd8a797418a6d27c8c5970a224d829ca5d4684136ca  ./app/src/main/java/app/memo/android/ui/LiveWorkspaceScreen.kt
-f9b123e5cc80ab6f764e73e184f7018fdd0800f446fc7ec4122689710a662f11  ./app/src/main/java/app/memo/android/ui/MemoLocalization.kt
+03302cec2eea78ee3cacb7933146a59e2cead0cb050a1d0dcff5ef1b405a6c08  ./app/src/main/java/app/memo/android/ui/MemoLocalization.kt
 7233cd4ac760ec24636c103294097c17e5a59d3772dda297a1034ba4f4941598  ./app/src/main/java/app/memo/android/ui/MemoPrimitives.kt
 fa5bd8f42d1349b9794601db776a3e137f933e5eac8caa0d7d9b50ace9979ac0  ./app/src/main/java/app/memo/android/ui/MemoTheme.kt
 2aad897814763413b69f0bd040ed1d07b103087a5a6afa92870b94f59b94c4a1  ./app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt
-c7a5182b170f57188542dcd7c04e85b4397ccf15678f47771c6f2550e632c167  ./app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt
+9d994a1997ac16e1c359e3a48c164138dd47360e228f21416d243a5ae1c9687a  ./app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt
 f78be77d6fa771c78d14e15a0e2e1e1bad49d384637546ee596e47941b251472  ./app/src/main/java/app/memo/android/ui/components/Primitives.kt
 128544949e1092389370b43128707cf0c985f5531bd7d6c2dff832ede64e3184  ./app/src/main/java/com/synthos/runtime/ai/JobCompiler.java
 8951a538775e3afaaac1c00396cbaeb2b80593fd235d5be1ef1fcc4686d07851  ./app/src/main/java/com/synthos/runtime/ai/LocalModelRuntime.kt
@@ -77,7 +77,7 @@ e4926a3e06cfe3df0f92d657d0b193d12c75856dcc1192d731bb0ee344d36ff7  ./app/src/main
 e284410e3432e3897bd3185abf06cc9f12e2dfc2ec8627782f0c7723aedd7309  ./app/src/test/java/app/memo/android/browser/BrowserPromptSubmissionSafetyTest.kt
 b8356e5805b218704a74d664343346ac8867637840cc698cfdb20dc4a1d12805  ./app/src/test/java/app/memo/android/browser/BrowserWorkflowPromptsTest.kt
 9caecf5d733df6d6c2a90a4d68c29db9855dff0e4c79467fd1cc5a945b5f8b70  ./app/src/test/java/app/memo/android/ui/LiveAgentRunTimelineTest.kt
-7c0afc71e463ad12d84899c1ef1317764e3bf692c2288b1dddc8cf8242ad4c56  ./app/src/test/java/app/memo/android/ui/MemoLocalizationTest.kt
+18600a79c5c0bf7245bab947c588e6b9adbbf03b8f9f37150057ea2ef21524b8  ./app/src/test/java/app/memo/android/ui/MemoLocalizationTest.kt
 37e2bc9ac428a67193eea44dd9223fa77bca9bc220d49e638cd31591282b63fe  ./app/src/test/java/com/synthos/runtime/engine/WorkflowPolicyTest.java
 21acd1687a0a9180acdd7ade75f2f3e378a4d229e71865ccf8ddb344c0c20bf7  ./build.gradle
 65d89e7226d918bcea5cf0e986e3f2d18f8e184ed28640e73c154486ff9d484a  ./core/build.gradle
@@ -255,7 +255,7 @@ d82dc17d418f2ce0b7f3b68b7304901400290e60aa3de8515fbfa8f2f617492d  ./gradle.prope
 a1453a88e5bc19e7b20a521b56d36acbaec90fc742b79fb49fca11b7ddda73af  ./remote-runner/tests/test_runner.py
 19280c23fb304e503d1037eb423b17d0a14dd2a6fbb3e916574f4c5be17dfebf  ./settings.gradle
 ee9dad7e7bd2a85426759245581af3dabf763d3443038c9b5a959cd3767bba47  ./tools/ci/circleci-android.sh
-b0bce98bbd5f11702f34ec65cce28f1092aaf805ac49a10986415307172624b6  ./tools/verify_source.py
+9a99fdf01a1f8a323f7d329cc069bf46bdf24640d02d4cf0126282110befbdbc  ./tools/verify_source.py
 259b0b2d91d3bad80ab020d3248b5574cbad6cf891d95bab7843f07f19cb21f2  ./core/src/main/kotlin/app/memo/android/data/AgentRunContinuationPolicy.kt
 4361c474a6a13fd0a8486116e9f92ad6a271b6d24214259aef2d2167fa632cde  ./core/src/test/kotlin/app/memo/android/data/AgentRunContinuationPolicyTest.kt
 93372a6fb08acbc6c504d58f8d7f3b3e8a0d20331ca453d2a9370157a90a21b2  ./docs/checkpoints/2026-11-25-talk-recovery-core.md
