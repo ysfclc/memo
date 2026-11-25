@@ -36,6 +36,7 @@ REQUIRED = [
     "app/src/main/java/app/memo/android/data/EncryptedVault.kt",
     "app/src/main/java/com/synthos/runtime/data/SynthStore.java",
     "app/src/androidTest/java/app/memo/android/data/EncryptedStoreUpgradeTest.kt",
+    "app/src/androidTest/java/app/memo/android/ui/LiveContinuationUiTest.kt",
     "app/src/main/java/app/memo/android/runtime/MemoRuntimeBridge.java",
     "app/src/main/java/com/synthos/runtime/engine/AutomationAccessibilityService.java",
     "remote-runner/server.py",
@@ -461,6 +462,18 @@ for task in (":core:test", ":app:testDebugUnitTest", ":app:lintDebug", ":app:lin
         fail(f"GitHub workflow missing Android gate: {task}")
 if any(alternate in workflow for alternate in ("Memo-Android-source.zip", "Memo-Android-Download-Fresh.zip")):
     fail("GitHub workflow must not fall back to an alternate/stale ZIP")
+continuation_ui_test = (ROOT / "app/src/androidTest/java/app/memo/android/ui/LiveContinuationUiTest.kt").read_text()
+for marker in (
+    "eligibleInterruptedRunShowsActionAndPassesExactParentToCallback",
+    "uncertainCapabilityOutcomeNeverShowsContinuationAction",
+    "onNodeWithText(\"Continue in Talk\").assertExists().performClick()",
+    "onNodeWithText(\"Continue in Talk\").assertDoesNotExist()",
+    "continuedConversationId"
+):
+    if marker not in continuation_ui_test:
+        fail(f"Live continuation Compose regression coverage is missing: {marker}")
+if "androidTestImplementation 'androidx.compose.ui:ui-test-junit4'" not in app_gradle:
+    fail("Live continuation Compose UI test dependency is missing")
 if "testBuildType 'release'" not in app_gradle:
     fail("encrypted-store install-upgrade instrumentation must target the normal release package")
 for marker in ("app/build/outputs/apk/release/app-release.apk", "app/build/outputs/apk/androidTest/release/app-release-androidTest.apk", "Memo-Android-release.apk", "app.memo.android"):
