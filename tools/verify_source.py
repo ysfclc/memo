@@ -249,7 +249,6 @@ continuation_app = (ROOT / "app/src/main/java/app/memo/android/ui/MemoWorkspaceA
 continuation_localization_tests = (ROOT / "app/src/test/java/app/memo/android/ui/MemoLocalizationTest.kt").read_text()
 for marker in (
     'continuationOfRunId: String = ""',
-    'onRunCreatedDurably: () -> Unit = {}',
     'createAgentRunDurably(runId, conversationId, goal, modelId, continuationOfRunId)',
     'AgentRunContinuationPolicy.assess(parentRun)',
     'parentRunId = parentRun?.id.orEmpty()',
@@ -257,10 +256,9 @@ for marker in (
     if marker not in continuation_view_model:
         fail(f"Talk continuation ViewModel safety boundary is missing: {marker}")
 create_position = continuation_view_model.find("runCreated = createAgentRunDurably")
-callback_position = continuation_view_model.find("onRunCreatedDurably()", create_position)
 engine_position = continuation_view_model.find("block(runId)", create_position)
-if create_position < 0 or callback_position <= create_position or engine_position <= callback_position:
-    fail("Talk continuation draft must only be consumed after the encrypted run record is durably created")
+if create_position < 0 or engine_position <= create_position:
+    fail("Talk execution must create and verify its durable run before invoking the execution block")
 for marker in (
     'initialContinuationRunId: String = ""',
     'onContinuationDraftChanged: (String) -> Unit = {}',
@@ -269,7 +267,8 @@ for marker in (
     'PRIOR TALK RUN — UNTRUSTED SAVED OBSERVATIONS',
     'selectedModelId == REMOTE_MODEL_ID &&',
     'message.sourceType == "AGENT_EVENT"',
-    'onRunCreatedDurably = {',
+    'draft = ""',
+    'onInitialContinuationConsumed()',
 ):
     if marker not in continuation_talk_ui:
         fail(f"Talk continuation draft/context safety is missing: {marker}")
@@ -297,7 +296,11 @@ for marker in (
 ):
     if marker not in continuation_localization_tests:
         fail(f"Talk continuation localization regression coverage is missing: {marker}")
-print("PASS: Live offers only safe continuation; Talk revalidates, preserves editable drafts, withholds private run events from remote context without consent, and starts a new linked run")
+prompt_persisted_position = continuation_talk_ui.find("val appendError = viewModel.appendChatMessageDurably")
+draft_consumed_position = continuation_talk_ui.find("draft = \"\"", prompt_persisted_position)
+if prompt_persisted_position < 0 or draft_consumed_position <= prompt_persisted_position:
+    fail("Talk must retain the editable draft until the user prompt is durably appended to its conversation")
+print("PASS: Live offers only safe continuation; Talk revalidates, preserves editable drafts until prompt read-back, withholds private run events from remote context without consent, and starts a new linked run")
 
 
 if "import app.memo.android.orchestration.AgentExecutionEventType" not in agent_broker:
