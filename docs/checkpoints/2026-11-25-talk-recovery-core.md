@@ -14,7 +14,7 @@ Establish a deterministic, fail-closed eligibility boundary and durable lineage 
 - `AGENTS.md`, `DEVELOPMENT_GOVERNANCE.md`, `docs/AI_EXECUTION_INVARIANTS.md`, `docs/MEMO_PRODUCT_CONTRACT.md`, `docs/DECISION_LOG.md`, `docs/UI_REGRESSION_CONTRACT.md`
 - `TASKS.md`, `docs/REQUIREMENT_TRACEABILITY.md`, `docs/checkpoints/2026-11-22-release-baseline-audit.md`
 - `AgentRunRecord`, `AppSnapshot` serialization/size accounting, `AgentRunRecord.applyEvent`, Talk ViewModel durable run writer, Live run summary and Talk request assembly.
-- PR #22 was not merged because it is based on an older mainline (28 commits ahead, 4 behind) and contains a weaker continuation policy. Its relevant UI intent was ported selectively onto this branch; the PR remains open until the integrated flow passes exact-head CI, then can be closed as superseded.
+- PR #22 was not merged because it was based on an older mainline (28 commits ahead, 4 behind) and contained a weaker continuation policy. Its relevant UI/ViewModel work was ported selectively onto PR #25, which passed integrated code-bearing CI #1213. PR #22 was then closed as superseded; no code from that branch was merged.
 
 ## Implemented in this increment
 - Added pure `AgentRunContinuationPolicy` in the core module.
