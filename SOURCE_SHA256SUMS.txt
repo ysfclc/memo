@@ -2,20 +2,20 @@ d7e13280de3d7b2d47cd2a719bea6205dfc7cf2b7c2b902c576529f6a75cae3f  ./.circleci/co
 11bc7e82e45d3189c9c9800ebde8b647bd1380084cfbcce37a27442d44755a0b  ./.github/workflows/build-apk.yml
 35d51b623486a63a825aeffa712fe00e73c069ff4db4cb783affe14783203641  ./.gitignore
 9e90374820273fbe8dae31941a1f964ca83fd5584fd9e7a1196fdef06d95a782  ./AGENTS.md
-12661fa37f913aea1cf33ee10bccf9597b3908f7caea4c70edad989f5c764261  ./BUILD_STATUS.md
+f12b38cf293a947fde8641083cedd3c28f146a25ce6249834998a1884a64a56c  ./BUILD_STATUS.md
 1e587651d6846f4bfdb910e3f8f499766786b7d3ab64f6b033725a45a04a8276  ./CHANGELOG.md
 2aee5ab8aa8c837fab1d8597ae6d13bc61d2dffb0ac2ad8a969c397a8aace1f3  ./DEVELOPMENT_GOVERNANCE.md
 1702a902afb0a7f960d473ce3bacc1835c5745bb15e0c7ed04773f207fa1f3b4  ./DEVICE_ACCEPTANCE_CHECKLIST.md
 07e582e71b1c406ebcdd65bfb4012bc872453c9a55d2a6fc6cde9856a46d0aa3  ./FEATURE_AUDIT.md
 7146bcef873c466e24f1e007c757a9a0921f121db2b4f3e30daae9b0c6c529e6  ./IMPLEMENTATION_CONTRACT.md
-e431b1fbc8a2203e933fb85a3a269e8365d9b050207e2f3aa49d68f58b0ec6a9  ./IMPLEMENTATION_LOG.md
+6700e87d3b08a9a7d87fcab02b672a279dccfc53d30b2d96dd65af09bd16961e  ./IMPLEMENTATION_LOG.md
 413fe1482fb424a3676febd4acedabb3c671e9bc45a034abdf899ac097eb45f0  ./MEMO-PATCH1-AUDIT.md
 918ac512072584dabb677b559a0e54f353b42c94d0e1607e07e9abeef8e8937f  ./MEMO2_ALIGNMENT_MATRIX.md
 c5eccbd00133c9d67e1c0ebb0fb090bf74876f35c24b5c79629ca13529cac261  ./PRODUCT_GAP_REGISTRY.md
 0f9b2724048c4d02b51ed5f4928bd8fc9c9bde2646591f5770cfdf21e0dfd077  ./README.md
 ce2bcd53a712bd22e83da53d4a3961e3af299d3ee715e51f91898db29fa779c6  ./REMOTE_RUNNER_SETUP.md
 0064532b2fbd3dcf6a58fadde86e6787e421abc6751b13c3acd059b9731ca049  ./ROADMAP.md
-32bb413f3caaaf7692be71501a8a59cd2419b7f3ec5479feba93c0dd4e8b4b5f  ./TASKS.md
+4ed3997d4b15afb1d8473d4033d662246ca7e708a69a5fea7bb8491d7e76fd1f  ./TASKS.md
 e4a585bc6bee854924de2e1a0d2c223e53598c943999c3b0306a33bf025ca134  ./app/build.gradle
 cf9961550854acab5317b4efa543fb1657e49e39b5de3f4a363565f85e2f704a  ./app/proguard-rules.pro
 97b317ecef3a48b16a90786ca24cfaba247ade229fe3ef99c5a66fffdbceca16  ./app/src/androidTest/java/app/memo/android/data/EncryptedStoreUpgradeTest.kt
@@ -27,8 +27,8 @@ a330e300b15c7d2166d057836ebe2bee26cedfdaea45f30fb33a186bd75cad1f  ./app/src/main
 22c9f3b3fcb065ea21f130ef2a1e26de990fdc7750f9e7b85dfa44dac27f8898  ./app/src/main/java/app/memo/android/ai/ModelCatalog.kt
 8c97925163148116d0965ee8dc65ae7d8478bdcb8659088b5c7846299d3875d4  ./app/src/main/java/app/memo/android/ai/OpenAiCompatibleClient.kt
 703fa8fc92ba4e5b924cc9ccfa87ad24e57cf92f957242e0d48fd0cf96c18447  ./app/src/main/java/app/memo/android/ai/ProviderSettingsStore.kt
-6beb3d1f489b4329c66ebd0eb0adc3d01c6d24c0549ae66b59eaa9faa76359ed  ./app/src/main/java/app/memo/android/browser/BrowserScripts.kt
-8336e117f49eb4401ec879776af084614e1b83741c233b9dd68154a295dd7a05  ./app/src/main/java/app/memo/android/browser/BrowserSession.kt
+ec8439171caf5ca4666715ee5861925c0d4fe7ba09ff3641c49492d1c14abcee  ./app/src/main/java/app/memo/android/browser/BrowserScripts.kt
+dc09d57a5ef35f0678c788f4a057ca2e58da82a2731f0dba19f6e895c6d582d3  ./app/src/main/java/app/memo/android/browser/BrowserSession.kt
 1cfc5334fc1c4da3afe944e915b2370b1f8ec65c7496ef5dd1f2cbf98b50cd33  ./app/src/main/java/app/memo/android/browser/BrowserWorkflow.kt
 3e6b51759f9929c47d39a109898bc7554bb0f721206683a93b5373a0d61c7795  ./app/src/main/java/app/memo/android/data/EncryptedVault.kt
 c3a4f71aaaa94a6e63836baf2aa3501993548dcce689a5abaa7ff67cc9184490  ./app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt
@@ -74,6 +74,7 @@ e4926a3e06cfe3df0f92d657d0b193d12c75856dcc1192d731bb0ee344d36ff7  ./app/src/main
 5ad57e493e75dc52057329d72cfb3c00c0e03e9a2c380c8ba3671d4fdd25cd99  ./app/src/main/res/xml/data_extraction_rules.xml
 34e605e53c6619a0a97bc82288e8fbf8962a568a92ffaa55f75529f40751b220  ./app/src/test/java/app/memo/android/ai/MemoWorkspaceAgentToolsTest.kt
 906f413fbbd6bb47a36c7c71565c1f43f3e90662d32c37a67854871dc0d0c495  ./app/src/test/java/app/memo/android/ai/ModelCatalogTest.kt
+e284410e3432e3897bd3185abf06cc9f12e2dfc2ec8627782f0c7723aedd7309  ./app/src/test/java/app/memo/android/browser/BrowserPromptSubmissionSafetyTest.kt
 b8356e5805b218704a74d664343346ac8867637840cc698cfdb20dc4a1d12805  ./app/src/test/java/app/memo/android/browser/BrowserWorkflowPromptsTest.kt
 9caecf5d733df6d6c2a90a4d68c29db9855dff0e4c79467fd1cc5a945b5f8b70  ./app/src/test/java/app/memo/android/ui/LiveAgentRunTimelineTest.kt
 91b9dafba2f4d14c8d1d907377014030682800f35e652d6ab9c35ba8a5daee06  ./app/src/test/java/app/memo/android/ui/MemoLocalizationTest.kt
@@ -126,7 +127,7 @@ f9040f47a7b0ab3ea12bc60f3bb9d4fdd4332abdddee180d28ff29e3b59f220b  ./core/src/tes
 2fbf52b43340ee048a52ed984af7ac6908f9d1bffe0fbfcfec2c8965fe2e0654  ./core/src/test/kotlin/app/memo/android/orchestration/WorkflowTaskProposalParserTest.kt
 3916c997aacb1ebafc39ff949b63ca828ee9b4ba5a61040db898c5000ea931e5  ./core/src/test/kotlin/app/memo/android/runtime/BrowserUrlPolicyTest.kt
 1d89d8383151c48835bd651ca891f692a293b92aaf9d96be96ada13d8e9f7fbe  ./core/src/test/kotlin/app/memo/android/runtime/RuntimeRegistryTest.kt
-f5edbe9b017931b5ea7d58915a7daf16c9ffc83aa201e4dde5f899e01fc9e90e  ./docs/AI_EXECUTION_INVARIANTS.md
+93ba55a545d80eaacbd4cce609854939e6fef274d0aafd062eb36f9fec151d76  ./docs/AI_EXECUTION_INVARIANTS.md
 188c29c98f189c6528fc8c4da23902cfce9039cff5f38e318e8027a63e847fcd  ./docs/DECISION_LOG.md
 06569ff9cf5dc9b41f2ffe62120db26a39a39909ef696bb06ce51963ef4ed036  ./docs/MEMO_PRODUCT_CONTRACT.md
 d52a00ccc75bae0c7c9f309bd08c47a9ddd807b2044b8f4e87e161c92775048a  ./docs/REQUIREMENT_TRACEABILITY.md
@@ -254,4 +255,4 @@ d82dc17d418f2ce0b7f3b68b7304901400290e60aa3de8515fbfa8f2f617492d  ./gradle.prope
 a1453a88e5bc19e7b20a521b56d36acbaec90fc742b79fb49fca11b7ddda73af  ./remote-runner/tests/test_runner.py
 19280c23fb304e503d1037eb423b17d0a14dd2a6fbb3e916574f4c5be17dfebf  ./settings.gradle
 ee9dad7e7bd2a85426759245581af3dabf763d3443038c9b5a959cd3767bba47  ./tools/ci/circleci-android.sh
-fe31f83eb708fbda9de67370ac37ac3a46ebcdf8a3f67dac18febd90936ea233  ./tools/verify_source.py
+bc2c0fd4115d165f9b89cadce30a85cce6472e5e09da0c1738c03580410bdf1c  ./tools/verify_source.py
