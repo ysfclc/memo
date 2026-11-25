@@ -600,3 +600,14 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - **Compatibility:** no encrypted workspace schema, backup schema, package ID, signing key, approval-ledger format or persisted user data changes.
 - **Verification state:** source edits are on memo/mission-1-safe-browser-submission; exact-head GitHub Actions unit tests, lint, source verification and emulator upgrade checks are pending. Physical-device acceptance remains pending. Do not mark this slice complete until CI is green and the actual phone flow is checked.
 - **Remaining boundary:** this hardens the existing approved browser prompt path only. It does not claim general browser controls, forms, uploads, native-app actions or universal workflow execution.
+
+### 2026-11-25 — M3.RECOVERY-S1 — Fail-closed continuation eligibility and durable lineage
+
+- **Requirement:** MEMO-RECOVERY-001, supporting MEMO-ORCH-001 and MEMO-AGENT-001.
+- **Change:** added a pure core policy that permits continuation only for NEEDS_REVIEW runs with a valid conversation/goal, no pending approval reference, consistent capability counters, and no capability invocation without verified completion.
+- **Durability:** added optional parentRunId lineage to AgentRunRecord and the existing schema-7 encrypted workspace snapshot. The field is included in backup validation, size estimation, JSON serialization and deserialization. Schema version remains 7; older schema-7 backups without the optional field import with an empty parent ID.
+- **Safety:** eligibility is not authorization. Prior tool-call IDs, idempotency keys and approvals are never reused. A new run must be created only after the ViewModel rechecks the parent record. No automatic replay is introduced.
+- **Tests added:** AgentRunContinuationPolicyTest covers allowed/blocked states, uncertain invocations, approval references and invalid counters. WorkspaceSchemaV3Test covers lineage round-trip, old schema-7 import and self-parent rejection.
+- **Verification:** exact-head CI pending; no local Gradle/Android SDK checkout or physical-device test was available in this session. No APK is claimed.
+- **Status:** [~] core policy and persistence slice implemented in source; ViewModel/UI continuation and exact-head/device acceptance remain open.
+
