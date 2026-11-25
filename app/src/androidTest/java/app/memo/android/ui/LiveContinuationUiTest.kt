@@ -2,9 +2,12 @@ package app.memo.android.ui
 
 import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.assertExists
+import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.memo.android.browser.BrowserWorkflowUiState
 import app.memo.android.data.AgentRunRecord
@@ -50,6 +53,7 @@ class LiveContinuationUiTest {
             }
         }
 
+        composeRule.onNode(hasScrollAction()).performScrollToNode(hasText("Continue in Talk"))
         composeRule.onNodeWithText("Continue in Talk").assertExists().performClick()
         composeRule.runOnIdle {
             assertEquals("parent-run", continuedRunId)
@@ -85,6 +89,7 @@ class LiveContinuationUiTest {
             }
         }
 
+        composeRule.onNode(hasScrollAction()).performScrollToNode(hasText("Inspect an uncertain operation"))
         composeRule.onNodeWithText("Continue in Talk").assertDoesNotExist()
         composeRule.onNodeWithText(
             "A capability may have started without a verified completion. Inspect its destination before continuing."
