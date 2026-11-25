@@ -555,6 +555,15 @@ for marker in (
 if "fun verifyPromptSubmission" not in browser_scripts:
     fail("The browser prompt submission verifier is missing")
 browser_prompt_safety_tests = (ROOT / "app/src/test/java/app/memo/android/browser/BrowserPromptSubmissionSafetyTest.kt").read_text()
+browser_execution_invariants = (ROOT / "docs/AI_EXECUTION_INVARIANTS.md").read_text()
+for marker in (
+    "**Exact browser prompt submission.**",
+    "must never replace a non-empty composer",
+    "newly observed user-authored message",
+    "stop at `NEEDS_REVIEW`",
+):
+    if marker not in browser_execution_invariants:
+        fail(f"Browser exact-submission architecture invariant is missing: {marker}")
 for marker in (
     "existing.length>0 && existing!==normalize(prompt)",
     "value() !== wanted",
