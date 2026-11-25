@@ -15,7 +15,7 @@ c5eccbd00133c9d67e1c0ebb0fb090bf74876f35c24b5c79629ca13529cac261  ./PRODUCT_GAP_
 0f9b2724048c4d02b51ed5f4928bd8fc9c9bde2646591f5770cfdf21e0dfd077  ./README.md
 ce2bcd53a712bd22e83da53d4a3961e3af299d3ee715e51f91898db29fa779c6  ./REMOTE_RUNNER_SETUP.md
 0064532b2fbd3dcf6a58fadde86e6787e421abc6751b13c3acd059b9731ca049  ./ROADMAP.md
-04ae12b1a673651d1439f7dd53a1c49e5f95efad1b2fca6000a6975213a0e4b7  ./TASKS.md
+5c8a54f39116665f72768577dd9257abca15f3a9f32ecc0aab1cb653552c1a08  ./TASKS.md
 e4a585bc6bee854924de2e1a0d2c223e53598c943999c3b0306a33bf025ca134  ./app/build.gradle
 cf9961550854acab5317b4efa543fb1657e49e39b5de3f4a363565f85e2f704a  ./app/proguard-rules.pro
 97b317ecef3a48b16a90786ca24cfaba247ade229fe3ef99c5a66fffdbceca16  ./app/src/androidTest/java/app/memo/android/data/EncryptedStoreUpgradeTest.kt
@@ -255,7 +255,7 @@ d82dc17d418f2ce0b7f3b68b7304901400290e60aa3de8515fbfa8f2f617492d  ./gradle.prope
 a1453a88e5bc19e7b20a521b56d36acbaec90fc742b79fb49fca11b7ddda73af  ./remote-runner/tests/test_runner.py
 19280c23fb304e503d1037eb423b17d0a14dd2a6fbb3e916574f4c5be17dfebf  ./settings.gradle
 ee9dad7e7bd2a85426759245581af3dabf763d3443038c9b5a959cd3767bba47  ./tools/ci/circleci-android.sh
-ad8916f74e0406b6f041e6e3caedbd3b2dc82032b1fbc675253a9df9c82f6aac  ./tools/verify_source.py
+dd40ab6ff754a157741cdecd72cba0d396264be0fb5a0f604701022354829f1c  ./tools/verify_source.py
 259b0b2d91d3bad80ab020d3248b5574cbad6cf891d95bab7843f07f19cb21f2  ./core/src/main/kotlin/app/memo/android/data/AgentRunContinuationPolicy.kt
 4361c474a6a13fd0a8486116e9f92ad6a271b6d24214259aef2d2167fa632cde  ./core/src/test/kotlin/app/memo/android/data/AgentRunContinuationPolicyTest.kt
-82cc048ac38244077efb930a53f1637d1f978af200be2aaaeeed6025d741761c  ./docs/checkpoints/2026-11-25-talk-recovery-core.md
+73b444c445567c9f56a8452383f0c29ca2f63a192539c2226ae3655e8d8d201a  ./docs/checkpoints/2026-11-25-talk-recovery-core.md
