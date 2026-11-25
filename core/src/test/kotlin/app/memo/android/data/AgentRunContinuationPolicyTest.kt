@@ -74,6 +74,47 @@ class AgentRunContinuationPolicyTest {
         assertFalse(AgentRunContinuationPolicy.assess(run(goal = " ")).allowed)
     }
 
+    @Test fun resolvesParentOnlyWithinTheOriginalConversation() {
+        val parent = run()
+        val resolution = AgentRunContinuationPolicy.resolveParent(
+            parentRunId = parent.id,
+            conversationId = parent.conversationId,
+            runs = listOf(parent)
+        )
+        assertTrue(resolution.assessment.allowed)
+        assertTrue(resolution.parentRun === parent)
+    }
+
+    @Test fun rejectsMissingOrCrossConversationParent() {
+        val parent = run()
+        val missing = AgentRunContinuationPolicy.resolveParent(
+            parentRunId = "missing-run",
+            conversationId = parent.conversationId,
+            runs = listOf(parent)
+        )
+        assertFalse(missing.assessment.allowed)
+        assertTrue(missing.parentRun == null)
+
+        val wrongConversation = AgentRunContinuationPolicy.resolveParent(
+            parentRunId = parent.id,
+            conversationId = "another-conversation",
+            runs = listOf(parent)
+        )
+        assertFalse(wrongConversation.assessment.allowed)
+        assertTrue(wrongConversation.parentRun == null)
+    }
+
+    @Test fun resolvedParentStillUsesTheFailClosedEligibilityPolicy() {
+        val parent = run(lastEventType = "TOOL_STARTED", toolCalls = 1, successfulToolCalls = 0)
+        val resolution = AgentRunContinuationPolicy.resolveParent(
+            parentRunId = parent.id,
+            conversationId = parent.conversationId,
+            runs = listOf(parent)
+        )
+        assertFalse(resolution.assessment.allowed)
+        assertTrue(resolution.parentRun === parent)
+    }
+
     @Test fun rejectsInconsistentCapabilityCounters() {
         assertFalse(AgentRunContinuationPolicy.assess(run(toolCalls = -1)).allowed)
         assertFalse(AgentRunContinuationPolicy.assess(run(toolCalls = 1, successfulToolCalls = 2)).allowed)
