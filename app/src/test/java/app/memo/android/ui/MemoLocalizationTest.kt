@@ -144,6 +144,12 @@ class MemoLocalizationTest {
         ).contains("Devam etmeden önce hedefi incele"))
         assertEquals("Kontynuuje poprzednie wykonanie", MemoLocalization.translate("Continues prior run", "PL"))
         assertEquals("Önceki çalışmanın devamı", MemoLocalization.translate("Continues prior run", "TR"))
+        assertTrue(MemoLocalization.translate(
+            "The saved run changed or is no longer eligible. Review it in Live before trying again.", "PL"
+        ).contains("Sprawdź je w Live"))
+        assertTrue(MemoLocalization.translate(
+            "The saved run changed or is no longer eligible. Review it in Live before trying again.", "TR"
+        ).contains("Live alanında incele"))
     }
 
     @Test
