@@ -15,7 +15,7 @@ c5eccbd00133c9d67e1c0ebb0fb090bf74876f35c24b5c79629ca13529cac261  ./PRODUCT_GAP_
 0f9b2724048c4d02b51ed5f4928bd8fc9c9bde2646591f5770cfdf21e0dfd077  ./README.md
 ce2bcd53a712bd22e83da53d4a3961e3af299d3ee715e51f91898db29fa779c6  ./REMOTE_RUNNER_SETUP.md
 0064532b2fbd3dcf6a58fadde86e6787e421abc6751b13c3acd059b9731ca049  ./ROADMAP.md
-4ed3997d4b15afb1d8473d4033d662246ca7e708a69a5fea7bb8491d7e76fd1f  ./TASKS.md
+3f19a84567619f4c64c772f5e13002a93cd8787fe3d4e208b9226c44103771e6  ./TASKS.md
 e4a585bc6bee854924de2e1a0d2c223e53598c943999c3b0306a33bf025ca134  ./app/build.gradle
 cf9961550854acab5317b4efa543fb1657e49e39b5de3f4a363565f85e2f704a  ./app/proguard-rules.pro
 97b317ecef3a48b16a90786ca24cfaba247ade229fe3ef99c5a66fffdbceca16  ./app/src/androidTest/java/app/memo/android/data/EncryptedStoreUpgradeTest.kt
@@ -89,7 +89,7 @@ ff0fd84c7c2854420f9d0744a68ff223b96ff28f5bf08a6ee004cdd176064784  ./core/src/mai
 68f92f98b3b26405168c5c0fffb5a9ec42181c95b5ff721e30990c554bf7e87f  ./core/src/main/kotlin/app/memo/android/data/EncryptedBackupCodec.kt
 a06ef4b47be8e47c47779ae161f12b57adc927ee50bef825723a6eb34753b181  ./core/src/main/kotlin/app/memo/android/data/EntityEditPolicy.kt
 a4ec2c564a19f2fa2c56f613460e659dad8c638ab85910de265f97cec850aecb  ./core/src/main/kotlin/app/memo/android/data/FollowUpTaskFactory.kt
-c5c4c7d4095bd6a2f08bff572dfbf25b853361b9ba2cc22b47f82564b6670d14  ./core/src/main/kotlin/app/memo/android/data/Models.kt
+30f59b524e71285acbf3f1032c602498322ca988db147a1091be732ce79691e4  ./core/src/main/kotlin/app/memo/android/data/Models.kt
 fd700964cc04f59ff2b6e363a7da42423cc31f827a7340642bf1a80854ab298d  ./core/src/main/kotlin/app/memo/android/data/OutcomeParser.kt
 6a17b4b38c3ab57453f446c82748cc8439b40641eb3ac754d5ab99d990f72503  ./core/src/main/kotlin/app/memo/android/data/SalesAccountResearch.kt
 5926140d2db960a68774c696841262c6f54d1340b243d9c1d68df8d8642711e2  ./core/src/main/kotlin/app/memo/android/data/SelfModelFactualityGuard.kt
@@ -118,7 +118,7 @@ a3cdf0d39f49d50767062bae0b1e6360346c78d5c32ea033fbb8411a98d34d1f  ./core/src/tes
 e269d6b46b92c2f78f9cbdc7d7329f0442b442e3ce9d5b6a8d7f58ab6f14a6f9  ./core/src/test/kotlin/app/memo/android/data/SelfModelFactualityGuardTest.kt
 59cafe26bad1eea6328d8676279a1d146f6461d52d77c03f5e1e6bdc5bec2393  ./core/src/test/kotlin/app/memo/android/data/StudioArtifactPolicyTest.kt
 4c22ffefc9820b6422c337a5cb4e673f0a1fe0b44072065b4bc8c91c7590d0dc  ./core/src/test/kotlin/app/memo/android/data/TodayPriorityTest.kt
-697587f59c6bb541ff67f63b0bd894b13c437517d9c175c44985ea17735f42a0  ./core/src/test/kotlin/app/memo/android/data/WorkspaceSchemaV3Test.kt
+d6c55c78d3b6a1e7f36d59afb9ed8032f67561852ebcdaa50348db7e6bdfc04b  ./core/src/test/kotlin/app/memo/android/data/WorkspaceSchemaV3Test.kt
 13e28b98b5f565daa29b52a14cd557cea01dd31879d1b0a07f74e1f759e8c8ac  ./core/src/test/kotlin/app/memo/android/orchestration/AgentCapabilityRegistryTest.kt
 a844af0a81f2cf29471d8f80dd420537abc2b76487faf1d47edab647ce6d21d8  ./core/src/test/kotlin/app/memo/android/orchestration/AgentExecutionEngineTest.kt
 1918783ca3fa284c2ff06aaad215b05b72051901f754e5724604e81309d68ed2  ./core/src/test/kotlin/app/memo/android/orchestration/CapabilityCompilerTest.kt
@@ -130,7 +130,7 @@ f9040f47a7b0ab3ea12bc60f3bb9d4fdd4332abdddee180d28ff29e3b59f220b  ./core/src/tes
 93ba55a545d80eaacbd4cce609854939e6fef274d0aafd062eb36f9fec151d76  ./docs/AI_EXECUTION_INVARIANTS.md
 188c29c98f189c6528fc8c4da23902cfce9039cff5f38e318e8027a63e847fcd  ./docs/DECISION_LOG.md
 06569ff9cf5dc9b41f2ffe62120db26a39a39909ef696bb06ce51963ef4ed036  ./docs/MEMO_PRODUCT_CONTRACT.md
-d52a00ccc75bae0c7c9f309bd08c47a9ddd807b2044b8f4e87e161c92775048a  ./docs/REQUIREMENT_TRACEABILITY.md
+f6dd9bad7ab2c160185b967a16c2d90bd8901e23f8b70475173cff5a8e2af79b  ./docs/REQUIREMENT_TRACEABILITY.md
 60bb630d1d43817d171e9606299de2789ddaeef9aafa507d52242c9a3090c286  ./docs/SESSION_CHECKPOINT_2026-11-20_AGENT_EXECUTION_CONSTRAINTS.md
 188fb6580a2e073d8d63f5261ed5712bd4420295c696004b9d0befc29825adfc  ./docs/SESSION_CHECKPOINT_TEMPLATE.md
 0ccc9aeb3dc6e3c2d1446cab30c257acfaeddcf2a32a4d29461e3cf711826cd3  ./docs/SOCIAL_PLATFORM_PRODUCT_SPEC.md
@@ -256,3 +256,6 @@ a1453a88e5bc19e7b20a521b56d36acbaec90fc742b79fb49fca11b7ddda73af  ./remote-runne
 19280c23fb304e503d1037eb423b17d0a14dd2a6fbb3e916574f4c5be17dfebf  ./settings.gradle
 ee9dad7e7bd2a85426759245581af3dabf763d3443038c9b5a959cd3767bba47  ./tools/ci/circleci-android.sh
 bc2c0fd4115d165f9b89cadce30a85cce6472e5e09da0c1738c03580410bdf1c  ./tools/verify_source.py
+259b0b2d91d3bad80ab020d3248b5574cbad6cf891d95bab7843f07f19cb21f2  ./core/src/main/kotlin/app/memo/android/data/AgentRunContinuationPolicy.kt
+4361c474a6a13fd0a8486116e9f92ad6a271b6d24214259aef2d2167fa632cde  ./core/src/test/kotlin/app/memo/android/data/AgentRunContinuationPolicyTest.kt
+784e2cfbfd702ab40f751c9caa58e8f97a4c2ab25085481cd6ec727dd5a9124f  ./docs/checkpoints/2026-11-25-talk-recovery-core.md
