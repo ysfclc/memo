@@ -737,7 +737,7 @@ jobs:
             local output="$RUNNER_TEMP/Memo-store-$phase.txt"
             echo "Running encrypted-store acceptance phase: $phase"
             adb shell am instrument -w -e phase "$phase" "$TEST_RUNNER" 2>&1 | tee "$output" | tee -a "$MEMO_BUILD_LOG"
-            if ! grep -Eq 'OK \\([1-9][0-9]* tests?\\)' "$output"; then
+            if ! grep -Eq 'OK \([1-9][0-9]* tests?\)' "$output"; then
               echo "::error::Encrypted-store instrumentation phase '$phase' did not report one passing test."
               cat "$output"
               exit 1
