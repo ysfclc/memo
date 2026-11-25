@@ -121,7 +121,6 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         goal: String,
         modelId: String,
         continuationOfRunId: String = "",
-        onRunCreatedDurably: () -> Unit = {},
         block: suspend (String) -> Unit
     ): Boolean {
         if (conversationId.isBlank() || !_vaultReady.value || agentExecutionJob?.isActive == true) return false
@@ -136,7 +135,6 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             try {
                 runCreated = createAgentRunDurably(runId, conversationId, goal, modelId, continuationOfRunId)
                 if (!runCreated) return@launch
-                onRunCreatedDurably()
                 block(runId)
             } catch (cancelled: CancellationException) {
                 throw cancelled
