@@ -472,6 +472,8 @@ for marker in (
 ):
     if marker not in continuation_ui_test:
         fail(f"Live continuation Compose regression coverage is missing: {marker}")
+if "OK \\([1-9][0-9]* tests?\\)" not in workflow:
+    fail("Android instrumentation gate must accept any positive test count")
 if "androidTestImplementation 'androidx.compose.ui:ui-test-junit4'" not in app_gradle:
     fail("Live continuation Compose UI test dependency is missing")
 if "testBuildType 'release'" not in app_gradle:
