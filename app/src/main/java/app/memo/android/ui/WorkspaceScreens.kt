@@ -742,13 +742,6 @@ fun ChatsWorkspaceScreen(
                                     goal = userText,
                                     modelId = selectedModelId,
                                     continuationOfRunId = initialContinuationRunId,
-                                    onRunCreatedDurably = {
-                                        draft = ""
-                                        if (initialContinuationRunId.isNotBlank()) {
-                                            onInitialContinuationConsumed()
-                                            onInitialPromptConsumed()
-                                        }
-                                    }
                                 ) { runId ->
                                     try {
                                         val appendError = viewModel.appendChatMessageDurably(
@@ -759,6 +752,11 @@ fun ChatsWorkspaceScreen(
                                         if (appendError != null) {
                                             onShowMessage(appendError)
                                             return@launchAgentExecution
+                                        }
+                                        draft = ""
+                                        if (initialContinuationRunId.isNotBlank()) {
+                                            onInitialContinuationConsumed()
+                                            onInitialPromptConsumed()
                                         }
                                         val durableConversation = viewModel.snapshot.value.conversations.firstOrNull {
                                             it.id == selectedConversation.id
