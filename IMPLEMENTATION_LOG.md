@@ -313,7 +313,7 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 
 - **Starting point:** main b979d103432f710d6d67bf91abcfbc0dfd5c9063; branch memo/mission-1-safe-browser-submission.
 - **Observed defect:** prompt preparation could replace a non-empty composer draft; send accepted substring matches; verification could accept an unrelated new user message or page-wide prompt prefix.
-- **Correction:** preserve any different non-empty composer draft; require exact normalized composer equality before Send; verify a new exact user-authored message and an empty visible composer. Unknown provider DOM structures stop for review.
+- **Correction:** preserve any different non-empty composer draft; require exact normalized composer equality before Send; verify a new exact user-authored message and an empty visible composer. Unknown provider DOM structures stop for review. The Talk adapter surfaces the page script's concrete failure explanation so draft preservation is visible to the user.
 - **Tests and contracts:** added BrowserPromptSubmissionSafetyTest, source-verifier guards and the exact-submission rule to docs/AI_EXECUTION_INVARIANTS.md.
 - **Data/signing compatibility:** no persistent schema, encryption, package identity, signing or user-data changes.
 - **Validation:** PR #24 exact-head Actions run #1185 is pending; earlier superseded runs are not acceptance evidence. Physical-device verification is still required.
