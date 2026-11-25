@@ -37,12 +37,14 @@ Establish a deterministic, fail-closed eligibility boundary and durable lineage 
 - Source changes are committed to this branch.
 - Core-only exact-head CI run #1196 on `83e1443c983258ba0c67615a4d8eb4030d8afe5` passed 151 core tests, 37 Android unit tests, source invariants, remote-runner tests, debug/release lint and APK identity/signature checks.
 - Emulator install-over-existing passed: both encrypted stores survived the release-package upgrade and instrumentation recovery/corruption checks passed.
-- The integrated ViewModel/Live/Talk UI changes were committed after #1196 and await a fresh exact-head CI run.
-- Lint reports 59 warnings and 5 hints in existing untouched files; coverage comparison and dependency vulnerability scanning are not available in this run.
+- Integrated exact-head CI run #1213 on `16a079d17da9d5275e27a7cc71756275a9c00e65` passed: 151 core tests, 38 Android unit tests, source verifier, remote-runner tests, debug/release lint, debug/release APK assembly and APK identity/signature checks.
+- Emulator install-over-existing passed; both encrypted stores survived the release-package upgrade and both instrumentation acceptance phases returned `OK (1 test)`.
+- Lint remained at the same 59 warnings and 5 hints as core-only baseline #1196; no new warnings were introduced by the continuation integration.
+- Coverage comparison and dependency vulnerability scanning remain unverified; GitHub dependency graph was disabled in this CI environment.
 - Physical-device acceptance: not run. Pull-request CI did not publish an APK/AAB.
 
 ## Rollback
 Revert this branch's commits. The new field is additive and optional; older schema-7 backups without `parentRunId` continue to import as independent runs. No existing app data is rewritten by this source change until the app writes a new snapshot.
 
 ## Next step
-Run exact-head CI for the integrated ViewModel/Live/Talk continuation flow. If green, perform physical-device continuation and install-update acceptance. Keep the feature unreleased until device acceptance and the remaining security/quality gates are satisfied.
+Perform physical-device continuation and install-update acceptance. Then complete coverage/dependency security assessment and the remaining release gates. Keep the feature unreleased until device acceptance.
