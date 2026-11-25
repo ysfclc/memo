@@ -121,6 +121,7 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         goal: String,
         modelId: String,
         continuationOfRunId: String = "",
+        onRunCreationRejected: (String) -> Unit = {},
         block: suspend (String) -> Unit
     ): Boolean {
         if (conversationId.isBlank() || !_vaultReady.value || agentExecutionJob?.isActive == true) return false
@@ -134,7 +135,10 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             var runCreated = false
             try {
                 runCreated = createAgentRunDurably(runId, conversationId, goal, modelId, continuationOfRunId)
-                if (!runCreated) return@launch
+                if (!runCreated) {
+                    onRunCreationRejected("The saved run changed or is no longer eligible. Review it in Live before trying again.")
+                    return@launch
+                }
                 block(runId)
             } catch (cancelled: CancellationException) {
                 throw cancelled
