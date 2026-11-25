@@ -11,7 +11,27 @@ data class AgentRunContinuationAssessment(
     val reason: String
 )
 
+data class AgentRunContinuationResolution(
+    val parentRun: AgentRunRecord?,
+    val assessment: AgentRunContinuationAssessment
+)
+
 object AgentRunContinuationPolicy {
+    fun resolveParent(
+        parentRunId: String,
+        conversationId: String,
+        runs: List<AgentRunRecord>
+    ): AgentRunContinuationResolution {
+        val parent = runs.firstOrNull {
+            it.id == parentRunId && it.conversationId == conversationId
+        }
+        val assessment = parent?.let(::assess) ?: AgentRunContinuationAssessment(
+            allowed = false,
+            reason = "The original conversation or goal is missing."
+        )
+        return AgentRunContinuationResolution(parentRun = parent, assessment = assessment)
+    }
+
     fun assess(run: AgentRunRecord): AgentRunContinuationAssessment {
         if (run.status != "NEEDS_REVIEW") {
             return AgentRunContinuationAssessment(
