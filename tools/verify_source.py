@@ -554,6 +554,9 @@ for marker in (
         fail(f"Browser prompt submission must use the visible, verified composer path: {marker}")
 if "fun verifyPromptSubmission" not in browser_scripts:
     fail("The browser prompt submission verifier is missing")
+for marker in ('prepared.optString("content")', 'sent.optString("content")'):
+    if marker not in browser_session:
+        fail(f"Browser submission failures must surface the actual visible-page reason: {marker}")
 browser_prompt_safety_tests = (ROOT / "app/src/test/java/app/memo/android/browser/BrowserPromptSubmissionSafetyTest.kt").read_text()
 browser_execution_invariants = (ROOT / "docs/AI_EXECUTION_INVARIANTS.md").read_text()
 for marker in (
