@@ -201,6 +201,48 @@ for marker in ("agentRunRecordsRoundTripWithExactRunAndConversationIdentity", "s
         fail(f"schema-v7 run persistence/recovery test is missing: {marker}")
 print("PASS: Talk execution has a schema-versioned encrypted run record, atomic event journal/readback, truthful Live state and no-replay recovery")
 
+continuation_policy = (ROOT / "core/src/main/kotlin/app/memo/android/data/AgentRunContinuationPolicy.kt").read_text()
+continuation_tests = (ROOT / "core/src/test/kotlin/app/memo/android/data/AgentRunContinuationPolicyTest.kt").read_text()
+for marker in (
+    'run.status != "NEEDS_REVIEW"',
+    "run.conversationId.isBlank() || run.goal.isBlank()",
+    "run.pendingApprovalCallId.isNotBlank()",
+    "run.toolCalls < 0 || run.successfulToolCalls < 0 || run.successfulToolCalls > run.toolCalls",
+    'run.lastEventType == "TOOL_STARTED"',
+    'run.lastEventType == "TOOL_FAILED"',
+    "run.toolCalls > run.successfulToolCalls",
+):
+    if marker not in continuation_policy:
+        fail(f"Talk continuation policy is missing a fail-closed guard: {marker}")
+for marker in (
+    "allowsInterruptedRunBeforeAnyCapabilityStarted",
+    "allowsContinuationAfterEveryRecordedCapabilityCompleted",
+    "rejectsActiveAndTerminalRuns",
+    "rejectsAnInvocationWhoseOutcomeMayBeUncertain",
+    "rejectsAnyPersistedApprovalReference",
+    "rejectsMissingConversationOrGoal",
+    "rejectsInconsistentCapabilityCounters",
+):
+    if marker not in continuation_tests:
+        fail(f"Talk continuation policy regression coverage is missing: {marker}")
+for marker in (
+    'val parentRunId: String = ""',
+    "it.parentRunId.length <= 128",
+    "it.parentRunId != it.id",
+    "add(run.parentRunId)",
+    'put("parentRunId", run.parentRunId.take(128))',
+    'parentRunId = row.safeString("parentRunId").take(128)',
+):
+    if marker not in agent_models:
+        fail(f"durable parent-run lineage is missing: {marker}")
+for marker in (
+    "schemaSevenBackupWithoutParentRunLinkImportsAsIndependentRun",
+    "parentRunIdCannotReferToTheRunItself",
+):
+    if marker not in workspace_schema_test:
+        fail(f"parent-run schema compatibility coverage is missing: {marker}")
+print("PASS: interrupted Talk continuation is fail-closed and parent-run lineage is bounded, persisted and backward-compatible")
+
 if "import app.memo.android.orchestration.AgentExecutionEventType" not in agent_broker:
     fail("the ViewModel run closeout must import the engine event types it compares")
 if "fun launchAgentExecution(conversationId: String, block: suspend () -> Unit)" in agent_broker:
