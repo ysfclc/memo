@@ -15,7 +15,7 @@ c5eccbd00133c9d67e1c0ebb0fb090bf74876f35c24b5c79629ca13529cac261  ./PRODUCT_GAP_
 0f9b2724048c4d02b51ed5f4928bd8fc9c9bde2646591f5770cfdf21e0dfd077  ./README.md
 ce2bcd53a712bd22e83da53d4a3961e3af299d3ee715e51f91898db29fa779c6  ./REMOTE_RUNNER_SETUP.md
 0064532b2fbd3dcf6a58fadde86e6787e421abc6751b13c3acd059b9731ca049  ./ROADMAP.md
-5e14d20218ad7bbe0599e7f873bdcd42ca2dc184f79aaf63bc1b536a9d32b5ba  ./TASKS.md
+dce0d3e601edd8b8b3b3351dacc559d58e5275fbb6bf2c8e69002fda016b5b5e  ./TASKS.md
 e4a585bc6bee854924de2e1a0d2c223e53598c943999c3b0306a33bf025ca134  ./app/build.gradle
 cf9961550854acab5317b4efa543fb1657e49e39b5de3f4a363565f85e2f704a  ./app/proguard-rules.pro
 97b317ecef3a48b16a90786ca24cfaba247ade229fe3ef99c5a66fffdbceca16  ./app/src/androidTest/java/app/memo/android/data/EncryptedStoreUpgradeTest.kt
@@ -130,7 +130,7 @@ f9040f47a7b0ab3ea12bc60f3bb9d4fdd4332abdddee180d28ff29e3b59f220b  ./core/src/tes
 93ba55a545d80eaacbd4cce609854939e6fef274d0aafd062eb36f9fec151d76  ./docs/AI_EXECUTION_INVARIANTS.md
 188c29c98f189c6528fc8c4da23902cfce9039cff5f38e318e8027a63e847fcd  ./docs/DECISION_LOG.md
 06569ff9cf5dc9b41f2ffe62120db26a39a39909ef696bb06ce51963ef4ed036  ./docs/MEMO_PRODUCT_CONTRACT.md
-5b36859606156beb8e291125a1496f0e836d61fede54507530f844f87838b8e0  ./docs/REQUIREMENT_TRACEABILITY.md
+328886ea81f27e5443c2b095ee8d649e73d4b9a676167d74eb61f61d5afb28bb  ./docs/REQUIREMENT_TRACEABILITY.md
 60bb630d1d43817d171e9606299de2789ddaeef9aafa507d52242c9a3090c286  ./docs/SESSION_CHECKPOINT_2026-11-20_AGENT_EXECUTION_CONSTRAINTS.md
 188fb6580a2e073d8d63f5261ed5712bd4420295c696004b9d0befc29825adfc  ./docs/SESSION_CHECKPOINT_TEMPLATE.md
 0ccc9aeb3dc6e3c2d1446cab30c257acfaeddcf2a32a4d29461e3cf711826cd3  ./docs/SOCIAL_PLATFORM_PRODUCT_SPEC.md
@@ -258,4 +258,4 @@ ee9dad7e7bd2a85426759245581af3dabf763d3443038c9b5a959cd3767bba47  ./tools/ci/cir
 eaae49e68c159290813fcc6b202463aba4b12bf764d13c83a05ada415f0f85d6  ./tools/verify_source.py
 259b0b2d91d3bad80ab020d3248b5574cbad6cf891d95bab7843f07f19cb21f2  ./core/src/main/kotlin/app/memo/android/data/AgentRunContinuationPolicy.kt
 4361c474a6a13fd0a8486116e9f92ad6a271b6d24214259aef2d2167fa632cde  ./core/src/test/kotlin/app/memo/android/data/AgentRunContinuationPolicyTest.kt
-93372a6fb08acbc6c504d58f8d7f3b3e8a0d20331ca453d2a9370157a90a21b2  ./docs/checkpoints/2026-11-25-talk-recovery-core.md
+90d71829b2aa8c7951b307f08d53dde34f3d8bd316ab99338c0ab9f359965c75  ./docs/checkpoints/2026-11-25-talk-recovery-core.md
