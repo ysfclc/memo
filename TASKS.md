@@ -589,3 +589,14 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - **Tests:** exact run-ID isolation (including other metadata on the same line), source-type filtering, chronological ordering, missing-conversation behavior and Polish/Turkish timeline-label translations.
 - **Verification:** GitHub Actions exact-head validation pending; no local Android SDK/Gradle checkout or physical device was available in this run. This is a partial M3.B2 slice, not cross-runtime Live completion or release acceptance.
 - **Remaining:** cross-runtime session/event projection, pause/resume/takeover and global stop/action gate; real-device Talk/Live acceptance remains open.
+
+### 2026-11-25 — M3.A4-S10 — Preserve user drafts and prove exact browser submission
+
+- **Product outcome:** an approved Talk action must never overwrite an unrelated draft, send text other than the approved prompt, or report success because some unrelated page text changed.
+- **Preparation:** the visible WebView composer is inspected before mutation. If it contains different text, Memo leaves it untouched and stops for user review. An already-present exact prompt may proceed without rewriting the composer.
+- **Send boundary:** the composer must equal the normalized approved prompt before the send control can be clicked; substring matches are rejected.
+- **Verification:** success now requires both an empty visible composer and a newly observed user-message node whose complete normalized text exactly equals the approved prompt. Page-wide prefix occurrences and a generic increase in user-message count are not sufficient. Unsupported provider DOM structures fail closed for manual review.
+- **Regression coverage:** added BrowserPromptSubmissionSafetyTest and source-verifier assertions for draft preservation, exact composer equality, new exact-message detection and the empty-composer postcondition.
+- **Compatibility:** no encrypted workspace schema, backup schema, package ID, signing key, approval-ledger format or persisted user data changes.
+- **Verification state:** source edits are on memo/mission-1-safe-browser-submission; exact-head GitHub Actions unit tests, lint, source verification and emulator upgrade checks are pending. Physical-device acceptance remains pending. Do not mark this slice complete until CI is green and the actual phone flow is checked.
+- **Remaining boundary:** this hardens the existing approved browser prompt path only. It does not claim general browser controls, forms, uploads, native-app actions or universal workflow execution.
