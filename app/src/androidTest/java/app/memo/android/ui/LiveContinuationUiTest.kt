@@ -2,11 +2,12 @@ package app.memo.android.ui
 
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.memo.android.MainActivity
 import app.memo.android.browser.BrowserWorkflowUiState
 import app.memo.android.data.AgentRunRecord
 import app.memo.android.data.AppSnapshot
@@ -18,7 +19,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class LiveContinuationUiTest {
     @get:Rule
-    val composeRule = createComposeRule()
+    val composeRule = createAndroidComposeRule<MainActivity>()
 
     @Test
     fun eligibleInterruptedRunShowsActionAndPassesExactParentToCallback() {
