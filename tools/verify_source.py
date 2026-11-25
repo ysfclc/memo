@@ -120,7 +120,8 @@ for marker in (
     if marker not in agent_broker:
         fail(f"durable Talk approval broker is missing: {marker}")
 for marker in (
-    "viewModel.launchAgentExecution(selectedConversation.id, userText, selectedModelId)",
+    "viewModel.launchAgentExecution(",
+    "continuationOfRunId = initialContinuationRunId,",
     "onApprovalRequired = { request ->",
     "viewModel.awaitAgentApproval(selectedConversation.id, request)",
     "viewModel.updateAgentExecutionStage(event.summary)",
