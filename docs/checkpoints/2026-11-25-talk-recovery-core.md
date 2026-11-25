@@ -22,6 +22,7 @@ Establish a deterministic, fail-closed eligibility boundary and durable lineage 
 - Added optional `parentRunId` to the existing encrypted workspace run record without changing schema version 7.
 - Included the field in size estimation, serialization, deserialization and backup validation.
 - Added tests for eligibility, uncertain calls, invalid counters, approval references, run state and schema-7 backward compatibility.
+- Added source-verifier guards for the fail-closed policy and every parentRunId persistence/compatibility boundary.
 
 ## Safety boundary
 - Eligibility is not authorization and does not grant a capability.
