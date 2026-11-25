@@ -120,6 +120,8 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         conversationId: String,
         goal: String,
         modelId: String,
+        continuationOfRunId: String = "",
+        onRunCreatedDurably: () -> Unit = {},
         block: suspend (String) -> Unit
     ): Boolean {
         if (conversationId.isBlank() || !_vaultReady.value || agentExecutionJob?.isActive == true) return false
@@ -132,8 +134,9 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         agentExecutionJob = viewModelScope.launch {
             var runCreated = false
             try {
-                runCreated = createAgentRunDurably(runId, conversationId, goal, modelId)
+                runCreated = createAgentRunDurably(runId, conversationId, goal, modelId, continuationOfRunId)
                 if (!runCreated) return@launch
+                onRunCreatedDurably()
                 block(runId)
             } catch (cancelled: CancellationException) {
                 throw cancelled
@@ -165,7 +168,8 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         runId: String,
         conversationId: String,
         goal: String,
-        modelId: String
+        modelId: String,
+        continuationOfRunId: String
     ): Boolean {
         if (!_vaultReady.value || _vaultError.value != null) return false
         val cleanGoal = goal.trim().take(6_000)
@@ -180,7 +184,27 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             return false
         }
         if (current.agentRuns.any { it.id == runId }) return false
-        val record = AgentRunRecord(id = runId, conversationId = conversationId, goal = cleanGoal, modelId = modelId.take(160))
+        val parentRun = if (continuationOfRunId.isBlank()) null else current.agentRuns.firstOrNull {
+            it.id == continuationOfRunId && it.conversationId == conversationId
+        }
+        if (continuationOfRunId.isNotBlank()) {
+            if (parentRun == null) {
+                log("The interrupted Talk run is no longer available in this conversation.", "WARN")
+                return false
+            }
+            val assessment = AgentRunContinuationPolicy.assess(parentRun)
+            if (!assessment.allowed) {
+                log(assessment.reason, "WARN")
+                return false
+            }
+        }
+        val record = AgentRunRecord(
+            id = runId,
+            conversationId = conversationId,
+            goal = cleanGoal,
+            parentRunId = parentRun?.id.orEmpty(),
+            modelId = modelId.take(160)
+        )
         val next = current.copy(agentRuns = listOf(record) + current.agentRuns)
         _snapshot.value = next
         persist(next)
