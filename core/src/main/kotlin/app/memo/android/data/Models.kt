@@ -222,7 +222,8 @@ data class AgentRunRecord(
     val successfulToolCalls: Int = 0,
     val createdAt: Long = nowMillis(),
     val updatedAt: Long = nowMillis(),
-    val finishedAt: Long = 0L
+    val finishedAt: Long = 0L,
+    val parentRunId: String = ""
 ) {
     val isActive: Boolean
         get() = status in ACTIVE_AGENT_RUN_STATUSES
@@ -342,7 +343,7 @@ data class AppSnapshot(
         require(actionApprovals.size <= MAX_ACTION_APPROVALS) { "Workspace contains too many action approval records for a safe backup." }
         require(actionAuditEvents.size <= MAX_ACTION_AUDIT_EVENTS) { "Workspace contains too many audit events for a safe backup." }
         require(agentRuns.size <= MAX_AGENT_RUNS) { "Workspace contains too many Memo execution records for a safe backup." }
-        require(agentRuns.all { it.id.isNotBlank() && it.id.length <= 128 && it.conversationId.isNotBlank() && it.conversationId.length <= 128 && it.goal.isNotBlank() && it.goal.length <= 6_000 && it.modelId.length <= 160 && it.stage.length <= 800 && it.finalMessage.length <= 4_000 && it.recoveryReason.length <= 800 && it.pendingApprovalCallId.length <= 128 }) { "A Memo execution record exceeds the safe backup limits." }
+        require(agentRuns.all { it.id.isNotBlank() && it.id.length <= 128 && it.conversationId.isNotBlank() && it.conversationId.length <= 128 && it.goal.isNotBlank() && it.goal.length <= 6_000 && it.modelId.length <= 160 && it.stage.length <= 800 && it.finalMessage.length <= 4_000 && it.recoveryReason.length <= 800 && it.pendingApprovalCallId.length <= 128 && it.parentRunId.length <= 128 && it.parentRunId != it.id }) { "A Memo execution record exceeds the safe backup limits." }
         require(agentRuns.all { it.status in VALID_AGENT_RUN_STATUSES && it.modelCalls in 0..20 && it.toolCalls in 0..1_000 && it.successfulToolCalls in 0..it.toolCalls }) { "A Memo execution record has invalid lifecycle state or counters." }
         require(ActionApprovalLedger.verifyLedger(this)) { "The action ledger or audit chain failed verification; export is blocked to preserve evidence of tampering." }
         // Estimate escaped JSON size before constructing the full object tree. Every UTF-8 code point costs
@@ -421,7 +422,7 @@ data class AppSnapshot(
             add(event.previousHash); add(event.eventHash); add(event.details)
         }
         agentRuns.forEach { run ->
-            add(run.id); add(run.conversationId); add(run.goal); add(run.modelId); add(run.status); add(run.stage)
+            add(run.id); add(run.conversationId); add(run.goal); add(run.parentRunId); add(run.modelId); add(run.status); add(run.stage)
             add(run.lastEventType); add(run.lastToolId); add(run.pendingApprovalCallId); add(run.lastEvidenceReference)
             add(run.finalMessage); add(run.recoveryReason); add(run.modelCalls.toString()); add(run.toolCalls.toString())
             add(run.successfulToolCalls.toString()); add(run.createdAt.toString()); add(run.updatedAt.toString()); add(run.finishedAt.toString())
@@ -667,6 +668,7 @@ data class AppSnapshot(
                     put("id", run.id.take(128))
                     put("conversationId", run.conversationId.take(128))
                     put("goal", run.goal.take(6_000))
+                    put("parentRunId", run.parentRunId.take(128))
                     put("modelId", run.modelId.take(160))
                     put("status", run.status.take(32))
                     put("stage", run.stage.take(800))
@@ -915,6 +917,7 @@ data class AppSnapshot(
                     id = uniqueImportedId(row.safeString("id"), usedAgentRunIds),
                     conversationId = row.safeString("conversationId").take(128),
                     goal = row.safeString("goal").take(6_000),
+                    parentRunId = row.safeString("parentRunId").take(128),
                     modelId = row.safeString("modelId").take(160),
                     status = status,
                     stage = row.safeString("stage").take(800),
