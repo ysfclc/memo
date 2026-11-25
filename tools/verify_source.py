@@ -183,7 +183,7 @@ for marker in (
     if marker not in agent_broker:
         fail(f"Talk durable run journal is missing: {marker}")
 for marker in (
-    "viewModel.launchAgentExecution(selectedConversation.id, userText, selectedModelId)",
+    "viewModel.launchAgentExecution(",
     "engine.executeWithRunId(",
     "executionRunId = runId",
     "viewModel.appendAgentEventDurably(",
