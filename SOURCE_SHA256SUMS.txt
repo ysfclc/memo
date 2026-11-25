@@ -255,7 +255,7 @@ d82dc17d418f2ce0b7f3b68b7304901400290e60aa3de8515fbfa8f2f617492d  ./gradle.prope
 a1453a88e5bc19e7b20a521b56d36acbaec90fc742b79fb49fca11b7ddda73af  ./remote-runner/tests/test_runner.py
 19280c23fb304e503d1037eb423b17d0a14dd2a6fbb3e916574f4c5be17dfebf  ./settings.gradle
 ee9dad7e7bd2a85426759245581af3dabf763d3443038c9b5a959cd3767bba47  ./tools/ci/circleci-android.sh
-9a99fdf01a1f8a323f7d329cc069bf46bdf24640d02d4cf0126282110befbdbc  ./tools/verify_source.py
+004e41fba5b3f48e7f5a544923f8da66064b9e4a81e51b2f554b342f4d0ff454  ./tools/verify_source.py
 259b0b2d91d3bad80ab020d3248b5574cbad6cf891d95bab7843f07f19cb21f2  ./core/src/main/kotlin/app/memo/android/data/AgentRunContinuationPolicy.kt
 4361c474a6a13fd0a8486116e9f92ad6a271b6d24214259aef2d2167fa632cde  ./core/src/test/kotlin/app/memo/android/data/AgentRunContinuationPolicyTest.kt
 93372a6fb08acbc6c504d58f8d7f3b3e8a0d20331ca453d2a9370157a90a21b2  ./docs/checkpoints/2026-11-25-talk-recovery-core.md
