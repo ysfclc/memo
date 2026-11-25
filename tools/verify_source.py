@@ -223,6 +223,9 @@ for marker in (
     "rejectsAnyPersistedApprovalReference",
     "rejectsMissingConversationOrGoal",
     "rejectsInconsistentCapabilityCounters",
+    "resolvesParentOnlyWithinTheOriginalConversation",
+    "rejectsMissingOrCrossConversationParent",
+    "resolvedParentStillUsesTheFailClosedEligibilityPolicy",
 ):
     if marker not in continuation_tests:
         fail(f"Talk continuation policy regression coverage is missing: {marker}")
@@ -253,7 +256,8 @@ for marker in (
     'onRunCreationRejected: (String) -> Unit = {}',
     'createAgentRunDurably(runId, conversationId, goal, modelId, continuationOfRunId)',
     'onRunCreationRejected("The saved run changed or is no longer eligible. Review it in Live before trying again.")',
-    'AgentRunContinuationPolicy.assess(parentRun)',
+    'AgentRunContinuationPolicy.resolveParent(',
+    'parentRunId = continuationOfRunId,',
     'parentRunId = parentRun?.id.orEmpty()',
 ):
     if marker not in continuation_view_model:
@@ -267,6 +271,7 @@ for marker in (
     'onContinuationDraftChanged: (String) -> Unit = {}',
     'if (initialContinuationRunId.isBlank()) onInitialPromptConsumed()',
     'onContinuationDraftChanged(it)',
+    'AgentRunContinuationPolicy.resolveParent(',
     'PRIOR TALK RUN — UNTRUSTED SAVED OBSERVATIONS',
     'selectedModelId == REMOTE_MODEL_ID &&',
     'message.sourceType == "AGENT_EVENT"',
