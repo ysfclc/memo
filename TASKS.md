@@ -594,7 +594,7 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 
 - **Product outcome:** an approved Talk action must never overwrite an unrelated draft, send text other than the approved prompt, or report success because some unrelated page text changed.
 - **Preparation:** the visible WebView composer is inspected before mutation. If it contains different text, Memo leaves it untouched and stops for user review. An already-present exact prompt may proceed without rewriting the composer.
-- **Send boundary:** the composer must equal the normalized approved prompt before the send control can be clicked; substring matches are rejected.
+- **Send boundary:** the composer must equal the normalized approved prompt before the send control can be clicked; substring matches are rejected. The Talk adapter now surfaces the script's actual failure explanation, so a preserved draft is clearly reported rather than hidden behind a generic composer error.
 - **Verification:** success now requires both an empty visible composer and a newly observed user-message node whose complete normalized text exactly equals the approved prompt. Page-wide prefix occurrences and a generic increase in user-message count are not sufficient. Unsupported provider DOM structures fail closed for manual review.
 - **Regression coverage:** added BrowserPromptSubmissionSafetyTest and source-verifier assertions for draft preservation, exact composer equality, new exact-message detection and the empty-composer postcondition.
 - **Compatibility:** no encrypted workspace schema, backup schema, package ID, signing key, approval-ledger format or persisted user data changes.
