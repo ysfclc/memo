@@ -19,7 +19,7 @@ ce2bcd53a712bd22e83da53d4a3961e3af299d3ee715e51f91898db29fa779c6  ./REMOTE_RUNNE
 f7c80f8bf4fa13d1fc5df1d306d25369efd0e915da5fdb7a742bf97048efc0bd  ./app/build.gradle
 cf9961550854acab5317b4efa543fb1657e49e39b5de3f4a363565f85e2f704a  ./app/proguard-rules.pro
 97b317ecef3a48b16a90786ca24cfaba247ade229fe3ef99c5a66fffdbceca16  ./app/src/androidTest/java/app/memo/android/data/EncryptedStoreUpgradeTest.kt
-e9e80e477fc57b08b11b9b7dfa67632502c1611e423bb6b9ff9b68b495bdcf4c  ./app/src/androidTest/java/app/memo/android/ui/LiveContinuationUiTest.kt
+ba1ca941c52e2145dcbc7747d78a520a42d5d451d2d872b1b9fea89f95e28d81  ./app/src/androidTest/java/app/memo/android/ui/LiveContinuationUiTest.kt
 a5e79842ebe67ebc05c611b64e1a48a8a7e18f96dbd86bdaf40227dc68ba7413  ./app/src/main/AndroidManifest.xml
 3b0a04fb49a44a022a59e7c5e87640c2692d7c29e149a8882592009c47eaad1d  ./app/src/main/java/app/memo/android/MainActivity.kt
 d1cfd901f19e8f4fadc7a6c726110b380e93f959788504b39f15433dd375c556  ./app/src/main/java/app/memo/android/ai/AiRuntimeViewModel.kt
