@@ -742,6 +742,9 @@ fun ChatsWorkspaceScreen(
                                     goal = userText,
                                     modelId = selectedModelId,
                                     continuationOfRunId = initialContinuationRunId,
+                                    onRunCreationRejected = { message ->
+                                        onShowMessage(MemoLocalization.translate(message, uiLanguage))
+                                    }
                                 ) { runId ->
                                     try {
                                         val appendError = viewModel.appendChatMessageDurably(
