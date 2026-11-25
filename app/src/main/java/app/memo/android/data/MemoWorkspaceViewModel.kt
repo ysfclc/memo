@@ -186,19 +186,19 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             return false
         }
         if (current.agentRuns.any { it.id == runId }) return false
-        val parentRun = if (continuationOfRunId.isBlank()) null else current.agentRuns.firstOrNull {
-            it.id == continuationOfRunId && it.conversationId == conversationId
-        }
-        if (continuationOfRunId.isNotBlank()) {
-            if (parentRun == null) {
-                log("The interrupted Talk run is no longer available in this conversation.", "WARN")
+        val parentRun = if (continuationOfRunId.isBlank()) {
+            null
+        } else {
+            val resolution = AgentRunContinuationPolicy.resolveParent(
+                parentRunId = continuationOfRunId,
+                conversationId = conversationId,
+                runs = current.agentRuns
+            )
+            if (!resolution.assessment.allowed || resolution.parentRun == null) {
+                log(resolution.assessment.reason, "WARN")
                 return false
             }
-            val assessment = AgentRunContinuationPolicy.assess(parentRun)
-            if (!assessment.allowed) {
-                log(assessment.reason, "WARN")
-                return false
-            }
+            resolution.parentRun
         }
         val record = AgentRunRecord(
             id = runId,
