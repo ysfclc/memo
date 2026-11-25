@@ -64,14 +64,24 @@ object BrowserScripts {
         return """
           (function(){
             const prompt = $quoted;
+            const normalize = s => (s || '').replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim();
             const visible = el => { const r = el.getBoundingClientRect(); const st = getComputedStyle(el); return r.width > 0 && r.height > 0 && st.visibility !== 'hidden' && st.display !== 'none' && !el.disabled; };
             const candidates = Array.from(document.querySelectorAll('textarea,[contenteditable="true"],[role="textbox"]')).filter(visible);
             if(!candidates.length) return JSON.stringify({ok:false,kind:'Prompt preparation',title:'Prompt not prepared',url:location.href,content:'No visible text composer was found. Open a conversation and try again.',summary:'Composer not found.',metadata:{}});
-            const el = candidates[candidates.length-1]; el.focus();
-            if(el.isContentEditable || el.getAttribute('contenteditable')==='true') { el.textContent=prompt; }
-            else { const proto = Object.getPrototypeOf(el); const setter = Object.getOwnPropertyDescriptor(proto,'value') && Object.getOwnPropertyDescriptor(proto,'value').set; if(setter) setter.call(el,prompt); else el.value=prompt; }
-            el.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertText',data:prompt})); el.dispatchEvent(new Event('change',{bubbles:true}));
-            return JSON.stringify({ok:true,kind:'Prompt preparation',title:'Prompt prepared · '+(document.title || location.hostname),url:location.href,content:'Prompt filled into the visible composer. It has not been sent. Review it on the page before using Send prepared prompt.',summary:'Prompt filled; not sent.',metadata:{composer:el.tagName,role:el.getAttribute('role')||'',length:prompt.length}});
+            const el = candidates[candidates.length-1];
+            const readValue = () => normalize(el.isContentEditable || el.getAttribute('contenteditable')==='true' ? (el.innerText || el.textContent) : el.value);
+            const existing = readValue();
+            if(existing.length>0 && existing!==normalize(prompt)) {
+              return JSON.stringify({ok:false,kind:'Prompt preparation',title:'Existing draft preserved',url:location.href,content:'The composer already contains text that is different from the approved prompt. Memo left the existing draft untouched. Save or remove that draft yourself before trying again.',summary:'Existing composer content was preserved.',metadata:{composer:el.tagName,existingLength:existing.length}});
+            }
+            el.focus();
+            if(existing!==normalize(prompt)) {
+              if(el.isContentEditable || el.getAttribute('contenteditable')==='true') { el.textContent=prompt; }
+              else { const proto = Object.getPrototypeOf(el); const setter = Object.getOwnPropertyDescriptor(proto,'value') && Object.getOwnPropertyDescriptor(proto,'value').set; if(setter) setter.call(el,prompt); else el.value=prompt; }
+              el.dispatchEvent(new InputEvent('input',{bubbles:true,inputType:'insertText',data:prompt}));
+              el.dispatchEvent(new Event('change',{bubbles:true}));
+            }
+            return JSON.stringify({ok:true,kind:'Prompt preparation',title:'Prompt prepared · '+(document.title || location.hostname),url:location.href,content:'The approved prompt is in the visible composer. No existing draft was replaced. It has not been sent.',summary:'Prompt prepared without replacing an existing draft.',metadata:{composer:el.tagName,role:el.getAttribute('role')||'',length:prompt.length,alreadyPrepared:existing===normalize(prompt)}});
           })();
         """.trimIndent()
     }
@@ -88,12 +98,15 @@ object BrowserScripts {
             if(!editor) return JSON.stringify({ok:false,clicked:false,kind:'Prompt submission',title:'Cannot send prompt',url:location.href,content:'No visible composer was found. The prompt was not sent.',summary:'Composer not found.',metadata:{}});
             const value = () => normalize(editor.isContentEditable || editor.getAttribute('contenteditable')==='true' ? (editor.innerText || editor.textContent) : editor.value);
             const wanted=normalize(prompt);
-            if(!wanted || !value().includes(wanted)) return JSON.stringify({ok:false,clicked:false,kind:'Prompt submission',title:'Composer changed',url:location.href,content:'The visible composer no longer contains the prepared prompt. Nothing was sent. Review the page and prepare the prompt again.',summary:'Prepared text no longer matches composer.',metadata:{}});
-            const bodyText = () => {
-              const clone=document.body ? document.body.cloneNode(true) : null;
-              if(!clone) return '';
-              clone.querySelectorAll('textarea,input,[contenteditable="true"],[role="textbox"],button,nav').forEach(el=>el.remove());
-              return normalize(clone.innerText || clone.textContent);
+            if(!wanted || value() !== wanted) return JSON.stringify({ok:false,clicked:false,kind:'Prompt submission',title:'Composer changed',url:location.href,content:'The visible composer does not exactly match the approved prompt. Nothing was sent. Review the page and prepare the exact prompt again.',summary:'Composer does not exactly match the approved prompt.',metadata:{}});
+            const userMessageTexts = () => {
+              const selectors=['[data-message-author-role="user"]','[data-testid="user-message"]','[data-testid*="user-message"]','[class*="user-message"]','[class*="human-message"]','user-query'];
+              for(const selector of selectors){
+                let nodes=[];try{nodes=Array.from(document.querySelectorAll(selector)).filter(visible);}catch(_){}
+                const values=Array.from(new Set(nodes.map(node=>normalize(node.innerText||node.textContent)).filter(Boolean)));
+                if(values.length) return values;
+              }
+              return [];
             };
             const assistantTexts = () => {
               const host=(location.hostname||'').toLowerCase().replace(/^www\./,'');
@@ -108,17 +121,15 @@ object BrowserScripts {
               }
               return [];
             };
-            const prefix=wanted.slice(0,Math.min(160,wanted.length));
-            const occurrences=(text,needle)=>{ if(!needle) return 0; let count=0,from=0,at; while((at=text.toLocaleLowerCase().indexOf(needle.toLocaleLowerCase(),from))>=0){count++;from=at+needle.length;} return count; };
-            const beforeText=bodyText();
-            const countNode=document.querySelectorAll('[data-message-author-role="user"]').length;
+            const beforeUserMessages=userMessageTexts();
+            const beforeExactMatches=beforeUserMessages.filter(message=>message===wanted).length;
             const beforeAssistant=assistantTexts();
-            window.__synthosSubmitState={prompt:prompt,prefix:prefix,beforeOccurrences:occurrences(beforeText,prefix),beforeUserMessages:countNode,beforeAssistantCount:beforeAssistant.length,beforeAssistantLatest:beforeAssistant[beforeAssistant.length-1]||'',lastReplyText:'',stablePolls:0,at:Date.now()};
+            window.__synthosSubmitState={prompt:prompt,beforeUserMessages:beforeUserMessages.length,beforeExactMatches:beforeExactMatches,beforeAssistantCount:beforeAssistant.length,beforeAssistantLatest:beforeAssistant[beforeAssistant.length-1]||'',lastReplyText:'',stablePolls:0,at:Date.now()};
             const candidates=Array.from((editor.closest('form') || document).querySelectorAll('button,[role="button"]')).filter(visible);
             const send=candidates.find(b=>/\bsend\b/i.test((b.getAttribute('aria-label')||'')+' '+(b.getAttribute('title')||'')+' '+(b.getAttribute('data-testid')||''))) || candidates.find(b=>/^send$/i.test(normalize(b.innerText)));
             if(!send){ return JSON.stringify({ok:false,clicked:false,kind:'Prompt submission',title:'Send control not found',url:location.href,content:'No recognizable send button was found in the composer. Memo did not press Enter or send anything; submit the reviewed prompt manually, then continue the workflow.',summary:'No safe send control found.',metadata:{composer:editor.tagName}}); }
             send.click();
-            return JSON.stringify({ok:true,clicked:true,kind:'Prompt submission',title:'Submission requested',url:location.href,content:'The recognized send control was clicked. Memo will verify that the prompt appears as a new conversation message and is no longer in the composer.',summary:'Send control clicked; awaiting evidence.',metadata:{method:'button',label:(send.getAttribute('aria-label')||send.innerText||'Send').slice(0,100)}});
+            return JSON.stringify({ok:true,clicked:true,kind:'Prompt submission',title:'Submission requested',url:location.href,content:'The recognized send control was clicked. Memo will verify that a new user message exactly matches the approved prompt and the composer is empty.',summary:'Send control clicked; awaiting exact-message evidence.',metadata:{method:'button',label:(send.getAttribute('aria-label')||send.innerText||'Send').slice(0,100)}});
           })();
         """.trimIndent()
     }
@@ -132,24 +143,23 @@ object BrowserScripts {
             const consumeState=$consumeState;
             const normalize=s=>(s||'').replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim();
             const state=window.__synthosSubmitState;
-            if(!state || state.prompt!==wanted) return JSON.stringify({verified:false,contextPresent:false,composerCleared:false,reason:'Submission context was lost because the page changed. Check the conversation manually.'});
-            const clone=document.body ? document.body.cloneNode(true) : null;
-            if(!clone) return JSON.stringify({verified:false,contextPresent:true,composerCleared:false,reason:'The page did not expose readable conversation content. Check the result manually.'});
-            clone.querySelectorAll('textarea,input,[contenteditable="true"],[role="textbox"]').forEach(el=>el.remove());
-            const text=normalize(clone.innerText || clone.textContent);
-            const prefix=normalize(wanted).slice(0,Math.min(160,normalize(wanted).length));
-            const occurrences=(value,needle)=>{ if(!needle) return 0; let count=0,from=0,at; while((at=value.toLocaleLowerCase().indexOf(needle.toLocaleLowerCase(),from))>=0){count++;from=at+needle.length;} return count; };
-            const afterOccurrences=occurrences(text,prefix);
-            const userMessageCount=document.querySelectorAll('[data-message-author-role="user"]').length;
+            if(!state || state.prompt!==wanted) return JSON.stringify({verified:false,contextPresent:false,composerCleared:false,newExactUserMessage:false,reason:'Submission context was lost because the page changed. Check the conversation manually.'});
+            const selectors=['[data-message-author-role="user"]','[data-testid="user-message"]','[data-testid*="user-message"]','[class*="user-message"]','[class*="human-message"]','user-query'];
+            let userMessages=[];
+            for(const selector of selectors){
+              let nodes=[];try{nodes=Array.from(document.querySelectorAll(selector)).filter(el=>{const r=el.getBoundingClientRect();const st=getComputedStyle(el);return r.width>0&&r.height>0&&st.visibility!=='hidden'&&st.display!=='none';});}catch(_){}
+              const values=Array.from(new Set(nodes.map(node=>normalize(node.innerText||node.textContent)).filter(Boolean)));
+              if(values.length){userMessages=values;break;}
+            }
+            const afterExactMatches=userMessages.filter(message=>message===normalize(wanted)).length;
+            const newExactUserMessage=afterExactMatches>Number(state.beforeExactMatches||0);
             const editors=Array.from(document.querySelectorAll('textarea,input,[contenteditable="true"],[role="textbox"]'));
             const editor=editors.reverse().find(el=>{const r=el.getBoundingClientRect();const st=getComputedStyle(el);return r.width>0&&r.height>0&&st.visibility!=='hidden'&&st.display!=='none';});
-            const current=editor ? normalize(editor.isContentEditable || editor.getAttribute('contenteditable')==='true' ? (editor.innerText || editor.textContent) : editor.value) : '';
-            const composerCleared=!current.toLocaleLowerCase().includes(prefix.toLocaleLowerCase());
-            const newUserMessage=userMessageCount>state.beforeUserMessages;
-            const newVisiblePrompt=afterOccurrences>state.beforeOccurrences;
-            const verified=composerCleared && (newUserMessage || newVisiblePrompt);
+            const current=editor ? normalize(editor.isContentEditable || editor.getAttribute('contenteditable')==='true' ? (editor.innerText || editor.textContent) : editor.value) : null;
+            const composerCleared=editor!==undefined && current==='';
+            const verified=composerCleared && newExactUserMessage;
             if(consumeState) delete window.__synthosSubmitState;
-            return JSON.stringify({verified:verified,contextPresent:true,reason:verified?'New prompt observed in the page.':'The page did not show a new prompt with the composer cleared. It may still be sending, or the site structure may be unsupported.',composerCleared:composerCleared,newUserMessage:newUserMessage,newVisiblePrompt:newVisiblePrompt,beforeOccurrences:state.beforeOccurrences,afterOccurrences:afterOccurrences,beforeUserMessages:state.beforeUserMessages,afterUserMessages:userMessageCount});
+            return JSON.stringify({verified:verified,contextPresent:true,reason:verified?'A new user message exactly matches the approved prompt and the composer is empty.':'Memo could not prove that a new user message exactly matches the approved prompt and the composer is empty. The outcome remains uncertain; inspect the conversation before retrying.',composerCleared:composerCleared,newExactUserMessage:newExactUserMessage,beforeExactMatches:Number(state.beforeExactMatches||0),afterExactMatches:afterExactMatches,beforeUserMessages:Number(state.beforeUserMessages||0),afterUserMessages:userMessages.length});
           })();
         """.trimIndent()
     }

@@ -123,6 +123,8 @@ External, destructive, financial, publishing, sending, submitting, deleting or o
 
 Browser login, CAPTCHA, OTP, passwords, payment confirmation, security challenges, revoked permissions and unexpected app/site states must stop for user intervention when the action cannot safely proceed.
 
+**Exact browser prompt submission.** Preparing an approved prompt must never replace a non-empty composer containing different text. Sending is allowed only when the visible composer equals the approved payload after the same documented whitespace normalization. Submission success requires a newly observed user-authored message whose complete normalized content equals that payload and an empty visible composer. Page-wide text occurrences, prompt prefixes, or a generic increase in message count are not proof. If the provider's visible DOM cannot establish these conditions, stop at `NEEDS_REVIEW`; never weaken verification or resend automatically.
+
 Model output, web content, imported files and tool output are untrusted data. None may alter trusted policy or issue instructions that bypass the user's intent and system safeguards.
 
 ## 8. Durable execution and truthful results

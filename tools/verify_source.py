@@ -554,6 +554,35 @@ for marker in (
         fail(f"Browser prompt submission must use the visible, verified composer path: {marker}")
 if "fun verifyPromptSubmission" not in browser_scripts:
     fail("The browser prompt submission verifier is missing")
+for marker in ('prepared.optString("content")', 'sent.optString("content")'):
+    if marker not in browser_session:
+        fail(f"Browser submission failures must surface the actual visible-page reason: {marker}")
+browser_prompt_safety_tests = (ROOT / "app/src/test/java/app/memo/android/browser/BrowserPromptSubmissionSafetyTest.kt").read_text()
+browser_execution_invariants = (ROOT / "docs/AI_EXECUTION_INVARIANTS.md").read_text()
+for marker in (
+    "**Exact browser prompt submission.**",
+    "must never replace a non-empty composer",
+    "newly observed user-authored message",
+    "stop at `NEEDS_REVIEW`",
+):
+    if marker not in browser_execution_invariants:
+        fail(f"Browser exact-submission architecture invariant is missing: {marker}")
+for marker in (
+    "existing.length>0 && existing!==normalize(prompt)",
+    "value() !== wanted",
+    "message=>message===normalize(wanted)",
+    "newExactUserMessage=afterExactMatches>Number(state.beforeExactMatches||0)",
+    "composerCleared && newExactUserMessage",
+):
+    if marker not in browser_scripts:
+        fail(f"Browser prompt submission safety invariant is missing: {marker}")
+for marker in (
+    "preparationPreservesAnExistingDifferentComposerDraft",
+    "sendRequiresTheComposerToMatchTheApprovedPrompt",
+    "verificationRequiresANewExactUserMessageAndAnEmptyComposer",
+):
+    if marker not in browser_prompt_safety_tests:
+        fail(f"Browser prompt safety regression test is missing: {marker}")
 if "browserPromptSubmissionIsAnExplicitlyApprovedExternalWrite" not in agent_registry_tests:
     fail("Browser prompt submission must have a regression test for explicit external-write approval")
 if "browserResponseCaptureDoesNotAuthorizeExternalSideEffects" not in agent_registry_tests:
