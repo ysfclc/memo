@@ -698,12 +698,15 @@ fun ChatsWorkspaceScreen(
                                 val selectedContext = if (useWorkspaceContext && (selectedModelId != REMOTE_MODEL_ID || shareWorkspaceContextRemotely)) {
                                     WorkspaceContextRetriever.select(userText, contextCandidates, maxHits = 6, maxCharacters = 4_500).asPromptContext(4_500)
                                 } else "Workspace retrieval was not included in this request."
-                                val continuationParent = if (initialContinuationRunId.isBlank()) null else {
-                                    snapshot.agentRuns.firstOrNull {
-                                        it.id == initialContinuationRunId && it.conversationId == selectedConversation.id
-                                    }
+                                val continuationResolution = if (initialContinuationRunId.isBlank()) null else {
+                                    AgentRunContinuationPolicy.resolveParent(
+                                        parentRunId = initialContinuationRunId,
+                                        conversationId = selectedConversation.id,
+                                        runs = snapshot.agentRuns
+                                    )
                                 }
-                                val continuationAssessment = continuationParent?.let { AgentRunContinuationPolicy.assess(it) }
+                                val continuationParent = continuationResolution?.parentRun
+                                val continuationAssessment = continuationResolution?.assessment
                                 if (initialContinuationRunId.isNotBlank() &&
                                     (continuationParent == null || continuationAssessment?.allowed != true)
                                 ) {
