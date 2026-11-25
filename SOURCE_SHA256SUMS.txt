@@ -258,4 +258,4 @@ ee9dad7e7bd2a85426759245581af3dabf763d3443038c9b5a959cd3767bba47  ./tools/ci/cir
 eaae49e68c159290813fcc6b202463aba4b12bf764d13c83a05ada415f0f85d6  ./tools/verify_source.py
 259b0b2d91d3bad80ab020d3248b5574cbad6cf891d95bab7843f07f19cb21f2  ./core/src/main/kotlin/app/memo/android/data/AgentRunContinuationPolicy.kt
 4361c474a6a13fd0a8486116e9f92ad6a271b6d24214259aef2d2167fa632cde  ./core/src/test/kotlin/app/memo/android/data/AgentRunContinuationPolicyTest.kt
-bc05abcf97e235b5f6fd830153a81ce2cf8f75f17b966041c13d40b2900798cd  ./docs/checkpoints/2026-11-25-talk-recovery-core.md
+abcfaaf2089e647444c13c79e73ba8b58edb49caa13be527975cc05f5b742187  ./docs/checkpoints/2026-11-25-talk-recovery-core.md
