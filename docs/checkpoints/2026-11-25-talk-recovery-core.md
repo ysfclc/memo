@@ -37,7 +37,7 @@ Establish a deterministic, fail-closed eligibility boundary and durable lineage 
 - Source changes are committed to this branch.
 - Core-only exact-head CI run #1196 on `83e1443c983258ba0c67615a4d8eb4030d8afe5` passed 151 core tests, 37 Android unit tests, source invariants, remote-runner tests, debug/release lint and APK identity/signature checks.
 - Emulator install-over-existing passed: both encrypted stores survived the release-package upgrade and instrumentation recovery/corruption checks passed.
-- Integrated exact-head CI run #1213 on `16a079d17da9d5275e27a7cc71756275a9c00e65` passed: 151 core tests, 38 Android unit tests, source verifier, remote-runner tests, debug/release lint, debug/release APK assembly and APK identity/signature checks.
+- Integrated exact-head CI run #1221 on `d4f9ad219ecabf5d9fffa13052c244c384d5e9a6` passed: 154 core tests (including conversation-bound parent resolution), 38 Android unit tests, source verifier, remote-runner tests, debug/release lint, debug/release APK assembly and APK identity/signature checks.
 - Emulator install-over-existing passed; both encrypted stores survived the release-package upgrade and both instrumentation acceptance phases returned `OK (1 test)`.
 - Lint remained at the same 59 warnings and 5 hints as core-only baseline #1196; no new warnings were introduced by the continuation integration.
 - Coverage comparison and dependency vulnerability scanning remain unverified; GitHub dependency graph was disabled in this CI environment.
