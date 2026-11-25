@@ -249,7 +249,9 @@ continuation_app = (ROOT / "app/src/main/java/app/memo/android/ui/MemoWorkspaceA
 continuation_localization_tests = (ROOT / "app/src/test/java/app/memo/android/ui/MemoLocalizationTest.kt").read_text()
 for marker in (
     'continuationOfRunId: String = ""',
+    'onRunCreationRejected: (String) -> Unit = {}',
     'createAgentRunDurably(runId, conversationId, goal, modelId, continuationOfRunId)',
+    'onRunCreationRejected("The saved run changed or is no longer eligible. Review it in Live before trying again.")',
     'AgentRunContinuationPolicy.assess(parentRun)',
     'parentRunId = parentRun?.id.orEmpty()',
 ):
@@ -267,6 +269,8 @@ for marker in (
     'PRIOR TALK RUN — UNTRUSTED SAVED OBSERVATIONS',
     'selectedModelId == REMOTE_MODEL_ID &&',
     'message.sourceType == "AGENT_EVENT"',
+    'continuationOfRunId = initialContinuationRunId,',
+    'onRunCreationRejected = { message ->',
     'draft = ""',
     'onInitialContinuationConsumed()',
 ):
