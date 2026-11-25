@@ -390,7 +390,9 @@ class BrowserSession(
             try {
                 val prepared = evaluateAgentScript(BrowserScripts.preparePrompt(cleanPrompt))
                 check(prepared.optBoolean("ok")) {
-                    prepared.optString("reason").ifBlank { "Memo could not identify a visible text composer. Nothing was sent." }
+                    prepared.optString("content").ifBlank {
+                        prepared.optString("reason").ifBlank { "Memo could not identify a visible text composer. Nothing was sent." }
+                    }
                 }
                 check(sameAgentPageTarget(target, currentUrl) && sameAgentPageTarget(target, webView.url.orEmpty())) {
                     "The browser page changed while preparing the approved prompt. Nothing was sent."
@@ -398,7 +400,9 @@ class BrowserSession(
 
                 val sent = evaluateAgentScript(BrowserScripts.sendPreparedPrompt(cleanPrompt))
                 check(sent.optBoolean("ok") && sent.optBoolean("clicked")) {
-                    sent.optString("reason").ifBlank { "Memo could not verify a send control. The submission outcome is uncertain." }
+                    sent.optString("content").ifBlank {
+                        sent.optString("reason").ifBlank { "Memo could not verify a send control. The submission outcome is uncertain." }
+                    }
                 }
 
                 val deadline = System.currentTimeMillis() + 20_000L
