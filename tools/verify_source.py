@@ -287,10 +287,12 @@ for marker in (
 ):
     if marker not in continuation_view_model:
         fail(f"Talk continuation ViewModel safety boundary is missing: {marker}")
-create_position = continuation_view_model.find("runCreated = createAgentRunDurably")
-engine_position = continuation_view_model.find("block(runId)", create_position)
-if create_position < 0 or engine_position <= create_position:
-    fail("Talk execution must create and verify its durable run before invoking the execution block")
+start_transaction_position = continuation_view_model.find("AgentRunStartTransaction.prepare(")
+persist_position = continuation_view_model.find("val verified = persistAgentRunAndVerify(runId)", start_transaction_position)
+message_callback_position = continuation_view_model.find("onUserMessagePersisted(created.messageId)")
+engine_position = continuation_view_model.find("block(runId, created.messageId)")
+if start_transaction_position < 0 or persist_position <= start_transaction_position or message_callback_position <= persist_position or engine_position <= message_callback_position:
+    fail("Talk must verify the combined user-message/run snapshot before clearing the draft or invoking the execution block")
 for marker in (
     'initialContinuationRunId: String = ""',
     'onContinuationDraftChanged: (String) -> Unit = {}',
