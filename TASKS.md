@@ -623,3 +623,13 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - **PR hygiene:** older divergent PR #22 was closed as superseded after its relevant UI/ViewModel work was ported and verified in PR #25; no code from PR #22 was merged.
 - **Status:** core policy, persistence and ViewModel/Live/Talk continuation source are implemented and exact-head CI verified; physical-device acceptance, coverage evidence and dependency vulnerability assessment remain open.
 
+
+### 2026-11-26 — M3.RECOVERY-S3 — Physical-device continuation acceptance
+
+- **Requirement:** MEMO-RECOVERY-001.
+- **Purpose:** verify the complete interrupted-run continuation journey on the release package, beyond the existing emulator test of action visibility and callback identity.
+- **Device protocol:** DEVICE_ACCEPTANCE_CHECKLIST.md → “Talk — interrupted-run continuation (M3.RECOVERY-S3)”. It covers safe eligibility, original-conversation handoff, editable draft/navigation behavior, draft clearing on conversation switch, durable message-before-run ordering, parent/child lineage, non-replay after process death, uncertain-outcome blocking and EN/PL/TR UI.
+- **Current evidence:** exact-head PR CI #1248 (45739859642) passed on 7577b13bfcbad84b44e6dad5da605af81011274d; the release-variant instrumentation proves eligible action/callback behavior and uncertain-outcome suppression. It does not exercise the physical phone.
+- **Blockers:** the PR validation workflow deliberately does not run persistent signing or publish an APK. Physical-device execution therefore has not started. Do not ask for uninstall, data clearing or a debug-signed package.
+- **Status:** acceptance protocol prepared; device verification NOT RUN. Coverage comparison and dependency vulnerability assessment remain separate open gates.
+- **Exit criteria:** complete every checklist item using a pinned-certificate APK installed over the existing app; record exact APK SHA-256, device/Android version, observed parent/child run IDs and evidence. Any uncertain or missing result blocks device sign-off.
