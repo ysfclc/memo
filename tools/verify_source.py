@@ -222,6 +222,7 @@ for marker in (
     "rejectsUnsafeParentWithoutPartialAppend",
     "rejectsFullConversationWithoutPartialAppend",
     "rejectsBlankMessageGoalAndDuplicateRunId",
+    "atomicContinuationMessageAndParentLineageSurviveSnapshotSerialization",
 ):
     if marker not in agent_run_start_tests:
         fail(f"atomic Talk start transaction regression coverage is missing: {marker}")
