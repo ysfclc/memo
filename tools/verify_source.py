@@ -17,6 +17,8 @@ REQUIRED = [
     "build.gradle",
     "core/build.gradle",
     "core/src/main/kotlin/app/memo/android/data/Models.kt",
+    "core/src/main/kotlin/app/memo/android/data/AgentRunStartTransaction.kt",
+    "core/src/test/kotlin/app/memo/android/data/AgentRunStartTransactionTest.kt",
     "core/src/main/kotlin/app/memo/android/data/ActionApprovalLedger.kt",
     "core/src/main/kotlin/app/memo/android/data/OutcomeParser.kt",
     "core/src/main/kotlin/app/memo/android/runtime/RuntimeContracts.kt",
@@ -203,6 +205,28 @@ for marker in ("agentRunRecordsRoundTripWithExactRunAndConversationIdentity", "s
         fail(f"schema-v7 run persistence/recovery test is missing: {marker}")
 print("PASS: Talk execution has a schema-versioned encrypted run record, atomic event journal/readback, truthful Live state and no-replay recovery")
 
+agent_run_start = (ROOT / "core/src/main/kotlin/app/memo/android/data/AgentRunStartTransaction.kt").read_text()
+agent_run_start_tests = (ROOT / "core/src/test/kotlin/app/memo/android/data/AgentRunStartTransactionTest.kt").read_text()
+for marker in (
+    "object AgentRunStartTransaction",
+    "MAX_USER_MESSAGES_PER_CONVERSATION",
+    "AgentRunContinuationPolicy.resolveParent(",
+    "messages = conversation.messages + message",
+    "agentRuns = listOf(run) + current.agentRuns",
+):
+    if marker not in agent_run_start:
+        fail(f"atomic Talk start transaction is missing: {marker}")
+for marker in (
+    "storesUserMessageAndNewRunInOneSnapshot",
+    "linksContinuationParentInSameSnapshotAsUserMessage",
+    "rejectsUnsafeParentWithoutPartialAppend",
+    "rejectsFullConversationWithoutPartialAppend",
+    "rejectsBlankMessageGoalAndDuplicateRunId",
+):
+    if marker not in agent_run_start_tests:
+        fail(f"atomic Talk start transaction regression coverage is missing: {marker}")
+print("PASS: Talk request message and child run are prepared together with fail-closed parent and message-limit checks")
+
 continuation_policy = (ROOT / "core/src/main/kotlin/app/memo/android/data/AgentRunContinuationPolicy.kt").read_text()
 continuation_tests = (ROOT / "core/src/test/kotlin/app/memo/android/data/AgentRunContinuationPolicyTest.kt").read_text()
 for marker in (
@@ -253,13 +277,13 @@ continuation_talk_ui = (ROOT / "app/src/main/java/app/memo/android/ui/WorkspaceS
 continuation_app = (ROOT / "app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt").read_text()
 continuation_localization_tests = (ROOT / "app/src/test/java/app/memo/android/ui/MemoLocalizationTest.kt").read_text()
 for marker in (
+    'userMessage: String',
     'continuationOfRunId: String = ""',
     'onRunCreationRejected: (String) -> Unit = {}',
-    'createAgentRunDurably(runId, conversationId, goal, modelId, continuationOfRunId)',
-    'onRunCreationRejected("The saved run changed or is no longer eligible. Review it in Live before trying again.")',
-    'AgentRunContinuationPolicy.resolveParent(',
-    'parentRunId = continuationOfRunId,',
-    'parentRunId = parentRun?.id.orEmpty()',
+    'onUserMessagePersisted: (String) -> Unit = {}',
+    'AgentRunStartTransaction.prepare(',
+    'onUserMessagePersisted(created.messageId)',
+    'block(runId, created.messageId)',
 ):
     if marker not in continuation_view_model:
         fail(f"Talk continuation ViewModel safety boundary is missing: {marker}")
@@ -270,6 +294,8 @@ if create_position < 0 or engine_position <= create_position:
 for marker in (
     'initialContinuationRunId: String = ""',
     'onContinuationDraftChanged: (String) -> Unit = {}',
+    'userMessage = userText',
+    'onUserMessagePersisted = { _ ->',
     'if (initialContinuationRunId.isBlank()) onInitialPromptConsumed()',
     'onContinuationDraftChanged(it)',
     'AgentRunContinuationPolicy.resolveParent(',
@@ -307,10 +333,16 @@ for marker in (
 ):
     if marker not in continuation_localization_tests:
         fail(f"Talk continuation localization regression coverage is missing: {marker}")
-prompt_persisted_position = continuation_talk_ui.find("val appendError = viewModel.appendChatMessageDurably")
-draft_consumed_position = continuation_talk_ui.find("draft = \"\"", prompt_persisted_position)
-if prompt_persisted_position < 0 or draft_consumed_position <= prompt_persisted_position:
-    fail("Talk must retain the editable draft until the user prompt is durably appended to its conversation")
+launch_position = continuation_talk_ui.find("viewModel.launchAgentExecution(")
+persisted_callback_position = continuation_talk_ui.find("onUserMessagePersisted = { _ ->", launch_position)
+draft_consumed_position = continuation_talk_ui.find("draft = \"\"", persisted_callback_position)
+engine_block_position = continuation_talk_ui.find(") { runId, sourceMessageId ->", launch_position)
+if launch_position < 0 or persisted_callback_position <= launch_position or draft_consumed_position <= persisted_callback_position or engine_block_position <= persisted_callback_position:
+    fail("Talk must consume its editable draft only after the atomic user-message/run snapshot is verified")
+if "appendChatMessageDurably(" in continuation_talk_ui[launch_position:engine_block_position]:
+    fail("Talk must not append the request in a second write after creating the run record")
+if "block(runId, created.messageId)" not in continuation_view_model:
+    fail("The Talk engine must receive the exact message ID from the verified atomic start snapshot")
 print("PASS: Live offers only safe continuation; Talk revalidates, preserves editable drafts until prompt read-back, withholds private run events from remote context without consent, and starts a new linked run")
 
 

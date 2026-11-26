@@ -744,31 +744,23 @@ fun ChatsWorkspaceScreen(
                                     conversationId = selectedConversation.id,
                                     goal = userText,
                                     modelId = selectedModelId,
+                                    userMessage = userText,
                                     continuationOfRunId = initialContinuationRunId,
                                     onRunCreationRejected = { message ->
                                         onShowMessage(MemoLocalization.translate(message, uiLanguage))
-                                    }
-                                ) { runId ->
-                                    try {
-                                        val appendError = viewModel.appendChatMessageDurably(
-                                            selectedConversation.id,
-                                            "USER",
-                                            userText
-                                        )
-                                        if (appendError != null) {
-                                            onShowMessage(appendError)
-                                            return@launchAgentExecution
-                                        }
+                                    },
+                                    onUserMessagePersisted = { _ ->
                                         draft = ""
                                         if (initialContinuationRunId.isNotBlank()) {
                                             onInitialContinuationConsumed()
                                             onInitialPromptConsumed()
                                         }
+                                    }
+                                ) { runId, sourceMessageId ->
+                                    try {
                                         val durableConversation = viewModel.snapshot.value.conversations.firstOrNull {
                                             it.id == selectedConversation.id
                                         }
-                                        val sourceMessageId = durableConversation?.messages
-                                            ?.lastOrNull { it.role == "USER" && it.content == userText }?.id.orEmpty()
                                         val agentContextCandidates = buildList {
                                             addAll(contextCandidates)
                                             if (durableConversation != null) {

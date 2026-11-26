@@ -113,33 +113,46 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
 
 
     /**
-     * Persist a run record before starting the engine. The same ID is passed through every
-     * engine event and approval request, keeping the encrypted run index and transcript aligned.
+     * Atomically persist the user's request and its durable run record before the execution block starts.
+     * The exact message ID is passed forward so evidence is linked to the message that was read back.
      */
     fun launchAgentExecution(
         conversationId: String,
         goal: String,
         modelId: String,
+        userMessage: String,
         continuationOfRunId: String = "",
         onRunCreationRejected: (String) -> Unit = {},
-        block: suspend (String) -> Unit
+        onUserMessagePersisted: (String) -> Unit = {},
+        block: suspend (String, String) -> Unit
     ): Boolean {
         if (conversationId.isBlank() || !_vaultReady.value || agentExecutionJob?.isActive == true) return false
         val runId = newId()
         _agentExecutionState.value = AgentExecutionUiState(
             running = true,
             conversationId = conversationId,
-            stage = "Starting Memo execution"
+            stage = "Saving request and Memo execution together"
         )
         agentExecutionJob = viewModelScope.launch {
             var runCreated = false
             try {
-                runCreated = createAgentRunDurably(runId, conversationId, goal, modelId, continuationOfRunId)
-                if (!runCreated) {
-                    onRunCreationRejected("The saved run changed or is no longer eligible. Review it in Live before trying again.")
+                val created = createAgentRunDurably(
+                    runId = runId,
+                    conversationId = conversationId,
+                    goal = goal,
+                    modelId = modelId,
+                    userMessage = userMessage,
+                    continuationOfRunId = continuationOfRunId
+                )
+                if (created.messageId == null) {
+                    onRunCreationRejected(created.reason.ifBlank {
+                        "The user message and new Memo run could not be verified together in encrypted storage."
+                    })
                     return@launch
                 }
-                block(runId)
+                runCreated = true
+                onUserMessagePersisted(created.messageId)
+                block(runId, created.messageId)
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Throwable) {
@@ -166,52 +179,61 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         return true
     }
 
+    private data class AgentRunCreationResult(
+        val messageId: String? = null,
+        val reason: String = ""
+    )
+
     private suspend fun createAgentRunDurably(
         runId: String,
         conversationId: String,
         goal: String,
         modelId: String,
+        userMessage: String,
         continuationOfRunId: String
-    ): Boolean {
-        if (!_vaultReady.value || _vaultError.value != null) return false
-        val cleanGoal = goal.trim().take(6_000)
-        if (cleanGoal.isBlank()) return false
-        val current = _snapshot.value
-        if (current.conversations.none { it.id == conversationId } || current.agentRuns.size >= MAX_AGENT_RUNS) {
-            _vaultError.value = if (current.agentRuns.size >= MAX_AGENT_RUNS) {
-                "Memo execution history is full. Export your workspace before starting another run."
-            } else {
-                "The originating conversation no longer exists."
-            }
-            return false
+    ): AgentRunCreationResult {
+        if (!_vaultReady.value) return AgentRunCreationResult(reason = "Unlock the workspace before continuing.")
+        _vaultError.value?.let {
+            return AgentRunCreationResult(reason = "Encrypted workspace persistence is unavailable: $it")
         }
-        if (current.agentRuns.any { it.id == runId }) return false
-        val parentRun = if (continuationOfRunId.isBlank()) {
-            null
-        } else {
-            val resolution = AgentRunContinuationPolicy.resolveParent(
-                parentRunId = continuationOfRunId,
-                conversationId = conversationId,
-                runs = current.agentRuns
-            )
-            if (!resolution.assessment.allowed || resolution.parentRun == null) {
-                log(resolution.assessment.reason, "WARN")
-                return false
-            }
-            resolution.parentRun
-        }
-        val record = AgentRunRecord(
-            id = runId,
+        val prepared = AgentRunStartTransaction.prepare(
+            current = _snapshot.value,
+            runId = runId,
             conversationId = conversationId,
-            goal = cleanGoal,
-            parentRunId = parentRun?.id.orEmpty(),
-            modelId = modelId.take(160)
+            goal = goal,
+            modelId = modelId,
+            userMessage = userMessage,
+            continuationOfRunId = continuationOfRunId
         )
-        val next = current.copy(agentRuns = listOf(record) + current.agentRuns)
+        val candidate = prepared.snapshot
+            ?: return AgentRunCreationResult(reason = prepared.reason)
+        val expectedRun = candidate.agentRuns.firstOrNull { it.id == runId }
+            ?: return AgentRunCreationResult(reason = "The new Memo run was not included in its prepared workspace snapshot.")
+        val expectedMessageContent = userMessage.trim().take(24_000)
+        val conversationTitle = candidate.conversations.firstOrNull { it.id == conversationId }?.title ?: "conversation"
+        val next = candidate.withActivity("Message added to $conversationTitle")
         _snapshot.value = next
         persist(next)
-        return persistAgentRunAndVerify(runId) { saved ->
-            saved.agentRuns.any { it.id == runId && it.status == "RUNNING" && it.conversationId == conversationId }
+        val verified = persistAgentRunAndVerify(runId) { saved ->
+            val savedRun = saved.agentRuns.firstOrNull { it.id == runId }
+            val savedConversation = saved.conversations.firstOrNull { it.id == conversationId }
+            savedRun?.status == "RUNNING" &&
+                savedRun.conversationId == conversationId &&
+                savedRun.goal == goal.trim().take(6_000) &&
+                savedRun.parentRunId == expectedRun.parentRunId &&
+                savedConversation?.messages?.any {
+                    it.id == prepared.userMessageId &&
+                        it.role == "USER" &&
+                        it.content == expectedMessageContent
+                } == true
+        }
+        return if (verified) {
+            AgentRunCreationResult(messageId = prepared.userMessageId)
+        } else {
+            AgentRunCreationResult(
+                reason = _vaultError.value
+                    ?: "The user message and new Memo run could not be verified together in encrypted storage."
+            )
         }
     }
 
@@ -447,7 +469,7 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         if (normalizedRole !in setOf("USER", "ASSISTANT", "SYSTEM", "SOURCE", "TOOL")) return "Unsupported message role."
         val current = _snapshot.value
         val currentConversation = current.conversations.firstOrNull { it.id == conversationId } ?: return "Conversation no longer exists."
-        val messageLimit = if (normalizedRole == "USER") 249 else 250
+        val messageLimit = if (normalizedRole == "USER") MAX_USER_MESSAGES_PER_CONVERSATION else MAX_MESSAGES_PER_CONVERSATION
         if (currentConversation.messages.size >= messageLimit) return "This conversation is at its message limit. Export the full history before continuing in a linked conversation."
         val message = ChatMessageRecord(role = normalizedRole, content = cleanContent, modelId = modelId.take(160), sourceType = sourceType.take(40))
         updateSnapshot { snapshot ->
