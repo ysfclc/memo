@@ -89,6 +89,35 @@ class AgentRunStartTransactionTest {
     }
 
     @Test
+    fun atomicContinuationMessageAndParentLineageSurviveSnapshotSerialization() {
+        val parent = AgentRunRecord(
+            id = "parent-run",
+            conversationId = "conversation-1",
+            goal = "Original goal",
+            status = "NEEDS_REVIEW",
+            lastEventType = "RUN_NEEDS_REVIEW"
+        )
+        val prepared = prepare(
+            current = snapshot(runs = listOf(parent)),
+            continuationOfRunId = parent.id,
+            userMessage = "Continue from the saved checkpoint"
+        )
+
+        assertTrue(prepared.reason, prepared.accepted)
+        val beforeStorage = requireNotNull(prepared.snapshot)
+        val restored = AppSnapshot.fromJson(beforeStorage.toJson())
+        val restoredMessage = restored.conversations.single().messages.single()
+        val restoredChild = restored.agentRuns.first()
+
+        assertEquals(prepared.userMessageId, restoredMessage.id)
+        assertEquals("USER", restoredMessage.role)
+        assertEquals("Continue from the saved checkpoint", restoredMessage.content)
+        assertEquals("child-run", restoredChild.id)
+        assertEquals(parent.id, restoredChild.parentRunId)
+        assertEquals(parent, restored.agentRuns.last())
+    }
+
+    @Test
     fun rejectsUnsafeParentWithoutPartialAppend() {
         val unsafeParent = AgentRunRecord(
             id = "parent-run",
