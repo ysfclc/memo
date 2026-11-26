@@ -601,6 +601,16 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - **Verification state:** source edits are on memo/mission-1-safe-browser-submission; exact-head GitHub Actions unit tests, lint, source verification and emulator upgrade checks are pending. Physical-device acceptance remains pending. Do not mark this slice complete until CI is green and the actual phone flow is checked.
 - **Remaining boundary:** this hardens the existing approved browser prompt path only. It does not claim general browser controls, forms, uploads, native-app actions or universal workflow execution.
 
+### 2026-11-26 — M3.RECOVERY-S2 — Live continuation UI acceptance
+
+- **Requirement:** MEMO-RECOVERY-001, supporting MEMO-ORCH-001.
+- **Change:** added release-variant Android instrumentation coverage for the Live continuation action. The eligible-run case proves that the visible action passes the exact parent run and original conversation ID to the callback. The uncertain-capability case proves that the action is absent and the inspection reason is visible.
+- **Test host:** Compose content is installed into Memo's existing `MainActivity` by replacing its root content view with a test `ComposeView`. This keeps the test in the target application's process; the instrumentation APK does not need to launch a separate host Activity.
+- **Verification:** exact-head PR CI run #1246 on `d455dc768f5a9d7a1e235cc0d9815036d4da6569` passed source verification, remote-runner tests, `:core:test`, `:app:testDebugUnitTest`, debug/release lint, debug/release APK assembly, APK package/version/signature checks and the release install-over-existing emulator gate. Both encrypted-store instrumentation phases passed with `OK (3 tests)`, covering the encrypted-store upgrade test plus both Live continuation UI tests.
+- **Delivery boundary:** this was pull-request validation. Persistent signing and APK artifact publication are deliberately skipped for PR events. No release APK is claimed or attached by this run.
+- **Remaining proof:** physical-device acceptance on the user's phone, coverage comparison and dependency vulnerability assessment remain unverified. The continuation flow must still be exercised on-device, including navigation away/back and process-death recovery.
+- **Status:** source and exact-head CI verification passed; PR #25 remains draft pending device acceptance and the remaining independent assessments.
+
 ### 2026-11-25 — M3.RECOVERY-S1 — Fail-closed continuation eligibility and durable lineage
 
 - **Requirement:** MEMO-RECOVERY-001, supporting MEMO-ORCH-001 and MEMO-AGENT-001.
