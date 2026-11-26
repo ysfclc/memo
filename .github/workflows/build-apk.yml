@@ -590,9 +590,11 @@ jobs:
           commit_times = subprocess.check_output(['git', 'log', '-2', '--format=%ct', 'HEAD'], text=True).splitlines()
           if len(commit_times) != 2 or not all(re.fullmatch(r'[1-9][0-9]{0,9}', value) for value in commit_times):
               raise SystemExit(f'Unsafe Android versionCode history: {commit_times!r}')
-          if int(commit_times[0]) <= int(commit_times[1]) or int(commit_times[0]) > 2100000000:
+          current_code = int(commit_times[0]) // 4
+          parent_code = int(commit_times[1]) // 4
+          if current_code <= parent_code or current_code > 2100000000:
               raise SystemExit(f'Android source versionCode is not strictly increasing: {commit_times!r}')
-          print(commit_times[0])
+          print(current_code)
           print(name.group(1))
           PY
           )"
@@ -640,7 +642,7 @@ jobs:
           CURRENT_APK="$RUNNER_TEMP/Memo-current.apk"
           BASELINE_APK="$RUNNER_TEMP/Memo-baseline.apk"
           cp "$APK" "$CURRENT_APK"
-          CURRENT_CODE="$(git show -s --format=%ct HEAD)"
+          CURRENT_CODE="$(( $(git show -s --format=%ct HEAD) / 4 ))"
           BASELINE_CODE="$((CURRENT_CODE - 1))"
           if (( BASELINE_CODE < 1 )); then
             echo '::error::Cannot create a lower-version install baseline.'
