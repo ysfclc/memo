@@ -92,3 +92,21 @@ A passing emulator build is not a substitute for these physical-device checks. R
 - [ ] Interrupt the response stream or navigate away. Confirm NEEDS_REVIEW, no prompt resubmission and no false completed response evidence.
 - [ ] Test an unsupported provider DOM and a response that never stabilizes. Confirm timeout/baseline loss becomes NEEDS_REVIEW rather than an empty successful response.
 - [ ] With a remote model selected, revoke/disable page-sharing consent and confirm the response adapter disappears from the available tool set.
+## Talk — interrupted-run continuation (M3.RECOVERY-S3)
+
+Run this section only with the exact PR candidate's pinned-certificate release APK. Install it over the existing app.memo.android package; never uninstall or clear app data. Record the source commit, APK SHA-256, device model and Android version.
+
+- [ ] Before starting, confirm the installed APK signature matches the pinned Memo certificate and the package/version are the expected candidate.
+- [ ] Create a Talk run that reaches NEEDS_REVIEW before any capability starts, or after every recorded capability has a verified completion. Do not manufacture a safe test by interrupting an uncertain external action.
+- [ ] Open Live. Confirm the saved run, goal, original conversation and recovery reason are visible, and Continue in Talk is offered only for the eligible run.
+- [ ] Tap Continue in Talk. Confirm Memo opens the original conversation, not a new conversation, and places the continuation prompt in the editable draft without sending it.
+- [ ] Edit the draft, switch to Live and back to Talk, and confirm the exact edited draft remains. Confirm no new run or capability action starts merely from opening or navigating.
+- [ ] Switch to a different conversation and return. Confirm the pending continuation draft is cleared and cannot be sent from the unrelated conversation.
+- [ ] Start a fresh eligible continuation. Confirm the user message is durably appended before the new run starts, the new run ID differs from the parent, and the new record's parentRunId equals the exact interrupted run ID.
+- [ ] Confirm the parent run remains unchanged and prior approvals/tool-call IDs are not reused. Confirm prior run events are not sent to a remote model unless the separate workspace-context sharing permission is explicitly enabled.
+- [ ] Force-stop Memo while an eligible parent is awaiting continuation, reopen and unlock. Confirm the persisted parent remains inspectable and no continuation is automatically launched or replayed.
+- [ ] Force-stop during the new continuation run. On reopen, confirm the new run is recovered as NEEDS_REVIEW with correct parent lineage; no capability is replayed automatically.
+- [ ] Create a separate NEEDS_REVIEW run with a capability invocation whose outcome is uncertain. Confirm Continue in Talk is absent and the destination-inspection warning is visible.
+- [ ] Repeat the safe path with Talk/Live navigation, keyboard open, and English, Polish and Turkish. Capture screenshots or video of the draft, parent/child run IDs and recovery state.
+
+A failed, skipped or unrecorded item means physical-device acceptance is pending. Emulator instrumentation is supporting evidence only; it cannot sign off this section.
