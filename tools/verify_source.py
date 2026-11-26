@@ -249,6 +249,7 @@ for marker in (
     "rejectsAnyPersistedApprovalReference",
     "rejectsMissingConversationOrGoal",
     "rejectsInconsistentCapabilityCounters",
+    "processDeathRecoveryAllowsOnlyRunsWithoutUncertainCapabilitySideEffects",
     "resolvesParentOnlyWithinTheOriginalConversation",
     "rejectsMissingOrCrossConversationParent",
     "resolvedParentStillUsesTheFailClosedEligibilityPolicy",
