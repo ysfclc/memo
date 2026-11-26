@@ -295,3 +295,17 @@ The action inbox and first top-level stop control are present in source. Static/
 - Required source, runner, JVM, debug/release lint, release instrumentation and APK identity gates: PASS
 - Release package: ; final pinned signing is isolated.
 - Workflow run: https://github.com/ysfclc/memo/actions/runs/45583930081
+
+# Build and verification status — 26 November 2026
+
+## WF-13 — APK version monotonicity (implementation transplanted; CI pending)
+
+- New branch: `fix/apk-version-monotonicity-mainline-2026-11-26`, based directly on current main.
+- Gradle now derives the default versionCode from the current Git commit timestamp and rejects missing Git history, malformed values, values above 2,100,000,000, and a timestamp that is not strictly newer than the first parent. The explicit `MEMO_VERSION_CODE` override is retained for controlled CI baseline construction and is range-validated.
+- GitHub Actions reads and validates the same two-commit timestamp sequence before comparing the built APK identity; its install-over-existing test uses the same source timestamp. CircleCI validates the same parent/current ordering before setting the explicit Gradle value.
+- `tools/verify_source.py` now guards against runner-specific counters and requires the shared source-derived policy in all three build paths.
+- No application ID, versionName, signing key/certificate, encryption key alias, storage schema, backup format, or application data behavior was changed.
+- This is a mainline transplant of the useful PR #9 versioning change, not a merge of its diverged branch. Its unrelated Talk source-verifier change was excluded.
+- **Not yet verified:** exact-head GitHub Actions, Gradle compilation/tests, lint, APK assembly/identity, encrypted-store install-over-existing, dependency scan, coverage comparison, and physical-device update. No APK has been published from this branch.
+- **Release blocker remains:** the user-installed package and certificate must be confirmed before installing any candidate. The existing known release artifact is package `app.memo.android`, version code `1190`, pinned certificate SHA-256 `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a`.
+
