@@ -301,8 +301,8 @@ The action inbox and first top-level stop control are present in source. Static/
 ## WF-13 — APK version monotonicity (implementation transplanted; CI pending)
 
 - New branch: `fix/apk-version-monotonicity-mainline-2026-11-26`, based directly on current main.
-- Gradle now derives the default versionCode from the current Git commit timestamp and rejects missing Git history, malformed values, values above 2,100,000,000, and a timestamp that is not strictly newer than the first parent. The explicit `MEMO_VERSION_CODE` override is retained for controlled CI baseline construction and is range-validated.
-- GitHub Actions reads and validates the same two-commit timestamp sequence before comparing the built APK identity; its install-over-existing test uses the same source timestamp. CircleCI validates the same parent/current ordering before setting the explicit Gradle value.
+- Gradle now derives the default versionCode as `floor(sourceCommitUnixSeconds / 4)`. It rejects missing Git history, malformed timestamps, a scaled value not strictly greater than the parent's, and values above 2,100,000,000. Four-second source timestamp resolution leaves a multi-century version-code range rather than consuming the limit in roughly a decade. The explicit `MEMO_VERSION_CODE` override is retained for controlled CI baseline construction and is range-validated.
+- GitHub Actions reads and validates the same two-commit timestamp sequence and scaled values before comparing the built APK identity; its install-over-existing test uses the same scaled source value. CircleCI validates the same scaled parent/current ordering before setting the explicit Gradle value.
 - `tools/verify_source.py` now guards against runner-specific counters and requires the shared source-derived policy in all three build paths.
 - No application ID, versionName, signing key/certificate, encryption key alias, storage schema, backup format, or application data behavior was changed.
 - This is a mainline transplant of the useful PR #9 versioning change, not a merge of its diverged branch. Its unrelated Talk source-verifier change was excluded.
