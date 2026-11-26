@@ -99,16 +99,16 @@ class BrowserPromptSubmissionSafetyInstrumentedTest {
                         pageLoaded.countDown()
                     }
                 }
-                viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
-                    override fun onGlobalLayout() {
-                        if (width > 0 && height > 0) {
-                            viewTreeObserver.removeOnGlobalLayoutListener(this)
-                            viewLaidOut.countDown()
-                        }
-                    }
-                })
             }
             activity.setContentView(webView)
+            webView.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
+                override fun onGlobalLayout() {
+                    if (webView.width > 0 && webView.height > 0) {
+                        webView.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                        viewLaidOut.countDown()
+                    }
+                }
+            })
             webView.loadDataWithBaseURL(
                 "https://provider.example/conversation",
                 html,
