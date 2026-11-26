@@ -4,7 +4,27 @@ plugins {
     id 'org.jetbrains.kotlin.plugin.compose'
 }
 
-def memoVersionCode = (System.getenv('MEMO_VERSION_CODE') ?: System.getenv('GITHUB_RUN_NUMBER') ?: '40').toInteger()
+def memoVersionCodeText = System.getenv('MEMO_VERSION_CODE')
+if (!memoVersionCodeText) {
+    try {
+        def versionProcess = new ProcessBuilder('git', 'show', '-s', '--format=%ct', 'HEAD')
+            .redirectErrorStream(true)
+            .start()
+        memoVersionCodeText = versionProcess.inputStream.getText('UTF-8').trim()
+        if (versionProcess.waitFor() != 0) {
+            throw new GradleException("Could not derive Memo APK versionCode from the checked-out Git commit.")
+        }
+    } catch (Exception ignored) {
+        throw new GradleException("Memo APK builds require MEMO_VERSION_CODE or a valid Git checkout; refusing an unsafe fixed fallback version.")
+    }
+}
+if (!(memoVersionCodeText ==~ /[1-9][0-9]{0,9}/)) {
+    throw new GradleException("Invalid MEMO_VERSION_CODE: \${memoVersionCodeText}")
+}
+def memoVersionCode = memoVersionCodeText.toInteger()
+if (memoVersionCode > 2100000000) {
+    throw new GradleException("Memo versionCode exceeds Android's supported maximum: \${memoVersionCode}")
+}
 
 def memoUploadStoreFile = System.getenv('MEMO_UPLOAD_KEYSTORE_FILE')
 def memoUploadStorePassword = System.getenv('MEMO_UPLOAD_STORE_PASSWORD')
