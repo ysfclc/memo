@@ -476,6 +476,8 @@ if "OK \\([1-9][0-9]* tests?\\)" not in workflow:
     fail("Android instrumentation gate must accept any positive test count")
 if "androidTestImplementation 'androidx.compose.ui:ui-test-junit4'" not in app_gradle:
     fail("Live continuation Compose UI test dependency is missing")
+if "androidTestImplementation 'androidx.compose.ui:ui-test-manifest'" not in app_gradle:
+    fail("Release instrumentation must package the Compose test host activity")
 if "testBuildType 'release'" not in app_gradle:
     fail("encrypted-store install-upgrade instrumentation must target the normal release package")
 for marker in ("app/build/outputs/apk/release/app-release.apk", "app/build/outputs/apk/androidTest/release/app-release-androidTest.apk", "Memo-Android-release.apk", "app.memo.android"):
