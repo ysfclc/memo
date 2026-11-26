@@ -604,7 +604,7 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 ## 2026-11-26 — WF-13 APK version monotonicity — mainline transplant
 
 - **Status:** [~] implementation transplanted from stale PR #9 onto current mainline; exact-head CI pending.
-- **Policy:** all normal builds derive `versionCode` from the checked-out source commit timestamp. The current commit timestamp must be valid, no greater than Android's 2,100,000,000 ceiling, and strictly greater than its first parent. A non-monotonic commit fails closed.
+- **Policy:** all normal builds derive `versionCode` as `floor(sourceCommitUnixSeconds / 4)`. The current and parent timestamps must be valid, and the scaled current value must be strictly greater than the scaled parent value and no greater than Android's 2,100,000,000 ceiling. This gives roughly 8-second version-code resolution and a multi-century range; commits too close together to advance the code fail closed.
 - **Build paths:** Gradle, GitHub Actions identity/upgrade checks, and CircleCI use the same source-derived value. The unsafe Gradle fallback `40`, GitHub run-number override and CircleCI build-number counter are removed.
 - **Test override:** `MEMO_VERSION_CODE` remains an explicit validated override for the CI install-over-existing baseline pair only; the baseline is current version minus one and is not published.
 - **Compatibility:** no application ID, versionName, signing configuration, encrypted-store schema, backup format, or user data changes.
