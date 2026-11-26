@@ -587,10 +587,12 @@ jobs:
           name = re.search(r'\bversionName\s*(?:=\s*)?[\'"]([^\'"]+)[\'"]', source)
           if not name:
               raise SystemExit('Could not read versionName from app Gradle file')
-          commit_code = subprocess.check_output(['git', 'show', '-s', '--format=%ct', 'HEAD'], text=True).strip()
-          if not re.fullmatch(r'[1-9][0-9]{0,9}', commit_code) or int(commit_code) > 2100000000:
-              raise SystemExit(f'Unsafe Android versionCode derived from source commit: {commit_code!r}')
-          print(commit_code)
+          commit_times = subprocess.check_output(['git', 'log', '-2', '--format=%ct', 'HEAD'], text=True).splitlines()
+          if len(commit_times) != 2 or not all(re.fullmatch(r'[1-9][0-9]{0,9}', value) for value in commit_times):
+              raise SystemExit(f'Unsafe Android versionCode history: {commit_times!r}')
+          if int(commit_times[0]) <= int(commit_times[1]) or int(commit_times[0]) > 2100000000:
+              raise SystemExit(f'Android source versionCode is not strictly increasing: {commit_times!r}')
+          print(commit_times[0])
           print(name.group(1))
           PY
           )"
