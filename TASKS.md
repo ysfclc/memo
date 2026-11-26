@@ -600,3 +600,14 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - **Compatibility:** no encrypted workspace schema, backup schema, package ID, signing key, approval-ledger format or persisted user data changes.
 - **Verification state:** source edits are on memo/mission-1-safe-browser-submission; exact-head GitHub Actions unit tests, lint, source verification and emulator upgrade checks are pending. Physical-device acceptance remains pending. Do not mark this slice complete until CI is green and the actual phone flow is checked.
 - **Remaining boundary:** this hardens the existing approved browser prompt path only. It does not claim general browser controls, forms, uploads, native-app actions or universal workflow execution.
+
+## 2026-11-26 — WF-13 APK version monotonicity — mainline transplant
+
+- **Status:** [~] implementation transplanted from stale PR #9 onto current mainline; exact-head CI pending.
+- **Policy:** all normal builds derive `versionCode` from the checked-out source commit timestamp. The current commit timestamp must be valid, no greater than Android's 2,100,000,000 ceiling, and strictly greater than its first parent. A non-monotonic commit fails closed.
+- **Build paths:** Gradle, GitHub Actions identity/upgrade checks, and CircleCI use the same source-derived value. The unsafe Gradle fallback `40`, GitHub run-number override and CircleCI build-number counter are removed.
+- **Test override:** `MEMO_VERSION_CODE` remains an explicit validated override for the CI install-over-existing baseline pair only; the baseline is current version minus one and is not published.
+- **Compatibility:** no application ID, versionName, signing configuration, encrypted-store schema, backup format, or user data changes.
+- **Scope:** current mainline was used as the base; the stale PR #9 branch was not merged. The unrelated stale Talk verifier edit from PR #9 was deliberately excluded.
+- **Required verification:** exact-head Actions source verifier, Gradle tests, lint, debug/release assembly, APK identity, encrypted-store emulator upgrade and CI artifacts. Then compare with the last known installed release and perform a physical-device in-place update using the pinned certificate. No uninstall workaround is permitted.
+- **Release:** blocked until exact-head CI and device acceptance pass. No APK is being distributed.
