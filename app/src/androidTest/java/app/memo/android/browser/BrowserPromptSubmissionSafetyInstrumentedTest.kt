@@ -1,9 +1,10 @@
 package app.memo.android.browser
 
+import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import app.memo.android.MainActivity
 import org.json.JSONObject
@@ -28,14 +29,15 @@ import java.util.concurrent.TimeUnit
 @RunWith(AndroidJUnit4::class)
 class BrowserPromptSubmissionSafetyInstrumentedTest {
     @get:Rule
-    val composeRule = createAndroidComposeRule<MainActivity>()
+    val activityRule = ActivityScenarioRule(MainActivity::class.java)
 
     private lateinit var webView: WebView
 
     @After
     fun tearDown() {
         if (::webView.isInitialized) {
-            composeRule.runOnUiThread {
+            activityRule.scenario.onActivity {
+                (webView.parent as? ViewGroup)?.removeView(webView)
                 webView.stopLoading()
                 webView.destroy()
             }
@@ -89,8 +91,8 @@ class BrowserPromptSubmissionSafetyInstrumentedTest {
             </html>
         """.trimIndent()
 
-        composeRule.runOnUiThread {
-            webView = WebView(composeRule.activity).apply {
+        activityRule.scenario.onActivity { activity ->
+            webView = WebView(activity).apply {
                 settings.javaScriptEnabled = true
                 webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView, url: String) {
@@ -106,7 +108,7 @@ class BrowserPromptSubmissionSafetyInstrumentedTest {
                     }
                 })
             }
-            composeRule.activity.setContentView(webView)
+            activity.setContentView(webView)
             webView.loadDataWithBaseURL(
                 "https://provider.example/conversation",
                 html,
@@ -118,7 +120,6 @@ class BrowserPromptSubmissionSafetyInstrumentedTest {
 
         assertTrue("Fixture page did not finish loading.", pageLoaded.await(10, TimeUnit.SECONDS))
         assertTrue("Fixture WebView was not laid out.", viewLaidOut.await(10, TimeUnit.SECONDS))
-        composeRule.waitForIdle()
     }
 
     private fun escapeHtml(value: String): String = value
@@ -131,7 +132,7 @@ class BrowserPromptSubmissionSafetyInstrumentedTest {
     private fun evaluateValue(script: String): String {
         val completed = CountDownLatch(1)
         var encodedResult: String? = null
-        composeRule.runOnUiThread {
+        activityRule.scenario.onActivity {
             webView.evaluateJavascript(script) { result ->
                 encodedResult = result
                 completed.countDown()
