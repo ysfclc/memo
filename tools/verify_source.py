@@ -362,9 +362,9 @@ if "sha256sum -c SOURCE_SHA256SUMS.txt" not in workflow or "Memo-Source-Archive-
 # All build paths must derive the same safe APK version from the checked-out source commit.
 gradle_build = (ROOT / "app/build.gradle").read_text()
 circleci_build = (ROOT / "tools/ci/circleci-android.sh").read_text()
-if "ProcessBuilder('git', 'show', '-s', '--format=%ct', 'HEAD')" not in gradle_build:
+if "ProcessBuilder('git', 'log', '-2', '--format=%ct', 'HEAD')" not in gradle_build:
     fail("Gradle APK versionCode must derive from the checked-out source commit")
-if "refusing an unsafe fixed fallback version" not in gradle_build:
+if "refusing an unsafe fallback version" not in gradle_build:
     fail("Gradle must fail closed when no safe source-derived APK version is available")
 if "GITHUB_RUN_NUMBER" in gradle_build or "CIRCLE_BUILD_NUM" in circleci_build:
     fail("APK versionCode must not depend on runner-specific counters")
@@ -372,7 +372,7 @@ if 'git show -s --format=%ct HEAD' not in circleci_build:
     fail("CircleCI must use the same source-derived APK version as GitHub Actions")
 if "GITHUB_RUN_NUMBER" in workflow or 'CURRENT_CODE="$(git show -s --format=%ct HEAD)"' not in workflow:
     fail("GitHub APK identity/upgrade checks must use the source-derived APK version")
-if "commit_code = subprocess.check_output(['git', 'show', '-s', '--format=%ct', 'HEAD']" not in workflow:
+if "commit_times = subprocess.check_output(['git', 'log', '-2', '--format=%ct', 'HEAD']" not in workflow:
     fail("GitHub APK version validation must match the source commit timestamp")
 
 workspace_vault = (ROOT / "app/src/main/java/app/memo/android/data/EncryptedVault.kt").read_text()
