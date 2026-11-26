@@ -17,6 +17,8 @@ REQUIRED = [
     "build.gradle",
     "core/build.gradle",
     "core/src/main/kotlin/app/memo/android/data/Models.kt",
+    "core/src/main/kotlin/app/memo/android/data/AgentRunStartTransaction.kt",
+    "core/src/test/kotlin/app/memo/android/data/AgentRunStartTransactionTest.kt",
     "core/src/main/kotlin/app/memo/android/data/ActionApprovalLedger.kt",
     "core/src/main/kotlin/app/memo/android/data/OutcomeParser.kt",
     "core/src/main/kotlin/app/memo/android/runtime/RuntimeContracts.kt",
@@ -36,6 +38,7 @@ REQUIRED = [
     "app/src/main/java/app/memo/android/data/EncryptedVault.kt",
     "app/src/main/java/com/synthos/runtime/data/SynthStore.java",
     "app/src/androidTest/java/app/memo/android/data/EncryptedStoreUpgradeTest.kt",
+    "app/src/androidTest/java/app/memo/android/ui/LiveContinuationUiTest.kt",
     "app/src/main/java/app/memo/android/runtime/MemoRuntimeBridge.java",
     "app/src/main/java/com/synthos/runtime/engine/AutomationAccessibilityService.java",
     "remote-runner/server.py",
@@ -120,7 +123,8 @@ for marker in (
     if marker not in agent_broker:
         fail(f"durable Talk approval broker is missing: {marker}")
 for marker in (
-    "viewModel.launchAgentExecution(selectedConversation.id, userText, selectedModelId)",
+    "viewModel.launchAgentExecution(",
+    "continuationOfRunId = initialContinuationRunId,",
     "onApprovalRequired = { request ->",
     "viewModel.awaitAgentApproval(selectedConversation.id, request)",
     "viewModel.updateAgentExecutionStage(event.summary)",
@@ -182,7 +186,7 @@ for marker in (
     if marker not in agent_broker:
         fail(f"Talk durable run journal is missing: {marker}")
 for marker in (
-    "viewModel.launchAgentExecution(selectedConversation.id, userText, selectedModelId)",
+    "viewModel.launchAgentExecution(",
     "engine.executeWithRunId(",
     "executionRunId = runId",
     "viewModel.appendAgentEventDurably(",
@@ -200,6 +204,152 @@ for marker in ("agentRunRecordsRoundTripWithExactRunAndConversationIdentity", "s
     if marker not in workspace_schema_test:
         fail(f"schema-v7 run persistence/recovery test is missing: {marker}")
 print("PASS: Talk execution has a schema-versioned encrypted run record, atomic event journal/readback, truthful Live state and no-replay recovery")
+
+agent_run_start = (ROOT / "core/src/main/kotlin/app/memo/android/data/AgentRunStartTransaction.kt").read_text()
+agent_run_start_tests = (ROOT / "core/src/test/kotlin/app/memo/android/data/AgentRunStartTransactionTest.kt").read_text()
+for marker in (
+    "object AgentRunStartTransaction",
+    "MAX_USER_MESSAGES_PER_CONVERSATION",
+    "AgentRunContinuationPolicy.resolveParent(",
+    "messages = conversation.messages + message",
+    "agentRuns = listOf(run) + current.agentRuns",
+):
+    if marker not in agent_run_start:
+        fail(f"atomic Talk start transaction is missing: {marker}")
+for marker in (
+    "storesUserMessageAndNewRunInOneSnapshot",
+    "linksContinuationParentInSameSnapshotAsUserMessage",
+    "rejectsUnsafeParentWithoutPartialAppend",
+    "rejectsFullConversationWithoutPartialAppend",
+    "rejectsBlankMessageGoalAndDuplicateRunId",
+    "atomicContinuationMessageAndParentLineageSurviveSnapshotSerialization",
+):
+    if marker not in agent_run_start_tests:
+        fail(f"atomic Talk start transaction regression coverage is missing: {marker}")
+print("PASS: Talk request message and child run are prepared together with fail-closed parent and message-limit checks")
+
+continuation_policy = (ROOT / "core/src/main/kotlin/app/memo/android/data/AgentRunContinuationPolicy.kt").read_text()
+continuation_tests = (ROOT / "core/src/test/kotlin/app/memo/android/data/AgentRunContinuationPolicyTest.kt").read_text()
+for marker in (
+    'run.status != "NEEDS_REVIEW"',
+    "run.conversationId.isBlank() || run.goal.isBlank()",
+    "run.pendingApprovalCallId.isNotBlank()",
+    "run.toolCalls < 0 || run.successfulToolCalls < 0 || run.successfulToolCalls > run.toolCalls",
+    'run.lastEventType == "TOOL_STARTED"',
+    'run.lastEventType == "TOOL_FAILED"',
+    "run.toolCalls > run.successfulToolCalls",
+):
+    if marker not in continuation_policy:
+        fail(f"Talk continuation policy is missing a fail-closed guard: {marker}")
+for marker in (
+    "allowsInterruptedRunBeforeAnyCapabilityStarted",
+    "allowsContinuationAfterEveryRecordedCapabilityCompleted",
+    "rejectsActiveAndTerminalRuns",
+    "rejectsAnInvocationWhoseOutcomeMayBeUncertain",
+    "rejectsAnyPersistedApprovalReference",
+    "rejectsMissingConversationOrGoal",
+    "rejectsInconsistentCapabilityCounters",
+    "processDeathRecoveryAllowsOnlyRunsWithoutUncertainCapabilitySideEffects",
+    "resolvesParentOnlyWithinTheOriginalConversation",
+    "rejectsMissingOrCrossConversationParent",
+    "resolvedParentStillUsesTheFailClosedEligibilityPolicy",
+):
+    if marker not in continuation_tests:
+        fail(f"Talk continuation policy regression coverage is missing: {marker}")
+for marker in (
+    'val parentRunId: String = ""',
+    "it.parentRunId.length <= 128",
+    "it.parentRunId != it.id",
+    "add(run.parentRunId)",
+    'put("parentRunId", run.parentRunId.take(128))',
+    'parentRunId = row.safeString("parentRunId").take(128)',
+):
+    if marker not in agent_models:
+        fail(f"durable parent-run lineage is missing: {marker}")
+for marker in (
+    "schemaSevenBackupWithoutParentRunLinkImportsAsIndependentRun",
+    "parentRunIdCannotReferToTheRunItself",
+):
+    if marker not in workspace_schema_test:
+        fail(f"parent-run schema compatibility coverage is missing: {marker}")
+print("PASS: interrupted Talk continuation is fail-closed and parent-run lineage is bounded, persisted and backward-compatible")
+continuation_view_model = (ROOT / "app/src/main/java/app/memo/android/data/MemoWorkspaceViewModel.kt").read_text()
+continuation_live_ui = (ROOT / "app/src/main/java/app/memo/android/ui/LiveWorkspaceScreen.kt").read_text()
+continuation_talk_ui = (ROOT / "app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt").read_text()
+continuation_app = (ROOT / "app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt").read_text()
+continuation_localization_tests = (ROOT / "app/src/test/java/app/memo/android/ui/MemoLocalizationTest.kt").read_text()
+for marker in (
+    'userMessage: String',
+    'continuationOfRunId: String = ""',
+    'onRunCreationRejected: (String) -> Unit = {}',
+    'onUserMessagePersisted: (String) -> Unit = {}',
+    'AgentRunStartTransaction.prepare(',
+    'onUserMessagePersisted(created.messageId)',
+    'block(runId, created.messageId)',
+):
+    if marker not in continuation_view_model:
+        fail(f"Talk continuation ViewModel safety boundary is missing: {marker}")
+launch_create_position = continuation_view_model.find("val created = createAgentRunDurably(")
+message_callback_position = continuation_view_model.find("onUserMessagePersisted(created.messageId)", launch_create_position)
+engine_position = continuation_view_model.find("block(runId, created.messageId)", message_callback_position)
+start_transaction_position = continuation_view_model.find("AgentRunStartTransaction.prepare(")
+persist_position = continuation_view_model.find("val verified = persistAgentRunAndVerify(runId)", start_transaction_position)
+if launch_create_position < 0 or message_callback_position <= launch_create_position or engine_position <= message_callback_position or start_transaction_position < 0 or persist_position <= start_transaction_position:
+    fail("Talk must prepare and read back the combined user-message/run snapshot before clearing the draft or invoking the execution block")
+for marker in (
+    'initialContinuationRunId: String = ""',
+    'onContinuationDraftChanged: (String) -> Unit = {}',
+    'userMessage = userText',
+    'onUserMessagePersisted = { _ ->',
+    'if (initialContinuationRunId.isBlank()) onInitialPromptConsumed()',
+    'onContinuationDraftChanged(it)',
+    'AgentRunContinuationPolicy.resolveParent(',
+    'PRIOR TALK RUN — UNTRUSTED SAVED OBSERVATIONS',
+    'selectedModelId == REMOTE_MODEL_ID &&',
+    'message.sourceType == "AGENT_EVENT"',
+    'continuationOfRunId = initialContinuationRunId,',
+    'onRunCreationRejected = { message ->',
+    'draft = ""',
+    'onInitialContinuationConsumed()',
+):
+    if marker not in continuation_talk_ui:
+        fail(f"Talk continuation draft/context safety is missing: {marker}")
+for marker in (
+    'AgentRunContinuationPolicy.assess(run)',
+    'onContinueRun: (AgentRunRecord) -> Unit',
+    'Text("Continue in Talk")',
+    'run.parentRunId.isNotBlank()',
+):
+    if marker not in continuation_live_ui:
+        fail(f"Live continuation inspection/action is missing: {marker}")
+for marker in (
+    'var pendingContinuationRunId by remember { mutableStateOf("") }',
+    'onContinueRun = { run ->',
+    'pendingContinuationRunId = run.id',
+    'onInitialContinuationConsumed = { pendingContinuationRunId = "" }',
+    'onContinuationDraftChanged = { pendingChatPrompt = it }',
+):
+    if marker not in continuation_app:
+        fail(f"Talk continuation navigation/draft handoff is missing: {marker}")
+for marker in (
+    'interruptedTalkContinuationLabelsAndReasonsTranslateInPolishAndTurkish',
+    'MemoLocalization.translate("Continue in Talk", "PL")',
+    'MemoLocalization.translate("Continue in Talk", "TR")',
+):
+    if marker not in continuation_localization_tests:
+        fail(f"Talk continuation localization regression coverage is missing: {marker}")
+launch_position = continuation_talk_ui.find("viewModel.launchAgentExecution(")
+persisted_callback_position = continuation_talk_ui.find("onUserMessagePersisted = { _ ->", launch_position)
+draft_consumed_position = continuation_talk_ui.find("draft = \"\"", persisted_callback_position)
+engine_block_position = continuation_talk_ui.find(") { runId, sourceMessageId ->", launch_position)
+if launch_position < 0 or persisted_callback_position <= launch_position or draft_consumed_position <= persisted_callback_position or engine_block_position <= persisted_callback_position:
+    fail("Talk must consume its editable draft only after the atomic user-message/run snapshot is verified")
+if "appendChatMessageDurably(" in continuation_talk_ui[launch_position:engine_block_position]:
+    fail("Talk must not append the request in a second write after creating the run record")
+if "block(runId, created.messageId)" not in continuation_view_model:
+    fail("The Talk engine must receive the exact message ID from the verified atomic start snapshot")
+print("PASS: Live offers only safe continuation; Talk revalidates, preserves editable drafts until prompt read-back, withholds private run events from remote context without consent, and starts a new linked run")
+
 
 if "import app.memo.android.orchestration.AgentExecutionEventType" not in agent_broker:
     fail("the ViewModel run closeout must import the engine event types it compares")
@@ -349,6 +499,22 @@ for task in (":core:test", ":app:testDebugUnitTest", ":app:lintDebug", ":app:lin
         fail(f"GitHub workflow missing Android gate: {task}")
 if any(alternate in workflow for alternate in ("Memo-Android-source.zip", "Memo-Android-Download-Fresh.zip")):
     fail("GitHub workflow must not fall back to an alternate/stale ZIP")
+continuation_ui_test = (ROOT / "app/src/androidTest/java/app/memo/android/ui/LiveContinuationUiTest.kt").read_text()
+for marker in (
+    "eligibleInterruptedRunShowsActionAndPassesExactParentToCallback",
+    "uncertainCapabilityOutcomeNeverShowsContinuationAction",
+    "onNodeWithText(\"Continue in Talk\").assertExists().performClick()",
+    "onNodeWithText(\"Continue in Talk\").assertDoesNotExist()",
+    "continuedConversationId"
+):
+    if marker not in continuation_ui_test:
+        fail(f"Live continuation Compose regression coverage is missing: {marker}")
+if "OK \\([1-9][0-9]* tests?\\)" not in workflow:
+    fail("Android instrumentation gate must accept any positive test count")
+if "androidTestImplementation 'androidx.compose.ui:ui-test-junit4'" not in app_gradle:
+    fail("Live continuation Compose UI test dependency is missing")
+if "createAndroidComposeRule<MainActivity>()" not in continuation_ui_test or "ComposeView(composeRule.activity)" not in continuation_ui_test:
+    fail("Live continuation tests must replace the Memo Activity content in-process, not launch an instrumentation-process host")
 if "testBuildType 'release'" not in app_gradle:
     fail("encrypted-store install-upgrade instrumentation must target the normal release package")
 for marker in ("app/build/outputs/apk/release/app-release.apk", "app/build/outputs/apk/androidTest/release/app-release-androidTest.apk", "Memo-Android-release.apk", "app.memo.android"):

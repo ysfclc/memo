@@ -125,6 +125,34 @@ class MemoLocalizationTest {
     }
 
     @Test
+    fun interruptedTalkContinuationLabelsAndReasonsTranslateInPolishAndTurkish() {
+        assertEquals("Kontynuuj w Rozmowie", MemoLocalization.translate("Continue in Talk", "PL"))
+        assertEquals("Talk'ta devam et", MemoLocalization.translate("Continue in Talk", "TR"))
+        assertEquals(
+            "Kontynuujesz zapisane wykonanie · sprawdź wersję roboczą przed wysłaniem",
+            MemoLocalization.translate("Continuing a saved run · review this draft before sending", "PL")
+        )
+        assertEquals(
+            "Kaydedilmiş bir çalışmaya devam ediyorsun · göndermeden önce taslağı incele",
+            MemoLocalization.translate("Continuing a saved run · review this draft before sending", "TR")
+        )
+        assertTrue(MemoLocalization.translate(
+            "A capability may have started without a verified completion. Inspect its destination before continuing.", "PL"
+        ).contains("Przed kontynuacją sprawdź miejsce docelowe"))
+        assertTrue(MemoLocalization.translate(
+            "A capability may have started without a verified completion. Inspect its destination before continuing.", "TR"
+        ).contains("Devam etmeden önce hedefi incele"))
+        assertEquals("Kontynuuje poprzednie wykonanie", MemoLocalization.translate("Continues prior run", "PL"))
+        assertEquals("Önceki çalışmanın devamı", MemoLocalization.translate("Continues prior run", "TR"))
+        assertTrue(MemoLocalization.translate(
+            "The saved run changed or is no longer eligible. Review it in Live before trying again.", "PL"
+        ).contains("Sprawdź je w Live"))
+        assertTrue(MemoLocalization.translate(
+            "The saved run changed or is no longer eligible. Review it in Live before trying again.", "TR"
+        ).contains("Live alanında incele"))
+    }
+
+    @Test
     fun userContentAndUnknownStringsRemainUntouched() {
         val userText = "I met a person called Deniz at the event."
         assertEquals(userText, MemoLocalization.translate(userText, "TR"))

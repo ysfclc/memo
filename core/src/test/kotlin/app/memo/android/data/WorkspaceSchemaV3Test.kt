@@ -62,6 +62,7 @@ class WorkspaceSchemaV3Test {
             id = "run-12345678",
             conversationId = "conversation-1",
             goal = "Find three relevant records",
+            parentRunId = "run-parent-0001",
             modelId = "local:model",
             status = "WAITING_FOR_APPROVAL",
             stage = "Waiting for exact-content approval",
@@ -80,6 +81,30 @@ class WorkspaceSchemaV3Test {
         val restored = AppSnapshot.fromJson(source.toJson())
         assertEquals(run, restored.agentRuns.single())
         assertEquals(7, org.json.JSONObject(source.toJson()).optInt("schemaVersion"))
+    }
+
+    @Test fun schemaSevenBackupWithoutParentRunLinkImportsAsIndependentRun() {
+        val root = org.json.JSONObject(AppSnapshot(
+            conversations = listOf(ConversationRecord(id = "conversation-1", title = "Run journal")),
+            agentRuns = listOf(AgentRunRecord(
+                id = "run-legacy-1",
+                conversationId = "conversation-1",
+                goal = "Legacy run"
+            ))
+        ).toJson())
+        root.getJSONArray("agentRuns").getJSONObject(0).remove("parentRunId")
+        val restored = AppSnapshot.fromJson(root.toString())
+        assertEquals("", restored.agentRuns.single().parentRunId)
+    }
+
+    @Test fun parentRunIdCannotReferToTheRunItself() {
+        val run = AgentRunRecord(
+            id = "run-self",
+            conversationId = "conversation-1",
+            goal = "Inspect lineage",
+            parentRunId = "run-self"
+        )
+        assertTrue(runCatching { AppSnapshot(agentRuns = listOf(run)).toJson() }.isFailure)
     }
 
     @Test fun schemaSixBackupMigratesWithoutAgentRunRecords() {

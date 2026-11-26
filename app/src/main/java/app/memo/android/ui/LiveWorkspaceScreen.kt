@@ -23,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import app.memo.android.data.ActionApprovalRecord
 import app.memo.android.data.AgentRunRecord
+import app.memo.android.data.AgentRunContinuationPolicy
 import app.memo.android.data.ChatMessageRecord
 import app.memo.android.data.AppSnapshot
 import app.memo.android.data.TaskRecord
@@ -42,6 +43,7 @@ fun LiveWorkspaceScreen(
     onOpenApprovals: () -> Unit,
     onOpenWork: () -> Unit,
     onOpenTalk: (String) -> Unit,
+    onContinueRun: (AgentRunRecord) -> Unit,
     onResumeTask: (TaskRecord) -> Unit
 ) {
     val activeJobs = snapshot.jobs
@@ -119,7 +121,13 @@ fun LiveWorkspaceScreen(
             item { EmptyState("No Memo executions yet", "Your Talk runs will appear here with their last durable stage and recovery state.") }
         } else {
             items(recentAgentRuns, key = { "agent-run-${it.id}" }) { run ->
-                AgentRunSummary(run, eventMessages = agentRunTimelineMessages(snapshot, run), onOpenConversation = { onOpenTalk(run.conversationId) }, onOpenApprovals = onOpenApprovals)
+                AgentRunSummary(
+                    run,
+                    eventMessages = agentRunTimelineMessages(snapshot, run),
+                    onOpenConversation = { onOpenTalk(run.conversationId) },
+                    onOpenApprovals = onOpenApprovals,
+                    onContinueRun = { onContinueRun(run) }
+                )
             }
         }
         item { MemoSectionHeading("Work in motion", supporting = "Resumable plans and tasks that need attention") }
@@ -238,8 +246,10 @@ private fun AgentRunSummary(
     run: AgentRunRecord,
     eventMessages: List<ChatMessageRecord>,
     onOpenConversation: () -> Unit,
-    onOpenApprovals: () -> Unit
+    onOpenApprovals: () -> Unit,
+    onContinueRun: () -> Unit
 ) {
+    val continuation = AgentRunContinuationPolicy.assess(run)
     val tone = when (run.status) {
         "NEEDS_REVIEW", "WAITING_FOR_APPROVAL" -> MemoStatusTone.WARNING
         "FAILED" -> MemoStatusTone.ERROR
@@ -250,6 +260,9 @@ private fun AgentRunSummary(
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(run.goal, style = MaterialTheme.typography.titleSmall, maxLines = 3)
             MemoStatusTag(label = agentRunStatusLabel(run.status), tone = tone)
+            if (run.parentRunId.isNotBlank()) {
+                Text("Continues prior run", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
             if (run.stage.isNotBlank()) {
                 Text("Last recorded stage", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(run.stage, style = MaterialTheme.typography.bodySmall, maxLines = 3)
@@ -293,6 +306,16 @@ private fun AgentRunSummary(
             if (run.recoveryReason.isNotBlank()) Text(run.recoveryReason, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             if (run.status == "NEEDS_REVIEW") {
                 Text("This run is preserved as history. Memo will not replay its last step automatically.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
+                if (continuation.allowed) {
+                    OutlinedButton(
+                        onClick = onContinueRun,
+                        modifier = Modifier.fillMaxWidth().height(MemoTokens.Spacing.minimumTouch)
+                    ) {
+                        Text("Continue in Talk")
+                    }
+                } else {
+                    Text(continuation.reason, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                }
             }
             if (run.finalMessage.isNotBlank()) {
                 Text("Recorded final result", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
