@@ -633,3 +633,7 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - **Blockers:** the PR validation workflow deliberately does not run persistent signing or publish an APK. Physical-device execution therefore has not started. Do not ask for uninstall, data clearing or a debug-signed package.
 - **Status:** acceptance protocol prepared; device verification NOT RUN. Coverage comparison and dependency vulnerability assessment remain separate open gates.
 - **Exit criteria:** complete every checklist item using a pinned-certificate APK installed over the existing app; record exact APK SHA-256, device/Android version, observed parent/child run IDs and evidence. Any uncertain or missing result blocks device sign-off.
+
+### 2026-11-26 — M3.RECOVERY-S4 — Atomic Talk request and run start
+
+- [~] **M3.RECOVERY-S4** Close the crash window between creating a RUNNING execution record and durably appending the user's message. The Talk start transaction now prepares the USER message and new run record in one immutable AppSnapshot; the ViewModel persists and reads back both before clearing the editable draft or invoking the execution block. Continuation parent eligibility is revalidated in the same preparation, and message/run limits fail without a partial append. Core regression tests cover atomic preparation, parent lineage, unsafe parents, full conversations and invalid inputs. Exact-head PR CI pending; physical-device acceptance remains open.

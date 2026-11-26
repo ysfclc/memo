@@ -48,3 +48,25 @@ Revert this branch's commits. The new field is additive and optional; older sche
 
 ## Next step
 Perform physical-device continuation and install-update acceptance. Then complete coverage/dependency security assessment and the remaining release gates. Keep the feature unreleased until device acceptance.
+
+## 2026-11-26 — M3.RECOVERY-S4 — Atomic request/run start
+
+### Finding
+The continuation Talk path created and persisted a new RUNNING AgentRunRecord in `launchAgentExecution`, then appended the user's message in the execution block. A process death in that interval could leave a durable child run with no corresponding user request. The device checklist already required message-before-run ordering, but the code only guaranteed message persistence before the model/capability loop, not before the run record was created.
+
+### Implemented
+- Added a pure `AgentRunStartTransaction` in the platform-independent core module. It validates the conversation, goal, user message, run ID, history limits and (for continuation) the exact parent eligibility before preparing any changes.
+- The transaction adds the USER message and new AgentRunRecord with parent lineage to one immutable AppSnapshot. It also updates the conversation title/entity using the existing chat behavior.
+- The ViewModel persists that single snapshot and reads back the exact message and run record before invoking the execution block. The UI clears the draft and consumes continuation state only after that read-back succeeds.
+- The execution block receives the exact persisted message ID; the previous second write through `appendChatMessageDurably` was removed from the Talk start path.
+- Shared the 249-user-message / 250-total-message limits between normal chat append, serialization and the atomic start transaction.
+- Added pure core tests for atomic preparation, linked parent lineage, unsafe-parent rejection without partial append, message-limit rejection and invalid/duplicate inputs. Extended the source verifier to prevent reintroducing a separate post-run message append.
+
+### Compatibility and safety
+- No encrypted workspace schema or backup schema bump, package ID, Keystore alias, signing identity, approval ledger or existing stored data change.
+- The immutable source snapshot is unchanged on any rejected preparation. An AtomicFile write can leave the prior snapshot or the complete new snapshot; it cannot intentionally publish a run-only or message-only candidate.
+- No capability is invoked until the combined snapshot has been read back and verified.
+
+### Verification
+- Source changes are committed to the existing PR #25 branch; exact-head CI is pending.
+- Physical-device acceptance, coverage comparison and dependency vulnerability assessment remain open.

@@ -102,7 +102,8 @@ Run this section only with the exact PR candidate's pinned-certificate release A
 - [ ] Tap Continue in Talk. Confirm Memo opens the original conversation, not a new conversation, and places the continuation prompt in the editable draft without sending it.
 - [ ] Edit the draft, switch to Live and back to Talk, and confirm the exact edited draft remains. Confirm no new run or capability action starts merely from opening or navigating.
 - [ ] Switch to a different conversation and return. Confirm the pending continuation draft is cleared and cannot be sent from the unrelated conversation.
-- [ ] Start a fresh eligible continuation. Confirm the user message is durably appended before the new run starts, the new run ID differs from the parent, and the new record's parentRunId equals the exact interrupted run ID.
+- [ ] Start a fresh eligible continuation. Confirm the user message and child run are committed together before the execution block starts, the new run ID differs from the parent, and the new record's parentRunId equals the exact interrupted run ID.
+- [ ] Force-stop at the start boundary before the first model event. After reopening, confirm the encrypted workspace contains both the user message and child run, or neither; an orphan RUNNING run without its user request is not acceptable.
 - [ ] Confirm the parent run remains unchanged and prior approvals/tool-call IDs are not reused. Confirm prior run events are not sent to a remote model unless the separate workspace-context sharing permission is explicitly enabled.
 - [ ] Force-stop Memo while an eligible parent is awaiting continuation, reopen and unlock. Confirm the persisted parent remains inspectable and no continuation is automatically launched or replayed.
 - [ ] Force-stop during the new continuation run. On reopen, confirm the new run is recovered as NEEDS_REVIEW with correct parent lineage; no capability is replayed automatically.
