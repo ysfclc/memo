@@ -2,11 +2,13 @@ package app.memo.android.ui
 
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.platform.ComposeView
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import app.memo.android.MainActivity
 import app.memo.android.browser.BrowserWorkflowUiState
 import app.memo.android.data.AgentRunRecord
 import app.memo.android.data.AppSnapshot
@@ -18,7 +20,32 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class LiveContinuationUiTest {
     @get:Rule
-    val composeRule = createComposeRule()
+    val composeRule = createAndroidComposeRule<MainActivity>()
+
+    private fun showLive(snapshot: AppSnapshot, onContinueRun: (AgentRunRecord) -> Unit) {
+        composeRule.runOnUiThread {
+            composeRule.activity.setContentView(
+                ComposeView(composeRule.activity).apply {
+                    setContent {
+                        MemoTheme(themeMode = "LIGHT") {
+                            LiveWorkspaceScreen(
+                                snapshot = snapshot,
+                                browserState = BrowserWorkflowUiState(),
+                                onOpenBrowser = {},
+                                onOpenApps = {},
+                                onOpenApprovals = {},
+                                onOpenWork = {},
+                                onOpenTalk = {},
+                                onContinueRun = onContinueRun,
+                                onResumeTask = {}
+                            )
+                        }
+                    }
+                }
+            )
+        }
+        composeRule.waitForIdle()
+    }
 
     @Test
     fun eligibleInterruptedRunShowsActionAndPassesExactParentToCallback() {
@@ -32,23 +59,9 @@ class LiveContinuationUiTest {
         var continuedRunId = ""
         var continuedConversationId = ""
 
-        composeRule.setContent {
-            MemoTheme(themeMode = "LIGHT") {
-                LiveWorkspaceScreen(
-                    snapshot = AppSnapshot(agentRuns = listOf(parent)),
-                    browserState = BrowserWorkflowUiState(),
-                    onOpenBrowser = {},
-                    onOpenApps = {},
-                    onOpenApprovals = {},
-                    onOpenWork = {},
-                    onOpenTalk = {},
-                    onContinueRun = { run ->
-                        continuedRunId = run.id
-                        continuedConversationId = run.conversationId
-                    },
-                    onResumeTask = {}
-                )
-            }
+        showLive(AppSnapshot(agentRuns = listOf(parent))) { run ->
+            continuedRunId = run.id
+            continuedConversationId = run.conversationId
         }
 
         composeRule.onNode(hasScrollAction()).performScrollToNode(hasText("Continue in Talk"))
@@ -71,21 +84,7 @@ class LiveContinuationUiTest {
             successfulToolCalls = 0
         )
 
-        composeRule.setContent {
-            MemoTheme(themeMode = "LIGHT") {
-                LiveWorkspaceScreen(
-                    snapshot = AppSnapshot(agentRuns = listOf(uncertain)),
-                    browserState = BrowserWorkflowUiState(),
-                    onOpenBrowser = {},
-                    onOpenApps = {},
-                    onOpenApprovals = {},
-                    onOpenWork = {},
-                    onOpenTalk = {},
-                    onContinueRun = {},
-                    onResumeTask = {}
-                )
-            }
-        }
+        showLive(AppSnapshot(agentRuns = listOf(uncertain))) {}
 
         composeRule.onNode(hasScrollAction()).performScrollToNode(hasText("Inspect an uncertain operation"))
         composeRule.onNodeWithText("Continue in Talk").assertDoesNotExist()
