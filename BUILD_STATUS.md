@@ -306,6 +306,7 @@ The action inbox and first top-level stop control are present in source. Static/
 - `tools/verify_source.py` now guards against runner-specific counters and requires the shared source-derived policy in all three build paths.
 - No application ID, versionName, signing key/certificate, encryption key alias, storage schema, backup format, or application data behavior was changed.
 - This is a mainline transplant of the useful PR #9 versioning change, not a merge of its diverged branch. Its unrelated Talk source-verifier change was excluded.
-- **Not yet verified:** exact-head GitHub Actions, Gradle compilation/tests, lint, APK assembly/identity, encrypted-store install-over-existing, dependency scan, coverage comparison, and physical-device update. No APK has been published from this branch.
+- **CI iteration:** run #1270 caught Groovy's `/` operator producing a decimal (`448925794.5`) for the scaled value; no APK was produced. Replaced it with `Math.floorDiv` so Gradle emits an integer versionCode. The updated exact head requires a fresh CI run.
+- **Not yet verified:** exact-head GitHub Actions after the `Math.floorDiv` correction, Gradle compilation/tests, lint, APK assembly/identity, encrypted-store install-over-existing, dependency scan, coverage comparison, and physical-device update. No APK has been published from this branch.
 - **Release blocker remains:** the user-installed package and certificate must be confirmed before installing any candidate. The existing known release artifact is package `app.memo.android`, version code `1190`, pinned certificate SHA-256 `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a`.
 
