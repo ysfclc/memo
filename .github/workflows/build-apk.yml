@@ -578,18 +578,19 @@ jobs:
           test -s "$APK" || { echo '::error::Debug APK was not produced.'; exit 1; }
           test -x "$AAPT" && test -x "$APKSIGNER" || { echo '::error::Android APK tools are unavailable.'; exit 1; }
           VERSION_FIELDS="$(python3 - <<'PY'
-          import os, re
+          import re, subprocess
           from pathlib import Path
           source_path = next((p for p in (Path('app/build.gradle'), Path('app/build.gradle.kts')) if p.is_file()), None)
           if source_path is None:
               raise SystemExit('app/build.gradle(.kts) is missing')
           source = source_path.read_text(encoding='utf-8')
-          code = re.search(r'\bversionCode\s*(?:=\s*)?(\d+)', source)
-          default_code = re.search(r"""System\.getenv\(['"]GITHUB_RUN_NUMBER['"]\)\s*\?:\s*['"](\d+)['"]""", source)
           name = re.search(r'\bversionName\s*(?:=\s*)?[\'"]([^\'"]+)[\'"]', source)
-          if not (code or default_code) or not name:
-              raise SystemExit('Could not read versionCode default/versionName from app Gradle file')
-          print(os.environ.get('GITHUB_RUN_NUMBER') or (code or default_code).group(1))
+          if not name:
+              raise SystemExit('Could not read versionName from app Gradle file')
+          commit_code = subprocess.check_output(['git', 'show', '-s', '--format=%ct', 'HEAD'], text=True).strip()
+          if not re.fullmatch(r'[1-9][0-9]{0,9}', commit_code) or int(commit_code) > 2100000000:
+              raise SystemExit(f'Unsafe Android versionCode derived from source commit: {commit_code!r}')
+          print(commit_code)
           print(name.group(1))
           PY
           )"
@@ -637,7 +638,7 @@ jobs:
           CURRENT_APK="$RUNNER_TEMP/Memo-current.apk"
           BASELINE_APK="$RUNNER_TEMP/Memo-baseline.apk"
           cp "$APK" "$CURRENT_APK"
-          CURRENT_CODE="$GITHUB_RUN_NUMBER"
+          CURRENT_CODE="$(git show -s --format=%ct HEAD)"
           BASELINE_CODE="$((CURRENT_CODE - 1))"
           if (( BASELINE_CODE < 1 )); then
             echo '::error::Cannot create a lower-version install baseline.'
