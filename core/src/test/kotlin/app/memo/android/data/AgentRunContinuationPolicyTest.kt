@@ -6,6 +6,7 @@ import org.junit.Test
 
 class AgentRunContinuationPolicyTest {
     private fun run(
+        id: String = "run-12345678",
         status: String = "NEEDS_REVIEW",
         lastEventType: String = "RUN_NEEDS_REVIEW",
         pendingApprovalCallId: String = "",
@@ -14,7 +15,7 @@ class AgentRunContinuationPolicyTest {
         conversationId: String = "conversation-1",
         goal: String = "Research the requested subject"
     ) = AgentRunRecord(
-        id = "run-12345678",
+        id = id,
         conversationId = conversationId,
         goal = goal,
         status = status,
@@ -117,11 +118,13 @@ class AgentRunContinuationPolicyTest {
 
     @Test fun processDeathRecoveryAllowsOnlyRunsWithoutUncertainCapabilitySideEffects() {
         val safeInterrupted = run(
+            id = "safe-interrupted-run",
             status = "RUNNING",
             lastEventType = "RUN_STARTED",
             pendingApprovalCallId = "stale-approval-call"
         ).copy(parentRunId = "older-parent-run")
         val uncertainInterrupted = run(
+            id = "uncertain-interrupted-run",
             status = "TOOL_RUNNING",
             lastEventType = "TOOL_STARTED",
             toolCalls = 1,
