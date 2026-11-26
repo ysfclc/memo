@@ -368,9 +368,9 @@ if "refusing an unsafe fallback version" not in gradle_build:
     fail("Gradle must fail closed when no safe source-derived APK version is available")
 if "GITHUB_RUN_NUMBER" in gradle_build or "CIRCLE_BUILD_NUM" in circleci_build:
     fail("APK versionCode must not depend on runner-specific counters")
-if 'git log -2 --format=%ct HEAD' not in circleci_build or 'VERSION_TIMES[0] > VERSION_TIMES[1]' not in circleci_build:
+if 'git log -2 --format=%ct HEAD' not in circleci_build or 'CURRENT_VERSION_CODE > PARENT_VERSION_CODE' not in circleci_build or 'VERSION_TIMES[0] / 4' not in circleci_build:
     fail("CircleCI must reject non-monotonic source timestamps before building APKs")
-if "GITHUB_RUN_NUMBER" in workflow or 'CURRENT_CODE="$(git show -s --format=%ct HEAD)"' not in workflow:
+if "GITHUB_RUN_NUMBER" in workflow or 'CURRENT_CODE="$(( $(git show -s --format=%ct HEAD) / 4 ))"' not in workflow:
     fail("GitHub APK identity/upgrade checks must use the source-derived APK version")
 if "commit_times = subprocess.check_output(['git', 'log', '-2', '--format=%ct', 'HEAD']" not in workflow or 'current_code = int(commit_times[0]) // 4' not in workflow:
     fail("GitHub APK version validation must match the source commit timestamp")
