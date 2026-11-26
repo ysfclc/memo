@@ -603,11 +603,12 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 
 ## 2026-11-26 — WF-13 APK version monotonicity — mainline transplant
 
-- **Status:** [~] implementation transplanted from stale PR #9 onto current mainline; exact-head CI pending.
-- **Policy:** all normal builds derive `versionCode` as `floor(sourceCommitUnixSeconds / 4)`. The current and parent timestamps must be valid, and the scaled current value must be strictly greater than the scaled parent value and no greater than Android's 2,100,000,000 ceiling. This gives roughly 8-second version-code resolution and a multi-century range; commits too close together to advance the code fail closed.
+- **Status:** [~] implementation and exact-head CI verified; physical-device acceptance remains open.
+- **Policy:** all normal builds derive `versionCode` as `floor(sourceCommitUnixSeconds / 4)`. The current and parent timestamps must be valid, and the scaled current value must be strictly greater than the scaled parent value and no greater than Android's 2,100,000,000 ceiling. This gives roughly 4-second version-code resolution and a multi-century range; commits too close together to advance the code fail closed.
 - **Build paths:** Gradle, GitHub Actions identity/upgrade checks, and CircleCI use the same source-derived value. The unsafe Gradle fallback `40`, GitHub run-number override and CircleCI build-number counter are removed.
 - **Test override:** `MEMO_VERSION_CODE` remains an explicit validated override for the CI install-over-existing baseline pair only; the baseline is current version minus one and is not published.
 - **Compatibility:** no application ID, versionName, signing configuration, encrypted-store schema, backup format, or user data changes.
 - **Scope:** current mainline was used as the base; the stale PR #9 branch was not merged. The unrelated stale Talk verifier edit from PR #9 was deliberately excluded.
-- **Required verification:** exact-head Actions source verifier, Gradle tests, lint, debug/release assembly, APK identity, encrypted-store emulator upgrade and CI artifacts. Then compare with the last known installed release and perform a physical-device in-place update using the pinned certificate. No uninstall workaround is permitted.
-- **Release:** blocked until exact-head CI and device acceptance pass. No APK is being distributed.
+- **Exact-head evidence:** PR #26 head `fff5b1b954090d5a17a30956083e02e22d2fbecb`, GitHub Actions run #1272 (`45839532067`) passed source verification, remote-runner tests, core/app unit tests, debug/release lint and assembly, APK identity/signature/version checks, and release-package emulator install-over-existing with both encrypted stores and private-data sentinel preserved. CI versionCode: `448925842`; previous verified mainline release versionCode: `1190`.
+- **Still required:** pinned-certificate physical-device in-place update on the user's actual installation; dependency vulnerability assessment and coverage comparison remain open for the overall APK gate.
+- **Release:** no installable APK was published by PR validation. Persistent signing was skipped; no APK distribution is authorized by this milestone.
