@@ -45,7 +45,15 @@ printf '%s' "$MEMO_UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
 test -s "$KEYSTORE" || fail "Decoded Memo keystore is empty"
 keytool -list -keystore "$KEYSTORE" -storepass "$MEMO_UPLOAD_STORE_PASSWORD" -alias "$MEMO_UPLOAD_KEY_ALIAS" >/dev/null
 export MEMO_UPLOAD_KEYSTORE_FILE="$KEYSTORE"
-export MEMO_VERSION_CODE="$((${CIRCLE_BUILD_NUM:-1} + 1000))"
+VERSION_TIMES=($(git log -2 --format=%ct HEAD))
+[[ "${#VERSION_TIMES[@]}" -eq 2 ]] || fail "Memo versioning requires the current commit and its parent."
+for version_time in "${VERSION_TIMES[@]}"; do
+  [[ "$version_time" =~ ^[1-9][0-9]{0,9}$ ]] || fail "Invalid Memo source commit timestamp: $version_time"
+done
+CURRENT_VERSION_CODE=$(( VERSION_TIMES[0] / 4 ))
+PARENT_VERSION_CODE=$(( VERSION_TIMES[1] / 4 ))
+(( CURRENT_VERSION_CODE > PARENT_VERSION_CODE && CURRENT_VERSION_CODE <= 2100000000 )) || fail "Memo source versionCode must increase and remain within Android versionCode limits."
+export MEMO_VERSION_CODE="$CURRENT_VERSION_CODE"
 export MEMO_UPLOAD_STORE_PASSWORD MEMO_UPLOAD_KEY_ALIAS MEMO_UPLOAD_KEY_PASSWORD
 
 ./gradlew --no-daemon --stacktrace \

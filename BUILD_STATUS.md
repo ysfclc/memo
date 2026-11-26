@@ -295,3 +295,22 @@ The action inbox and first top-level stop control are present in source. Static/
 - Required source, runner, JVM, debug/release lint, release instrumentation and APK identity gates: PASS
 - Release package: ; final pinned signing is isolated.
 - Workflow run: https://github.com/ysfclc/memo/actions/runs/45583930081
+
+# Build and verification status — 26 November 2026
+
+## WF-13 — APK version monotonicity (exact-head CI passed; device acceptance pending)
+
+- New branch: `fix/apk-version-monotonicity-mainline-2026-11-26`, based directly on current main.
+- Gradle now derives the default versionCode as `floor(sourceCommitUnixSeconds / 4)`. It rejects missing Git history, malformed timestamps, a scaled value not strictly greater than the parent's, and values above 2,100,000,000. Four-second source timestamp resolution leaves a multi-century version-code range rather than consuming the limit in roughly a decade. The explicit `MEMO_VERSION_CODE` override is retained for controlled CI baseline construction and is range-validated.
+- GitHub Actions reads and validates the same two-commit timestamp sequence and scaled values before comparing the built APK identity; its install-over-existing test uses the same scaled source value. CircleCI validates the same scaled parent/current ordering before setting the explicit Gradle value.
+- `tools/verify_source.py` now guards against runner-specific counters and requires the shared source-derived policy in all three build paths.
+- No application ID, versionName, signing key/certificate, encryption key alias, storage schema, backup format, or application data behavior was changed.
+- This is a mainline transplant of the useful PR #9 versioning change, not a merge of its diverged branch. Its unrelated Talk source-verifier change was excluded.
+- **CI iterations:** run #1270 caught Groovy's `/` operator producing a decimal; no APK was produced. Replaced it with `Math.floorDiv` so Gradle emits an integer versionCode. Run #1272 passed on the preceding code head `fff5b1b954090d5a17a30956083e02e22d2fbecb`; exact latest PR head validation is recorded below.
+- **Exact-head CI evidence:** Actions run #1273 (`45841609952`) passed on exact PR head `b20677e4e3e3353ea53f97a3443bd7814b953f0d`: source verification, remote-runner tests, core/app unit tests, debug/release lint, debug/release APK assembly, APK identity/version/signature inspection, and release-package emulator install-over-existing. Both encrypted-store instrumentation phases reported `OK (1 test)`; both encrypted stores and the private-data sentinel survived the in-place update.
+- **Version evidence:** CI merge-ref versionCode `448926027`; previously verified mainline release versionCode `1190`; package remains `app.memo.android`. The scaled timestamp formula is `floor(sourceCommitUnixSeconds / 4)`, with current scaled code strictly greater than the parent's and bounded by `2,100,000,000`.
+- **Artifact boundary:** PR validation uploaded only `Memo-Android-Build-Reports` diagnostics. It skipped persistent signing and final APK publication; no installable release APK is claimed.
+- **Still outstanding for the overall APK gate:** physical-device update using the pinned certificate, dependency vulnerability assessment, and coverage comparison. No uninstall/reinstall workaround is permitted.
+- **Release blocker remains:** the user-installed package and certificate must be confirmed before installing any candidate. The existing known release artifact is package `app.memo.android`, version code `1190`, pinned certificate SHA-256 `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a`.
+- **Four-second bucket edge case:** the documentation-only branch head `fd7fb3e771d4294a7a539ccacdde4b6782ba7627` was committed at `15:48:31Z`, only three seconds after its parent (`15:48:28Z`); both direct-branch timestamps floor to versionCode `448927027`. A direct build of that branch head must fail closed rather than reuse a versionCode. GitHub pull-request validation checks out the synthetic PR merge ref, so its timestamp/parent pair is distinct; do not infer direct-branch behavior from the PR run. Mainline push and CircleCI behavior must still be verified on the actual merge commit.
+

@@ -600,3 +600,15 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - **Compatibility:** no encrypted workspace schema, backup schema, package ID, signing key, approval-ledger format or persisted user data changes.
 - **Verification state:** source edits are on memo/mission-1-safe-browser-submission; exact-head GitHub Actions unit tests, lint, source verification and emulator upgrade checks are pending. Physical-device acceptance remains pending. Do not mark this slice complete until CI is green and the actual phone flow is checked.
 - **Remaining boundary:** this hardens the existing approved browser prompt path only. It does not claim general browser controls, forms, uploads, native-app actions or universal workflow execution.
+
+## 2026-11-26 — WF-13 APK version monotonicity — mainline transplant
+
+- **Status:** [~] implementation and exact-head CI verified; physical-device acceptance remains open.
+- **Policy:** all normal builds derive `versionCode` as `floor(sourceCommitUnixSeconds / 4)`. The current and parent timestamps must be valid, and the scaled current value must be strictly greater than the scaled parent value and no greater than Android's 2,100,000,000 ceiling. This gives roughly 4-second version-code resolution and a multi-century range; commits too close together to advance the code fail closed.
+- **Build paths:** Gradle, GitHub Actions identity/upgrade checks, and CircleCI use the same source-derived value. The unsafe Gradle fallback `40`, GitHub run-number override and CircleCI build-number counter are removed.
+- **Test override:** `MEMO_VERSION_CODE` remains an explicit validated override for the CI install-over-existing baseline pair only; the baseline is current version minus one and is not published.
+- **Compatibility:** no application ID, versionName, signing configuration, encrypted-store schema, backup format, or user data changes.
+- **Scope:** current mainline was used as the base; the stale PR #9 branch was not merged. The unrelated stale Talk verifier edit from PR #9 was deliberately excluded.
+- **Exact-head evidence:** PR #26 exact head `b20677e4e3e3353ea53f97a3443bd7814b953f0d`, GitHub Actions run #1273 (`45841609952`) passed source verification, remote-runner tests, core/app unit tests, debug/release lint and assembly, APK identity/signature/version checks, and release-package emulator install-over-existing with both encrypted stores and private-data sentinel preserved. CI merge-ref versionCode: `448926027`; previous verified mainline release versionCode: `1190`.
+- **Still required:** pinned-certificate physical-device in-place update on the user's actual installation; dependency vulnerability assessment and coverage comparison remain open for the overall APK gate.
+- **Release:** no installable APK was published by PR validation. Persistent signing was skipped; no APK distribution is authorized by this milestone.
