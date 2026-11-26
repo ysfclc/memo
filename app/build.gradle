@@ -13,11 +13,15 @@ if (!memoVersionCodeText) {
         def commitTimes = versionProcess.inputStream.getText('UTF-8').readLines().collect { it.trim() }
         if (versionProcess.waitFor() != 0 || commitTimes.size() != 2 ||
                 !(commitTimes[0] ==~ /[1-9][0-9]{0,9}/) ||
-                !(commitTimes[1] ==~ /[1-9][0-9]{0,9}/) ||
-                commitTimes[0].toLong() <= commitTimes[1].toLong()) {
-            throw new GradleException("Memo source commit timestamp must be valid and strictly newer than its parent.")
+                !(commitTimes[1] ==~ /[1-9][0-9]{0,9}/)) {
+            throw new GradleException("Memo source commit timestamps must be valid.")
         }
-        memoVersionCodeText = commitTimes[0]
+        def currentVersionCode = commitTimes[0].toLong() / 4L
+        def parentVersionCode = commitTimes[1].toLong() / 4L
+        if (currentVersionCode <= parentVersionCode || currentVersionCode > 2100000000L) {
+            throw new GradleException("Memo source-derived versionCode must increase and remain within Android's supported maximum.")
+        }
+        memoVersionCodeText = currentVersionCode.toString()
     } catch (Exception ignored) {
         throw new GradleException("Memo APK builds require MEMO_VERSION_CODE or a valid, monotonic Git checkout; refusing an unsafe fallback version.")
     }
