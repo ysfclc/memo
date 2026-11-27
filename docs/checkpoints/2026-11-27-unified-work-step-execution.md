@@ -45,4 +45,4 @@ This is not a reason to create a DAG scheduler in this increment. It is a reason
 
 ## Verification record
 
-Pending implementation and exact-head CI. No completion or APK readiness is claimed by this checkpoint.
+Implementation is committed on PR #32 (latest code commit `8b61879fb139472646393459e737087c6c16f05a`). Exact-head Actions validation is pending; no merge, installable APK or physical-device acceptance is claimed.

@@ -1,14 +1,14 @@
 # Current PR candidate — 27 November 2026
 
-## M3.A4-S10 — Work executes eligible local-model nodes (exact-head CI pending)
+## M3.A4-S11 — Unify Work local-model execution with the shared Talk engine
 
-- Branch: `feature/work-local-model-step-execution-2026-11-27`, based on main `f628517699b51cac28c09c8fd0723a1334cf0f9f`.
-- Dynamic TaskSpec nodes are mapped to the executable Work checkpoint type only when participant is `LOCAL_MODEL`, runtime is exactly `app.models`, and the only requested capability is `model.generate`. Remote model generation and approval-gated nodes remain review-only.
-- Work exposes a direct action for the next eligible local-model checkpoint. The existing ordered checkpoint gate starts it first; the installed local model generates a draft artifact using the selected step and retrieved workspace context. The artifact is saved to Evidence and the checkpoint moves to `NEEDS_REVIEW`; it is not marked complete until the user reviews and records an outcome.
-- The UI routes users to model setup when no compatible local model is installed. No browser, Android-app, remote-provider or external-write action is executed by this increment.
-- Added policy tests for exact local-model classification and remote-model exclusion, plus source-verifier checks for the one-tap path and dependency order.
+- PR #32: `https://github.com/ysfclc/memo/pull/32`; branch `feature/unified-work-step-execution-2026-11-27`, based on main `1602e50f2e2d23b5265362a7641f649aaf06e3c4`.
+- The executable node allowlist remains exact: participant `LOCAL_MODEL`, runtime `app.models`, and only `model.generate`. Remote model generation and approval-gated nodes remain review-only.
+- Work now starts the same `AgentExecutionEngine` used by Talk, bound to the exact source USER message and an installed on-device model. It exposes only the registered private `workspace.save_artifact` adapter with a one-tool-call budget; the model must save a real draft rather than returning text alone.
+- Every run event is durably appended to the source conversation. The artifact is tied to the exact run/source IDs and read back before the Work checkpoint can become `NEEDS_REVIEW`. The user must inspect and accept it; uncertain/interrupted checkpoints are review-only and never replay automatically.
+- No DAG scheduler, new executable node types, remote/browser/Android/external-write actions, workspace schema changes, package identity changes or signing changes are included.
 - **Local:** no Gradle/Android SDK or checked-out project tree is available here; no local compile or test is claimed.
-- **CI:** exact-head Actions validation pending. No APK is claimed for this candidate.
+- **CI:** exact-head Actions validation pending. Intermediate implementation head `b2dd21181ff70bc253e5e090618a16420fdd9886` passed source verification, remote-runner tests, Android unit tests, lint, debug/release assembly and APK identity/signature checks; emulator install-over-existing and final exact-head validation are still pending. No installable PR APK is claimed.
 - **Device:** physical-device acceptance remains open.
 
 ---
