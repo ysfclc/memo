@@ -4,6 +4,7 @@
 A user can describe an outcome in Talk and Memo can turn it into a model-composed, typed, dependency-aware Work plan saved in the encrypted workspace. The plan is editable/reviewable in Work and retains its source conversation and exact user message.
 
 ## Implementation
+- Routed every new home intent into Talk; removed the keyword-based `IntentPlanner.shouldCreateWorkflow` shortcut so action-oriented requests are not diverted into a deterministic template planner before the model can decide what to do.
 - Added `workspace.create_work_plan` to the registered Memo workspace runtime and Talk capability catalogue.
 - The model supplies a bounded TaskSpec proposal; `WorkflowTaskProposalParser` validates the graph against exact registered runtimes/capabilities, dependency structure, budgets, approval gates and external-side-effect policy.
 - `AgentWorkPlanPolicy` converts the validated graph into a durable `WorkJobRecord` with topologically ordered, pending checkpoints and explicit participant, runtime, capability, input, output and postcondition details.
