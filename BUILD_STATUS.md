@@ -329,6 +329,7 @@ The action inbox and first top-level stop control are present in source. Static/
 ## Talk → Work dynamic plan creation (source implementation; exact-head CI pending)
 
 - Branch: `feature/talk-dynamic-work-plans-2026-11-27`, based on main `00f32176e2e996a4b53715190270e76438716008`.
+- All new home intents now enter Talk's canonical execution path; the keyword-based deterministic template shortcut was removed.
 - Added the registered `workspace.create_work_plan` capability to Talk. The model proposes a typed dependency graph; `WorkflowTaskProposalParser` validates exact runtime/capability ownership, graph structure, budgets and approval gates.
 - A validated graph becomes an encrypted Work draft with ordered pending checkpoints, contracts and exact Talk source-message provenance. The adapter verifies the saved graph and DRAFT state by reading it back from the workspace.
 - Added pure-core policy tests and source-verifier checks. No schema, encryption, backup, package, signing or external-action behavior changed.
