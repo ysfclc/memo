@@ -317,3 +317,12 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - **Tests and contracts:** added BrowserPromptSubmissionSafetyTest, source-verifier guards and the exact-submission rule to docs/AI_EXECUTION_INVARIANTS.md.
 - **Data/signing compatibility:** no persistent schema, encryption, package identity, signing or user-data changes.
 - **Validation:** PR #24 exact-head Actions run #1185 is pending; earlier superseded runs are not acceptance evidence. Physical-device verification is still required.
+
+### 2026-11-27 — MEMO-ORCH-001 — Fail-closed persisted Work graph decoding
+
+- **Starting point:** current main `1602e50f2e2d23b5265362a7641f649aaf06e3c4`; old draft PR #28 was not merged because its branch predated the latest mainline plan and local-model execution work.
+- **Observed defect:** the persisted `WorkflowGraph.fromJson` path accepted permissively coerced values and truncated oversized strings. Because it also validates encrypted workspace backups, an invalid graph could be silently reinterpreted during restore.
+- **Correction:** strict typed readers, mandatory bounded fields, exact integer parsing with overflow rejection, full post-decode validation and consistent handling of pre-`externalSideEffect` schema-v1 data. Proposal envelope schema and goal typing are strict as well.
+- **Tests:** malformed type, fractional/out-of-range integer, string/list bounds, missing budget, mixed side-effect representation and legacy approval classification regressions.
+- **Data/signing compatibility:** no schema migration, key alias, cipher envelope, package ID, backup version or signing configuration change.
+- **Validation:** initial exact-head run #1298 stopped at the source verifier because it still expected the old floating-point expression. Updated `tools/verify_source.py` to require exact decimal parsing and the overflow regression tests; this preserves the gate rather than bypassing it. Fresh exact-head Actions validation is pending. The old PR #28 run #1293 is historical branch evidence only.

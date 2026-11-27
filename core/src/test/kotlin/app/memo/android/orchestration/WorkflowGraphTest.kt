@@ -1,5 +1,7 @@
 package app.memo.android.orchestration
 
+import org.json.JSONArray
+import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -147,4 +149,158 @@ class WorkflowGraphTest {
         val unapproved = base.copy(nodes = base.nodes + base.nodes.first().copy(id = "write", externalWrite = true))
         assertTrue(runCatching { WorkflowGraphValidator.validate(unapproved) }.isFailure)
     }
+
+    private fun approvedExternalGraph(): WorkflowGraph {
+        val proposal = JSONObject().apply {
+            put("schemaVersion", 1)
+            put("goal", "Prepare and submit a reviewed deliverable")
+            put("tasks", JSONArray(listOf(
+                task("draft", WorkflowNodeKind.ARTIFACT, WorkflowParticipant.LOCAL_MODEL, "app.models", listOf("model.generate")),
+                task(
+                    "approval", WorkflowNodeKind.APPROVAL, WorkflowParticipant.USER, "app.approvals",
+                    dependsOn = listOf("draft"), externalWrite = true, requiresApproval = true
+                ),
+                task(
+                    "submit", WorkflowNodeKind.DOMAIN_WORK, WorkflowParticipant.BROWSER, "runtime.browser",
+                    listOf("browser.submit_prompt"), listOf("approval"), requiresApproval = true
+                ),
+                task("review", WorkflowNodeKind.REVIEW, WorkflowParticipant.USER, "app.jobs", dependsOn = listOf("submit"))
+            )))
+        }.toString()
+        return WorkflowTaskProposalParser.parse(
+            proposal, "Prepare and submit a reviewed deliverable",
+            app.memo.android.runtime.RuntimeRegistry().listRuntimes()
+        )
+    }
+
+    @Test fun persistedGraphDecoderRejectsOverlongFieldsInsteadOfSilentlyTruncating() {
+        val json = JSONObject(approvedExternalGraph().toJson())
+        json.getJSONArray("nodes").getJSONObject(0).put("title", "x".repeat(241))
+
+        assertTrue(runCatching { WorkflowGraph.fromJson(json.toString()) }.isFailure)
+    }
+
+    @Test fun persistedGraphDecoderRejectsMixedSideEffectClassificationAndNonStringCapabilities() {
+        val graph = approvedExternalGraph()
+        val missingClassification = JSONObject(graph.toJson())
+        val rows = missingClassification.getJSONArray("nodes")
+        val sideEffectNode = (0 until rows.length())
+            .map { rows.getJSONObject(it) }
+            .single { it.optBoolean("externalSideEffect") }
+        val approvalCheckpoint = (0 until rows.length())
+            .map { rows.getJSONObject(it) }
+            .single { it.optString("kind") == WorkflowNodeKind.APPROVAL.name && it.optBoolean("externalWrite") }
+        approvalCheckpoint.put("externalWrite", false)
+        sideEffectNode.remove("externalSideEffect")
+        assertTrue(runCatching { WorkflowGraph.fromJson(missingClassification.toString()) }.isFailure)
+
+        val wrongBooleanType = JSONObject(graph.toJson())
+        val safeNodeRows = wrongBooleanType.getJSONArray("nodes")
+        val safeNode = (0 until safeNodeRows.length())
+            .map { safeNodeRows.getJSONObject(it) }
+            .single { it.optString("kind") == WorkflowNodeKind.REVIEW.name }
+        safeNode.put("requiresApproval", 0)
+        assertTrue(runCatching { WorkflowGraph.fromJson(wrongBooleanType.toString()) }.isFailure)
+
+        val wrongCapabilityType = JSONObject(graph.toJson())
+        val capabilityRows = wrongCapabilityType.getJSONArray("nodes")
+        val capabilityNode = (0 until capabilityRows.length())
+            .map { capabilityRows.getJSONObject(it) }
+            .first { it.getJSONArray("requiredCapabilities").length() > 0 }
+        capabilityNode.getJSONArray("requiredCapabilities").put(0, 123)
+        assertTrue(runCatching { WorkflowGraph.fromJson(wrongCapabilityType.toString()) }.isFailure)
+    }
+
+    @Test fun persistedGraphDecoderRejectsFractionalLimitsAndMissingBudget() {
+        val fractionalTimeout = JSONObject(approvedExternalGraph().toJson())
+        fractionalTimeout.getJSONArray("nodes").getJSONObject(0).put("timeoutMs", 90_000.5)
+        assertTrue(runCatching { WorkflowGraph.fromJson(fractionalTimeout.toString()) }.isFailure)
+
+        val missingBudget = JSONObject(approvedExternalGraph().toJson())
+        missingBudget.remove("budget")
+        assertTrue(runCatching { WorkflowGraph.fromJson(missingBudget.toString()) }.isFailure)
+    }
+
+
+    private fun legacySchemaOneGraphJson(): String {
+        fun node(
+            id: String,
+            kind: WorkflowNodeKind,
+            participant: WorkflowParticipant,
+            runtimeId: String,
+            capabilities: List<String> = emptyList(),
+            dependsOn: List<String> = emptyList(),
+            requiresApproval: Boolean = false,
+            externalWrite: Boolean = false
+        ) = JSONObject().apply {
+            put("id", id)
+            put("title", "Legacy $id")
+            put("kind", kind.name)
+            put("participant", participant.name)
+            put("runtimeId", runtimeId)
+            put("requiredCapabilities", JSONArray(capabilities))
+            put("dependsOn", JSONArray(dependsOn))
+            put("inputContract", "Legacy input for $id")
+            put("outputContract", "Legacy output for $id")
+            put("postcondition", "Legacy observable result for $id")
+            put("requiresApproval", requiresApproval)
+            put("externalWrite", externalWrite)
+            put("timeoutMs", 120_000)
+            put("maxRetries", 0)
+            put("idempotencyKey", "a".repeat(64))
+        }
+        return JSONObject().apply {
+            put("schemaVersion", 1)
+            put("goal", "Restore an existing schema-v1 Work plan")
+            put("budget", JSONObject().apply {
+                put("maxNodes", 40)
+                put("maxDurationMs", 900_000)
+                put("maxModelCalls", 12)
+                put("maxExternalWrites", 1)
+            })
+            put("nodes", JSONArray(listOf(
+                node("draft", WorkflowNodeKind.ARTIFACT, WorkflowParticipant.LOCAL_MODEL, "app.models", listOf("model.generate")),
+                node("verify", WorkflowNodeKind.VERIFICATION, WorkflowParticipant.DETERMINISTIC, "app.jobs", listOf("job.verify"), listOf("draft")),
+                node(
+                    "approval", WorkflowNodeKind.APPROVAL, WorkflowParticipant.USER, "app.approvals",
+                    dependsOn = listOf("verify"), requiresApproval = true, externalWrite = true
+                ),
+                node(
+                    "submit", WorkflowNodeKind.DOMAIN_WORK, WorkflowParticipant.BROWSER, "runtime.browser",
+                    capabilities = listOf("browser.submit_prompt"), dependsOn = listOf("approval"),
+                    requiresApproval = true
+                ),
+                node(
+                    "remote-consent", WorkflowNodeKind.APPROVAL, WorkflowParticipant.USER, "app.approvals",
+                    dependsOn = listOf("submit"), requiresApproval = true
+                ),
+                node(
+                    "remote-model", WorkflowNodeKind.DOMAIN_WORK, WorkflowParticipant.LOCAL_MODEL, "app.models",
+                    capabilities = listOf("model.generate_remote"), dependsOn = listOf("remote-consent"),
+                    requiresApproval = true
+                ),
+                node("review", WorkflowNodeKind.REVIEW, WorkflowParticipant.USER, "app.jobs", dependsOn = listOf("remote-model"))
+            )))
+        }.toString()
+    }
+
+    @Test fun persistedGraphDecoderPreservesLegacyApprovalAndConsentSemanticsWithoutSideEffectField() {
+        val restored = WorkflowGraph.fromJson(legacySchemaOneGraphJson())
+
+        assertEquals("approval", restored.nodes.single { it.externalWrite }.id)
+        assertTrue(restored.nodes.single { it.id == "submit" }.externalSideEffect)
+        assertFalse(restored.nodes.single { it.id == "remote-model" }.externalSideEffect)
+        assertEquals(restored, WorkflowGraph.fromJson(restored.toJson()))
+    }
+
+
+    @Test fun persistedGraphDecoderRejectsIntegerOverflow() {
+        val raw = approvedExternalGraph().toJson().replace(
+            "\"maxDurationMs\":900000",
+            "\"maxDurationMs\":9223372036854775808"
+        )
+        assertTrue("The overflow fixture must change the serialized budget.", raw.contains("9223372036854775808"))
+        assertTrue(runCatching { WorkflowGraph.fromJson(raw) }.isFailure)
+    }
+
 }
