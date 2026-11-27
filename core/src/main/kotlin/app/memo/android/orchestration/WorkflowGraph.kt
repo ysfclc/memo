@@ -88,50 +88,115 @@ data class WorkflowGraph(
 
     companion object {
         fun fromJson(raw: String): WorkflowGraph {
-            require(raw.length <= 64_000) { "Workflow graph exceeds its storage limit." }
+            require(raw.isNotBlank() && raw.length <= 64_000) {
+                "Workflow graph is empty or exceeds its storage limit."
+            }
             val root = JSONObject(raw)
-            val budgetRow = root.optJSONObject("budget") ?: JSONObject()
-            val nodeRows = root.optJSONArray("nodes") ?: JSONArray()
-            require(nodeRows.length() in 1..40) { "Workflow graph must contain between 1 and 40 nodes." }
+            val schemaVersion = requiredInt(root, "schemaVersion")
+            val goal = requiredString(root, "goal", 8_000)
+            val budgetRow = root.optJSONObject("budget")
+                ?: throw IllegalArgumentException("Workflow graph budget is missing.")
+            val nodeRows = root.optJSONArray("nodes")
+                ?: throw IllegalArgumentException("Workflow graph nodes are missing.")
+            require(nodeRows.length() in 1..40) {
+                "Workflow graph must contain between 1 and 40 nodes."
+            }
             val nodes = (0 until nodeRows.length()).map { index ->
-                val row = nodeRows.getJSONObject(index)
-                fun strings(key: String): List<String> {
-                    val values = row.optJSONArray(key) ?: JSONArray()
-                    require(values.length() <= 40) { "Workflow node list is too large." }
-                    return (0 until values.length()).map { values.getString(it).take(128) }
-                }
+                val row = nodeRows.optJSONObject(index)
+                    ?: throw IllegalArgumentException("Workflow node ${index + 1} must be an object.")
                 WorkflowNodeSpec(
-                    id = row.optString("id", "").take(64),
-                    title = row.optString("title", "").take(240),
-                    kind = WorkflowNodeKind.valueOf(row.optString("kind")),
-                    participant = WorkflowParticipant.valueOf(row.optString("participant")),
-                    runtimeId = row.optString("runtimeId", "").take(120),
-                    requiredCapabilities = strings("requiredCapabilities"),
-                    dependsOn = strings("dependsOn"),
-                    inputContract = row.optString("inputContract", "").take(1_000),
-                    outputContract = row.optString("outputContract", "").take(1_000),
-                    postcondition = row.optString("postcondition", "").take(1_000),
-                    requiresApproval = row.optBoolean("requiresApproval", false),
-                    externalWrite = row.optBoolean("externalWrite", false),
-                    externalSideEffect = row.optBoolean("externalSideEffect", false),
-                    timeoutMs = row.optLong("timeoutMs", 120_000),
-                    maxRetries = row.optInt("maxRetries", 0),
-                    idempotencyKey = row.optString("idempotencyKey", "").take(64)
+                    id = requiredString(row, "id", 64),
+                    title = requiredString(row, "title", 240),
+                    kind = requiredEnum<WorkflowNodeKind>(row, "kind"),
+                    participant = requiredEnum<WorkflowParticipant>(row, "participant"),
+                    runtimeId = requiredString(row, "runtimeId", 120),
+                    requiredCapabilities = requiredStringArray(row, "requiredCapabilities", 20, 120),
+                    dependsOn = requiredStringArray(row, "dependsOn", 40, 64),
+                    inputContract = requiredString(row, "inputContract", 1_000),
+                    outputContract = requiredString(row, "outputContract", 1_000),
+                    postcondition = requiredString(row, "postcondition", 1_000),
+                    requiresApproval = requiredBoolean(row, "requiresApproval"),
+                    externalWrite = requiredBoolean(row, "externalWrite"),
+                    externalSideEffect = requiredBoolean(row, "externalSideEffect"),
+                    timeoutMs = requiredLong(row, "timeoutMs"),
+                    maxRetries = requiredInt(row, "maxRetries"),
+                    idempotencyKey = requiredString(row, "idempotencyKey", 64)
                 )
             }
             val graph = WorkflowGraph(
-                schemaVersion = root.optInt("schemaVersion", 0),
-                goal = root.optString("goal", "").take(8_000),
+                schemaVersion = schemaVersion,
+                goal = goal,
                 nodes = nodes,
                 budget = WorkflowBudget(
-                    maxNodes = budgetRow.optInt("maxNodes", 40),
-                    maxDurationMs = budgetRow.optLong("maxDurationMs", 900_000),
-                    maxModelCalls = budgetRow.optInt("maxModelCalls", 12),
-                    maxExternalWrites = budgetRow.optInt("maxExternalWrites", 1)
+                    maxNodes = requiredInt(budgetRow, "maxNodes"),
+                    maxDurationMs = requiredLong(budgetRow, "maxDurationMs"),
+                    maxModelCalls = requiredInt(budgetRow, "maxModelCalls"),
+                    maxExternalWrites = requiredInt(budgetRow, "maxExternalWrites")
                 )
             )
             WorkflowGraphValidator.validate(graph)
             return graph
+        }
+
+        private fun requiredString(row: JSONObject, key: String, maxLength: Int): String {
+            val value = row.opt(key)
+            require(value is String && value.isNotBlank() && value.length <= maxLength) {
+                "Workflow field '$key' must be non-empty text of at most $maxLength characters."
+            }
+            return value
+        }
+
+        private fun requiredStringArray(
+            row: JSONObject,
+            key: String,
+            maxItems: Int,
+            maxLength: Int
+        ): List<String> {
+            val values = row.optJSONArray(key)
+                ?: throw IllegalArgumentException("Workflow field '$key' must be an array.")
+            require(values.length() <= maxItems) {
+                "Workflow field '$key' contains too many entries."
+            }
+            return (0 until values.length()).map { index ->
+                val value = values.opt(index)
+                require(value is String && value.isNotBlank() && value.length <= maxLength) {
+                    "Workflow field '$key' contains an invalid text entry."
+                }
+                value
+            }
+        }
+
+        private fun requiredBoolean(row: JSONObject, key: String): Boolean {
+            val value = row.opt(key)
+            require(value is Boolean) { "Workflow field '$key' must be boolean." }
+            return value
+        }
+
+        private fun requiredLong(row: JSONObject, key: String): Long {
+            val value = row.opt(key)
+            require(value is Number) { "Workflow field '$key' must be an integer." }
+            val numeric = value.toDouble()
+            require(
+                numeric.isFinite() && numeric % 1.0 == 0.0 &&
+                    numeric >= Long.MIN_VALUE.toDouble() && numeric <= Long.MAX_VALUE.toDouble()
+            ) { "Workflow field '$key' must be a whole number." }
+            val result = value.toLong()
+            require(result.toDouble() == numeric) { "Workflow field '$key' is outside the supported integer range." }
+            return result
+        }
+
+        private fun requiredInt(row: JSONObject, key: String): Int {
+            val value = requiredLong(row, key)
+            require(value in Int.MIN_VALUE.toLong()..Int.MAX_VALUE.toLong()) {
+                "Workflow field '$key' is outside the supported integer range."
+            }
+            return value.toInt()
+        }
+
+        private inline fun <reified T : Enum<T>> requiredEnum(row: JSONObject, key: String): T {
+            val value = requiredString(row, key, 40)
+            return runCatching { enumValueOf<T>(value) }
+                .getOrElse { throw IllegalArgumentException("Workflow field '$key' contains an unsupported value.") }
         }
     }
 }

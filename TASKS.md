@@ -624,3 +624,13 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - **Compatibility:** no workspace schema, backup format, encryption/key alias, package identity, signing configuration or external provider behavior changed; the existing `workflowGraphJson` field is used.
 - **Verification:** exact-head Actions validation pending. No local Gradle/Android SDK build or physical-device acceptance is claimed.
 - **Next product increment:** make Work plans actionable through the shared execution lifecycle, with durable per-node run state, cancellation and postcondition evidence. Do not mark the DAG executor complete based on plan persistence.
+
+
+### 2026-11-27 — MEMO-ORCH-001 — Strict persisted Work-graph decoding
+
+- **Observed defect:** `WorkflowGraph.fromJson` used permissive `optString`/`optBoolean`/`optLong` reads and truncated strings with `.take(...)`. Because the decoder is also used while validating encrypted workspace backups, malformed fields could be silently converted into a different graph. In particular, a missing `externalSideEffect` flag defaulted to `false`, a missing budget received permissive defaults, non-string array values could be coerced, and fractional timeouts could be truncated.
+- **Correction:** schema-v1 graph decoding now requires every serialized field, exact JSON types, bounded unmodified strings/arrays and whole-number limits before applying `WorkflowGraphValidator`. Missing safety classification or budget data fails closed instead of being normalized.
+- **Regression coverage:** reject overlong fields, absent external-side-effect classification, non-string capability entries, fractional execution limits and missing budgets; existing valid graph round-trip tests remain.
+- **Compatibility:** valid schema-v1 graphs emitted by `WorkflowGraph.toJson()` remain byte-semantically equivalent after round-trip. No workspace schema, backup format, encryption/key alias, package identity, signing configuration or user data changes.
+- **Boundary:** this hardens persistence/backup decoding only. Work plans remain reviewable drafts; no DAG execution is claimed.
+- **Verification:** exact-head CI pending; no local Gradle/Android SDK execution or physical-device acceptance is claimed.

@@ -1,5 +1,7 @@
 package app.memo.android.orchestration
 
+import org.json.JSONArray
+import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -147,4 +149,64 @@ class WorkflowGraphTest {
         val unapproved = base.copy(nodes = base.nodes + base.nodes.first().copy(id = "write", externalWrite = true))
         assertTrue(runCatching { WorkflowGraphValidator.validate(unapproved) }.isFailure)
     }
+
+    private fun approvedExternalGraph(): WorkflowGraph {
+        val proposal = JSONObject().apply {
+            put("schemaVersion", 1)
+            put("goal", "Prepare and submit a reviewed deliverable")
+            put("tasks", JSONArray(listOf(
+                task("draft", WorkflowNodeKind.ARTIFACT, WorkflowParticipant.LOCAL_MODEL, "app.models", listOf("model.generate")),
+                task(
+                    "approval", WorkflowNodeKind.APPROVAL, WorkflowParticipant.USER, "app.approvals",
+                    dependsOn = listOf("draft"), externalWrite = true, requiresApproval = true
+                ),
+                task(
+                    "submit", WorkflowNodeKind.DOMAIN_WORK, WorkflowParticipant.BROWSER, "runtime.browser",
+                    listOf("browser.submit_prompt"), listOf("approval"), requiresApproval = true
+                ),
+                task("review", WorkflowNodeKind.REVIEW, WorkflowParticipant.USER, "app.jobs", dependsOn = listOf("submit"))
+            )))
+        }.toString()
+        return WorkflowTaskProposalParser.parse(
+            proposal, "Prepare and submit a reviewed deliverable",
+            app.memo.android.runtime.RuntimeRegistry().listRuntimes()
+        )
+    }
+
+    @Test fun persistedGraphDecoderRejectsOverlongFieldsInsteadOfSilentlyTruncating() {
+        val json = JSONObject(approvedExternalGraph().toJson())
+        json.getJSONArray("nodes").getJSONObject(0).put("title", "x".repeat(241))
+
+        assertTrue(runCatching { WorkflowGraph.fromJson(json.toString()) }.isFailure)
+    }
+
+    @Test fun persistedGraphDecoderRequiresSideEffectClassificationAndStringCapabilities() {
+        val graph = approvedExternalGraph()
+        val missingClassification = JSONObject(graph.toJson())
+        val rows = missingClassification.getJSONArray("nodes")
+        val sideEffectNode = (0 until rows.length())
+            .map { rows.getJSONObject(it) }
+            .single { it.optBoolean("externalSideEffect") }
+        sideEffectNode.remove("externalSideEffect")
+        assertTrue(runCatching { WorkflowGraph.fromJson(missingClassification.toString()) }.isFailure)
+
+        val wrongCapabilityType = JSONObject(graph.toJson())
+        val capabilityRows = wrongCapabilityType.getJSONArray("nodes")
+        val capabilityNode = (0 until capabilityRows.length())
+            .map { capabilityRows.getJSONObject(it) }
+            .first { it.getJSONArray("requiredCapabilities").length() > 0 }
+        capabilityNode.getJSONArray("requiredCapabilities").put(0, 123)
+        assertTrue(runCatching { WorkflowGraph.fromJson(wrongCapabilityType.toString()) }.isFailure)
+    }
+
+    @Test fun persistedGraphDecoderRejectsFractionalLimitsAndMissingBudget() {
+        val fractionalTimeout = JSONObject(approvedExternalGraph().toJson())
+        fractionalTimeout.getJSONArray("nodes").getJSONObject(0).put("timeoutMs", 90_000.5)
+        assertTrue(runCatching { WorkflowGraph.fromJson(fractionalTimeout.toString()) }.isFailure)
+
+        val missingBudget = JSONObject(approvedExternalGraph().toJson())
+        missingBudget.remove("budget")
+        assertTrue(runCatching { WorkflowGraph.fromJson(missingBudget.toString()) }.isFailure)
+    }
+
 }

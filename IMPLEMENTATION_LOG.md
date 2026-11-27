@@ -317,3 +317,14 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - **Tests and contracts:** added BrowserPromptSubmissionSafetyTest, source-verifier guards and the exact-submission rule to docs/AI_EXECUTION_INVARIANTS.md.
 - **Data/signing compatibility:** no persistent schema, encryption, package identity, signing or user-data changes.
 - **Validation:** PR #24 exact-head Actions run #1185 is pending; earlier superseded runs are not acceptance evidence. Physical-device verification is still required.
+
+
+## 2026-11-27 — MEMO-ORCH-001 — Fail-closed persisted workflow graph decoding
+
+- **Baseline:** `main` at `f628517699b51cac28c09c8fd0723a1334cf0f9f`; feature branch `fix/strict-workflow-graph-decoding-2026-11-27`.
+- **Reason:** `WorkflowGraph.fromJson` is used by workspace backup validation/import as well as Work-plan reads. Its previous use of `optString`, `optBoolean`, `optLong` and silent string truncation could accept malformed serialized graphs as altered graphs. Missing `externalSideEffect` could be defaulted to false, and malformed numeric values could be coerced.
+- **Change:** replaced permissive reads with required typed readers for all schema-v1 fields; string and array bounds are checked without truncation; booleans and whole-number limits are type/range checked; budget and node arrays are mandatory; graph validation still runs after decoding.
+- **Tests:** added regressions for overlong strings, missing side-effect classification, non-string capability values, fractional timeouts and missing budget. Existing round-trip coverage remains.
+- **Compatibility:** valid `toJson()` output is unchanged. No workspace/backup schema, encryption/key alias, package ID, signing identity or persisted user data changed.
+- **Boundary:** no DAG executor or new capability was added; saved plans remain DRAFT and non-executing.
+- **Verification:** exact-head CI pending; no local Gradle/Android SDK or physical-device acceptance claimed.
