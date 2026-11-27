@@ -591,7 +591,10 @@ for marker in (
 ):
     if marker not in work_ui:
         fail(f"Work does not expose the safe one-tap local-model execution path: {marker}")
-if work_ui.index('onStartStep(step.id)') > work_ui.index('onRunWithModel(step.id, localModel.id)'):
+local_model_branch_start = work_ui.index('isNext && step.checkpointKind == "LOCAL_MODEL"')
+local_model_branch_end = work_ui.index('isNext && (step.requiresApproval || step.checkpointKind == "EXTERNAL_ACTION")', local_model_branch_start)
+local_model_branch = work_ui[local_model_branch_start:local_model_branch_end]
+if local_model_branch.index('onStartStep(step.id)') > local_model_branch.index('onRunWithModel(step.id, localModel.id)'):
     fail("Local-model Work execution must start the eligible checkpoint before generation")
 print("PASS: Work runs only exact local model-generation checkpoints with dependency gating and reviewable artifact output; remote generation remains approval-gated")
 
