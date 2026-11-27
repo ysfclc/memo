@@ -634,3 +634,13 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 - **Compatibility:** current schema-v1 graphs round-trip unchanged; original schema-v1 graphs written before `externalSideEffect` was added remain readable and are normalized only when the field is absent from every node. No workspace schema, backup format, encryption/key alias, package identity, signing configuration or user data changes.
 - **Boundary:** this hardens persistence/backup decoding only. Work plans remain reviewable drafts; no DAG execution is claimed.
 - **Verification:** exact-head GitHub Actions run #1288 (`45994138742`) on commit `470ba4d149ea9caaeba8c7e651f4e67df40d87b3` passed source verification, remote-runner tests, core and Android unit tests, lint, debug/release assembly, APK identity/signature checks and emulator release-package install-over-existing with both encrypted stores plus legacy recovery/corruption tests. The dependency graph was disabled, so no complete dependency assessment is claimed. PR validation skipped APK publication and final pinned signing; no installable release APK was produced. Physical-device acceptance remains pending.
+
+
+### 2026-11-27 — MEMO-ORCH-001 — Strict untrusted Work proposal envelope
+
+- **Observed defect:** WorkflowTaskProposalParser used optInt for the model-proposed schema version and optString for the goal. The permissive JSON accessors could coerce a string/fractional schema version or a non-text goal into apparently valid proposal metadata before capability and graph validation.
+- **Correction:** require a numeric whole-number schema version equal to 1 and require the goal to be an actual JSON string before trimming and applying the existing length bound. Task numeric parsing retains whole-number and finite-value checks.
+- **Regression coverage:** reject string, fractional, boolean and missing schema versions, plus a numeric goal; retain the valid schema-v1 proposal path and all existing runtime/capability/approval validation.
+- **Compatibility:** valid schema-v1 model proposals are unchanged. No persisted workspace or backup schema, encryption/key alias, package identity, signing configuration, runtime capability, or user data changes.
+- **Boundary:** this validates the untrusted proposal envelope only. Work plans remain DRAFT; no DAG execution or new capability is claimed.
+- **Verification:** exact-head CI pending. Physical-device acceptance is not applicable to this parser-only boundary; end-to-end Talk plan creation still requires device acceptance.

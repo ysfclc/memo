@@ -328,3 +328,14 @@ Run #72 failed during ZIP validation, before source extraction or Kotlin/Gradle 
 - **Compatibility:** valid current `toJson()` output is unchanged, and original schema-v1 graphs without `externalSideEffect` remain readable when the field is absent from every node. No workspace/backup schema, encryption/key alias, package ID, signing identity or persisted user data changed.
 - **Boundary:** no DAG executor or new capability was added; saved plans remain DRAFT and non-executing.
 - **Verification:** exact-head GitHub Actions run #1288 (`45994138742`) on commit `470ba4d149ea9caaeba8c7e651f4e67df40d87b3` passed source verification, remote-runner tests, core and Android unit tests, lint, debug/release assembly, APK identity/signature checks and emulator release-package install-over-existing with both encrypted stores plus legacy recovery/corruption tests. The dependency graph was disabled, so no complete dependency assessment is claimed. PR validation skipped APK publication and final pinned signing; no installable release APK was produced. Physical-device acceptance remains pending.
+
+
+### 2026-11-27 — MEMO-ORCH-001 — Strict model-proposed Work envelope
+
+- **Baseline:** stacked on fix/strict-workflow-graph-decoding-2026-11-27 at 1d679f8bb317a34b88d884ff8a4c4d3b45fbbf2d; Memo 1 only.
+- **Finding:** the persisted graph decoder is being hardened separately, but the upstream untrusted model-proposal parser still accepted schemaVersion through optInt and goal through optString. These accessors can coerce malformed JSON values.
+- **Change:** proposal schema version now uses the parser's whole-number validation and must equal 1; goal must be a JSON string before normalization and length validation. Numeric-field diagnostics now use a scope-neutral field label because the helper also validates the root envelope.
+- **Tests:** reject string, fractional, boolean and missing schema versions and reject a non-string goal; retain the existing valid proposal, capability resolution, approval gate, cycle and limit tests.
+- **Compatibility:** valid proposals remain unchanged. No workspace/backup format, encryption, key alias, package ID, signing identity, or persisted user data changed.
+- **Boundary:** proposals are still validated and saved as DRAFTs; this does not add DAG execution or bypass the shared Talk dispatcher.
+- **Verification:** exact-head GitHub Actions validation pending; no local Gradle/Android SDK or physical-device result is claimed.
