@@ -16,6 +16,7 @@ import app.memo.android.orchestration.AgentExecutionEvent
 import app.memo.android.orchestration.AgentExecutionEventType
 import app.memo.android.orchestration.AgentExecutionResult
 import app.memo.android.orchestration.AgentRunStatus
+import app.memo.android.orchestration.WorkflowGraph
 import org.json.JSONObject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -1108,6 +1109,40 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             }).withActivity("User recorded checkpoint outcome: ${step.title}", jobId, if (allComplete) "INFO" else "INFO")
         }
         return Result.success(Unit)
+    }
+
+    /** Persist a model-proposed, runtime-validated dynamic workflow as a reviewable Work plan. No node is executed here. */
+    fun createAgentWorkPlan(
+        title: String,
+        graph: WorkflowGraph,
+        sourceConversationId: String,
+        sourceMessageId: String
+    ): Result<String> {
+        if (!_vaultReady.value) return Result.failure(IllegalStateException("Unlock the workspace before creating a work plan."))
+        if (_vaultError.value != null) return Result.failure(IllegalStateException("Workspace persistence is unavailable. Resolve the workspace issue before creating a plan."))
+        val prepared = runCatching {
+            AgentWorkPlanPolicy.prepare(title, graph, sourceConversationId, sourceMessageId)
+        }.getOrElse { return Result.failure(it) }
+        var accepted = false
+        updateSnapshot { current ->
+            val source = current.conversations.firstOrNull { it.id == sourceConversationId }
+            val sourceMessage = source?.messages?.firstOrNull { it.id == sourceMessageId && it.role == "USER" }
+            if (sourceMessage == null || current.jobs.size >= 240) {
+                current
+            } else {
+                accepted = true
+                current.copy(jobs = (listOf(prepared) + current.jobs).take(240))
+                    .withActivity("Dynamic Talk work plan created: ${prepared.title}", prepared.id)
+            }
+        }
+        if (!accepted) return Result.failure(IllegalStateException("The source Talk message is unavailable or the 240-job limit has been reached. Nothing was saved."))
+        val saved = _snapshot.value.jobs.firstOrNull { it.id == prepared.id }
+        return if (saved?.workflowGraphJson == prepared.workflowGraphJson &&
+            saved.sourceConversationId == sourceConversationId &&
+            saved.sourceMessageId == sourceMessageId &&
+            saved.steps.map { it.title } == prepared.steps.map { it.title } &&
+            saved.status == "DRAFT"
+        ) Result.success(prepared.id) else Result.failure(IllegalStateException("The dynamic work plan could not be read back from the encrypted workspace. Review Work before retrying."))
     }
 
     fun createJob(title: String, goal: String, runtimeId: String, sourceConversationId: String = "", stepTitles: List<String>): String? {
