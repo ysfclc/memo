@@ -991,6 +991,8 @@ object MemoWorkspaceAgentTools {
         override fun isAvailable(): Boolean =
             sourceConversationId.isNotBlank() &&
                 sourceMessageId.isNotBlank() &&
+                viewModel.snapshot.value.conversations.firstOrNull { it.id == sourceConversationId }
+                    ?.messages?.any { it.id == sourceMessageId && it.role == "USER" } == true &&
                 viewModel.vaultReady.value &&
                 viewModel.vaultError.value == null
 

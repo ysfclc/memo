@@ -596,6 +596,10 @@ local_model_branch = work_ui[local_model_branch_start:local_model_branch_end]
 if 'onStartStep(step.id)' in local_model_branch:
     fail("Work must not start a checkpoint separately from its shared execution run")
 for marker in (
+    'fun buildWorkStep(',
+    'StudioArtifactAdapter(viewModel, sourceConversationId, sourceMessageId, sourceExcerpt, reuseExistingDrafts = false)',
+    'sourceMessageId.isNotBlank()',
+    'it.id == sourceMessageId && it.role == "USER"',
     'launchSharedWorkStepExecution(',
     'viewModel.launchAgentExecution(',
     'AgentExecutionEngine(',
@@ -607,6 +611,7 @@ for marker in (
     'startJobStep(freshJob.id, freshStep.id, runId)',
     'AgentExecutionConfig(maxToolCalls = 1)',
     'AgentExecutionEventType.TOOL_FINISHED',
+    'val selectedModelId = if (modelId.startsWith("local:")) modelId else "local:$modelId"',
 ):
     if marker not in work_ui:
         fail(f"Work local-model execution bypasses the shared durable engine contract: {marker}")
