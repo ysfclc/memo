@@ -29,14 +29,14 @@ object AgentWorkPlanPolicy {
         val steps = WorkflowGraphValidator.topologicalOrder(graph).map { node ->
             val detail = buildString {
                 append("Participant: ").append(node.participant.name)
-                append("\\nRuntime: ").append(node.runtimeId)
-                append("\\nCapabilities: ").append(node.requiredCapabilities.ifEmpty { listOf("none") }.joinToString(", "))
-                append("\\nDepends on: ").append(node.dependsOn.ifEmpty { listOf("none") }.joinToString(", "))
-                append("\\nInput: ").append(node.inputContract)
-                append("\\nExpected output: ").append(node.outputContract)
-                append("\\nDone when: ").append(node.postcondition)
-                if (node.requiresApproval) append("\\nHuman approval required before this step.")
-                if (node.externalSideEffect) append("\\nExternal side effect: do not execute from this draft.")
+                append("\nRuntime: ").append(node.runtimeId)
+                append("\nCapabilities: ").append(node.requiredCapabilities.ifEmpty { listOf("none") }.joinToString(", "))
+                append("\nDepends on: ").append(node.dependsOn.ifEmpty { listOf("none") }.joinToString(", "))
+                append("\nInput: ").append(node.inputContract)
+                append("\nExpected output: ").append(node.outputContract)
+                append("\nDone when: ").append(node.postcondition)
+                if (node.requiresApproval) append("\nHuman approval required before this step.")
+                if (node.externalSideEffect) append("\nExternal side effect: do not execute from this draft.")
             }.take(2_000)
             JobStepRecord(
                 title = node.title,
