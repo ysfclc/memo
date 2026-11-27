@@ -322,3 +322,16 @@ The action inbox and first top-level stop control are present in source. Static/
 - Required source, runner, JVM, debug/release lint, release instrumentation and APK identity gates: PASS
 - Release package: ; final pinned signing is isolated.
 - Workflow run: https://github.com/ysfclc/memo/actions/runs/45857259677
+
+
+# Product build status — 27 November 2026
+
+## Talk → Work dynamic plan creation (source implementation; exact-head CI pending)
+
+- Branch: `feature/talk-dynamic-work-plans-2026-11-27`, based on main `00f32176e2e996a4b53715190270e76438716008`.
+- Added the registered `workspace.create_work_plan` capability to Talk. The model proposes a typed dependency graph; `WorkflowTaskProposalParser` validates exact runtime/capability ownership, graph structure, budgets and approval gates.
+- A validated graph becomes an encrypted Work draft with ordered pending checkpoints, contracts and exact Talk source-message provenance. The adapter verifies the saved graph and DRAFT state by reading it back from the workspace.
+- Added pure-core policy tests and source-verifier checks. No schema, encryption, backup, package, signing or external-action behavior changed.
+- **Important boundary:** this creates a real, editable plan only. It does not execute graph nodes. The existing iterative Talk engine still executes only its registered callable adapters; full durable DAG execution remains future product work.
+- Exact-head GitHub Actions validation: pending. No local Gradle/Android build, release APK or physical-device acceptance is claimed.
+- Checkpoint: `docs/checkpoints/2026-11-27-talk-dynamic-work-plans.md`.
