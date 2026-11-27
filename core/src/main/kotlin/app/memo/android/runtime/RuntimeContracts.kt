@@ -33,7 +33,8 @@ class RuntimeRegistry {
             RuntimeCapability("workspace.search", "Search workspace", "Search permitted local Memo conversations, records, jobs and evidence."),
             RuntimeCapability("workspace.save_note", "Save private note", "Save a private note in the encrypted Memo workspace."),
             RuntimeCapability("workspace.save_artifact", "Save Studio artifact", "Save a private Markdown draft in the encrypted Memo workspace."),
-            RuntimeCapability("workspace.propose_record", "Propose record", "Create a source-linked workspace record proposal for human review.")
+            RuntimeCapability("workspace.propose_record", "Propose record", "Create a source-linked workspace record proposal for human review."),
+            RuntimeCapability("workspace.create_work_plan", "Create dynamic Work plan", "Persist a validated, editable Talk workflow proposal for human review.")
         )),
         RuntimeDescriptor("app.chats", "AI Chats", RuntimeKind.APP, "Persistent conversations, source capture and model handoffs.", listOf(
             RuntimeCapability("chat.create", "Create conversation", "Create a durable local conversation."),
