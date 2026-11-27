@@ -604,6 +604,8 @@ for marker in (
     'appendAgentEventDurably(',
     'finishAgentRunDurably(',
     'finishAgentWorkStepDurably(',
+    'startJobStep(freshJob.id, freshStep.id, runId)',
+    'AgentExecutionConfig(maxToolCalls = 1)',
     'AgentExecutionEventType.TOOL_FINISHED',
 ):
     if marker not in work_ui:

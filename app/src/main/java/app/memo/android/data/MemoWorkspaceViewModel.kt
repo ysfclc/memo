@@ -1051,7 +1051,7 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
     }
 
     /** Start only the next sequential checkpoint. An external-write checkpoint cannot be started through this generic workbench. */
-    fun startJobStep(jobId: String, stepId: String): Result<Unit> {
+    fun startJobStep(jobId: String, stepId: String, runId: String = ""): Result<Unit> {
         if (!_vaultReady.value || _vaultError.value != null) return Result.failure(IllegalStateException("Workspace persistence is unavailable."))
         val current = _snapshot.value
         val job = current.jobs.firstOrNull { it.id == jobId } ?: return Result.failure(IllegalArgumentException("Job no longer exists."))
@@ -1068,7 +1068,12 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             snapshot.copy(jobs = snapshot.jobs.map { candidate ->
                 if (candidate.id != jobId) candidate else candidate.copy(
                     status = "RUNNING",
-                    steps = candidate.steps.map { candidateStep -> if (candidateStep.id == stepId) candidateStep.copy(status = "RUNNING", detail = candidateStep.detail.take(1_700) + "\n\nStarted by the user at ${nowMillis()}.", updatedAt = nowMillis()) else candidateStep },
+                    steps = candidate.steps.map { candidateStep -> if (candidateStep.id == stepId) candidateStep.copy(
+                        status = "RUNNING",
+                        detail = candidateStep.detail.take(1_700) + "\n\nStarted by the user at ${nowMillis()}.",
+                        evidence = if (runId.isNotBlank()) "run:$runId" else candidateStep.evidence,
+                        updatedAt = nowMillis()
+                    ) else candidateStep },
                     resultSummary = "A checkpoint is active. Memo is not acting outside this screen; record a real outcome before moving on.",
                     updatedAt = nowMillis()
                 )

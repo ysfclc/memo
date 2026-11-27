@@ -99,6 +99,7 @@ import app.memo.android.ai.ModelRuntimeUiState
 import app.memo.android.ai.REMOTE_MODEL_ID
 import app.memo.android.ai.MemoWorkspaceAgentTools
 import app.memo.android.ai.agentEventTranscriptMessage
+import app.memo.android.orchestration.AgentExecutionConfig
 import app.memo.android.orchestration.AgentExecutionEngine
 import app.memo.android.orchestration.AgentExecutionEventType
 import app.memo.android.orchestration.AgentModelProvider
@@ -1438,7 +1439,7 @@ private fun launchSharedWorkStepExecution(
             return@launchAgentExecution
         }
         if (freshStep.status == "PENDING") {
-            val started = viewModel.startJobStep(freshJob.id, freshStep.id)
+            val started = viewModel.startJobStep(freshJob.id, freshStep.id, runId)
             if (started.isFailure) {
                 onShowMessage(started.exceptionOrNull()?.message ?: "The Work checkpoint could not be started.")
                 return@launchAgentExecution
@@ -1483,7 +1484,8 @@ private fun launchSharedWorkStepExecution(
                     allowRemote = false
                 )
             },
-            adapters = tools
+            adapters = tools,
+            config = AgentExecutionConfig(maxToolCalls = 1)
         )
         var artifactReference = ""
         val executionResult = try {
