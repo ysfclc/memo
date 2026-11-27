@@ -67,11 +67,33 @@ class AgentWorkPlanPolicyTest {
         assertEquals(graph.toJson(), job.workflowGraphJson)
         assertEquals(listOf("Step draft", "Step approval", "Step submit"), job.steps.map { it.title })
         assertTrue(job.steps.all { it.status == "PENDING" })
+        assertEquals("LOCAL_MODEL", job.steps[0].checkpointKind)
         assertTrue(job.steps[1].requiresApproval)
         assertEquals("HUMAN_REVIEW", job.steps[1].checkpointKind)
         assertTrue(job.steps[2].requiresApproval)
         assertEquals("EXTERNAL_ACTION", job.steps[2].checkpointKind)
         assertTrue(job.resultSummary.contains("No step has run"))
+    }
+
+    @Test
+    fun remoteModelGenerationIsNotClassifiedAsAnExecutableLocalModelStep() {
+        val raw = JSONObject().apply {
+            put("schemaVersion", 1)
+            put("goal", "Prepare a remote-model deliverable")
+            put("tasks", JSONArray(listOf(
+                task("consent", "USER", "app.approvals", kind = "APPROVAL", requiresApproval = true),
+                task("generate", "LOCAL_MODEL", "app.models", listOf("model.generate_remote"), dependsOn = listOf("consent"), requiresApproval = true)
+            )))
+        }.toString()
+        val graph = WorkflowTaskProposalParser.parse(
+            raw,
+            "Prepare a remote-model deliverable",
+            RuntimeRegistry().listRuntimes()
+        )
+        val job = AgentWorkPlanPolicy.prepare("Remote plan", graph, "conversation-1", "message-1")
+
+        assertEquals("HUMAN_REVIEW", job.steps[0].checkpointKind)
+        assertEquals("HUMAN_REVIEW", job.steps[1].checkpointKind)
     }
 
     @Test

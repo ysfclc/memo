@@ -1285,6 +1285,7 @@ fun WorkWorkspaceScreen(
                             onRecordOutcome = { stepId, outcome -> viewModel.recordJobCheckpoint(job.id, stepId, outcome).fold(onSuccess = { onShowMessage("Checkpoint outcome saved.") }, onFailure = { onShowMessage(it.message ?: "Could not record checkpoint.") }) },
                             onRevisePlan = { title, intent -> viewModel.reviseIntentPlan(job.id, title, intent).fold(onSuccess = { onShowMessage("Draft plan revised. Review the regenerated checkpoints before starting.") }, onFailure = { onShowMessage(it.message ?: "Could not revise plan.") }) },
                             onOpenApprovals = onOpenApprovals,
+                            onOpenModels = onOpenModels,
                             localModel = runtimeState.installedModels.firstOrNull(),
                             modelRunning = runtimeState.running,
                             onRunWithModel = { stepId, modelId ->
@@ -1292,6 +1293,8 @@ fun WorkWorkspaceScreen(
                                 val currentStep = currentJob?.steps?.firstOrNull { it.id == stepId }
                                 if (currentJob == null || currentStep == null) {
                                     onShowMessage("This plan step no longer exists.")
+                                } else if (currentStep.status != "RUNNING") {
+                                    onShowMessage("Start this checkpoint before running the local model.")
                                 } else {
                                     val query = "${currentJob.title} ${currentJob.goal.take(500)} ${currentStep.title} ${currentStep.detail.take(300)}"
                                     val contextCandidates = buildList {
@@ -2240,6 +2243,7 @@ private fun JobCard(
     onRecordOutcome: (String, String) -> Unit,
     onRevisePlan: (String, String) -> Unit,
     onOpenApprovals: () -> Unit,
+    onOpenModels: () -> Unit,
     localModel: app.memo.android.ai.InstalledModel?,
     modelRunning: Boolean,
     onRunWithModel: (String, String) -> Unit,
@@ -2319,6 +2323,22 @@ private fun JobCard(
                             OutlinedButton(onClick = { recordStepId = step.id; outcomeDraft = "" }, modifier = Modifier.fillMaxWidth().padding(start = 32.dp)) {
                                 Icon(Icons.Rounded.CheckCircle, null); Spacer(Modifier.width(6.dp)); Text("Record checkpoint outcome")
                             }
+                        }
+                        isNext && step.checkpointKind == "LOCAL_MODEL" -> {
+                            if (localModel == null) {
+                                OutlinedButton(onClick = onOpenModels, modifier = Modifier.fillMaxWidth().padding(start = 32.dp)) {
+                                    Icon(Icons.Rounded.AutoAwesome, null); Spacer(Modifier.width(6.dp)); Text("Choose or install a local model")
+                                }
+                            } else {
+                                Button(enabled = !modelRunning, onClick = {
+                                    onStartStep(step.id)
+                                    onRunWithModel(step.id, localModel.id)
+                                }, modifier = Modifier.fillMaxWidth().padding(start = 32.dp)) {
+                                    Icon(Icons.Rounded.AutoAwesome, null); Spacer(Modifier.width(6.dp))
+                                    Text(if (modelRunning) "Local model busy" else "Run this step with ${localModel.name}", maxLines = 2)
+                                }
+                            }
+                            Text("Runs this eligible step on-device. The result is saved as a draft for your review; no external action is performed.", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 32.dp))
                         }
                         isNext && (step.requiresApproval || step.checkpointKind == "EXTERNAL_ACTION") -> {
                             OutlinedButton(onClick = onOpenApprovals, modifier = Modifier.fillMaxWidth().padding(start = 32.dp)) {

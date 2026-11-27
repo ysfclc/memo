@@ -1,3 +1,18 @@
+# Current PR candidate — 27 November 2026
+
+## M3.A4-S10 — Work executes eligible local-model nodes (exact-head CI pending)
+
+- Branch: `feature/work-local-model-step-execution-2026-11-27`, based on main `f628517699b51cac28c09c8fd0723a1334cf0f9f`.
+- Dynamic TaskSpec nodes are mapped to the executable Work checkpoint type only when participant is `LOCAL_MODEL`, runtime is exactly `app.models`, and the only requested capability is `model.generate`. Remote model generation and approval-gated nodes remain review-only.
+- Work exposes a direct action for the next eligible local-model checkpoint. The existing ordered checkpoint gate starts it first; the installed local model generates a draft artifact using the selected step and retrieved workspace context. The artifact is saved to Evidence and the checkpoint moves to `NEEDS_REVIEW`; it is not marked complete until the user reviews and records an outcome.
+- The UI routes users to model setup when no compatible local model is installed. No browser, Android-app, remote-provider or external-write action is executed by this increment.
+- Added policy tests for exact local-model classification and remote-model exclusion, plus source-verifier checks for the one-tap path and dependency order.
+- **Local:** no Gradle/Android SDK or checked-out project tree is available here; no local compile or test is claimed.
+- **CI:** exact-head Actions validation pending. No APK is claimed for this candidate.
+- **Device:** physical-device acceptance remains open.
+
+---
+
 # Current PR candidate — 21 November 2026
 
 ## M3.A4-S7 — Shared capability postcondition verification (CI passed; device acceptance pending)

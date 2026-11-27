@@ -126,6 +126,8 @@ object MemoLocalization {
 ,
         "Home" to ("Strona główna" to "Ana sayfa"),
         "Chats" to ("Czaty" to "Sohbetler"),
+        "Choose or install a local model" to ("Wybierz lub zainstaluj model lokalny" to "Yerel bir model seçin veya yükleyin"),
+        "Runs this eligible step on-device. The result is saved as a draft for your review; no external action is performed." to ("Ten obsługiwany krok jest wykonywany lokalnie na urządzeniu. Wynik zostanie zapisany jako szkic do sprawdzenia; nie zostanie wykonane żadne działanie zewnętrzne." to "Bu uygun adım cihazda yerel olarak çalıştırılır. Sonuç incelemeniz için taslak olarak kaydedilir; harici bir işlem yapılmaz."),
         "Work" to ("Praca" to "İş"),
         "Browser" to ("Przeglądarka" to "Tarayıcı"),
         "More" to ("Więcej" to "Daha fazla"),
