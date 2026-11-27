@@ -564,6 +564,37 @@ for marker in ('RuntimeCapability("workspace.create_work_plan"', 'id = "workspac
     if marker not in runtime_registry + agent_tools + workspace_view_model:
         fail(f"Talk dynamic Work plan capability is missing its runtime, persistence or read-back contract: {marker}")
 print("PASS: Talk can save source-linked private Markdown drafts through the registered workspace runtime; digest, bounds and Studio review surface are guarded")
+
+work_ui = (ROOT / "app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt").read_text()
+for marker in (
+    'node.participant == app.memo.android.orchestration.WorkflowParticipant.LOCAL_MODEL',
+    'node.runtimeId == "app.models"',
+    'node.requiredCapabilities == listOf("model.generate")',
+):
+    if marker not in agent_work_plan_policy:
+        fail(f"Only the exact local model capability may become an executable Work checkpoint: {marker}")
+for marker in (
+    'assertEquals("LOCAL_MODEL", job.steps[0].checkpointKind)',
+    "remoteModelGenerationIsNotClassifiedAsAnExecutableLocalModelStep",
+):
+    if marker not in agent_work_plan_tests:
+        fail(f"Local-model Work execution boundary regression is missing: {marker}")
+for marker in (
+    'step.checkpointKind == "LOCAL_MODEL"',
+    'onOpenModels = onOpenModels',
+    'onOpenModels: () -> Unit',
+    'onStartStep(step.id)',
+    'onRunWithModel(step.id, localModel.id)',
+    'currentStep.status != "RUNNING"',
+    'Run this step with',
+    'result is saved as a draft for your review',
+):
+    if marker not in work_ui:
+        fail(f"Work does not expose the safe one-tap local-model execution path: {marker}")
+if work_ui.index('onStartStep(step.id)') > work_ui.index('onRunWithModel(step.id, localModel.id)'):
+    fail("Local-model Work execution must start the eligible checkpoint before generation")
+print("PASS: Work runs only exact local model-generation checkpoints with dependency gating and reviewable artifact output; remote generation remains approval-gated")
+
 for marker in (
     'RuntimeCapability("browser.submit_prompt"',
     'id = "browser.submit_prompt"',
