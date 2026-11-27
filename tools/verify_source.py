@@ -450,7 +450,7 @@ agent_engine_tests = (ROOT / "core/src/test/kotlin/app/memo/android/orchestratio
 for marker in ('RuntimeDescriptor("app.workspace"', 'RuntimeCapability("workspace.search"', 'id = "runtime.browser"', 'RuntimeCapability("browser.navigate_https"', 'RuntimeCapability("browser.capture_evidence"', 'RuntimeCapability("browser.open_observed_link"'):
     if marker not in runtime_registry:
         fail(f"Talk runtime capability contract is missing: {marker}")
-for marker in ("AgentCapabilityRegistry(RuntimeRegistry().listRuntimes(), adapters)", "capabilityRegistry.availableAdapters()", "capabilityRegistry.resolve(decision.toolId)", "val runtimeId: String ="):
+for marker in ("AgentCapabilityRegistry(RuntimeRegistry().listRuntimes(), adapters)", "capabilityRegistry.availableAdapters()", "capabilityRegistry.resolve(decision.toolId)", "val runtimeId: String =", "workspace.create_work_plan when it is available", "saves a DRAFT only"):
     if marker not in agent_engine:
         fail(f"Talk dynamic capability discovery is missing: {marker}")
 for marker in ("definition.runtimeId", "no matching policy entry", "policy.requiresUserApproval == definition.requiresUserApproval", "policy.externalSideEffect == hasExternalSideEffect", "fun availableAdapters()"):
@@ -511,6 +511,7 @@ for marker in (
     if marker not in agent_tools:
         fail(f"current Talk adapter verification is incomplete: {marker}")
 for marker in (
+    "compoundGoalsAreDirectedToTheDurableWorkPlanCapability",
     "successfulReadOnlyResultWithoutVerifierFailsAndAllowsReplanning",
     "localWriteWithoutPostconditionVerifierStopsForReview",
     "writePostconditionMustMatchReturnedEvidenceReference",
