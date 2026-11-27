@@ -1416,6 +1416,7 @@ private fun launchSharedWorkStepExecution(
         onShowMessage("The exact source Talk message is unavailable. Memo will not run an unlinked Work step.")
         return
     }
+    val selectedModelId = if (modelId.startsWith("local:")) modelId else "local:$modelId"
     val goal = buildString {
         append("Execute exactly one eligible Work checkpoint using Memo's shared execution engine.\n")
         append("WORK ITEM: ").append(job.title).append("\n")
@@ -1427,7 +1428,7 @@ private fun launchSharedWorkStepExecution(
     val launched = viewModel.launchAgentExecution(
         conversationId = sourceConversation.id,
         goal = goal,
-        modelId = modelId
+        modelId = selectedModelId
     ) { runId ->
         val freshSnapshot = viewModel.snapshot.value
         val freshJob = freshSnapshot.jobs.firstOrNull { it.id == job.id }
@@ -1480,7 +1481,7 @@ private fun launchSharedWorkStepExecution(
                 runtime.generateAgentTurn(
                     rawPrompt = agentPrompt,
                     systemInstruction = systemPrompt,
-                    selectedModelId = modelId,
+                    selectedModelId = selectedModelId,
                     allowRemote = false
                 )
             },
@@ -1515,7 +1516,7 @@ private fun launchSharedWorkStepExecution(
                         conversationId = freshSource.id,
                         content = transcript,
                         event = event,
-                        modelId = modelId
+                        modelId = selectedModelId
                     )
                     if (journalError != null) {
                         throw IllegalStateException("Memo could not durably record the Work execution trace. No subsequent capability will be started. $journalError")
@@ -1563,7 +1564,7 @@ private fun launchSharedWorkStepExecution(
             runId = runId,
             result = finalResult,
             messageRole = if (finalResult.status == AgentRunStatus.FINISHED) "ASSISTANT" else "SYSTEM",
-            modelId = modelId,
+            modelId = selectedModelId,
             sourceType = if (finalResult.status == AgentRunStatus.FINISHED) "LOCAL" else "AGENT_${finalResult.status.name}"
         )
         val stepDetail = if (artifact != null) {
