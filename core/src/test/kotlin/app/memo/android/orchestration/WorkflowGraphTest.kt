@@ -187,8 +187,20 @@ class WorkflowGraphTest {
         val sideEffectNode = (0 until rows.length())
             .map { rows.getJSONObject(it) }
             .single { it.optBoolean("externalSideEffect") }
+        val approvalCheckpoint = (0 until rows.length())
+            .map { rows.getJSONObject(it) }
+            .single { it.optString("kind") == WorkflowNodeKind.APPROVAL.name && it.optBoolean("externalWrite") }
+        approvalCheckpoint.put("externalWrite", false)
         sideEffectNode.remove("externalSideEffect")
         assertTrue(runCatching { WorkflowGraph.fromJson(missingClassification.toString()) }.isFailure)
+
+        val wrongBooleanType = JSONObject(graph.toJson())
+        val safeNodeRows = wrongBooleanType.getJSONArray("nodes")
+        val safeNode = (0 until safeNodeRows.length())
+            .map { safeNodeRows.getJSONObject(it) }
+            .single { it.optString("kind") == WorkflowNodeKind.REVIEW.name }
+        safeNode.put("requiresApproval", 0)
+        assertTrue(runCatching { WorkflowGraph.fromJson(wrongBooleanType.toString()) }.isFailure)
 
         val wrongCapabilityType = JSONObject(graph.toJson())
         val capabilityRows = wrongCapabilityType.getJSONArray("nodes")

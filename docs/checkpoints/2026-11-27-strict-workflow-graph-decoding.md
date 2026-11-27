@@ -34,10 +34,10 @@ Ensure that a saved Work plan or imported encrypted workspace backup cannot sile
 ## Verification evidence
 | Check | Result | Evidence |
 |---|---|---|
-| Core unit tests | Pending exact-head CI | Includes new strict-decoder regression cases |
-| Source verification | Pending exact-head CI | PR workflow |
-| Android unit tests / lint / APK assembly | Pending exact-head CI | PR workflow |
-| Emulator / in-place upgrade | Pending exact-head CI | PR workflow |
+| Core unit tests | Passed | Exact-head Actions #1288, commit `470ba4d` |
+| Source verification | Passed | Exact-head Actions #1288 |
+| Android unit tests / lint / debug+release APK assembly | Passed | Exact-head Actions #1288 |
+| Emulator / in-place upgrade | Passed | Exact-head Actions #1288; both encrypted stores and legacy recovery/corruption tests passed |
 | Physical device | Not run | Requires the user's phone |
 | Release signing | Not run | No release candidate or release request |
 
