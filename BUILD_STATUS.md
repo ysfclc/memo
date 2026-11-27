@@ -14,7 +14,7 @@
 - Replaces permissive graph decoding/coercion and silent truncation with required typed fields, bounded strings/arrays, exact whole-number parsing and post-decode graph validation.
 - Preserves legacy schema-v1 graphs only when every node uses the prior side-effect field shape; reconstructs the legacy external-write approval relationship and rejects mixed legacy/current representations.
 - Tightens the TaskSpec proposal envelope and rejects out-of-range numeric fields. Regression tests cover malformed types, fractional and overflowing numbers, oversized values, missing budget fields and legacy approval compatibility.
-- CI on the updated mainline branch is pending. No new release APK is claimed for this candidate.
+- First exact-head CI run #1298 (`46038084775`) stopped at source verification because the verifier still required the old floating-point integer-check expression; it did not reach Kotlin compilation or Android tests. The verifier is now updated to require the exact decimal conversion and new overflow regression tests. Fresh exact-head CI is pending. No new release APK is claimed for this candidate.
 
 ---
 

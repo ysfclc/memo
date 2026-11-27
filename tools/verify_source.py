@@ -427,7 +427,7 @@ for marker in ("data class TaskSpec(", "externalSideEffect: Boolean = false", "t
 for marker in ("fun compileForTasks(", "task.runtimeId to it", "externalSideEffect = capability.externalSideEffect", "unresolvedRequirements = missing", "registeredRuntimeIds = registeredRuntimes.map", "mode=task-spec"):
     if marker not in capability_source:
         fail(f"dynamic capability assembly is missing: {marker}")
-for marker in ("MAX_RAW_CHARS = 64_000", "UUID.randomUUID()", "CapabilityCompiler.compileForTasks", "WorkflowGraphCompiler.compile", "private fun integer(", "numeric % 1.0 == 0.0"):
+for marker in ("MAX_RAW_CHARS = 64_000", "UUID.randomUUID()", "CapabilityCompiler.compileForTasks", "WorkflowGraphCompiler.compile", "private fun integer(", "BigDecimal(value.toString()).longValueExact()"):
     if marker not in proposal_parser:
         fail(f"untrusted TaskSpec proposal parser is missing: {marker}")
 for marker in ("dynamicTaskSpecsCompileIntoAValidatedFanOutAndJoinDag", "NeverBorrowsAnIdenticallyNamedCapability", "dynamicGraphRejectsModelAndDurationBudgetOverruns"):
@@ -436,6 +436,12 @@ for marker in ("dynamicTaskSpecsCompileIntoAValidatedFanOutAndJoinDag", "NeverBo
 for marker in ("parsesDynamicTaskSpecsAndCreatesFreshAppOwnedIdempotencyKeys", "rejectsCapabilitiesThatExistOnlyOnAnotherRuntime", "rejectsAnUnregisteredRuntimeEvenWhenTheTaskNeedsNoCapabilities", "approvalGatedCapabilitiesRequireAnExplicitApprovalTask", "remoteModelConsentUsesApprovalWithoutBeingClassifiedAsExternalWrite", "externalSideEffect", "rejectsCyclesAndUnapprovedExternalWrites", "rejectsMalformedAndOversizedTaskFields"):
     if marker not in proposal_tests:
         fail(f"TaskSpec proposal parser regression coverage is missing: {marker}")
+for marker in ("persistedGraphDecoderRejectsOverlongFieldsInsteadOfSilentlyTruncating", "persistedGraphDecoderRejectsMixedSideEffectClassificationAndNonStringCapabilities", "persistedGraphDecoderRejectsFractionalLimitsAndMissingBudget", "persistedGraphDecoderPreservesLegacyApprovalAndConsentSemanticsWithoutSideEffectField", "persistedGraphDecoderRejectsIntegerOverflow"):
+    if marker not in task_graph_tests:
+        fail(f"strict persisted Work graph decoder regression coverage is missing: {marker}")
+for marker in ("rejectsCoercedProposalEnvelopeFields", "rejectsOutOfRangeIntegerFields"):
+    if marker not in proposal_tests:
+        fail(f"strict TaskSpec proposal envelope/integer regression coverage is missing: {marker}")
 print("PASS: typed TaskSpec proposals compile into bounded DAGs with exact-runtime capability resolution and fail-closed validation")
 
 
