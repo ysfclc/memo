@@ -180,7 +180,7 @@ class WorkflowGraphTest {
         assertTrue(runCatching { WorkflowGraph.fromJson(json.toString()) }.isFailure)
     }
 
-    @Test fun persistedGraphDecoderRequiresSideEffectClassificationAndStringCapabilities() {
+    @Test fun persistedGraphDecoderRejectsMixedSideEffectClassificationAndNonStringCapabilities() {
         val graph = approvedExternalGraph()
         val missingClassification = JSONObject(graph.toJson())
         val rows = missingClassification.getJSONArray("nodes")
@@ -219,6 +219,64 @@ class WorkflowGraphTest {
         val missingBudget = JSONObject(approvedExternalGraph().toJson())
         missingBudget.remove("budget")
         assertTrue(runCatching { WorkflowGraph.fromJson(missingBudget.toString()) }.isFailure)
+    }
+
+
+    private fun legacySchemaOneGraphJson(): String {
+        fun node(
+            id: String,
+            kind: WorkflowNodeKind,
+            participant: WorkflowParticipant,
+            runtimeId: String,
+            capabilities: List<String> = emptyList(),
+            dependsOn: List<String> = emptyList(),
+            requiresApproval: Boolean = false,
+            externalWrite: Boolean = false
+        ) = JSONObject().apply {
+            put("id", id)
+            put("title", "Legacy $id")
+            put("kind", kind.name)
+            put("participant", participant.name)
+            put("runtimeId", runtimeId)
+            put("requiredCapabilities", JSONArray(capabilities))
+            put("dependsOn", JSONArray(dependsOn))
+            put("inputContract", "Legacy input for $id")
+            put("outputContract", "Legacy output for $id")
+            put("postcondition", "Legacy observable result for $id")
+            put("requiresApproval", requiresApproval)
+            put("externalWrite", externalWrite)
+            put("timeoutMs", 120_000)
+            put("maxRetries", 0)
+            put("idempotencyKey", "a".repeat(64))
+        }
+        return JSONObject().apply {
+            put("schemaVersion", 1)
+            put("goal", "Restore an existing schema-v1 Work plan")
+            put("budget", JSONObject().apply {
+                put("maxNodes", 40)
+                put("maxDurationMs", 900_000)
+                put("maxModelCalls", 12)
+                put("maxExternalWrites", 1)
+            })
+            put("nodes", JSONArray(listOf(
+                node("draft", WorkflowNodeKind.ARTIFACT, WorkflowParticipant.LOCAL_MODEL, "app.models", listOf("model.generate")),
+                node("verify", WorkflowNodeKind.VERIFICATION, WorkflowParticipant.DETERMINISTIC, "app.jobs", listOf("job.verify"), listOf("draft")),
+                node(
+                    "approval", WorkflowNodeKind.APPROVAL, WorkflowParticipant.USER, "app.approvals",
+                    capabilities = listOf("browser.prepare_prompt"), dependsOn = listOf("verify"),
+                    requiresApproval = true, externalWrite = true
+                ),
+                node("review", WorkflowNodeKind.REVIEW, WorkflowParticipant.USER, "app.jobs", dependsOn = listOf("approval"))
+            )))
+        }.toString()
+    }
+
+    @Test fun persistedGraphDecoderPreservesLegacySchemaOneGraphsWithoutSideEffectField() {
+        val restored = WorkflowGraph.fromJson(legacySchemaOneGraphJson())
+
+        assertEquals("approval", restored.nodes.single { it.externalWrite }.id)
+        assertTrue(restored.nodes.all { !it.externalSideEffect })
+        assertEquals(restored, WorkflowGraph.fromJson(restored.toJson()))
     }
 
 }

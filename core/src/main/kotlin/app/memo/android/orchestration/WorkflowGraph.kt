@@ -101,6 +101,16 @@ data class WorkflowGraph(
             require(nodeRows.length() in 1..40) {
                 "Workflow graph must contain between 1 and 40 nodes."
             }
+            // externalSideEffect was added after schema-v1 graphs had already been persisted.
+            // Accept the original representation only when every node omits the field; mixed
+            // representations are ambiguous and must be rejected.
+            val sideEffectFieldPresence = (0 until nodeRows.length()).map { index ->
+                nodeRows.getJSONObject(index).has("externalSideEffect")
+            }
+            val legacySideEffectFormat = sideEffectFieldPresence.none { it }
+            require(legacySideEffectFormat || sideEffectFieldPresence.all { it }) {
+                "Workflow graph mixes legacy and current side-effect classification fields."
+            }
             val nodes = (0 until nodeRows.length()).map { index ->
                 val row = nodeRows.optJSONObject(index)
                     ?: throw IllegalArgumentException("Workflow node ${index + 1} must be an object.")
@@ -117,7 +127,7 @@ data class WorkflowGraph(
                     postcondition = requiredString(row, "postcondition", 1_000),
                     requiresApproval = requiredBoolean(row, "requiresApproval"),
                     externalWrite = requiredBoolean(row, "externalWrite"),
-                    externalSideEffect = requiredBoolean(row, "externalSideEffect"),
+                    externalSideEffect = if (legacySideEffectFormat) false else requiredBoolean(row, "externalSideEffect"),
                     timeoutMs = requiredLong(row, "timeoutMs"),
                     maxRetries = requiredInt(row, "maxRetries"),
                     idempotencyKey = requiredString(row, "idempotencyKey", 64)

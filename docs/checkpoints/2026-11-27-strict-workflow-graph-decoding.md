@@ -19,7 +19,7 @@ Ensure that a saved Work plan or imported encrypted workspace backup cannot sile
 ## Work completed
 - Replaced permissive `optString`, `optBoolean`, `optLong` and silent truncation in `WorkflowGraph.fromJson` with required typed readers.
 - Require budget and node arrays and every schema-v1 field.
-- Reject wrong JSON types, fractional/overflowing numeric values, overlong strings and arrays, missing side-effect classification and missing budget data.
+- Reject wrong JSON types, fractional/overflowing numeric values, overlong strings and arrays, missing budget data, and mixed legacy/current side-effect classification. Original schema-v1 graphs from before the `externalSideEffect` field was added remain readable only when all nodes omit it.
 - Preserve the existing graph validator after strict decoding.
 - No execution behavior, workspace schema, encryption, key alias, package identity or signing configuration changed.
 
@@ -42,7 +42,7 @@ Ensure that a saved Work plan or imported encrypted workspace backup cannot sile
 | Release signing | Not run | No release candidate or release request |
 
 ## Risks and boundaries
-- This is a persistence/backup integrity correction, not DAG execution.
+- This is a persistence/backup integrity correction, not DAG execution. The decoder explicitly preserves the original schema-v1 serialized form from before `externalSideEffect` was added.
 - Work plans remain DRAFT and no node is dispatched.
 - Do not claim device acceptance or a user-ready APK from CI alone.
 - No changes were made to Memo-2 or another repository.
