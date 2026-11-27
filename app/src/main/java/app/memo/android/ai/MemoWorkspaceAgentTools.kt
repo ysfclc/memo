@@ -10,6 +10,8 @@ import app.memo.android.data.EvidenceRecord
 import app.memo.android.data.ActionApprovalLedger
 import app.memo.android.data.MemoWorkspaceViewModel
 import app.memo.android.data.StudioArtifactPolicy
+import app.memo.android.runtime.RuntimeRegistry
+import app.memo.android.orchestration.WorkflowTaskProposalParser
 import app.memo.android.orchestration.AgentApprovalEnvelope
 import app.memo.android.orchestration.AgentApprovalGrant
 import app.memo.android.orchestration.AgentCapabilityAdapter
@@ -50,6 +52,7 @@ object MemoWorkspaceAgentTools {
         add(SaveNoteAdapter(viewModel))
         add(StudioArtifactAdapter(viewModel, sourceConversationId, sourceMessageId, sourceExcerpt))
         add(ProposeRecordAdapter(viewModel, sourceConversationId, sourceMessageId, sourceExcerpt))
+        add(CreateWorkPlanAdapter(viewModel, sourceConversationId, sourceMessageId, sourceExcerpt))
         if (browser != null) {
             val userSuppliedUrls = BrowserUrlPolicy.explicitlySuppliedUrls(sourceExcerpt)
             val browserScope = BrowserAgentScope().apply {
@@ -1087,6 +1090,93 @@ object MemoWorkspaceAgentTools {
                 verified = verified,
                 description = if (verified) "The exact Markdown draft, type, content digest and source provenance were read back from the encrypted workspace." else "The Studio draft could not be read back with matching content, digest, version and source provenance.",
                 evidenceReference = id
+            )
+        }
+    }
+
+    private class CreateWorkPlanAdapter(
+        private val viewModel: MemoWorkspaceViewModel,
+        private val sourceConversationId: String,
+        private val sourceMessageId: String,
+        private val sourceExcerpt: String
+    ) : AgentCapabilityAdapter {
+        private data class ExpectedPlan(val jobId: String, val title: String, val graphJson: String)
+        private val expectedByCall = mutableMapOf<String, ExpectedPlan>()
+
+        override val definition = AgentToolDefinition(
+            id = "workspace.create_work_plan",
+            description = "Create a dynamic, editable Work plan from the user's current Talk request. Propose a bounded dependency graph using only registered runtime capabilities. Include observable input/output/postcondition contracts for every step and explicit approval gates for consequential actions. This saves a DRAFT for review; it does not execute any step or perform external actions.",
+            inputSchemaJson = """{"type":"object","properties":{"title":{"type":"string","minLength":1,"maxLength":240},"proposalJson":{"type":"string","minLength":20,"maxLength":24000}},"required":["title","proposalJson"],"additionalProperties":false}""",
+            executionClass = AgentToolExecutionClass.LOCAL_WRITE,
+            runtimeId = "app.workspace"
+        )
+
+        override fun isAvailable(): Boolean {
+            val conversation = viewModel.snapshot.value.conversations.firstOrNull { it.id == sourceConversationId }
+            return sourceConversationId.isNotBlank() &&
+                sourceMessageId.isNotBlank() &&
+                conversation?.messages?.any { it.id == sourceMessageId && it.role == "USER" } == true &&
+                viewModel.vaultReady.value &&
+                viewModel.vaultError.value == null
+        }
+
+        override suspend fun invoke(arguments: JSONObject, invocation: AgentToolInvocation): AgentToolResult {
+            check(isAvailable()) { "The source Talk message or encrypted workspace is unavailable." }
+            val title = arguments.getString("title").trim().take(240)
+            val proposalJson = arguments.getString("proposalJson")
+            val graph = WorkflowTaskProposalParser.parse(
+                raw = proposalJson,
+                sourceIntent = sourceExcerpt,
+                registeredRuntimes = RuntimeRegistry().listRuntimes()
+            )
+            val outcome = viewModel.createAgentWorkPlan(
+                title = title,
+                graph = graph,
+                sourceConversationId = sourceConversationId,
+                sourceMessageId = sourceMessageId
+            )
+            val jobId = outcome.getOrNull()
+            if (jobId == null) {
+                val reason = outcome.exceptionOrNull()?.message ?: "Memo could not save the dynamic Work plan."
+                val uncertain = viewModel.vaultError.value != null || reason.contains("read back", ignoreCase = true)
+                return AgentToolResult(
+                    status = if (uncertain) AgentToolStatus.NEEDS_REVIEW else AgentToolStatus.FAILED,
+                    output = reason,
+                    summary = if (uncertain) "Work plan persistence needs review." else "Work plan was not saved."
+                )
+            }
+            val graphJson = graph.toJson()
+            expectedByCall[invocation.callId] = ExpectedPlan(jobId, title, graphJson)
+            return AgentToolResult(
+                status = AgentToolStatus.SUCCEEDED,
+                output = "Saved a dynamic Work plan in DRAFT status. Title: $title. Steps: ${graph.nodes.size}. Work item ID: $jobId. The dependency graph and approval requirements are stored for review; no step has run.",
+                summary = "Saved dynamic Work plan '$title' for review.",
+                evidenceReference = jobId
+            )
+        }
+
+        override suspend fun verifyPostcondition(
+            arguments: JSONObject,
+            invocation: AgentToolInvocation,
+            result: AgentToolResult
+        ): AgentToolPostconditionVerification {
+            val expected = expectedByCall.remove(invocation.callId)
+            val job = expected?.let { plan ->
+                viewModel.snapshot.value.jobs.firstOrNull { it.id == plan.jobId }
+            }
+            val verified = isAvailable() && expected != null && job != null &&
+                result.evidenceReference == expected.jobId &&
+                job.title == expected.title &&
+                job.workflowGraphJson == expected.graphJson &&
+                job.status == "DRAFT" &&
+                job.sourceConversationId == sourceConversationId &&
+                job.sourceMessageId == sourceMessageId &&
+                job.steps.size in 1..40 &&
+                job.steps.all { it.status == "PENDING" }
+            return AgentToolPostconditionVerification(
+                verified = verified,
+                description = if (verified) "The exact dynamic graph, ordered step contracts, approval boundaries, source Talk message and DRAFT state were read back from the encrypted workspace." else "The dynamic Work plan could not be read back with its exact graph, source, step and review state.",
+                evidenceReference = expected?.jobId.orEmpty()
             )
         }
     }
