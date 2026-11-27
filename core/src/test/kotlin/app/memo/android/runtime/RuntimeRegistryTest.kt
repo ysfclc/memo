@@ -23,6 +23,7 @@ class RuntimeRegistryTest {
         assertTrue(registry.can("app.entities", "entity.propose"))
         assertTrue(registry.can("app.entities", "entity.create"))
         assertTrue(registry.can("app.jobs", "job.verify"))
+        assertTrue(registry.can("app.workspace", "workspace.create_work_plan"))
         assertFalse(registry.can("app.entities", "browser.navigate_https"))
     }
     @Test fun localInferenceAndRemoteProviderConsentAreDifferentCapabilities() {
