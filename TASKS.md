@@ -616,6 +616,7 @@ Do not copy progress claims from Memo 2 into this ledger. Start with P1-0 and ke
 ## 2026-11-27 — MEMO-ORCH-001 / MEMO-WORK-001 — Dynamic Talk-to-Work plan creation
 
 - **Product outcome:** Talk can ask the selected model to compose a bounded, typed dependency graph and save it as an editable Work draft linked to the exact source user message.
+- **Entry path:** all new home intents now enter Talk; the keyword-based `IntentPlanner.shouldCreateWorkflow` shortcut no longer diverts action-oriented requests into a deterministic template plan.
 - **Capability:** added `workspace.create_work_plan` to the registered `app.workspace` runtime and the Talk adapter catalogue. The model's proposal is parsed by `WorkflowTaskProposalParser` against the current registered runtimes, capability IDs, dependency rules, budgets and approval policy.
 - **Persistence:** `AgentWorkPlanPolicy` converts the validated graph into topologically ordered pending checkpoints. Each Work step retains participant, runtime, capabilities, input/output contracts, postcondition and approval boundary. The ViewModel requires the source conversation and exact USER message, persists to the existing encrypted workspace and verifies the graph, source, step list and DRAFT status by read-back.
 - **Execution boundary:** this capability saves a plan only. No DAG node is executed; external-write steps remain review-only and retain approval requirements. Existing iterative Talk execution remains the route for currently registered callable capabilities.
