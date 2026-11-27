@@ -600,6 +600,10 @@ for marker in (
     'StudioArtifactAdapter(viewModel, sourceConversationId, sourceMessageId, sourceExcerpt, reuseExistingDrafts = false)',
     'sourceMessageId.isNotBlank()',
     'it.id == sourceMessageId && it.role == "USER"',
+):
+    if marker not in agent_tools:
+        fail(f"Work artifact adapter is not restricted to its exact source and private-write capability: {marker}")
+for marker in (
     'launchSharedWorkStepExecution(',
     'viewModel.launchAgentExecution(',
     'AgentExecutionEngine(',
