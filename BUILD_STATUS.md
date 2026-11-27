@@ -344,3 +344,12 @@ The action inbox and first top-level stop control are present in source. Static/
 - Required source, runner, JVM, debug/release lint, release instrumentation and APK identity gates: PASS
 - Release package: ; final pinned signing is isolated.
 - Workflow run: https://github.com/ysfclc/memo/actions/runs/45941121247
+
+
+## Strict Work graph and proposal-envelope decoding — exact-head CI PASS
+
+- PR: [#28](https://github.com/ysfclc/memo/pull/28), still draft and unmerged; branch `fix/strict-workflow-graph-decoding-2026-11-27`.
+- Exact tested head: `d5cdbb83a1f8770dc99e2f32592d9622e3712c42`.
+- GitHub Actions run #1292 (`45998744182`) passed source verification, remote-runner tests, core and Android unit tests, lint, debug/release APK assembly, APK identity/signature checks, and emulator install-over-existing with app-private data preservation.
+- The PR workflow skipped protected persistent signing and APK publication; no installable release APK is claimed. The repository Dependency Graph is disabled, so no complete dependency assessment is claimed.
+- Product boundary remains unchanged: Work plans are validated encrypted DRAFTs; no DAG node execution is implemented. Physical-device acceptance remains open. Next product increment is to connect plan nodes to the existing shared Talk execution lifecycle, not create a parallel engine.

@@ -174,4 +174,33 @@ class WorkflowTaskProposalParserTest {
             WorkflowTaskProposalParser.parse(proposal(listOf(fractionalLimit)), "Inspect page", runtimes)
         }.isFailure)
     }
+    @Test fun rejectsCoercedProposalEnvelopeFields() {
+        val valid = proposal(listOf(task("inspect", "BROWSER", "runtime.browser", listOf("browser.inspect_page"))))
+
+        val stringSchemaVersion = JSONObject(valid).put("schemaVersion", "1").toString()
+        assertTrue(runCatching {
+            WorkflowTaskProposalParser.parse(stringSchemaVersion, "Inspect a page", runtimes)
+        }.isFailure)
+
+        val fractionalSchemaVersion = JSONObject(valid).put("schemaVersion", 1.5).toString()
+        assertTrue(runCatching {
+            WorkflowTaskProposalParser.parse(fractionalSchemaVersion, "Inspect a page", runtimes)
+        }.isFailure)
+
+        val booleanSchemaVersion = JSONObject(valid).put("schemaVersion", true).toString()
+        assertTrue(runCatching {
+            WorkflowTaskProposalParser.parse(booleanSchemaVersion, "Inspect a page", runtimes)
+        }.isFailure)
+
+        val missingSchemaVersion = JSONObject(valid).apply { remove("schemaVersion") }.toString()
+        assertTrue(runCatching {
+            WorkflowTaskProposalParser.parse(missingSchemaVersion, "Inspect a page", runtimes)
+        }.isFailure)
+
+        val nonTextGoal = JSONObject(valid).put("goal", 123).toString()
+        assertTrue(runCatching {
+            WorkflowTaskProposalParser.parse(nonTextGoal, "Inspect a page", runtimes)
+        }.isFailure)
+    }
+
 }

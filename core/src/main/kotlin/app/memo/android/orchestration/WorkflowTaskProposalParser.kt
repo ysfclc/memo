@@ -28,8 +28,10 @@ object WorkflowTaskProposalParser {
             "The workflow proposal is empty or exceeds its size limit."
         }
         val root = JSONObject(raw)
-        require(root.optInt("schemaVersion", 0) == 1) { "Unsupported task proposal schema." }
-        val goal = root.optString("goal", "").trim()
+        require(integer(root, "schemaVersion") == 1L) { "Unsupported task proposal schema." }
+        val goalValue = root.opt("goal")
+        require(goalValue is String) { "The proposed workflow goal must be text." }
+        val goal = goalValue.trim()
         require(goal.isNotBlank() && goal.length <= 8_000) { "The proposed workflow goal is missing or too long." }
         val rows = root.optJSONArray("tasks")
             ?: throw IllegalArgumentException("The workflow proposal must contain a tasks array.")
@@ -112,11 +114,11 @@ object WorkflowTaskProposalParser {
 
     private fun integer(row: JSONObject, key: String): Long {
         val value = row.opt(key)
-        require(value is Number) { "Task field '$key' must be numeric." }
+        require(value is Number) { "Field '$key' must be numeric." }
         val numeric = value.toDouble()
         require(numeric.isFinite() && numeric % 1.0 == 0.0 &&
             numeric >= Long.MIN_VALUE.toDouble() && numeric <= Long.MAX_VALUE.toDouble()
-        ) { "Task field '$key' must be a whole number." }
+        ) { "Field '$key' must be a whole number." }
         return value.toLong()
     }
 
