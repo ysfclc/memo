@@ -336,3 +336,11 @@ The action inbox and first top-level stop control are present in source. Static/
 - **Important boundary:** this creates a real, editable plan only. It does not execute graph nodes. The existing iterative Talk engine still executes only its registered callable adapters; full durable DAG execution remains future product work.
 - Exact-head GitHub Actions validation: pending. No local Gradle/Android build, release APK or physical-device acceptance is claimed.
 - Checkpoint: `docs/checkpoints/2026-11-27-talk-dynamic-work-plans.md`.
+
+## Automated import — 2026-11-27 04:45:16 UTC
+
+- Source revision: `f1f865ac1bcea73f68eab89c28fea77544f88561`
+- Archive SHA-256: `92d3f73c60e6372a2fc060ba733d58072b5f95eb7ea809671b78b3a0f316a1f3`
+- Required source, runner, JVM, debug/release lint, release instrumentation and APK identity gates: PASS
+- Release package: ; final pinned signing is isolated.
+- Workflow run: https://github.com/ysfclc/memo/actions/runs/45941121247
