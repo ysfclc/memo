@@ -46,6 +46,9 @@ object AgentWorkPlanPolicy {
                 checkpointKind = when {
                     node.externalSideEffect -> "EXTERNAL_ACTION"
                     node.requiresApproval -> "HUMAN_REVIEW"
+                    node.participant == app.memo.android.orchestration.WorkflowParticipant.LOCAL_MODEL &&
+                        node.runtimeId == "app.models" &&
+                        node.requiredCapabilities == listOf("model.generate") -> "LOCAL_MODEL"
                     else -> "USER_CHECKPOINT"
                 },
                 requiresApproval = node.requiresApproval || node.externalSideEffect
