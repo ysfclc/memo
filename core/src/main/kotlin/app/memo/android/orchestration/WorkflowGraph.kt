@@ -111,7 +111,7 @@ data class WorkflowGraph(
             require(legacySideEffectFormat || sideEffectFieldPresence.all { it }) {
                 "Workflow graph mixes legacy and current side-effect classification fields."
             }
-            val nodes = (0 until nodeRows.length()).map { index ->
+            val decodedNodes = (0 until nodeRows.length()).map { index ->
                 val row = nodeRows.optJSONObject(index)
                     ?: throw IllegalArgumentException("Workflow node ${index + 1} must be an object.")
                 WorkflowNodeSpec(
@@ -132,6 +132,25 @@ data class WorkflowGraph(
                     maxRetries = requiredInt(row, "maxRetries"),
                     idempotencyKey = requiredString(row, "idempotencyKey", 64)
                 )
+            }
+            // Before externalSideEffect was persisted, schema-v1 approval semantics matched a
+            // required action to its explicit externalWrite checkpoint. Reconstruct that legacy
+            // classification from the dependency shape; never infer it for current-format graphs,
+            // where the compiler-derived field is mandatory.
+            val nodes = if (legacySideEffectFormat) {
+                val nodesById = decodedNodes.associateBy { it.id }
+                decodedNodes.map { node ->
+                    val hasLegacyExternalWriteGate = node.kind != WorkflowNodeKind.APPROVAL &&
+                        node.requiresApproval && node.dependsOn.any { dependency ->
+                            val gate = nodesById[dependency]
+                            gate?.kind == WorkflowNodeKind.APPROVAL && gate.requiresApproval &&
+                                gate.externalWrite && gate.participant == WorkflowParticipant.USER &&
+                                gate.runtimeId == "app.approvals" && gate.maxRetries == 0
+                        }
+                    node.copy(externalSideEffect = hasLegacyExternalWriteGate)
+                }
+            } else {
+                decodedNodes
             }
             val graph = WorkflowGraph(
                 schemaVersion = schemaVersion,

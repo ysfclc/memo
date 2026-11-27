@@ -263,19 +263,33 @@ class WorkflowGraphTest {
                 node("verify", WorkflowNodeKind.VERIFICATION, WorkflowParticipant.DETERMINISTIC, "app.jobs", listOf("job.verify"), listOf("draft")),
                 node(
                     "approval", WorkflowNodeKind.APPROVAL, WorkflowParticipant.USER, "app.approvals",
-                    capabilities = listOf("browser.prepare_prompt"), dependsOn = listOf("verify"),
-                    requiresApproval = true, externalWrite = true
+                    dependsOn = listOf("verify"), requiresApproval = true, externalWrite = true
                 ),
-                node("review", WorkflowNodeKind.REVIEW, WorkflowParticipant.USER, "app.jobs", dependsOn = listOf("approval"))
+                node(
+                    "submit", WorkflowNodeKind.DOMAIN_WORK, WorkflowParticipant.BROWSER, "runtime.browser",
+                    capabilities = listOf("browser.submit_prompt"), dependsOn = listOf("approval"),
+                    requiresApproval = true
+                ),
+                node(
+                    "remote-consent", WorkflowNodeKind.APPROVAL, WorkflowParticipant.USER, "app.approvals",
+                    dependsOn = listOf("submit"), requiresApproval = true
+                ),
+                node(
+                    "remote-model", WorkflowNodeKind.DOMAIN_WORK, WorkflowParticipant.LOCAL_MODEL, "app.models",
+                    capabilities = listOf("model.generate_remote"), dependsOn = listOf("remote-consent"),
+                    requiresApproval = true
+                ),
+                node("review", WorkflowNodeKind.REVIEW, WorkflowParticipant.USER, "app.jobs", dependsOn = listOf("remote-model"))
             )))
         }.toString()
     }
 
-    @Test fun persistedGraphDecoderPreservesLegacySchemaOneGraphsWithoutSideEffectField() {
+    @Test fun persistedGraphDecoderPreservesLegacyApprovalAndConsentSemanticsWithoutSideEffectField() {
         val restored = WorkflowGraph.fromJson(legacySchemaOneGraphJson())
 
         assertEquals("approval", restored.nodes.single { it.externalWrite }.id)
-        assertTrue(restored.nodes.all { !it.externalSideEffect })
+        assertTrue(restored.nodes.single { it.id == "submit" }.externalSideEffect)
+        assertFalse(restored.nodes.single { it.id == "remote-model" }.externalSideEffect)
         assertEquals(restored, WorkflowGraph.fromJson(restored.toJson()))
     }
 
