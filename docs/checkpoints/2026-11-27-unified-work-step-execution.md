@@ -45,4 +45,4 @@ This is not a reason to create a DAG scheduler in this increment. It is a reason
 
 ## Verification record
 
-Implementation is committed on PR #32 (latest code commit `8b61879fb139472646393459e737087c6c16f05a`). Exact-head Actions validation is pending; no merge, installable APK or physical-device acceptance is claimed.
+Implementation is committed on PR #32. Exact code commit `e51f29dcf9a492d812d655dc3f490f37aa0505da` passed Actions run [#1306](https://github.com/ysfclc/memo/actions/runs/46049068094), including the new process-restart artifact-recovery tests and install-over-existing/data-preservation gate. PR #32 remains unmerged; the PR workflow did not publish an installable signed APK, and physical-device acceptance remains open.

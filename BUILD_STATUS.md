@@ -3,12 +3,12 @@
 ## M3.A4-S11 — Unify Work local-model execution with the shared Talk engine
 
 - PR #32: `https://github.com/ysfclc/memo/pull/32`; branch `feature/unified-work-step-execution-2026-11-27`, based on main `1602e50f2e2d23b5265362a7641f649aaf06e3c4`.
-- The executable node allowlist remains exact: participant `LOCAL_MODEL`, runtime `app.models`, and only `model.generate`. Remote model generation and approval-gated nodes remain review-only.
-- Work now starts the same `AgentExecutionEngine` used by Talk, bound to the exact source USER message and an installed on-device model. It exposes only the registered private `workspace.save_artifact` adapter with a one-tool-call budget; the model must save a real draft rather than returning text alone.
-- Every run event is durably appended to the source conversation. The artifact is tied to the exact run/source IDs and read back before the Work checkpoint can become `NEEDS_REVIEW`. The user must inspect and accept it; uncertain/interrupted checkpoints are review-only and never replay automatically.
-- No DAG scheduler, new executable node types, remote/browser/Android/external-write actions, workspace schema changes, package identity changes or signing changes are included.
-- **Local:** no Gradle/Android SDK or checked-out project tree is available here; no local compile or test is claimed.
-- **CI:** exact-head Actions validation pending. Intermediate implementation head `b2dd21181ff70bc253e5e090618a16420fdd9886` passed source verification, remote-runner tests, Android unit tests, lint, debug/release assembly and APK identity/signature checks; emulator install-over-existing and final exact-head validation are still pending. No installable PR APK is claimed.
+- Exact executable node allowlist: participant `LOCAL_MODEL`, runtime `app.models`, and only `model.generate`. Remote model generation and approval-gated nodes remain review-only.
+- Work uses the same `AgentExecutionEngine` as Talk, bound to the exact source USER message and an installed on-device model. It exposes only the registered private `workspace.save_artifact` adapter with a one-tool-call budget; a final text response without a saved artifact does not complete the checkpoint.
+- Every run event is durably appended to the source conversation. The artifact is tied to exact run/source IDs and read back before the Work checkpoint becomes `NEEDS_REVIEW`. Startup recovery links an artifact only when its run and source provenance match; otherwise it preserves the run reference for inspection. No interrupted step is replayed automatically.
+- No general DAG scheduler, new executable node types, remote/browser/Android/external-write actions, workspace schema changes, package identity changes or signing changes are included.
+- **CI:** exact code commit `e51f29dcf9a492d812d655dc3f490f37aa0505da` passed [Actions run #1306](https://github.com/ysfclc/memo/actions/runs/46049068094): source verification, remote-runner tests, Android unit tests (including recovery tests), lint, debug/release assembly, APK identity/signature checks and emulator install-over-existing/data-preservation.
+- **Artifact:** PR validation skips isolated pinned release signing and APK publication; only build reports were uploaded. No installable APK is available from this draft PR.
 - **Device:** physical-device acceptance remains open.
 
 ---
