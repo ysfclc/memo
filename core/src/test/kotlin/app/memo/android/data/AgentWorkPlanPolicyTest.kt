@@ -68,7 +68,7 @@ class AgentWorkPlanPolicyTest {
         assertEquals(listOf("Step draft", "Step approval", "Step submit"), job.steps.map { it.title })
         assertTrue(job.steps.all { it.status == "PENDING" })
         assertTrue(job.steps[1].requiresApproval)
-        assertEquals("EXTERNAL_ACTION", job.steps[1].checkpointKind)
+        assertEquals("HUMAN_REVIEW", job.steps[1].checkpointKind)
         assertTrue(job.steps[2].requiresApproval)
         assertEquals("EXTERNAL_ACTION", job.steps[2].checkpointKind)
         assertTrue(job.resultSummary.contains("No step has run"))
