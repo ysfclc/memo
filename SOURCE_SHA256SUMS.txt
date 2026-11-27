@@ -258,4 +258,4 @@ d82dc17d418f2ce0b7f3b68b7304901400290e60aa3de8515fbfa8f2f617492d  ./gradle.prope
 a1453a88e5bc19e7b20a521b56d36acbaec90fc742b79fb49fca11b7ddda73af  ./remote-runner/tests/test_runner.py
 19280c23fb304e503d1037eb423b17d0a14dd2a6fbb3e916574f4c5be17dfebf  ./settings.gradle
 af82b8e9bc8cc7166cefb8f5b282aeb7bec2d7dd6db9fbf72d565502953bc642  ./tools/ci/circleci-android.sh
-19ef56ab653cdf4b36db7748e37bdcf32b887617553ecd0bbc079d182ea8562e  ./tools/verify_source.py
+6023833dcb997033b684678f0119ba79c1024fe090c5002d65e550c8dac5ef5d  ./tools/verify_source.py
