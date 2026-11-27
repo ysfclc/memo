@@ -26,6 +26,8 @@ Ensure that a saved Work plan or imported encrypted workspace backup cannot sile
 ## Changed files
 - `core/src/main/kotlin/app/memo/android/orchestration/WorkflowGraph.kt`
 - `core/src/test/kotlin/app/memo/android/orchestration/WorkflowGraphTest.kt`
+- `core/src/main/kotlin/app/memo/android/orchestration/WorkflowTaskProposalParser.kt`
+- `core/src/test/kotlin/app/memo/android/orchestration/WorkflowTaskProposalParserTest.kt`
 - `TASKS.md`
 - `docs/REQUIREMENT_TRACEABILITY.md`
 - `IMPLEMENTATION_LOG.md`
@@ -34,12 +36,12 @@ Ensure that a saved Work plan or imported encrypted workspace backup cannot sile
 ## Verification evidence
 | Check | Result | Evidence |
 |---|---|---|
-| Core unit tests | Passed | Exact-head Actions #1288, commit `470ba4d` |
-| Source verification | Passed | Exact-head Actions #1288 |
-| Android unit tests / lint / debug+release APK assembly | Passed | Exact-head Actions #1288 |
-| Emulator / in-place upgrade | Passed | Exact-head Actions #1288; both encrypted stores and legacy recovery/corruption tests passed |
+| Exact-head source, remote-runner, core and Android unit tests | Passed | Actions #1292 (`45998744182`), commit `d5cdbb83a1f8770dc99e2f32592d9622e3712c42` |
+| Android lint and debug/release APK assembly | Passed | Actions #1292 |
+| APK identity/signature and emulator install-over-existing/data preservation | Passed | Actions #1292 |
+| Protected persistent signing and APK publication | Skipped | Pull-request validation; no installable release APK is claimed |
+| Dependency assessment | Incomplete | Repository Dependency Graph is disabled |
 | Physical device | Not run | Requires the user's phone |
-| Release signing | Not run | No release candidate or release request |
 
 ## Risks and boundaries
 - This is a persistence/backup integrity correction, not DAG execution. The decoder explicitly preserves the original schema-v1 serialized form from before `externalSideEffect` was added.
