@@ -39,7 +39,7 @@ f608bddf49f49c35679c84ac52d1fef8e66363af0ab6f00005adaccc87a36363  ./app/src/main
 36f69a25fe5dfb84b70f9f7ac570388114088db17a4e559c865daa42fa0e590d  ./app/src/main/java/app/memo/android/ui/AppsWorkspaceScreen.kt
 c23d9d73f947dca41834299207c98cb522fbcf627615454078dc3d0bd22b645f  ./app/src/main/java/app/memo/android/ui/BrowserWorkflowScreen.kt
 ab22d7dc75cce9723b6f18a3d45e508cbf886063c3b79c028ce9ec9929368853  ./app/src/main/java/app/memo/android/ui/LiveWorkspaceScreen.kt
-707efee5ddd29a8d08a8643c556f7ad22eb090b518af23544202833f7182c178  ./app/src/main/java/app/memo/android/ui/MemoLocalization.kt
+47ec5a9c18bef72a51939ba436f7321f2e214460bb6a1943ab6cd33dd56c5a1e  ./app/src/main/java/app/memo/android/ui/MemoLocalization.kt
 7233cd4ac760ec24636c103294097c17e5a59d3772dda297a1034ba4f4941598  ./app/src/main/java/app/memo/android/ui/MemoPrimitives.kt
 fa5bd8f42d1349b9794601db776a3e137f933e5eac8caa0d7d9b50ace9979ac0  ./app/src/main/java/app/memo/android/ui/MemoTheme.kt
 26e87c7e2f9b72d214118008fc666fa618f079b5b129d3308dbd91c2644731f8  ./app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt
