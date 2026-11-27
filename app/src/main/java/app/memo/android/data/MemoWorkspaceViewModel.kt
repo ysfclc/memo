@@ -16,6 +16,7 @@ import app.memo.android.orchestration.AgentExecutionEvent
 import app.memo.android.orchestration.AgentExecutionEventType
 import app.memo.android.orchestration.AgentExecutionResult
 import app.memo.android.orchestration.AgentRunStatus
+import app.memo.android.orchestration.WorkflowGraph
 import org.json.JSONObject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -1108,6 +1109,62 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             }).withActivity("User recorded checkpoint outcome: ${step.title}", jobId, if (allComplete) "INFO" else "INFO")
         }
         return Result.success(Unit)
+    }
+
+    /** Persist a model-proposed, runtime-validated dynamic workflow and verify it by reopening the encrypted vault. No node is executed here. */
+    suspend fun createAgentWorkPlan(
+        title: String,
+        graph: WorkflowGraph,
+        sourceConversationId: String,
+        sourceMessageId: String
+    ): Result<String> {
+        if (!_vaultReady.value) return Result.failure(IllegalStateException("Unlock the workspace before creating a work plan."))
+        _vaultError.value?.let { return Result.failure(IllegalStateException("Encrypted workspace persistence is unavailable: $it")) }
+        val current = _snapshot.value
+        val source = current.conversations.firstOrNull { it.id == sourceConversationId }
+            ?: return Result.failure(IllegalStateException("The source Talk conversation no longer exists."))
+        if (source.messages.none { it.id == sourceMessageId && it.role == "USER" }) {
+            return Result.failure(IllegalStateException("The exact source USER message no longer exists in that conversation."))
+        }
+        if (current.jobs.size >= 240) {
+            return Result.failure(IllegalStateException("The 240-job limit has been reached. Export a backup before removing older jobs."))
+        }
+        val prepared = runCatching {
+            AgentWorkPlanPolicy.prepare(title, graph, sourceConversationId, sourceMessageId)
+        }.getOrElse { return Result.failure(it) }
+        updateSnapshot { latest ->
+            if (latest.jobs.size >= 240 ||
+                latest.conversations.none { conversation ->
+                    conversation.id == sourceConversationId &&
+                        conversation.messages.any { it.id == sourceMessageId && it.role == "USER" }
+                }
+            ) latest
+            else latest.copy(jobs = (listOf(prepared) + latest.jobs).take(240))
+                .withActivity("Dynamic Talk work plan created: ${prepared.title}", prepared.id)
+        }
+        if (_snapshot.value.jobs.none { it.id == prepared.id }) {
+            return Result.failure(IllegalStateException("The source Talk message changed or the job limit was reached. Nothing was saved."))
+        }
+        return try {
+            val persisted = withContext(Dispatchers.IO) { persistLatestSnapshotAndReadSafely() }
+            val saved = persisted?.jobs?.firstOrNull { it.id == prepared.id }
+            val verified = saved != null &&
+                saved.title == prepared.title &&
+                saved.workflowGraphJson == prepared.workflowGraphJson &&
+                saved.sourceConversationId == sourceConversationId &&
+                saved.sourceMessageId == sourceMessageId &&
+                saved.status == "DRAFT" &&
+                saved.steps.map { it.title } == prepared.steps.map { it.title } &&
+                saved.steps.all { it.status == "PENDING" }
+            if (verified) Result.success(prepared.id)
+            else Result.failure(IllegalStateException("The encrypted vault write completed, but the exact dynamic Work plan could not be read back. Review Work before retrying."))
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Throwable) {
+            val message = safeError(error, "The encrypted workspace could not save the dynamic Work plan.")
+            _vaultError.value = message
+            Result.failure(IllegalStateException(message, error))
+        }
     }
 
     fun createJob(title: String, goal: String, runtimeId: String, sourceConversationId: String = "", stepTitles: List<String>): String? {

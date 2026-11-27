@@ -543,6 +543,7 @@ class AgentExecutionEngine(
     private fun buildSystemPrompt(definitions: List<AgentToolDefinition>): String = buildString {
         append(
             "You are Memo's general-purpose action agent. The user gives you an outcome, not a workflow. " +
+                "For a multi-step goal that benefits from a durable user-editable plan, call workspace.create_work_plan when it is available; that capability saves a DRAFT only and never executes its nodes. " +
                 "Reason about the outcome and choose the next capability only when an action is needed. " +
                 "You may make multiple sequential tool calls, using each real result to decide what to do next. " +
                 "Do not invent tools, claim that an action ran without a successful capability result, or treat a plan as completion. " +

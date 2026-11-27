@@ -149,7 +149,6 @@ import app.memo.android.data.ActivityRecord
 import app.memo.android.data.EvidenceRecord
 import app.memo.android.data.MemoWorkspaceViewModel
 import app.memo.android.notifications.MemoNotificationCenter
-import app.memo.android.orchestration.IntentPlanner
 import com.synthos.runtime.engine.AutomationAccessibilityService
 import com.synthos.runtime.remote.RemoteRunnerClient
 import app.memo.android.data.TaskKind
@@ -428,32 +427,6 @@ fun MemoWorkspaceApp(
         val clean = rawIntent.trim().take(6_000)
         if (clean.isBlank()) return false
         val title = clean.lineSequence().firstOrNull().orEmpty().take(64).ifBlank { "New conversation" }
-        if (IntentPlanner.shouldCreateWorkflow(clean)) {
-            val sourceId = viewModel.createConversation(title = title)
-            if (sourceId.isBlank()) {
-                snack("Memo reached its conversation limit. Export a backup before removing older records.")
-                return false
-            }
-            val captureError = viewModel.appendChatMessage(sourceId, "USER", clean)
-            if (captureError != null) {
-                snack("Your draft was not saved: $captureError")
-                return false
-            }
-            viewModel.createIntentPlan(clean, uiLanguage, sourceConversationId = sourceId).fold(
-                onSuccess = { jobId ->
-                    workSectionRequest = "JOBS"
-                    tab = AppTab.WORK
-                    val checkpoints = viewModel.snapshot.value.jobs.firstOrNull { it.id == jobId }?.steps?.size ?: 0
-                    snack("Draft plan created with $checkpoints checkpoints and linked to its source conversation. Review it before starting; no external action has run.")
-                },
-                onFailure = { error ->
-                    activeConversationId = sourceId
-                    tab = AppTab.HOME
-                    snack("The request is saved in Talk, but its plan could not be created: ${error.message ?: "unknown error"}")
-                }
-            )
-            return true
-        }
         val id = viewModel.createConversation(title = title)
         if (id.isBlank()) {
             snack("Memo reached its conversation limit. Export a backup before removing older records.")

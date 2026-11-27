@@ -270,9 +270,14 @@ if "interface Listener" not in bridge.read_text() or "openForExternalCapture" no
     fail("Memo runtime bridge is missing listeners or capture entry points")
 home = (ROOT / "app/src/main/java/app/memo/android/ui/MemoWorkspaceApp.kt").read_text()
 chat = (ROOT / "app/src/main/java/app/memo/android/ui/WorkspaceScreens.kt").read_text()
-for marker in ("onContinueWithMemo", "IntentPlanner.shouldCreateWorkflow", "RecognizerIntent.ACTION_RECOGNIZE_SPEECH", "speechResultLauncher", "Manifest.permission.RECORD_AUDIO", "Make sense of what matters.", "Needs your decision"):
+for marker in ("onContinueWithMemo", "RecognizerIntent.ACTION_RECOGNIZE_SPEECH", "speechResultLauncher", "Manifest.permission.RECORD_AUDIO", "Make sense of what matters.", "Needs your decision"):
     if marker not in home:
         fail(f"Memo-first home is missing product marker: {marker}")
+if "IntentPlanner.shouldCreateWorkflow" in home:
+    fail("new user intents must enter the canonical Talk execution path, not a keyword-routed template planner")
+for marker in ("pendingChatPrompt = clean", "activeConversationId = id", "tab = AppTab.HOME"):
+    if marker not in home:
+        fail(f"home-to-Talk intent handoff is missing marker: {marker}")
 for marker in ("initialPrompt", "onInitialPromptConsumed", "draft = initialPrompt.take(6_000)"):
     if marker not in chat:
         fail(f"home-to-chat draft handoff is missing marker: {marker}")
@@ -445,7 +450,7 @@ agent_engine_tests = (ROOT / "core/src/test/kotlin/app/memo/android/orchestratio
 for marker in ('RuntimeDescriptor("app.workspace"', 'RuntimeCapability("workspace.search"', 'id = "runtime.browser"', 'RuntimeCapability("browser.navigate_https"', 'RuntimeCapability("browser.capture_evidence"', 'RuntimeCapability("browser.open_observed_link"'):
     if marker not in runtime_registry:
         fail(f"Talk runtime capability contract is missing: {marker}")
-for marker in ("AgentCapabilityRegistry(RuntimeRegistry().listRuntimes(), adapters)", "capabilityRegistry.availableAdapters()", "capabilityRegistry.resolve(decision.toolId)", "val runtimeId: String ="):
+for marker in ("AgentCapabilityRegistry(RuntimeRegistry().listRuntimes(), adapters)", "capabilityRegistry.availableAdapters()", "capabilityRegistry.resolve(decision.toolId)", "val runtimeId: String =", "workspace.create_work_plan when it is available", "saves a DRAFT only"):
     if marker not in agent_engine:
         fail(f"Talk dynamic capability discovery is missing: {marker}")
 for marker in ("definition.runtimeId", "no matching policy entry", "policy.requiresUserApproval == definition.requiresUserApproval", "policy.externalSideEffect == hasExternalSideEffect", "fun availableAdapters()"):
@@ -493,8 +498,8 @@ for marker in (
 ):
     if marker not in agent_engine:
         fail(f"shared Talk engine does not enforce verified capability outcomes: {marker}")
-if agent_tools.count("override suspend fun verifyPostcondition(") != 9:
-    fail("each of the nine current Talk adapters must implement an explicit postcondition verifier")
+if agent_tools.count("override suspend fun verifyPostcondition(") != 10:
+    fail("each of the ten current Talk adapters must implement an explicit postcondition verifier")
 for marker in (
     "deterministic recomputation from the permitted candidate set",
     "exact note title, content and digest",
@@ -506,6 +511,7 @@ for marker in (
     if marker not in agent_tools:
         fail(f"current Talk adapter verification is incomplete: {marker}")
 for marker in (
+    "compoundGoalsAreDirectedToTheDurableWorkPlanCapability",
     "successfulReadOnlyResultWithoutVerifierFailsAndAllowsReplanning",
     "localWriteWithoutPostconditionVerifierStopsForReview",
     "writePostconditionMustMatchReturnedEvidenceReference",
@@ -546,6 +552,17 @@ for marker in (
 for marker in ('"STUDIO_ARTIFACT"', "Your generated artifacts", "artifactType", '"BROWSER_PROMPT_SUBMISSION"', '"BROWSER_PROMPT_RESPONSE"', "Browser research evidence"):
     if marker not in talk_ui:
         fail(f"Studio does not expose Talk-created artifacts for review: {marker}")
+agent_work_plan_policy = (ROOT / "core/src/main/kotlin/app/memo/android/data/AgentWorkPlanPolicy.kt").read_text()
+agent_work_plan_tests = (ROOT / "core/src/test/kotlin/app/memo/android/data/AgentWorkPlanPolicyTest.kt").read_text()
+for marker in ("object AgentWorkPlanPolicy", "WorkflowGraphValidator.validate(graph)", "WorkflowGraphValidator.topologicalOrder(graph)", 'status = "DRAFT"', 'workflowGraphJson = graph.toJson()', "No step has run"):
+    if marker not in agent_work_plan_policy:
+        fail(f"dynamic Work plan persistence policy is incomplete: {marker}")
+for marker in ("createsReviewableWorkStepsInDependencyOrderAndPreservesApprovalBoundary", "rejectsMissingSourceAndInvalidTitle", "doesNotMarkAnyProposedStepAsCompleted"):
+    if marker not in agent_work_plan_tests:
+        fail(f"dynamic Talk work plan regression coverage is missing: {marker}")
+for marker in ('RuntimeCapability("workspace.create_work_plan"', 'id = "workspace.create_work_plan"', "WorkflowTaskProposalParser.parse(", "createAgentWorkPlan(", "persistLatestSnapshotAndReadSafely()", "job.workflowGraphJson == expected.graphJson", "DRAFT"):
+    if marker not in runtime_registry + agent_tools + workspace_view_model:
+        fail(f"Talk dynamic Work plan capability is missing its runtime, persistence or read-back contract: {marker}")
 print("PASS: Talk can save source-linked private Markdown drafts through the registered workspace runtime; digest, bounds and Studio review surface are guarded")
 for marker in (
     'RuntimeCapability("browser.submit_prompt"',
