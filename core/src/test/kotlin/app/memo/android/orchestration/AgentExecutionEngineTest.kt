@@ -327,6 +327,24 @@ class AgentExecutionEngineTest {
     }
 
     @Test
+    fun compoundGoalsAreDirectedToTheDurableWorkPlanCapability() = runBlocking {
+        var capturedSystemPrompt = ""
+        val engine = AgentExecutionEngine(
+            model = AgentModelProvider { systemPrompt, _ ->
+                capturedSystemPrompt = systemPrompt
+                """{"type":"final","content":"I can help with that."}"""
+            },
+            adapters = emptyList()
+        )
+
+        val result = engine.execute("Plan a multi-step project with milestones.")
+
+        assertEquals(AgentRunStatus.FINISHED, result.status)
+        assertTrue(capturedSystemPrompt.contains("workspace.create_work_plan"))
+        assertTrue(capturedSystemPrompt.contains("saves a DRAFT only"))
+    }
+
+    @Test
     fun plainTextModelResponseStillWorksAsDirectAnswer() = runBlocking {
         val model = AgentModelProvider { _, _ -> "Hello. What would you like to accomplish?" }
         val result = AgentExecutionEngine(model, emptyList()).execute("Hello")
