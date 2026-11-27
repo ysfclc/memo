@@ -309,7 +309,31 @@ data class AppSnapshot(
                 if (job.status == "RUNNING") job.copy(
                     status = "WAITING_FOR_USER",
                     resultSummary = "Memo restarted during this job. Review the last step before resuming.",
-                    steps = job.steps.map { step -> if (step.status == "RUNNING") step.copy(status = "NEEDS_REVIEW", detail = "Interrupted by application restart.", updatedAt = nowMillis()) else step },
+                    steps = job.steps.map { step ->
+                        if (step.status != "RUNNING") step
+                        else {
+                            val runId = step.evidence.substringAfter("run:", "").substringBefore(";").trim()
+                            val recoveredArtifact = if (runId.isBlank()) null else evidence.firstOrNull { candidate ->
+                                candidate.kind == "STUDIO_ARTIFACT" && runCatching {
+                                    val metadata = JSONObject(candidate.metadata)
+                                    metadata.optString("origin") == "MEMO_AGENT" &&
+                                        metadata.optString("runId") == runId &&
+                                        metadata.optString("sourceConversationId") == job.sourceConversationId &&
+                                        metadata.optString("sourceMessageId") == job.sourceMessageId
+                                }.getOrDefault(false)
+                            }
+                            step.copy(
+                                status = "NEEDS_REVIEW",
+                                detail = if (recoveredArtifact != null) {
+                                    "Interrupted by application restart. A private draft from this run was found; inspect it before accepting or retrying."
+                                } else {
+                                    "Interrupted by application restart. Inspect the source run and any saved evidence before resuming."
+                                },
+                                evidence = recoveredArtifact?.let { "evidence:${it.id}; run:$runId" } ?: step.evidence,
+                                updatedAt = nowMillis()
+                            )
+                        }
+                    },
                     updatedAt = nowMillis()
                 ) else job
             },
