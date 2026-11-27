@@ -612,6 +612,12 @@ helper_start = work_ui.index('private fun launchSharedWorkStepExecution(')
 helper_end = work_ui.index('@Composable\nfun SelfModelStudioScreen(', helper_start)
 if 'runtime.runPrompt(' in work_ui[helper_start:helper_end]:
     fail("Work local-model execution must not bypass the shared AgentExecutionEngine")
+for marker in (
+    "This run was interrupted or its outcome is uncertain.",
+    "Inspect execution transcript",
+):
+    if marker not in work_ui:
+        fail(f"Interrupted Work checkpoints must remain review-only: {marker}")
 print("PASS: Work local-model checkpoints use the shared durable Talk engine, exact artifact adapter, event journal and review-only completion boundary")
 
 for marker in (

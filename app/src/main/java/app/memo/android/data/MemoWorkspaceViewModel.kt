@@ -1143,8 +1143,8 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
             val savedStep = savedJob?.steps?.firstOrNull { it.id == stepId }
             val savedArtifact = if (verifiedArtifact) persisted?.evidence?.firstOrNull { it.id == artifactId } else null
             val verified = savedStep?.status == nextStepStatus &&
-                savedStep.evidence == evidence &&
-                savedStep.detail == explanation &&
+                savedStep?.evidence == evidence &&
+                savedStep?.detail == explanation &&
                 savedJob?.status == updatedJob.status &&
                 (!verifiedArtifact || savedArtifact?.let {
                     val savedMetadata = runCatching { JSONObject(it.metadata) }.getOrNull()

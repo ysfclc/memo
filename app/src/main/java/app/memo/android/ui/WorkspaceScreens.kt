@@ -2458,6 +2458,19 @@ private fun JobCard(
                                 Icon(Icons.Rounded.CheckCircle, null); Spacer(Modifier.width(6.dp)); Text("Record review outcome")
                             }
                         }
+                        step.status == "NEEDS_REVIEW" && step.checkpointKind == "LOCAL_MODEL" -> {
+                            Text(
+                                "This run was interrupted or its outcome is uncertain. Inspect the source conversation and any saved evidence before retrying.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(start = 32.dp)
+                            )
+                            TextButton(onClick = onOpenSource, modifier = Modifier.padding(start = 28.dp)) {
+                                Icon(Icons.Rounded.ChatBubbleOutline, null)
+                                Spacer(Modifier.width(5.dp))
+                                Text("Inspect execution transcript")
+                            }
+                        }
                         step.status == "RUNNING" && !(step.requiresApproval || step.checkpointKind == "EXTERNAL_ACTION") -> {
                             if (localModel != null) {
                                 OutlinedButton(enabled = !modelRunning, onClick = { onRunWithModel(step.id, localModel.id) }, modifier = Modifier.fillMaxWidth().padding(start = 32.dp)) {
