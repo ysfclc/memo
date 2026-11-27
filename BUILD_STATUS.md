@@ -1,19 +1,24 @@
-# Current PR candidate — 27 November 2026
+# Mainline build and product status — 27 November 2026
 
-## M3.A4-S10 — Work executes eligible local-model nodes (exact-head CI pending)
+## M3.A4-S10 — Execute eligible local-model Work steps (merged to main; CI PASS)
 
-- Branch: `feature/work-local-model-step-execution-2026-11-27`, based on main `f628517699b51cac28c09c8fd0723a1334cf0f9f`.
-- Dynamic TaskSpec nodes are mapped to the executable Work checkpoint type only when participant is `LOCAL_MODEL`, runtime is exactly `app.models`, and the only requested capability is `model.generate`. Remote model generation and approval-gated nodes remain review-only.
-- Work exposes a direct action for the next eligible local-model checkpoint. The existing ordered checkpoint gate starts it first; the installed local model generates a draft artifact using the selected step and retrieved workspace context. The artifact is saved to Evidence and the checkpoint moves to `NEEDS_REVIEW`; it is not marked complete until the user reviews and records an outcome.
-- The UI routes users to model setup when no compatible local model is installed. No browser, Android-app, remote-provider or external-write action is executed by this increment.
-- Added policy tests for exact local-model classification and remote-model exclusion, plus source-verifier checks for the one-tap path and dependency order.
-- **Local:** no Gradle/Android SDK or checked-out project tree is available here; no local compile or test is claimed.
-- **CI:** exact-head Actions validation pending. No APK is claimed for this candidate.
-- **Device:** physical-device acceptance remains open.
+- Mainline source: merge commit `8aa7e54dd02e91831ce9650bd3fe62c9355479b8`; validated source revision `8aa7e54dd02e91831ce9650bd3fe62c9355479b8`; final Actions handoff commit `1602e50f2e2d23b5265362a7641f649aaf06e3c4`.
+- Exact mainline workflow run #1297 (`46023201077`) completed successfully: source verifier, remote-runner tests, core and Android unit tests, lint, debug/release APK assembly, APK identity/signature checks, emulator install-over-existing and app-private data preservation.
+- The release artifact `Memo-Android-APKs` (artifact `15211876204`) contains `Memo-Android-release.apk`, package `app.memo.android`, signed with the pinned Memo certificate `a15b8b21e4d9ef43cbba01e8230491796c75c6ee41b3f5c674558aced5fb134a`.
+- Work executes only the exact eligible local-model node shape (`LOCAL_MODEL`, `app.models`, `model.generate`). It saves a private draft to Evidence and leaves the step at `NEEDS_REVIEW`; browser, native-app, remote-model and external-write nodes are not thereby executable.
+- Physical-device install-over-existing and task acceptance remain open. Emulator success is not phone acceptance.
+
+## MEMO-ORCH-001 — Strict persisted Work-graph and proposal decoding (mainline transplant in review)
+
+- New branch: `fix/strict-work-graph-mainline-2026-11-27`, based on current main `1602e50f2e2d23b5265362a7641f649aaf06e3c4`. The former draft PR #28 branch is stale and is not the release candidate.
+- Replaces permissive graph decoding/coercion and silent truncation with required typed fields, bounded strings/arrays, exact whole-number parsing and post-decode graph validation.
+- Preserves legacy schema-v1 graphs only when every node uses the prior side-effect field shape; reconstructs the legacy external-write approval relationship and rejects mixed legacy/current representations.
+- Tightens the TaskSpec proposal envelope and rejects out-of-range numeric fields. Regression tests cover malformed types, fractional and overflowing numbers, oversized values, missing budget fields and legacy approval compatibility.
+- CI on the updated mainline branch is pending. No new release APK is claimed for this candidate.
 
 ---
 
-# Current PR candidate — 21 November 2026
+# Historical PR candidate — 21 November 2026
 
 ## M3.A4-S7 — Shared capability postcondition verification (CI passed; device acceptance pending)
 
