@@ -71,6 +71,20 @@ object MemoWorkspaceAgentTools {
     }
 
 
+    /**
+     * Work executes its eligible local-model node through the same engine as Talk.
+     * Only the existing private artifact capability is exposed; no browser, remote,
+     * Android or external-write adapter is available in this restricted run.
+     */
+    fun buildWorkStep(
+        viewModel: MemoWorkspaceViewModel,
+        sourceConversationId: String,
+        sourceMessageId: String,
+        sourceExcerpt: String
+    ): List<AgentCapabilityAdapter> = listOf(
+        StudioArtifactAdapter(viewModel, sourceConversationId, sourceMessageId, sourceExcerpt, reuseExistingDrafts = false)
+    )
+
     private class BrowserAgentScope {
         var lastOpenedPage: BrowserNavigationResult? = null
         var capturedPageUrl: String = ""
@@ -963,7 +977,8 @@ object MemoWorkspaceAgentTools {
         private val viewModel: MemoWorkspaceViewModel,
         private val sourceConversationId: String,
         private val sourceMessageId: String,
-        private val sourceExcerpt: String
+        private val sourceExcerpt: String,
+        private val reuseExistingDrafts: Boolean = true
     ) : AgentCapabilityAdapter {
         override val definition = AgentToolDefinition(
             id = "workspace.save_artifact",
@@ -996,6 +1011,7 @@ object MemoWorkspaceAgentTools {
                     metadata.optString("contentDigest") == draft.contentDigest &&
                         metadata.optString("sourceConversationId") == sourceConversationId &&
                         metadata.optString("sourceMessageId") == sourceMessageId &&
+                        (reuseExistingDrafts || metadata.optString("runId") == invocation.runId) &&
                         metadata.optString("sourceExcerptDigest") == sourceDigest
                 }.getOrDefault(false)
             }

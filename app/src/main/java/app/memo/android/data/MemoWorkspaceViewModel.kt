@@ -1077,6 +1077,93 @@ class MemoWorkspaceViewModel(application: Application) : AndroidViewModel(applic
         return Result.success(Unit)
     }
 
+    /**
+     * Settle an eligible Work checkpoint only after its shared agent run has ended and
+     * the private artifact can be read back with exact run/source-message provenance.
+     */
+    suspend fun finishAgentWorkStepDurably(
+        jobId: String,
+        stepId: String,
+        runId: String,
+        artifactId: String,
+        detail: String
+    ): Result<Unit> {
+        if (!_vaultReady.value) return Result.failure(IllegalStateException("Unlock the workspace before finishing this checkpoint."))
+        _vaultError.value?.let { return Result.failure(IllegalStateException("Encrypted workspace persistence is unavailable: $it")) }
+        val current = _snapshot.value
+        val job = current.jobs.firstOrNull { it.id == jobId }
+            ?: return Result.failure(IllegalArgumentException("Work item no longer exists."))
+        val step = job.steps.firstOrNull { it.id == stepId }
+            ?: return Result.failure(IllegalArgumentException("Work checkpoint no longer exists."))
+        if (step.checkpointKind != "LOCAL_MODEL" || step.status != "RUNNING") {
+            return Result.failure(IllegalStateException("Only the active eligible local-model checkpoint can be settled by this execution path."))
+        }
+        if (runId.isBlank() || runId.length > 128) {
+            return Result.failure(IllegalArgumentException("A valid durable Memo run ID is required."))
+        }
+        val artifact = current.evidence.firstOrNull { it.id == artifactId && it.kind == "STUDIO_ARTIFACT" }
+        val metadata = artifact?.let { runCatching { JSONObject(it.metadata) }.getOrNull() }
+        val verifiedArtifact = artifact != null && metadata != null &&
+            metadata.optString("origin") == "MEMO_AGENT" &&
+            metadata.optString("runId") == runId &&
+            metadata.optString("sourceConversationId") == job.sourceConversationId &&
+            metadata.optString("sourceMessageId") == job.sourceMessageId
+        val nextStepStatus = if (verifiedArtifact) "NEEDS_REVIEW" else "FAILED"
+        val evidence = if (verifiedArtifact) "evidence:$artifactId; run:$runId" else "run:$runId"
+        val explanation = detail.trim().take(1_600).ifBlank {
+            if (verifiedArtifact) "A private draft was saved. Review the artifact before accepting this checkpoint."
+            else "No artifact with verified run and source provenance was saved. The checkpoint was not completed."
+        }
+        val updatedStep = step.copy(
+            status = nextStepStatus,
+            detail = explanation,
+            evidence = evidence,
+            updatedAt = nowMillis()
+        )
+        val updatedJob = job.copy(
+            status = if (verifiedArtifact) "WAITING_FOR_USER" else "FAILED",
+            steps = job.steps.map { if (it.id == stepId) updatedStep else it },
+            resultSummary = if (verifiedArtifact) {
+                "The shared Memo execution saved a private draft. Review its exact evidence before recording the checkpoint outcome."
+            } else {
+                "The shared Memo execution did not produce a read-back-verified artifact. Inspect the run transcript before retrying."
+            },
+            updatedAt = nowMillis()
+        )
+        _snapshot.value = current.copy(
+            jobs = current.jobs.map { if (it.id == jobId) updatedJob else it }
+        ).withActivity(
+            if (verifiedArtifact) "Shared Memo execution saved a reviewable Work artifact: ${job.title}" else "Shared Memo execution did not verify a Work artifact: ${job.title}",
+            jobId,
+            if (verifiedArtifact) "INFO" else "WARN"
+        )
+        return try {
+            val persisted = withContext(Dispatchers.IO) { persistLatestSnapshotAndReadSafely() }
+            val savedJob = persisted?.jobs?.firstOrNull { it.id == jobId }
+            val savedStep = savedJob?.steps?.firstOrNull { it.id == stepId }
+            val savedArtifact = if (verifiedArtifact) persisted?.evidence?.firstOrNull { it.id == artifactId } else null
+            val verified = savedStep?.status == nextStepStatus &&
+                savedStep.evidence == evidence &&
+                savedStep.detail == explanation &&
+                savedJob?.status == updatedJob.status &&
+                (!verifiedArtifact || savedArtifact?.let {
+                    val savedMetadata = runCatching { JSONObject(it.metadata) }.getOrNull()
+                    savedMetadata != null &&
+                        savedMetadata.optString("runId") == runId &&
+                        savedMetadata.optString("sourceConversationId") == job.sourceConversationId &&
+                        savedMetadata.optString("sourceMessageId") == job.sourceMessageId
+                } == true)
+            if (verified) Result.success(Unit)
+            else Result.failure(IllegalStateException("The Work checkpoint state and artifact reference could not be read back from the encrypted workspace."))
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Throwable) {
+            val message = safeError(error, "The encrypted workspace could not settle this Work checkpoint.")
+            _vaultError.value = message
+            Result.failure(IllegalStateException(message, error))
+        }
+    }
+
     /** Save a user-reported result for a local checkpoint. External-write steps require the real approval/runtime flow and are never completed by this shortcut. */
     fun recordJobCheckpoint(jobId: String, stepId: String, outcome: String): Result<Unit> {
         if (!_vaultReady.value || _vaultError.value != null) return Result.failure(IllegalStateException("Workspace persistence is unavailable."))

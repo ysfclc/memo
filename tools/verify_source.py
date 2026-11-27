@@ -583,9 +583,8 @@ for marker in (
     'step.checkpointKind == "LOCAL_MODEL"',
     'onOpenModels = onOpenModels',
     'onOpenModels: () -> Unit',
-    'onStartStep(step.id)',
     'onRunWithModel(step.id, localModel.id)',
-    'currentStep.status != "RUNNING"',
+    'currentStep.status !in setOf("PENDING", "RUNNING")',
     'Run this step with',
     'result is saved as a draft for your review',
 ):
@@ -594,9 +593,26 @@ for marker in (
 local_model_branch_start = work_ui.index('isNext && step.checkpointKind == "LOCAL_MODEL"')
 local_model_branch_end = work_ui.index('isNext && (step.requiresApproval || step.checkpointKind == "EXTERNAL_ACTION")', local_model_branch_start)
 local_model_branch = work_ui[local_model_branch_start:local_model_branch_end]
-if local_model_branch.index('onStartStep(step.id)') > local_model_branch.index('onRunWithModel(step.id, localModel.id)'):
-    fail("Local-model Work execution must start the eligible checkpoint before generation")
-print("PASS: Work runs only exact local model-generation checkpoints with dependency gating and reviewable artifact output; remote generation remains approval-gated")
+if 'onStartStep(step.id)' in local_model_branch:
+    fail("Work must not start a checkpoint separately from its shared execution run")
+for marker in (
+    'launchSharedWorkStepExecution(',
+    'viewModel.launchAgentExecution(',
+    'AgentExecutionEngine(',
+    'MemoWorkspaceAgentTools.buildWorkStep(',
+    'runtime.generateAgentTurn(',
+    'appendAgentEventDurably(',
+    'finishAgentRunDurably(',
+    'finishAgentWorkStepDurably(',
+    'AgentExecutionEventType.TOOL_FINISHED',
+):
+    if marker not in work_ui:
+        fail(f"Work local-model execution bypasses the shared durable engine contract: {marker}")
+helper_start = work_ui.index('private fun launchSharedWorkStepExecution(')
+helper_end = work_ui.index('@Composable\nfun SelfModelStudioScreen(', helper_start)
+if 'runtime.runPrompt(' in work_ui[helper_start:helper_end]:
+    fail("Work local-model execution must not bypass the shared AgentExecutionEngine")
+print("PASS: Work local-model checkpoints use the shared durable Talk engine, exact artifact adapter, event journal and review-only completion boundary")
 
 for marker in (
     'RuntimeCapability("browser.submit_prompt"',
