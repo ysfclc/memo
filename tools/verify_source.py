@@ -554,7 +554,7 @@ for marker in ("object AgentWorkPlanPolicy", "WorkflowGraphValidator.validate(gr
 for marker in ("createsReviewableWorkStepsInDependencyOrderAndPreservesApprovalBoundary", "rejectsMissingSourceAndInvalidTitle", "doesNotMarkAnyProposedStepAsCompleted"):
     if marker not in agent_work_plan_tests:
         fail(f"dynamic Talk work plan regression coverage is missing: {marker}")
-for marker in ('RuntimeCapability("workspace.create_work_plan"', 'id = "workspace.create_work_plan"', "WorkflowTaskProposalParser.parse(", "createAgentWorkPlan(", "job.workflowGraphJson == expected.graphJson", "DRAFT"):
+for marker in ('RuntimeCapability("workspace.create_work_plan"', 'id = "workspace.create_work_plan"', "WorkflowTaskProposalParser.parse(", "createAgentWorkPlan(", "persistLatestSnapshotAndReadSafely()", "job.workflowGraphJson == expected.graphJson", "DRAFT"):
     if marker not in runtime_registry + agent_tools + workspace_view_model:
         fail(f"Talk dynamic Work plan capability is missing its runtime, persistence or read-back contract: {marker}")
 print("PASS: Talk can save source-linked private Markdown drafts through the registered workspace runtime; digest, bounds and Studio review surface are guarded")
