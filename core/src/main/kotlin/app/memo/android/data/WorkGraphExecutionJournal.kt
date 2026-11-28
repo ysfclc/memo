@@ -152,6 +152,9 @@ data class WorkGraphExecutionRecord(
         }.copy(status = STATUS_RUNNING, updatedAt = at)
     }
 
+    val hasInterruptedInvocation: Boolean
+        get() = invocations.any { it.status in setOf(WorkNodeInvocationRecord.STATUS_PREPARED, WorkNodeInvocationRecord.STATUS_RUNNING) }
+
     /** Process death is ambiguous: PREPARED and RUNNING are both review-only, never auto-replayed. */
     fun recoverAfterRestart(at: Long = nowMillis()): WorkGraphExecutionRecord {
         val recovered = invocations.map { node ->
