@@ -81,6 +81,11 @@ data class WorkGraphExecutionRecord(
         require(invocations.all { invocation -> invocation.dependencies == graphNodes.getValue(invocation.nodeId).dependsOn }) {
             "Execution journal dependencies do not match the stored workflow graph."
         }
+        val invocationsByNode = invocations.associateBy { it.nodeId }
+        require(invocations.all { invocation ->
+            invocation.status in setOf(WorkNodeInvocationRecord.STATUS_BLOCKED, WorkNodeInvocationRecord.STATUS_SKIPPED) ||
+                invocation.dependencies.all { dependency -> invocationsByNode[dependency]?.status == WorkNodeInvocationRecord.STATUS_SUCCEEDED }
+        }) { "A non-blocked node has an unfinished dependency." }
         require(status in ALL_STATUSES && invocations.size in 1..MAX_NODES) { "Execution journal state or node count is invalid." }
         require(invocations.map { it.nodeId }.toSet().size == invocations.size) { "Execution journal contains duplicate node IDs." }
         require(invocations.map { it.invocationId }.toSet().size == invocations.size) { "Execution journal contains duplicate invocation IDs." }
@@ -123,6 +128,7 @@ data class WorkGraphExecutionRecord(
     /** Persist PREPARED before any adapter is called. */
     fun prepare(nodeId: String, inputHash: String, at: Long = nowMillis()): WorkGraphExecutionRecord {
         require(inputHash.matches(Regex("[a-fA-F0-9]{64}"))) { "A prepared invocation requires a SHA-256 input hash." }
+        requireDependenciesSucceeded(nodeId)
         return updateNode(nodeId, at) { node ->
             require(node.status == WorkNodeInvocationRecord.STATUS_READY) { "Only a ready node can be prepared." }
             node.copy(status = WorkNodeInvocationRecord.STATUS_PREPARED, inputHash = inputHash, updatedAt = at)
@@ -131,6 +137,7 @@ data class WorkGraphExecutionRecord(
 
     /** Dispatch is legal only after PREPARED has been durably written by the caller. */
     fun start(nodeId: String, at: Long = nowMillis()): WorkGraphExecutionRecord {
+        requireDependenciesSucceeded(nodeId)
         require(invocations.none { it.status == WorkNodeInvocationRecord.STATUS_RUNNING }) {
             "Another workflow node is already running; parallel dispatch is not enabled."
         }
@@ -179,6 +186,7 @@ data class WorkGraphExecutionRecord(
     /** Approval is bound to the exact prepared invocation input; approval never authorizes a changed payload. */
     fun prepareAfterApproval(nodeId: String, bindingHash: String, at: Long = nowMillis()): WorkGraphExecutionRecord {
         require(bindingHash.matches(Regex("[a-fA-F0-9]{64}"))) { "Approval must bind to a SHA-256 payload hash." }
+        requireDependenciesSucceeded(nodeId)
         val next = updateNode(nodeId, at) { node ->
             require(node.status == WorkNodeInvocationRecord.STATUS_WAITING_FOR_APPROVAL) { "This node is not waiting for approval." }
             require(node.inputHash.equals(bindingHash, ignoreCase = true)) { "Approval does not match the exact prepared input." }
@@ -211,6 +219,14 @@ data class WorkGraphExecutionRecord(
         }
         val runStatus = if (recovered.any { it.status == WorkNodeInvocationRecord.STATUS_NEEDS_REVIEW }) STATUS_NEEDS_REVIEW else status
         return copy(status = runStatus, invocations = recovered, updatedAt = at)
+    }
+
+    private fun requireDependenciesSucceeded(nodeId: String) {
+        val target = invocations.firstOrNull { it.nodeId == nodeId }
+            ?: throw IllegalArgumentException("Unknown workflow node '$nodeId'.")
+        require(target.dependencies.all { dependency ->
+            invocations.any { it.nodeId == dependency && it.status == WorkNodeInvocationRecord.STATUS_SUCCEEDED }
+        }) { "A node cannot be prepared or started before every dependency succeeds." }
     }
 
     private fun updateNode(
