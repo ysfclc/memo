@@ -16,6 +16,7 @@ data class WorkNodeInvocationRecord(
     val attempt: Int = 0,
     val inputHash: String = "",
     val outputReference: String = "",
+    val outputHash: String = "",
     val approvalBindingHash: String = "",
     val error: String = "",
     val startedAt: Long = 0L,
@@ -38,6 +39,20 @@ data class WorkNodeInvocationRecord(
             STATUS_FAILED, STATUS_WAITING_FOR_APPROVAL, STATUS_NEEDS_REVIEW, STATUS_CANCELLED, STATUS_SKIPPED
         )
         val TERMINAL_STATUSES = setOf(STATUS_SUCCEEDED, STATUS_FAILED, STATUS_NEEDS_REVIEW, STATUS_CANCELLED, STATUS_SKIPPED)
+    }
+}
+
+data class VerifiedWorkOutput private constructor(val reference: String, val sha256: String) {
+    companion object {
+        /** The adapter must supply the digest read back from the persisted output, not merely its proposed bytes. */
+        fun verifyObserved(reference: String, expectedSha256: String, observedSha256: String): VerifiedWorkOutput {
+            require(reference.isNotBlank() && reference.length <= 2_048) { "Verified output reference is invalid." }
+            require(expectedSha256.matches(Regex("[a-fA-F0-9]{64}")) && observedSha256.matches(Regex("[a-fA-F0-9]{64}"))) {
+                "Output verification requires SHA-256 digests."
+            }
+            require(expectedSha256.equals(observedSha256, ignoreCase = true)) { "Persisted output digest does not match the expected output." }
+            return VerifiedWorkOutput(reference, observedSha256.lowercase())
+        }
     }
 }
 
@@ -77,7 +92,7 @@ data class WorkGraphExecutionRecord(
                 it.dependencies.size <= MAX_NODES && it.dependencies.all { dependency -> dependency.isNotBlank() && dependency.length <= 128 } &&
                 it.invocationId.isNotBlank() && it.invocationId.length <= 128 &&
                 it.status in WorkNodeInvocationRecord.ALL_STATUSES && it.attempt in 0..1 &&
-                it.inputHash.length <= 64 && it.outputReference.length <= 2_048 &&
+                it.inputHash.length <= 64 && it.outputReference.length <= 2_048 && it.outputHash.length <= 64 &&
                 it.approvalBindingHash.length <= 64 && it.error.length <= 1_000 &&
                 it.startedAt >= 0L && it.updatedAt >= 0L && it.finishedAt >= 0L
         }) { "Execution journal contains an invalid node invocation." }
@@ -108,16 +123,20 @@ data class WorkGraphExecutionRecord(
     }
 
     /** Dispatch is legal only after PREPARED has been durably written by the caller. */
-    fun start(nodeId: String, at: Long = nowMillis()): WorkGraphExecutionRecord =
-        updateNode(nodeId, at) { node ->
+    fun start(nodeId: String, at: Long = nowMillis()): WorkGraphExecutionRecord {
+        require(invocations.none { it.status == WorkNodeInvocationRecord.STATUS_RUNNING }) {
+            "Another workflow node is already running; parallel dispatch is not enabled."
+        }
+        return updateNode(nodeId, at) { node ->
             require(node.status == WorkNodeInvocationRecord.STATUS_PREPARED) { "An invocation must be prepared before dispatch." }
             node.copy(status = WorkNodeInvocationRecord.STATUS_RUNNING, startedAt = at, updatedAt = at)
         }.copy(status = STATUS_RUNNING, updatedAt = at)
+    }
 
     fun finish(
         nodeId: String,
         outcome: String,
-        outputReference: String = "",
+        verifiedOutput: VerifiedWorkOutput? = null,
         error: String = "",
         at: Long = nowMillis()
     ): WorkGraphExecutionRecord {
@@ -126,13 +145,16 @@ data class WorkGraphExecutionRecord(
             WorkNodeInvocationRecord.STATUS_WAITING_FOR_APPROVAL, WorkNodeInvocationRecord.STATUS_NEEDS_REVIEW,
             WorkNodeInvocationRecord.STATUS_CANCELLED
         )) { "Unsupported invocation outcome." }
-        if (outcome == WorkNodeInvocationRecord.STATUS_SUCCEEDED) require(outputReference.isNotBlank()) {
-            "A successful invocation must reference an output that the runtime has verified."
+        if (outcome == WorkNodeInvocationRecord.STATUS_SUCCEEDED) require(verifiedOutput != null) {
+            "A successful invocation requires a persisted output whose read-back digest has been verified."
         }
         val next = updateNode(nodeId, at) { node ->
             require(node.status == WorkNodeInvocationRecord.STATUS_RUNNING) { "Only a running invocation can finish." }
             node.copy(
-                status = outcome, outputReference = outputReference.take(2_048), error = error.take(1_000),
+                status = outcome,
+                outputReference = verifiedOutput?.reference.orEmpty(),
+                outputHash = verifiedOutput?.sha256.orEmpty(),
+                error = error.take(1_000),
                 updatedAt = at, finishedAt = if (outcome == WorkNodeInvocationRecord.STATUS_WAITING_FOR_APPROVAL) 0L else at
             )
         }
@@ -214,6 +236,7 @@ data class WorkGraphExecutionRecord(
                         put("attempt", node.attempt)
                         put("inputHash", node.inputHash)
                         put("outputReference", node.outputReference)
+                        put("outputHash", node.outputHash)
                         put("approvalBindingHash", node.approvalBindingHash)
                         put("error", node.error)
                         put("startedAt", node.startedAt)
@@ -267,6 +290,7 @@ data class WorkGraphExecutionRecord(
                         attempt = row.optInt("attempt", 0),
                         inputHash = row.optString("inputHash", "").take(64),
                         outputReference = row.optString("outputReference", "").take(2_048),
+                        outputHash = row.optString("outputHash", "").take(64),
                         approvalBindingHash = row.optString("approvalBindingHash", "").take(64),
                         error = row.optString("error", "").take(1_000),
                         startedAt = row.optLong("startedAt", 0L),
@@ -291,7 +315,7 @@ data class WorkGraphExecutionRecord(
                 node.nodeId.isNotBlank() && node.invocationId.isNotBlank() &&
                     node.status in WorkNodeInvocationRecord.ALL_STATUSES && node.attempt in 0..1 &&
                     node.inputHash.length <= 64 && node.approvalBindingHash.length <= 64 &&
-                    node.outputReference.length <= 2_048 && node.error.length <= 1_000 &&
+                    node.outputReference.length <= 2_048 && node.outputHash.length <= 64 && node.error.length <= 1_000 &&
                     node.startedAt >= 0L && node.updatedAt >= 0L && node.finishedAt >= 0L
             }) { "Execution journal contains an invalid node invocation." }
             require(record.invocations.count { it.status == WorkNodeInvocationRecord.STATUS_RUNNING } <= 1) {
