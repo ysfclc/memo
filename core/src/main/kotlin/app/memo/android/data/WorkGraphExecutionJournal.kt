@@ -95,7 +95,7 @@ data class WorkGraphExecutionRecord(
         return updateNode(nodeId, at) { node ->
             require(node.status == WorkNodeInvocationRecord.STATUS_BLOCKED) { "Only a blocked node can become ready." }
             node.copy(status = WorkNodeInvocationRecord.STATUS_READY, updatedAt = at)
-        }.copy(status = STATUS_RUNNING, updatedAt = at)
+        }.copy(status = STATUS_READY, updatedAt = at)
     }
 
     /** Persist PREPARED before any adapter is called. */
@@ -127,7 +127,7 @@ data class WorkGraphExecutionRecord(
             WorkNodeInvocationRecord.STATUS_CANCELLED
         )) { "Unsupported invocation outcome." }
         if (outcome == WorkNodeInvocationRecord.STATUS_SUCCEEDED) require(outputReference.isNotBlank()) {
-            "A successful invocation must reference a verifiable output."
+            "A successful invocation must reference an output that the runtime has verified."
         }
         val next = updateNode(nodeId, at) { node ->
             require(node.status == WorkNodeInvocationRecord.STATUS_RUNNING) { "Only a running invocation can finish." }
@@ -158,7 +158,7 @@ data class WorkGraphExecutionRecord(
                 approvalBindingHash = bindingHash.lowercase(),
                 updatedAt = at
             )
-        }.copy(status = STATUS_RUNNING, updatedAt = at)
+        }.copy(status = STATUS_READY, updatedAt = at)
     }
 
     val hasInterruptedInvocation: Boolean
@@ -280,7 +280,9 @@ data class WorkGraphExecutionRecord(
                 "Execution journal identity is incomplete."
             }
             require(record.graphDigest.matches(Regex("[a-fA-F0-9]{64}"))) { "Execution journal graph digest is invalid." }
+            require(record.createdAt >= 0L && record.updatedAt >= 0L) { "Execution journal timestamps are invalid." }
             require(record.invocations.map { it.nodeId }.toSet().size == record.invocations.size) { "Execution journal contains duplicate node IDs." }
+            require(record.invocations.map { it.invocationId }.toSet().size == record.invocations.size) { "Execution journal contains duplicate invocation IDs." }
             val nodeIds = record.invocations.map { it.nodeId }.toSet()
             require(record.invocations.all { node -> node.nodeId !in node.dependencies && node.dependencies.toSet().size == node.dependencies.size && node.dependencies.all { it in nodeIds } }) {
                 "Execution journal dependencies are invalid."
