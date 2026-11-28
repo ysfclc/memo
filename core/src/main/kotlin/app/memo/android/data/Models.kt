@@ -311,7 +311,7 @@ data class AppSnapshot(
             },
             jobs = jobs.map { job ->
                 val journal = job.executionJournalJson.takeIf { it.isNotBlank() }
-                    ?.let(WorkGraphExecutionRecord::fromJson)
+                    ?.let { WorkGraphExecutionRecord.fromJson(it) }
                 val shouldRecover = job.status == "RUNNING" || journal?.hasInterruptedInvocation == true
                 if (shouldRecover) job.copy(
                     status = "WAITING_FOR_USER",
