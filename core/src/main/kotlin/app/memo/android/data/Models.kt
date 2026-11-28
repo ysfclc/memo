@@ -295,7 +295,9 @@ data class AppSnapshot(
     /** A persisted RUNNING task has lost its WebView execution context after process death. */
     fun recoverInterruptedTasks(): AppSnapshot {
         val interrupted = tasks.count { it.status == TaskStatus.RUNNING }
-        val interruptedJobs = jobs.count { it.status == "RUNNING" }
+        val interruptedJobs = jobs.count { job ->
+            job.status == "RUNNING" || (job.executionJournalJson.isNotBlank() && WorkGraphExecutionRecord.fromJson(job.executionJournalJson).hasInterruptedInvocation)
+        }
         val actionCandidates = actionApprovals.count { it.status in setOf("PENDING", "APPROVED", "IN_PROGRESS") }
         val interruptedAgentRuns = agentRuns.count { it.isActive }
         if (interrupted == 0 && interruptedJobs == 0 && actionCandidates == 0 && interruptedAgentRuns == 0) return this
@@ -308,8 +310,11 @@ data class AppSnapshot(
                 ) else task
             },
             jobs = jobs.map { job ->
-                if (job.status == "RUNNING") job.copy(
+                val recoveredJournal = job.executionJournalJson.takeIf { it.isNotBlank() }
+                    ?.let { WorkGraphExecutionRecord.fromJson(it).recoverAfterRestart().toJson() }
+                if (job.status == "RUNNING" || (job.executionJournalJson.isNotBlank() && WorkGraphExecutionRecord.fromJson(job.executionJournalJson).hasInterruptedInvocation)) job.copy(
                     status = "WAITING_FOR_USER",
+                    executionJournalJson = recoveredJournal.orEmpty(),
                     resultSummary = "Memo restarted during this job. Review the last step before resuming.",
                     steps = job.steps.map { step ->
                         if (step.status != "RUNNING") step
@@ -904,6 +909,9 @@ data class AppSnapshot(
                     todayPriority = row.safeString("todayPriority").takeIf { it in TODAY_PRIORITY_VALUES && row.safeString("todayPriorityDate").matches(Regex("\\d{4}-\\d{2}-\\d{2}")) } ?: "UNSORTED",
                     todayPriorityDate = row.safeString("todayPriorityDate").takeIf { it.matches(Regex("\\d{4}-\\d{2}-\\d{2}")) }.orEmpty()
                 )
+            }
+            jobs.forEach { job ->
+                if (job.executionJournalJson.isNotBlank()) WorkGraphExecutionRecord.fromJson(job.executionJournalJson).validateFor(job)
             }
             val actionApprovals = if (schema < 4) emptyList() else root.optJSONArray("actionApprovals").toTypedRecords(MAX_ACTION_APPROVALS) { row ->
                 val payload = row.safeString("payload").take(ActionApprovalLedger.MAX_PAYLOAD_CHARS)
