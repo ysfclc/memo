@@ -18,7 +18,9 @@ REQUIRED = [
     "core/build.gradle",
     "core/src/main/kotlin/app/memo/android/data/Models.kt",
     "core/src/main/kotlin/app/memo/android/data/WorkGraphExecutionJournal.kt",
+    "core/src/main/kotlin/app/memo/android/orchestration/WorkGraphScheduler.kt",
     "core/src/test/kotlin/app/memo/android/data/WorkGraphExecutionJournalTest.kt",
+    "core/src/test/kotlin/app/memo/android/orchestration/WorkGraphSchedulerTest.kt",
     "core/src/main/kotlin/app/memo/android/data/ActionApprovalLedger.kt",
     "core/src/main/kotlin/app/memo/android/data/OutcomeParser.kt",
     "core/src/main/kotlin/app/memo/android/runtime/RuntimeContracts.kt",
@@ -219,6 +221,8 @@ for marker in (
     "Another workflow node is already running",
     "fun recoverAfterRestart(",
     "fun validateFor(job: WorkJobRecord)",
+    "fun createFor(",
+    "invocationIdFactory(node.id)",
     "graphDigest(job.workflowGraphJson)",
 ):
     if marker not in work_journal:
@@ -245,6 +249,31 @@ for marker in (
     if marker not in agent_models:
         fail(f"Work job backup/recovery is missing its per-node journal: {marker}")
 print("PASS: Work graph nodes have source-bound durable invocation records, dependency gates, approval binding and no-replay restart recovery")
+
+work_scheduler = (ROOT / "core/src/main/kotlin/app/memo/android/orchestration/WorkGraphScheduler.kt").read_text()
+work_scheduler_test = (ROOT / "core/src/test/kotlin/app/memo/android/orchestration/WorkGraphSchedulerTest.kt").read_text()
+for marker in (
+    "object WorkGraphScheduler",
+    "journal.validateFor(job)",
+    "WorkflowGraphValidator.topologicalOrder(graph)",
+    "Decision.AwaitingRecovery",
+    "Decision.AwaitingApproval",
+    "Decision.Eligible",
+    "Decision.Ready",
+):
+    if marker not in work_scheduler:
+        fail(f"dependency-aware Work scheduler contract is missing: {marker}")
+for marker in (
+    "createsInvocationRecordsFromExactGraphWithStableNodeAndDependencyBindings",
+    "selectsEligibleNodesByTopologicalDependenciesNotHumanCheckpointOrder",
+    "fanOutNodesCanCompleteIndependentlyButJoinWaitsForEveryDependency",
+    "preparedOrRunningNodesRequireExplicitRecoveryAndAreNeverSelectedAgain",
+    "approvalAndReviewStatesStopAutomaticScheduling",
+    "completedGraphHasNoFurtherRunnableNodes",
+):
+    if marker not in work_scheduler_test:
+        fail(f"dependency-aware Work scheduler regression coverage is missing: {marker}")
+print("PASS: Work scheduler selects graph nodes by persisted dependencies and stops on approval, recovery or review boundaries")
 
 if "import app.memo.android.orchestration.AgentExecutionEventType" not in agent_broker:
     fail("the ViewModel run closeout must import the engine event types it compares")
