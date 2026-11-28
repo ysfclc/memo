@@ -166,8 +166,8 @@ for marker in (
     "fun AgentRunRecord.applyEvent(",
     "val interruptedAgentRuns = agentRuns.count { it.isActive }",
     'root.put("agentRuns"',
-    'root.put("schemaVersion", 7)',
-    "require(schema in 1..7)",
+    'root.put("schemaVersion", 8)',
+    "require(schema in 1..8)",
 ):
     if marker not in agent_models:
         fail(f"encrypted durable run model/recovery is missing: {marker}")
@@ -200,7 +200,7 @@ for marker in ("eventsRecordApprovalToolAndTerminalLifecycle", "rejectedOrUncert
         fail(f"agent run lifecycle regression coverage is missing: {marker}")
 for marker in ("agentRunRecordsRoundTripWithExactRunAndConversationIdentity", "schemaSixBackupMigratesWithoutAgentRunRecords", "interruptedAgentRunsRecoverToReviewAndTerminalRunsStayTerminal"):
     if marker not in workspace_schema_test:
-        fail(f"schema-v7 run persistence/recovery test is missing: {marker}")
+        fail(f"schema-v8 run persistence/recovery test is missing: {marker}")
 print("PASS: Talk execution has a schema-versioned encrypted run record, atomic event journal/readback, truthful Live state and no-replay recovery")
 
 work_journal = (ROOT / "core/src/main/kotlin/app/memo/android/data/WorkGraphExecutionJournal.kt").read_text()
