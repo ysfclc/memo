@@ -183,7 +183,9 @@ data class JobStepRecord(
     val evidence: String = "",
     val updatedAt: Long = nowMillis(),
     val checkpointKind: String = "USER_CHECKPOINT",
-    val requiresApproval: Boolean = false
+    val requiresApproval: Boolean = false,
+    /** Stable ID of the corresponding TaskSpec; blank only for legacy/manual jobs. */
+    val workflowNodeId: String = ""
 )
 
 data class WorkJobRecord(
@@ -371,7 +373,17 @@ data class AppSnapshot(
         require(relationships.size <= MAX_RELATIONSHIPS) { "Workspace contains too many relationships for a safe backup." }
         require(jobs.size <= MAX_JOBS && jobs.all { it.steps.size <= MAX_JOB_STEPS && it.workflowGraphJson.length <= 64_000 && it.executionJournalJson.length <= 256_000 }) { "Workspace contains too many jobs, job steps, workflow graph or execution journal data for a safe backup." }
         jobs.forEach { job ->
-            if (job.workflowGraphJson.isNotBlank()) app.memo.android.orchestration.WorkflowGraph.fromJson(job.workflowGraphJson)
+            if (job.workflowGraphJson.isNotBlank()) {
+                val graph = app.memo.android.orchestration.WorkflowGraph.fromJson(job.workflowGraphJson)
+                val mappedNodeIds = job.steps.map { it.workflowNodeId }.filter { it.isNotBlank() }
+                require(mappedNodeIds.isEmpty() || (
+                    mappedNodeIds.size == job.steps.size &&
+                        mappedNodeIds.toSet().size == mappedNodeIds.size &&
+                        mappedNodeIds.toSet() == graph.nodes.map { it.id }.toSet()
+                )) { "Work checkpoints must map one-to-one to the stored workflow graph nodes." }
+            } else {
+                require(job.steps.none { it.workflowNodeId.isNotBlank() }) { "A Work checkpoint cannot reference a missing workflow graph." }
+            }
             if (job.executionJournalJson.isNotBlank()) WorkGraphExecutionRecord.fromJson(job.executionJournalJson).validateFor(job)
         }
         require(actionApprovals.size <= MAX_ACTION_APPROVALS) { "Workspace contains too many action approval records for a safe backup." }
@@ -444,7 +456,7 @@ data class AppSnapshot(
         relationships.forEach { add(it.id); add(it.fromEntityId); add(it.toEntityId); add(it.relationType); add(it.sourceConversationId) }
         jobs.forEach { job ->
             add(job.id); add(job.title); add(job.goal); add(job.status); add(job.runtimeId); add(job.sourceConversationId); add(job.sourceMessageId); add(job.resultSummary); add(job.workflowGraphJson); add(job.todayPriority); add(job.todayPriorityDate); add(job.executionJournalJson)
-            job.steps.forEach { add(it.id); add(it.title); add(it.detail); add(it.status); add(it.evidence) }
+            job.steps.forEach { add(it.id); add(it.title); add(it.detail); add(it.status); add(it.evidence); add(it.workflowNodeId) }
         }
         actionApprovals.forEach { action ->
             add(action.id); add(action.jobId); add(action.stepId); add(action.runtimeId); add(action.capabilityId); add(action.destination)
@@ -647,6 +659,7 @@ data class AppSnapshot(
                                 put("updatedAt", step.updatedAt)
                                 put("checkpointKind", step.checkpointKind.take(40))
                                 put("requiresApproval", step.requiresApproval)
+                                put("workflowNodeId", step.workflowNodeId.take(64))
                             })
                         }
                     })
@@ -880,7 +893,7 @@ data class AppSnapshot(
                     if (graphJson.isNotBlank()) app.memo.android.orchestration.WorkflowGraph.fromJson(graphJson)
                 }
             }
-            val jobs = if (schema < 3) emptyList() else root.optJSONArray("jobs").toTypedRecords(MAX_JOBS) { row ->
+            val parsedJobs = if (schema < 3) emptyList() else root.optJSONArray("jobs").toTypedRecords(MAX_JOBS) { row ->
                 val steps = row.optJSONArray("steps").toTypedRecords(MAX_JOB_STEPS) { step ->
                     JobStepRecord(
                         id = step.safeString("id").ifBlank { newId() }.take(128),
@@ -890,7 +903,8 @@ data class AppSnapshot(
                         evidence = step.safeString("evidence").take(2_000),
                         updatedAt = step.optLong("updatedAt", nowMillis()),
                         checkpointKind = step.safeString("checkpointKind").take(40).ifBlank { "USER_CHECKPOINT" },
-                        requiresApproval = step.optBoolean("requiresApproval", false)
+                        requiresApproval = step.optBoolean("requiresApproval", false),
+                        workflowNodeId = step.safeString("workflowNodeId").take(64)
                     )
                 }
                 WorkJobRecord(
@@ -910,6 +924,17 @@ data class AppSnapshot(
                     todayPriority = row.safeString("todayPriority").takeIf { it in TODAY_PRIORITY_VALUES && row.safeString("todayPriorityDate").matches(Regex("\\d{4}-\\d{2}-\\d{2}")) } ?: "UNSORTED",
                     todayPriorityDate = row.safeString("todayPriorityDate").takeIf { it.matches(Regex("\\d{4}-\\d{2}-\\d{2}")) }.orEmpty()
                 )
+            }
+            val jobs = parsedJobs.map { job ->
+                if (job.workflowGraphJson.isBlank() || job.steps.isEmpty() || job.steps.any { it.workflowNodeId.isNotBlank() }) job
+                else {
+                    val graph = app.memo.android.orchestration.WorkflowGraph.fromJson(job.workflowGraphJson)
+                    val orderedNodes = app.memo.android.orchestration.WorkflowGraphValidator.topologicalOrder(graph)
+                    if (orderedNodes.size != job.steps.size) job
+                    else job.copy(steps = job.steps.mapIndexed { index, step ->
+                        step.copy(workflowNodeId = orderedNodes[index].id)
+                    })
+                }
             }
             jobs.forEach { job ->
                 if (job.executionJournalJson.isNotBlank()) WorkGraphExecutionRecord.fromJson(job.executionJournalJson).validateFor(job)
