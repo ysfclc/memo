@@ -168,4 +168,26 @@ class WorkGraphExecutionJournalTest {
         assertEquals(8, org.json.JSONObject(restored.toJson()).optInt("schemaVersion"))
     }
 
+    @Test fun restartRecoveryLeavesUnrelatedJobJournalByteForByteUnchanged() {
+        val (activeJob, activeJournal) = fixture()
+        val (unrelatedJob, unrelatedJournal) = fixture().let { (job, journal) ->
+            job.copy(id = "job-2", sourceConversationId = "conversation-2", sourceMessageId = "message-2") to
+                journal.copy(
+                    id = "execution-2",
+                    jobId = "job-2",
+                    sourceConversationId = "conversation-2",
+                    sourceMessageId = "message-2"
+                )
+        }
+        val active = activeJournal.markReady("collect").prepare("collect", hash).start("collect")
+        val unrelatedJson = unrelatedJournal.toJson()
+        val snapshot = AppSnapshot(jobs = listOf(
+            activeJob.copy(status = "RUNNING", executionJournalJson = active.toJson()),
+            unrelatedJob.copy(executionJournalJson = unrelatedJson)
+        ))
+
+        val recovered = snapshot.recoverInterruptedTasks()
+        assertEquals(unrelatedJson, recovered.jobs.single { it.id == "job-2" }.executionJournalJson)
+    }
+
 }
