@@ -66,6 +66,7 @@ class AgentWorkPlanPolicyTest {
         assertEquals("message-1", job.sourceMessageId)
         assertEquals(graph.toJson(), job.workflowGraphJson)
         assertEquals(listOf("Step draft", "Step approval", "Step submit"), job.steps.map { it.title })
+        assertEquals(listOf("draft", "approval", "submit"), job.steps.map { it.workflowNodeId })
         assertTrue(job.steps.all { it.status == "PENDING" })
         assertEquals("LOCAL_MODEL", job.steps[0].checkpointKind)
         assertTrue(job.steps[1].requiresApproval)
