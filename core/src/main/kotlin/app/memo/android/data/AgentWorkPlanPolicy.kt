@@ -51,7 +51,8 @@ object AgentWorkPlanPolicy {
                         node.requiredCapabilities == listOf("model.generate") -> "LOCAL_MODEL"
                     else -> "USER_CHECKPOINT"
                 },
-                requiresApproval = node.requiresApproval || node.externalSideEffect
+                requiresApproval = node.requiresApproval || node.externalSideEffect,
+                workflowNodeId = node.id
             )
         }
         return WorkJobRecord(
