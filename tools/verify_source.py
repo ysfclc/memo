@@ -233,6 +233,7 @@ for marker in (
     "schemaSevenWorkspaceImportsWithoutInventingAnExecutionJournal",
     "journalRejectsChangedGraphOrSourceIdentity",
     "restartRecoveryIsIntegratedIntoWorkspaceSnapshot",
+    "restartRecoveryLeavesUnrelatedJobJournalByteForByteUnchanged",
 ):
     if marker not in work_journal_test:
         fail(f"durable Work graph journal regression coverage is missing: {marker}")
