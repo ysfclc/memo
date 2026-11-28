@@ -110,8 +110,8 @@ class WorkGraphExecutionJournalTest {
             .finish("collect", WorkNodeInvocationRecord.STATUS_WAITING_FOR_APPROVAL)
         assertTrue(runCatching { waiting.prepareAfterApproval("collect", "b".repeat(64)) }.isFailure)
         val approved = waiting.prepareAfterApproval("collect", hash)
-        assertEquals(hash, approved.invocations.single().approvalBindingHash)
-        assertEquals(WorkNodeInvocationRecord.STATUS_PREPARED, approved.invocations.single().status)
+        assertEquals(hash, approved.invocations.first().approvalBindingHash)
+        assertEquals(WorkNodeInvocationRecord.STATUS_PREPARED, approved.invocations.first().status)
     }
 
     @Test fun interruptedPreparedOrRunningInvocationBecomesReviewOnlyAndIsNeverReplayed() {
