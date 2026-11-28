@@ -236,7 +236,8 @@ for marker in (
         fail(f"durable Work graph journal regression coverage is missing: {marker}")
 for marker in (
     "executionJournalJson",
-    "WorkGraphExecutionRecord.fromJson(job.executionJournalJson).recoverAfterRestart()",
+    "WorkGraphExecutionRecord.fromJson(job.executionJournalJson).hasInterruptedInvocation",
+    "WorkGraphExecutionRecord.fromJson(it).recoverAfterRestart().toJson()",
 ):
     if marker not in agent_models:
         fail(f"Work job backup/recovery is missing its per-node journal: {marker}")
