@@ -74,7 +74,10 @@ class WorkGraphExecutionJournalTest {
         assertTrue(runCatching { prepared.start("collect", at = 12L).markReady("review") }.isFailure)
 
         val started = prepared.start("collect", at = 12L)
-        val succeeded = started.finish("collect", WorkNodeInvocationRecord.STATUS_SUCCEEDED, "artifact:collect", at = 13L)
+        val succeeded = started.finish(
+            "collect", WorkNodeInvocationRecord.STATUS_SUCCEEDED,
+            verifiedOutput = VerifiedWorkOutput.verifyObserved("artifact:collect", hash, hash), at = 13L
+        )
         val secondReady = succeeded.markReady("review", at = 14L)
         assertEquals(WorkNodeInvocationRecord.STATUS_READY, secondReady.invocations.single { it.nodeId == "review" }.status)
     }
@@ -88,7 +91,17 @@ class WorkGraphExecutionJournalTest {
         assertTrue(runCatching {
             running.finish("collect", WorkNodeInvocationRecord.STATUS_SUCCEEDED)
         }.isFailure)
+        assertTrue(runCatching { VerifiedWorkOutput.verifyObserved("artifact:collect", hash, "b".repeat(64)) }.isFailure)
         assertEquals(WorkNodeInvocationRecord.STATUS_RUNNING, running.invocations.first().status)
+    }
+
+    @Test fun secondNodeCannotStartWhileAnotherInvocationIsRunning() {
+        val (_, initial) = fixture()
+        val running = initial.markReady("collect").prepare("collect", hash).start("collect")
+        val withSecondReady = running.copy(invocations = running.invocations.map { node ->
+            if (node.nodeId == "review") node.copy(status = WorkNodeInvocationRecord.STATUS_READY) else node
+        })
+        assertTrue(runCatching { withSecondReady.prepare("review", hash).start("review") }.isFailure)
     }
 
     @Test fun approvalIsBoundToExactPreparedInput() {
