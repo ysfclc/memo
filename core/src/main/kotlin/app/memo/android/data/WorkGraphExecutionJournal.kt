@@ -83,6 +83,7 @@ data class WorkGraphExecutionRecord(
         }
         require(status in ALL_STATUSES && invocations.size in 1..MAX_NODES) { "Execution journal state or node count is invalid." }
         require(invocations.map { it.nodeId }.toSet().size == invocations.size) { "Execution journal contains duplicate node IDs." }
+        require(invocations.map { it.invocationId }.toSet().size == invocations.size) { "Execution journal contains duplicate invocation IDs." }
         val nodeIds = invocations.map { it.nodeId }.toSet()
         require(invocations.all { node -> node.nodeId !in node.dependencies && node.dependencies.toSet().size == node.dependencies.size && node.dependencies.all { it in nodeIds } }) {
             "Execution journal dependencies are invalid."
