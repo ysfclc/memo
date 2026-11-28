@@ -59,7 +59,7 @@ data class WorkGraphExecutionRecord(
         }
         require(graphDigest.matches(Regex("[a-fA-F0-9]{64}"))) { "Execution journal graph digest is invalid." }
         require(job.workflowGraphJson.isNotBlank()) { "Execution journal has no source workflow graph." }
-        require(graphDigest.equals(graphDigest(job.workflowGraphJson), ignoreCase = true)) { "Execution journal does not match the stored workflow graph." }
+        require(graphDigest.equals(WorkGraphExecutionRecord.graphDigest(job.workflowGraphJson), ignoreCase = true)) { "Execution journal does not match the stored workflow graph." }
         val graph = app.memo.android.orchestration.WorkflowGraph.fromJson(job.workflowGraphJson)
         val graphNodes = graph.nodes.associateBy { it.id }
         require(invocations.map { it.nodeId }.toSet() == graphNodes.keys) { "Execution journal nodes do not match the stored workflow graph." }
