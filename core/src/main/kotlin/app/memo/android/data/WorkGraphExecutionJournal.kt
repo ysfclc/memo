@@ -93,6 +93,8 @@ data class WorkGraphExecutionRecord(
                 it.invocationId.isNotBlank() && it.invocationId.length <= 128 &&
                 it.status in WorkNodeInvocationRecord.ALL_STATUSES && it.attempt in 0..1 &&
                 it.inputHash.length <= 64 && it.outputReference.length <= 2_048 && it.outputHash.length <= 64 &&
+                (it.status != WorkNodeInvocationRecord.STATUS_SUCCEEDED || (it.outputReference.isNotBlank() && it.outputHash.matches(Regex("[a-fA-F0-9]{64}")))) &&
+                (it.approvalBindingHash.isBlank() || (it.inputHash.matches(Regex("[a-fA-F0-9]{64}")) && it.approvalBindingHash.equals(it.inputHash, ignoreCase = true))) &&
                 it.approvalBindingHash.length <= 64 && it.error.length <= 1_000 &&
                 it.startedAt >= 0L && it.updatedAt >= 0L && it.finishedAt >= 0L
         }) { "Execution journal contains an invalid node invocation." }
@@ -315,7 +317,10 @@ data class WorkGraphExecutionRecord(
                 node.nodeId.isNotBlank() && node.invocationId.isNotBlank() &&
                     node.status in WorkNodeInvocationRecord.ALL_STATUSES && node.attempt in 0..1 &&
                     node.inputHash.length <= 64 && node.approvalBindingHash.length <= 64 &&
-                    node.outputReference.length <= 2_048 && node.outputHash.length <= 64 && node.error.length <= 1_000 &&
+                    node.outputReference.length <= 2_048 && node.outputHash.length <= 64 &&
+                    (node.status != WorkNodeInvocationRecord.STATUS_SUCCEEDED || (node.outputReference.isNotBlank() && node.outputHash.matches(Regex("[a-fA-F0-9]{64}")))) &&
+                    (node.approvalBindingHash.isBlank() || (node.inputHash.matches(Regex("[a-fA-F0-9]{64}")) && node.approvalBindingHash.equals(node.inputHash, ignoreCase = true))) &&
+                    node.error.length <= 1_000 &&
                     node.startedAt >= 0L && node.updatedAt >= 0L && node.finishedAt >= 0L
             }) { "Execution journal contains an invalid node invocation." }
             require(record.invocations.count { it.status == WorkNodeInvocationRecord.STATUS_RUNNING } <= 1) {
