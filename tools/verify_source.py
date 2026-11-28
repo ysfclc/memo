@@ -273,6 +273,7 @@ for marker in (
     "preparedOrRunningNodesRequireExplicitRecoveryAndAreNeverSelectedAgain",
     "approvalAndReviewStatesStopAutomaticScheduling",
     "completedGraphHasNoFurtherRunnableNodes",
+    "inconsistentTerminalRunStateIsRejectedBeforeScheduling",
 ):
     if marker not in work_scheduler_test:
         fail(f"dependency-aware Work scheduler regression coverage is missing: {marker}")
