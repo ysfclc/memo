@@ -124,7 +124,7 @@ class WorkGraphExecutionJournalTest {
         assertTrue(recovered.invocations.first().error.contains("never") || recovered.invocations.first().error.contains("Inspect"))
     }
 
-    @Test fun journalRoundTripsInsideExistingJobBackupWithoutChangingWorkspaceSchema() {
+    @Test fun journalRoundTripsInsideExistingJobBackupWithSchemaVersionEight() {
         val (job, journal) = fixture()
         val source = AppSnapshot(jobs = listOf(job.copy(executionJournalJson = journal.toJson())))
         val restored = AppSnapshot.fromJson(source.toJson())
@@ -132,7 +132,7 @@ class WorkGraphExecutionJournalTest {
         val restoredJournal = WorkGraphExecutionRecord.fromJson(restoredJob.executionJournalJson)
         restoredJournal.validateFor(restoredJob)
         assertEquals(journal, restoredJournal)
-        assertEquals(7, org.json.JSONObject(source.toJson()).optInt("schemaVersion"))
+        assertEquals(8, org.json.JSONObject(source.toJson()).optInt("schemaVersion"))
     }
 
     @Test fun journalRejectsChangedGraphOrSourceIdentity() {
