@@ -15,7 +15,7 @@ class WorkGraphExecutionJournalTest {
     private fun fixture(): Pair<WorkJobRecord, WorkGraphExecutionRecord> {
         val graph = WorkflowGraph(
             goal = "Complete an arbitrary user request",
-            budget = WorkflowBudget(maxNodes = 2, maxDurationMs = 120_000, maxModelCalls = 0, maxExternalWrites = 0),
+            budget = WorkflowBudget(maxNodes = 2, maxDurationMs = 300_000, maxModelCalls = 0, maxExternalWrites = 0),
             nodes = listOf(
                 node("collect", emptyList(), WorkflowNodeKind.SCOPE, WorkflowParticipant.DETERMINISTIC, "app.jobs"),
                 node("review", listOf("collect"), WorkflowNodeKind.REVIEW, WorkflowParticipant.USER, "app.jobs")
@@ -62,7 +62,7 @@ class WorkGraphExecutionJournalTest {
         inputContract = "Bounded input",
         outputContract = "Observable output",
         postcondition = "Output is verified",
-        idempotencyKey = id.padEnd(64, '0')
+        idempotencyKey = "a".repeat(64)
     )
 
     @Test fun dependencyMustSucceedBeforeDependentNodeCanBecomeReady() {
