@@ -1,5 +1,6 @@
 package app.memo.android.orchestration
 
+import app.memo.android.data.AppSnapshot
 import app.memo.android.data.JobStepRecord
 import app.memo.android.data.VerifiedWorkOutput
 import app.memo.android.data.WorkGraphExecutionRecord
@@ -130,6 +131,20 @@ class WorkGraphSchedulerTest {
         val (job, journal) = fixture()
         val forgedComplete = journal.copy(status = WorkGraphExecutionRecord.STATUS_COMPLETED)
         assertTrue(runCatching { WorkGraphScheduler.next(job, forgedComplete) }.isFailure)
+    }
+
+    @Test fun legacyGraphStepsMigrateToStableTopologicalNodeIdsOnImport() {
+        val (job, _) = fixture()
+        val legacyJob = job.copy(steps = listOf(
+            JobStepRecord(title = "Synthesize"),
+            JobStepRecord(title = "Gather B"),
+            JobStepRecord(title = "Gather A")
+        ))
+        val restored = AppSnapshot.fromJson(AppSnapshot(jobs = listOf(legacyJob)).toJson())
+        assertEquals(
+            listOf("gather_b", "gather_a", "synthesize"),
+            restored.jobs.single().steps.map { it.workflowNodeId }
+        )
     }
 
 }
