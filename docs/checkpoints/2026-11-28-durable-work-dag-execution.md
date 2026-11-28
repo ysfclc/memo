@@ -104,3 +104,18 @@ Concurrency starts at one. Parallel fan-out may be enabled only after journal co
 5. **Expand capability coverage:** add runtime types only when their adapters, safety policies, evidence and recovery contracts are genuinely implemented.
 
 A phase is not complete because a plan can be displayed or a unit test can simulate a successful result. Real adapter execution and durable evidence are required before claiming that Memo performed the work.
+
+## Implementation status — 28 November 2026
+
+The first persistence slice is now present on the active Work branch. It is deliberately narrower than a DAG executor:
+
+- `WorkJobRecord` can carry a versioned per-node invocation journal in the existing encrypted workspace. The journal binds to the owning job, exact source conversation/message, exact serialized graph digest, exact node IDs and persisted dependency lists.
+- The journal reducer enforces dependency success before readiness, PREPARED before dispatch, one active invocation, and exact input-hash binding for approval.
+- A node cannot be marked SUCCEEDED without a `VerifiedWorkOutput` carrying a read-back SHA-256 digest that matches the expected digest.
+- PREPARED/RUNNING nodes recover to NEEDS_REVIEW after process death. No invocation is replayed automatically.
+- Workspace backup schema is now version 8. Schema 7 imports remain supported; older readers are required to reject schema 8 rather than silently dropping the execution journal.
+- JVM regression tests cover dependency gates, prepared-before-start, single-flight dispatch, output digest mismatch, approval binding, no-replay recovery, exact graph/source binding, schema-8 round-trip and schema-7 migration.
+
+**Still not implemented:** a graph-run factory from a validated TaskSpec, a scheduler/coordinator, atomic durable writes around each transition, capability-manifest digest binding, append-only transition history, runtime adapter dispatch, budgets, cancellation, pause/resume, postcondition execution, and UI projection of per-node progress. `VerifiedWorkOutput.verifyObserved` validates hashes supplied by the adapter; it does not itself perform filesystem or vault I/O. The caller must compute the observed digest from persisted read-back before constructing it.
+
+This is a persistence/reducer foundation only. It does not make the DAG executable and must not be presented as end-to-end Work execution.
