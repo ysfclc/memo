@@ -212,6 +212,10 @@ for marker in (
     "fun prepare(nodeId: String",
     "fun start(nodeId: String",
     "fun prepareAfterApproval(",
+    "data class VerifiedWorkOutput",
+    "fun verifyObserved(",
+    "persisted output whose read-back digest has been verified",
+    "Another workflow node is already running",,
     "fun recoverAfterRestart(",
     "fun validateFor(job: WorkJobRecord)",
     "graphDigest(job.workflowGraphJson)",
@@ -221,6 +225,7 @@ for marker in (
 for marker in (
     "dependencyMustSucceedBeforeDependentNodeCanBecomeReady",
     "dispatchRequiresDurablePreparedStateAndSuccessRequiresOutputReference",
+    "secondNodeCannotStartWhileAnotherInvocationIsRunning",
     "approvalIsBoundToExactPreparedInput",
     "interruptedPreparedOrRunningInvocationBecomesReviewOnlyAndIsNeverReplayed",
     "journalRoundTripsInsideExistingJobBackupWithoutChangingWorkspaceSchema",
