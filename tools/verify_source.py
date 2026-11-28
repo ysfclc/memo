@@ -17,6 +17,10 @@ REQUIRED = [
     "build.gradle",
     "core/build.gradle",
     "core/src/main/kotlin/app/memo/android/data/Models.kt",
+    "core/src/main/kotlin/app/memo/android/data/WorkGraphExecutionJournal.kt",
+    "core/src/main/kotlin/app/memo/android/orchestration/WorkGraphScheduler.kt",
+    "core/src/test/kotlin/app/memo/android/data/WorkGraphExecutionJournalTest.kt",
+    "core/src/test/kotlin/app/memo/android/orchestration/WorkGraphSchedulerTest.kt",
     "core/src/main/kotlin/app/memo/android/data/ActionApprovalLedger.kt",
     "core/src/main/kotlin/app/memo/android/data/OutcomeParser.kt",
     "core/src/main/kotlin/app/memo/android/runtime/RuntimeContracts.kt",
@@ -164,8 +168,8 @@ for marker in (
     "fun AgentRunRecord.applyEvent(",
     "val interruptedAgentRuns = agentRuns.count { it.isActive }",
     'root.put("agentRuns"',
-    'root.put("schemaVersion", 7)',
-    "require(schema in 1..7)",
+    'root.put("schemaVersion", 8)',
+    "require(schema in 1..8)",
 ):
     if marker not in agent_models:
         fail(f"encrypted durable run model/recovery is missing: {marker}")
@@ -198,8 +202,82 @@ for marker in ("eventsRecordApprovalToolAndTerminalLifecycle", "rejectedOrUncert
         fail(f"agent run lifecycle regression coverage is missing: {marker}")
 for marker in ("agentRunRecordsRoundTripWithExactRunAndConversationIdentity", "schemaSixBackupMigratesWithoutAgentRunRecords", "interruptedAgentRunsRecoverToReviewAndTerminalRunsStayTerminal"):
     if marker not in workspace_schema_test:
-        fail(f"schema-v7 run persistence/recovery test is missing: {marker}")
+        fail(f"schema-v8 run persistence/recovery test is missing: {marker}")
 print("PASS: Talk execution has a schema-versioned encrypted run record, atomic event journal/readback, truthful Live state and no-replay recovery")
+
+work_journal = (ROOT / "core/src/main/kotlin/app/memo/android/data/WorkGraphExecutionJournal.kt").read_text()
+work_journal_test = (ROOT / "core/src/test/kotlin/app/memo/android/data/WorkGraphExecutionJournalTest.kt").read_text()
+for marker in (
+    "data class WorkGraphExecutionRecord(",
+    "data class WorkNodeInvocationRecord(",
+    "fun markReady(nodeId: String",
+    "fun prepare(nodeId: String",
+    "requireDependenciesSucceeded(nodeId)",
+    "fun start(nodeId: String",
+    "fun prepareAfterApproval(",
+    "data class VerifiedWorkOutput",
+    "fun verifyObserved(",
+    "persisted output whose read-back digest has been verified",
+    "Another workflow node is already running",
+    "fun recoverAfterRestart(",
+    "fun validateFor(job: WorkJobRecord)",
+    "fun createFor(",
+    "invocationIdFactory(node.id)",
+    "graphDigest(job.workflowGraphJson)",
+    "A completed graph must have only successful or explicitly skipped nodes.",
+    "A failed graph must contain a failed node.",
+    "A graph waiting for approval must contain a node waiting for approval.",
+):
+    if marker not in work_journal:
+        fail(f"durable Work graph journal contract is missing: {marker}")
+for marker in (
+    "dependencyMustSucceedBeforeDependentNodeCanBecomeReady",
+    "dispatchRequiresDurablePreparedStateAndSuccessRequiresOutputReference",
+    "secondNodeCannotStartWhileAnotherInvocationIsRunning",
+    "approvalIsBoundToExactPreparedInput",
+    "interruptedPreparedOrRunningInvocationBecomesReviewOnlyAndIsNeverReplayed",
+    "journalRoundTripsInsideExistingJobBackupWithSchemaVersionEight",
+    "schemaSevenWorkspaceImportsWithoutInventingAnExecutionJournal",
+    "journalRejectsChangedGraphOrSourceIdentity",
+    "restartRecoveryIsIntegratedIntoWorkspaceSnapshot",
+    "restartRecoveryLeavesUnrelatedJobJournalByteForByteUnchanged",
+):
+    if marker not in work_journal_test:
+        fail(f"durable Work graph journal regression coverage is missing: {marker}")
+for marker in (
+    "executionJournalJson",
+    "WorkGraphExecutionRecord.fromJson(job.executionJournalJson).hasInterruptedInvocation",
+    "journal?.recoverAfterRestart()?.toJson()",
+):
+    if marker not in agent_models:
+        fail(f"Work job backup/recovery is missing its per-node journal: {marker}")
+print("PASS: Work graph nodes have source-bound durable invocation records, dependency gates, approval binding and no-replay restart recovery")
+
+work_scheduler = (ROOT / "core/src/main/kotlin/app/memo/android/orchestration/WorkGraphScheduler.kt").read_text()
+work_scheduler_test = (ROOT / "core/src/test/kotlin/app/memo/android/orchestration/WorkGraphSchedulerTest.kt").read_text()
+for marker in (
+    "object WorkGraphScheduler",
+    "journal.validateFor(job)",
+    "WorkflowGraphValidator.topologicalOrder(graph)",
+    "Decision.AwaitingRecovery",
+    "Decision.AwaitingApproval",
+    "Decision.Eligible",
+    "Decision.Ready",
+):
+    if marker not in work_scheduler:
+        fail(f"dependency-aware Work scheduler contract is missing: {marker}")
+for marker in (
+    "createsInvocationRecordsFromExactGraphWithStableNodeAndDependencyBindings",
+    "selectsEligibleNodesByTopologicalDependenciesNotHumanCheckpointOrder",
+    "fanOutNodesCanCompleteIndependentlyButJoinWaitsForEveryDependency",
+    "preparedOrRunningNodesRequireExplicitRecoveryAndAreNeverSelectedAgain",
+    "approvalAndReviewStatesStopAutomaticScheduling",
+    "completedGraphHasNoFurtherRunnableNodes",
+    "inconsistentTerminalRunStateIsRejectedBeforeScheduling",
+):
+    if marker not in work_scheduler_test:
+        fail(f"dependency-aware Work scheduler regression coverage is missing: {marker}")
+print("PASS: Work scheduler selects graph nodes by persisted dependencies and stops on approval, recovery or review boundaries")
 
 if "import app.memo.android.orchestration.AgentExecutionEventType" not in agent_broker:
     fail("the ViewModel run closeout must import the engine event types it compares")
@@ -583,9 +661,8 @@ for marker in (
     'step.checkpointKind == "LOCAL_MODEL"',
     'onOpenModels = onOpenModels',
     'onOpenModels: () -> Unit',
-    'onStartStep(step.id)',
     'onRunWithModel(step.id, localModel.id)',
-    'currentStep.status != "RUNNING"',
+    'currentStep.status !in setOf("PENDING", "RUNNING")',
     'Run this step with',
     'result is saved as a draft for your review',
 ):
@@ -594,9 +671,43 @@ for marker in (
 local_model_branch_start = work_ui.index('isNext && step.checkpointKind == "LOCAL_MODEL"')
 local_model_branch_end = work_ui.index('isNext && (step.requiresApproval || step.checkpointKind == "EXTERNAL_ACTION")', local_model_branch_start)
 local_model_branch = work_ui[local_model_branch_start:local_model_branch_end]
-if local_model_branch.index('onStartStep(step.id)') > local_model_branch.index('onRunWithModel(step.id, localModel.id)'):
-    fail("Local-model Work execution must start the eligible checkpoint before generation")
-print("PASS: Work runs only exact local model-generation checkpoints with dependency gating and reviewable artifact output; remote generation remains approval-gated")
+if 'onStartStep(step.id)' in local_model_branch:
+    fail("Work must not start a checkpoint separately from its shared execution run")
+for marker in (
+    'fun buildWorkStep(',
+    'StudioArtifactAdapter(viewModel, sourceConversationId, sourceMessageId, sourceExcerpt, reuseExistingDrafts = false)',
+    'sourceMessageId.isNotBlank()',
+    'it.id == sourceMessageId && it.role == "USER"',
+):
+    if marker not in agent_tools:
+        fail(f"Work artifact adapter is not restricted to its exact source and private-write capability: {marker}")
+for marker in (
+    'launchSharedWorkStepExecution(',
+    'viewModel.launchAgentExecution(',
+    'AgentExecutionEngine(',
+    'MemoWorkspaceAgentTools.buildWorkStep(',
+    'runtime.generateAgentTurn(',
+    'appendAgentEventDurably(',
+    'finishAgentRunDurably(',
+    'finishAgentWorkStepDurably(',
+    'startJobStep(freshJob.id, freshStep.id, runId)',
+    'AgentExecutionConfig(maxToolCalls = 1)',
+    'AgentExecutionEventType.TOOL_FINISHED',
+    'val selectedModelId = if (modelId.startsWith("local:")) modelId else "local:$modelId"',
+):
+    if marker not in work_ui:
+        fail(f"Work local-model execution bypasses the shared durable engine contract: {marker}")
+helper_start = work_ui.index('private fun launchSharedWorkStepExecution(')
+helper_end = work_ui.index('@Composable\nfun SelfModelStudioScreen(', helper_start)
+if 'runtime.runPrompt(' in work_ui[helper_start:helper_end]:
+    fail("Work local-model execution must not bypass the shared AgentExecutionEngine")
+for marker in (
+    "This run was interrupted or its outcome is uncertain.",
+    "Inspect execution transcript",
+):
+    if marker not in work_ui:
+        fail(f"Interrupted Work checkpoints must remain review-only: {marker}")
+print("PASS: Work local-model checkpoints use the shared durable Talk engine, exact artifact adapter, event journal and review-only completion boundary")
 
 for marker in (
     'RuntimeCapability("browser.submit_prompt"',

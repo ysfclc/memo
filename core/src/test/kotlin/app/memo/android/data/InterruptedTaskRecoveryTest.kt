@@ -40,6 +40,83 @@ class InterruptedTaskRecoveryTest {
     }
 
     @Test
+    fun interruptedWorkStepLinksOnlyAnArtifactFromItsExactRunAndSource() {
+        val runId = "work-run-123"
+        val sourceConversationId = "conversation-source"
+        val sourceMessageId = "message-source"
+        val runningStep = JobStepRecord(
+            title = "Prepare the requested draft",
+            status = "RUNNING",
+            evidence = "run:$runId",
+            checkpointKind = "LOCAL_MODEL"
+        )
+        val job = WorkJobRecord(
+            title = "User's requested work",
+            goal = "Prepare a useful deliverable",
+            status = "RUNNING",
+            sourceConversationId = sourceConversationId,
+            sourceMessageId = sourceMessageId,
+            steps = listOf(runningStep)
+        )
+        val matchingArtifact = EvidenceRecord(
+            id = "artifact-matching",
+            title = "Private draft",
+            sourceUrl = "",
+            kind = "STUDIO_ARTIFACT",
+            content = "# Draft",
+            summary = "A private draft",
+            metadata = """{"origin":"MEMO_AGENT","runId":"$runId","sourceConversationId":"$sourceConversationId","sourceMessageId":"$sourceMessageId"}"""
+        )
+        val wrongSourceArtifact = EvidenceRecord(
+            id = "artifact-wrong-source",
+            title = "Unrelated draft",
+            sourceUrl = "",
+            kind = "STUDIO_ARTIFACT",
+            content = "# Other",
+            summary = "An unrelated draft",
+            metadata = """{"origin":"MEMO_AGENT","runId":"$runId","sourceConversationId":"another-conversation","sourceMessageId":"another-message"}"""
+        )
+
+        val restored = AppSnapshot(
+            jobs = listOf(job),
+            evidence = listOf(wrongSourceArtifact, matchingArtifact)
+        ).recoverInterruptedTasks()
+
+        val recovered = restored.jobs.single()
+        val recoveredStep = recovered.steps.single()
+        assertEquals("WAITING_FOR_USER", recovered.status)
+        assertEquals("NEEDS_REVIEW", recoveredStep.status)
+        assertEquals("evidence:artifact-matching; run:$runId", recoveredStep.evidence)
+        assertTrue(recoveredStep.detail.contains("private draft"))
+    }
+
+    @Test
+    fun interruptedWorkStepWithoutMatchingArtifactKeepsRunReferenceAndIsNotReplayed() {
+        val runId = "work-run-456"
+        val step = JobStepRecord(
+            title = "Prepare the requested draft",
+            status = "RUNNING",
+            evidence = "run:$runId",
+            checkpointKind = "LOCAL_MODEL"
+        )
+        val job = WorkJobRecord(
+            title = "User's requested work",
+            goal = "Prepare a useful deliverable",
+            status = "RUNNING",
+            sourceConversationId = "conversation-source",
+            sourceMessageId = "message-source",
+            steps = listOf(step)
+        )
+
+        val restored = AppSnapshot(jobs = listOf(job)).recoverInterruptedTasks()
+        val recoveredStep = restored.jobs.single().steps.single()
+
+        assertEquals("NEEDS_REVIEW", recoveredStep.status)
+        assertEquals("run:$runId", recoveredStep.evidence)
+        assertTrue(recoveredStep.detail.contains("Inspect the source run"))
+    }
+
+    @Test
     fun activeAgentRunsBecomeReviewableAfterProcessRestartWithoutReplay() {
         val activeStatuses = listOf("RUNNING", "WAITING_FOR_APPROVAL", "TOOL_RUNNING", "FINALIZING")
         val activeRuns = activeStatuses.map { status ->

@@ -200,7 +200,9 @@ data class WorkJobRecord(
     val updatedAt: Long = nowMillis(),
     val workflowGraphJson: String = "",
     val todayPriority: String = "UNSORTED",
-    val todayPriorityDate: String = ""
+    val todayPriorityDate: String = "",
+    /** Versioned durable per-node execution journal; blank for jobs that have not entered graph execution. */
+    val executionJournalJson: String = ""
 )
 
 
@@ -293,7 +295,9 @@ data class AppSnapshot(
     /** A persisted RUNNING task has lost its WebView execution context after process death. */
     fun recoverInterruptedTasks(): AppSnapshot {
         val interrupted = tasks.count { it.status == TaskStatus.RUNNING }
-        val interruptedJobs = jobs.count { it.status == "RUNNING" }
+        val interruptedJobs = jobs.count { job ->
+            job.status == "RUNNING" || (job.executionJournalJson.isNotBlank() && WorkGraphExecutionRecord.fromJson(job.executionJournalJson).hasInterruptedInvocation)
+        }
         val actionCandidates = actionApprovals.count { it.status in setOf("PENDING", "APPROVED", "IN_PROGRESS") }
         val interruptedAgentRuns = agentRuns.count { it.isActive }
         if (interrupted == 0 && interruptedJobs == 0 && actionCandidates == 0 && interruptedAgentRuns == 0) return this
@@ -306,10 +310,38 @@ data class AppSnapshot(
                 ) else task
             },
             jobs = jobs.map { job ->
-                if (job.status == "RUNNING") job.copy(
+                val journal = job.executionJournalJson.takeIf { it.isNotBlank() }
+                    ?.let { WorkGraphExecutionRecord.fromJson(it) }
+                val shouldRecover = job.status == "RUNNING" || journal?.hasInterruptedInvocation == true
+                if (shouldRecover) job.copy(
                     status = "WAITING_FOR_USER",
+                    executionJournalJson = journal?.recoverAfterRestart()?.toJson().orEmpty(),
                     resultSummary = "Memo restarted during this job. Review the last step before resuming.",
-                    steps = job.steps.map { step -> if (step.status == "RUNNING") step.copy(status = "NEEDS_REVIEW", detail = "Interrupted by application restart.", updatedAt = nowMillis()) else step },
+                    steps = job.steps.map { step ->
+                        if (step.status != "RUNNING") step
+                        else {
+                            val runId = step.evidence.substringAfter("run:", "").substringBefore(";").trim()
+                            val recoveredArtifact = if (runId.isBlank()) null else evidence.firstOrNull { candidate ->
+                                candidate.kind == "STUDIO_ARTIFACT" && runCatching {
+                                    val metadata = JSONObject(candidate.metadata)
+                                    metadata.optString("origin") == "MEMO_AGENT" &&
+                                        metadata.optString("runId") == runId &&
+                                        metadata.optString("sourceConversationId") == job.sourceConversationId &&
+                                        metadata.optString("sourceMessageId") == job.sourceMessageId
+                                }.getOrDefault(false)
+                            }
+                            step.copy(
+                                status = "NEEDS_REVIEW",
+                                detail = if (recoveredArtifact != null) {
+                                    "Interrupted by application restart. A private draft from this run was found; inspect it before accepting or retrying."
+                                } else {
+                                    "Interrupted by application restart. Inspect the source run and any saved evidence before resuming."
+                                },
+                                evidence = recoveredArtifact?.let { "evidence:${it.id}; run:$runId" } ?: step.evidence,
+                                updatedAt = nowMillis()
+                            )
+                        }
+                    },
                     updatedAt = nowMillis()
                 ) else job
             },
@@ -337,8 +369,11 @@ data class AppSnapshot(
         require(conversations.all { it.messages.size <= MAX_MESSAGES_PER_CONVERSATION }) { "A conversation exceeds the 250-message backup limit." }
         require(entities.size <= MAX_ENTITIES) { "Workspace contains too many entities for a safe backup." }
         require(relationships.size <= MAX_RELATIONSHIPS) { "Workspace contains too many relationships for a safe backup." }
-        require(jobs.size <= MAX_JOBS && jobs.all { it.steps.size <= MAX_JOB_STEPS && it.workflowGraphJson.length <= 64_000 }) { "Workspace contains too many jobs, job steps or workflow graph data for a safe backup." }
-        jobs.forEach { job -> if (job.workflowGraphJson.isNotBlank()) app.memo.android.orchestration.WorkflowGraph.fromJson(job.workflowGraphJson) }
+        require(jobs.size <= MAX_JOBS && jobs.all { it.steps.size <= MAX_JOB_STEPS && it.workflowGraphJson.length <= 64_000 && it.executionJournalJson.length <= 256_000 }) { "Workspace contains too many jobs, job steps, workflow graph or execution journal data for a safe backup." }
+        jobs.forEach { job ->
+            if (job.workflowGraphJson.isNotBlank()) app.memo.android.orchestration.WorkflowGraph.fromJson(job.workflowGraphJson)
+            if (job.executionJournalJson.isNotBlank()) WorkGraphExecutionRecord.fromJson(job.executionJournalJson).validateFor(job)
+        }
         require(actionApprovals.size <= MAX_ACTION_APPROVALS) { "Workspace contains too many action approval records for a safe backup." }
         require(actionAuditEvents.size <= MAX_ACTION_AUDIT_EVENTS) { "Workspace contains too many audit events for a safe backup." }
         require(agentRuns.size <= MAX_AGENT_RUNS) { "Workspace contains too many Memo execution records for a safe backup." }
@@ -408,7 +443,7 @@ data class AppSnapshot(
         }
         relationships.forEach { add(it.id); add(it.fromEntityId); add(it.toEntityId); add(it.relationType); add(it.sourceConversationId) }
         jobs.forEach { job ->
-            add(job.id); add(job.title); add(job.goal); add(job.status); add(job.runtimeId); add(job.sourceConversationId); add(job.sourceMessageId); add(job.resultSummary); add(job.workflowGraphJson); add(job.todayPriority); add(job.todayPriorityDate)
+            add(job.id); add(job.title); add(job.goal); add(job.status); add(job.runtimeId); add(job.sourceConversationId); add(job.sourceMessageId); add(job.resultSummary); add(job.workflowGraphJson); add(job.todayPriority); add(job.todayPriorityDate); add(job.executionJournalJson)
             job.steps.forEach { add(it.id); add(it.title); add(it.detail); add(it.status); add(it.evidence) }
         }
         actionApprovals.forEach { action ->
@@ -441,9 +476,9 @@ data class AppSnapshot(
         councilRunLimit: Int
     ): String {
         val root = JSONObject()
-        root.put("schemaVersion", 7)
-        root.put("schemaSemver", "7.0.0")
-        root.put("minimumReaderVersion", 7)
+        root.put("schemaVersion", 8)
+        root.put("schemaSemver", "8.0.0")
+        root.put("minimumReaderVersion", 8)
         root.put("exportedAt", nowMillis())
         root.put("themeMode", themeMode)
         root.put("tasks", JSONArray().apply {
@@ -596,6 +631,7 @@ data class AppSnapshot(
                     put("sourceMessageId", job.sourceMessageId.take(128))
                     put("resultSummary", job.resultSummary.take(4_000))
                     put("workflowGraphJson", job.workflowGraphJson.take(64_000))
+                    put("executionJournalJson", job.executionJournalJson.take(256_000))
                     put("todayPriority", job.todayPriority)
                     put("todayPriorityDate", job.todayPriorityDate.take(10))
                     put("createdAt", job.createdAt)
@@ -693,13 +729,13 @@ data class AppSnapshot(
             require(raw.toByteArray(Charsets.UTF_8).size <= MAX_WORKSPACE_BACKUP_BYTES) { "Import file is larger than 40 MB." }
             val root = JSONObject(raw)
             val schema = root.optInt("schemaVersion", 0)
-            require(schema in 1..7) { "This backup format is not supported." }
+            require(schema in 1..8) { "This backup format is not supported." }
             val schemaSemver = root.safeString("schemaSemver")
             if (schemaSemver.isNotBlank()) {
                 val major = schemaSemver.substringBefore('.').toIntOrNull()
                 require(major == schema) { "Backup schema version metadata is inconsistent." }
             }
-            require(root.optInt("minimumReaderVersion", schema).coerceAtLeast(1) <= 7) { "This backup requires a newer Memo reader." }
+            require(root.optInt("minimumReaderVersion", schema).coerceAtLeast(1) <= 8) { "This backup requires a newer Memo reader." }
 
             val usedTaskIds = mutableSetOf<String>()
             val tasks = root.optJSONArray("tasks").toTypedRecords(MAX_TASKS) { row ->
@@ -870,9 +906,13 @@ data class AppSnapshot(
                     createdAt = row.optLong("createdAt", nowMillis()),
                     updatedAt = row.optLong("updatedAt", nowMillis()),
                     workflowGraphJson = row.safeString("workflowGraphJson").take(64_000),
+                    executionJournalJson = row.safeString("executionJournalJson").take(256_000),
                     todayPriority = row.safeString("todayPriority").takeIf { it in TODAY_PRIORITY_VALUES && row.safeString("todayPriorityDate").matches(Regex("\\d{4}-\\d{2}-\\d{2}")) } ?: "UNSORTED",
                     todayPriorityDate = row.safeString("todayPriorityDate").takeIf { it.matches(Regex("\\d{4}-\\d{2}-\\d{2}")) }.orEmpty()
                 )
+            }
+            jobs.forEach { job ->
+                if (job.executionJournalJson.isNotBlank()) WorkGraphExecutionRecord.fromJson(job.executionJournalJson).validateFor(job)
             }
             val actionApprovals = if (schema < 4) emptyList() else root.optJSONArray("actionApprovals").toTypedRecords(MAX_ACTION_APPROVALS) { row ->
                 val payload = row.safeString("payload").take(ActionApprovalLedger.MAX_PAYLOAD_CHARS)

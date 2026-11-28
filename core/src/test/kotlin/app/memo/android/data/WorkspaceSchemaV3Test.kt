@@ -30,8 +30,8 @@ class WorkspaceSchemaV3Test {
         assertEquals("WAITING_FOR_USER", restored.jobs.single().status)
         assertEquals("COMPLETED", restored.jobs.single().steps.single().status)
         assertEquals("USER_CHECKPOINT", restored.jobs.single().steps.single().checkpointKind)
-        assertEquals(7, org.json.JSONObject(snapshot.toJson()).optInt("schemaVersion"))
-        assertEquals("7.0.0", org.json.JSONObject(snapshot.toJson()).optString("schemaSemver"))
+        assertEquals(8, org.json.JSONObject(snapshot.toJson()).optInt("schemaVersion"))
+        assertEquals("8.0.0", org.json.JSONObject(snapshot.toJson()).optString("schemaSemver"))
     }
 
     @Test fun interruptedJobsAreRecoveredIntoReviewState() {
@@ -54,7 +54,7 @@ class WorkspaceSchemaV3Test {
         val restored = AppSnapshot.fromJson(root.toString())
         assertEquals("USER_CHECKPOINT", restored.jobs.single().steps.single().checkpointKind)
         assertEquals(false, restored.jobs.single().steps.single().requiresApproval)
-        assertEquals(7, org.json.JSONObject(restored.toJson()).optInt("schemaVersion"))
+        assertEquals(8, org.json.JSONObject(restored.toJson()).optInt("schemaVersion"))
     }
 
     @Test fun agentRunRecordsRoundTripWithExactRunAndConversationIdentity() {
@@ -79,7 +79,7 @@ class WorkspaceSchemaV3Test {
         )
         val restored = AppSnapshot.fromJson(source.toJson())
         assertEquals(run, restored.agentRuns.single())
-        assertEquals(7, org.json.JSONObject(source.toJson()).optInt("schemaVersion"))
+        assertEquals(8, org.json.JSONObject(source.toJson()).optInt("schemaVersion"))
     }
 
     @Test fun schemaSixBackupMigratesWithoutAgentRunRecords() {
@@ -90,7 +90,7 @@ class WorkspaceSchemaV3Test {
         root.remove("agentRuns")
         val restored = AppSnapshot.fromJson(root.toString())
         assertTrue(restored.agentRuns.isEmpty())
-        assertEquals(7, org.json.JSONObject(restored.toJson()).optInt("schemaVersion"))
+        assertEquals(8, org.json.JSONObject(restored.toJson()).optInt("schemaVersion"))
     }
 
     @Test fun interruptedAgentRunsRecoverToReviewAndTerminalRunsStayTerminal() {
