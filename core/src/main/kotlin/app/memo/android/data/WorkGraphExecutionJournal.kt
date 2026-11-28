@@ -87,6 +87,19 @@ data class WorkGraphExecutionRecord(
                 invocation.dependencies.all { dependency -> invocationsByNode[dependency]?.status == WorkNodeInvocationRecord.STATUS_SUCCEEDED }
         }) { "A non-blocked node has an unfinished dependency." }
         require(status in ALL_STATUSES && invocations.size in 1..MAX_NODES) { "Execution journal state or node count is invalid." }
+        require(status != STATUS_COMPLETED || (
+            invocations.all { it.status in WorkNodeInvocationRecord.TERMINAL_STATUSES } &&
+                invocations.all { it.status == WorkNodeInvocationRecord.STATUS_SUCCEEDED || it.status == WorkNodeInvocationRecord.STATUS_SKIPPED }
+        )) { "A completed graph must have only successful or explicitly skipped nodes." }
+        require(status != STATUS_FAILED || invocations.any { it.status == WorkNodeInvocationRecord.STATUS_FAILED }) {
+            "A failed graph must contain a failed node."
+        }
+        require(status != STATUS_NEEDS_REVIEW || invocations.any { it.status == WorkNodeInvocationRecord.STATUS_NEEDS_REVIEW }) {
+            "A graph requiring review must contain a node requiring review."
+        }
+        require(status != STATUS_WAITING_FOR_APPROVAL || invocations.any { it.status == WorkNodeInvocationRecord.STATUS_WAITING_FOR_APPROVAL }) {
+            "A graph waiting for approval must contain a node waiting for approval."
+        }
         require(invocations.map { it.nodeId }.toSet().size == invocations.size) { "Execution journal contains duplicate node IDs." }
         require(invocations.map { it.invocationId }.toSet().size == invocations.size) { "Execution journal contains duplicate invocation IDs." }
         val nodeIds = invocations.map { it.nodeId }.toSet()
