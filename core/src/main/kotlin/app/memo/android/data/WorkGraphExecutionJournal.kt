@@ -2,6 +2,7 @@ package app.memo.android.data
 
 import org.json.JSONArray
 import org.json.JSONObject
+import java.security.MessageDigest
 
 /**
  * Durable, job-scoped execution journal. It records intent before dispatch and never treats
@@ -57,6 +58,14 @@ data class WorkGraphExecutionRecord(
             "Execution journal source identity does not match the originating user request."
         }
         require(graphDigest.matches(Regex("[a-fA-F0-9]{64}"))) { "Execution journal graph digest is invalid." }
+        require(job.workflowGraphJson.isNotBlank()) { "Execution journal has no source workflow graph." }
+        require(graphDigest.equals(graphDigest(job.workflowGraphJson), ignoreCase = true)) { "Execution journal does not match the stored workflow graph." }
+        val graph = app.memo.android.orchestration.WorkflowGraph.fromJson(job.workflowGraphJson)
+        val graphNodes = graph.nodes.associateBy { it.id }
+        require(invocations.map { it.nodeId }.toSet() == graphNodes.keys) { "Execution journal nodes do not match the stored workflow graph." }
+        require(invocations.all { invocation -> invocation.dependencies == graphNodes.getValue(invocation.nodeId).dependsOn }) {
+            "Execution journal dependencies do not match the stored workflow graph."
+        }
         require(status in ALL_STATUSES && invocations.size in 1..MAX_NODES) { "Execution journal state or node count is invalid." }
         require(invocations.map { it.nodeId }.toSet().size == invocations.size) { "Execution journal contains duplicate node IDs." }
         val nodeIds = invocations.map { it.nodeId }.toSet()
@@ -225,9 +234,13 @@ data class WorkGraphExecutionRecord(
         const val STATUS_FAILED = "FAILED"
         const val STATUS_CANCELLED = "CANCELLED"
         private const val VERSION = 1
-        private const val MAX_NODES = 100
+        private const val MAX_NODES = 40
         private const val MAX_JSON_CHARS = 256_000
         private val ALL_STATUSES = setOf(STATUS_READY, STATUS_RUNNING, STATUS_WAITING_FOR_APPROVAL, STATUS_NEEDS_REVIEW, STATUS_COMPLETED, STATUS_FAILED, STATUS_CANCELLED)
+
+        fun graphDigest(graphJson: String): String =
+            MessageDigest.getInstance("SHA-256").digest(graphJson.toByteArray(Charsets.UTF_8))
+                .joinToString("") { "%02x".format(it) }
 
         fun fromJson(raw: String): WorkGraphExecutionRecord {
             require(raw.length in 2..MAX_JSON_CHARS) { "Execution journal is empty or too large." }
