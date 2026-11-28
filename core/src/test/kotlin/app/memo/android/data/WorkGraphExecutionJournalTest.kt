@@ -68,6 +68,7 @@ class WorkGraphExecutionJournalTest {
     @Test fun dependencyMustSucceedBeforeDependentNodeCanBecomeReady() {
         val (_, initial) = fixture()
         assertTrue(runCatching { initial.markReady("review") }.isFailure)
+        assertTrue(runCatching { initial.prepare("review", hash) }.isFailure)
 
         val firstReady = initial.markReady("collect", at = 10L)
         val prepared = firstReady.prepare("collect", hash, at = 11L)
