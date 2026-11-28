@@ -154,4 +154,17 @@ class WorkGraphExecutionJournalTest {
             WorkGraphExecutionRecord.fromJson(recoveredJob.executionJournalJson).invocations.first().status)
         assertTrue(recovered.activity.first().message.contains("1 interrupted job"))
     }
+    @Test fun schemaSevenWorkspaceImportsWithoutInventingAnExecutionJournal() {
+        val (job, _) = fixture()
+        val root = org.json.JSONObject(AppSnapshot(jobs = listOf(job)).toJson())
+        root.put("schemaVersion", 7)
+        root.put("schemaSemver", "7.0.0")
+        root.put("minimumReaderVersion", 7)
+        root.getJSONArray("jobs").getJSONObject(0).remove("executionJournalJson")
+
+        val restored = AppSnapshot.fromJson(root.toString())
+        assertEquals("", restored.jobs.single().executionJournalJson)
+        assertEquals(8, org.json.JSONObject(restored.toJson()).optInt("schemaVersion"))
+    }
+
 }
