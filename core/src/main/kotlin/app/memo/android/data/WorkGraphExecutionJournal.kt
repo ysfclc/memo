@@ -290,7 +290,43 @@ data class WorkGraphExecutionRecord(
 
         fun graphDigest(graphJson: String): String =
             MessageDigest.getInstance("SHA-256").digest(graphJson.toByteArray(Charsets.UTF_8))
-                .joinToString("") { "%02x".format(it) }
+                .joinToString("") { "%02x".format(it.toInt() and 0xff) }
+
+        /** Creates one stable invocation identity per node from the exact graph stored on the job. */
+        fun createFor(
+            job: WorkJobRecord,
+            executionId: String = newId(),
+            invocationIdFactory: (String) -> String = { newId() },
+            at: Long = nowMillis()
+        ): WorkGraphExecutionRecord {
+            require(job.id.isNotBlank() && job.sourceConversationId.isNotBlank() && job.sourceMessageId.isNotBlank()) {
+                "A source-linked Work job is required to create an execution journal."
+            }
+            require(job.workflowGraphJson.isNotBlank()) { "This Work job has no validated workflow graph." }
+            val graph = app.memo.android.orchestration.WorkflowGraph.fromJson(job.workflowGraphJson)
+            val orderedNodes = app.memo.android.orchestration.WorkflowGraphValidator.topologicalOrder(graph)
+            val record = WorkGraphExecutionRecord(
+                id = executionId,
+                jobId = job.id,
+                sourceConversationId = job.sourceConversationId,
+                sourceMessageId = job.sourceMessageId,
+                graphDigest = graphDigest(job.workflowGraphJson),
+                status = STATUS_READY,
+                invocations = orderedNodes.map { node ->
+                    WorkNodeInvocationRecord(
+                        nodeId = node.id,
+                        invocationId = invocationIdFactory(node.id),
+                        dependencies = node.dependsOn,
+                        status = WorkNodeInvocationRecord.STATUS_BLOCKED,
+                        updatedAt = at
+                    )
+                },
+                createdAt = at,
+                updatedAt = at
+            )
+            record.validateFor(job)
+            return record
+        }
 
         fun fromJson(raw: String): WorkGraphExecutionRecord {
             require(raw.length in 2..MAX_JSON_CHARS) { "Execution journal is empty or too large." }
