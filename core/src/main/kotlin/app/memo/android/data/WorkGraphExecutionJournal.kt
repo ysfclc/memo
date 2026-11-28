@@ -10,6 +10,7 @@ import org.json.JSONObject
 data class WorkNodeInvocationRecord(
     val nodeId: String,
     val invocationId: String,
+    val dependencies: List<String> = emptyList(),
     val status: String = STATUS_BLOCKED,
     val attempt: Int = 0,
     val inputHash: String = "",
@@ -58,8 +59,13 @@ data class WorkGraphExecutionRecord(
         require(graphDigest.matches(Regex("[a-fA-F0-9]{64}"))) { "Execution journal graph digest is invalid." }
         require(status in ALL_STATUSES && invocations.size in 1..MAX_NODES) { "Execution journal state or node count is invalid." }
         require(invocations.map { it.nodeId }.toSet().size == invocations.size) { "Execution journal contains duplicate node IDs." }
+        val nodeIds = invocations.map { it.nodeId }.toSet()
+        require(invocations.all { node -> node.nodeId !in node.dependencies && node.dependencies.toSet().size == node.dependencies.size && node.dependencies.all { it in nodeIds } }) {
+            "Execution journal dependencies are invalid."
+        }
         require(invocations.all {
             it.nodeId.isNotBlank() && it.nodeId.length <= 128 &&
+                it.dependencies.size <= MAX_NODES && it.dependencies.all { dependency -> dependency.isNotBlank() && dependency.length <= 128 } &&
                 it.invocationId.isNotBlank() && it.invocationId.length <= 128 &&
                 it.status in WorkNodeInvocationRecord.ALL_STATUSES && it.attempt in 0..1 &&
                 it.inputHash.length <= 64 && it.outputReference.length <= 2_048 &&
@@ -72,8 +78,9 @@ data class WorkGraphExecutionRecord(
     }
 
     /** Makes a node runnable only after every declared dependency has succeeded. */
-    fun markReady(nodeId: String, dependencies: Set<String>, at: Long = nowMillis()): WorkGraphExecutionRecord {
-        require(dependencies.all { dependency -> invocations.any { it.nodeId == dependency && it.status == WorkNodeInvocationRecord.STATUS_SUCCEEDED } }) {
+    fun markReady(nodeId: String, at: Long = nowMillis()): WorkGraphExecutionRecord {
+        val target = invocations.firstOrNull { it.nodeId == nodeId } ?: throw IllegalArgumentException("Unknown workflow node '$nodeId'.")
+        require(target.dependencies.all { dependency -> invocations.any { it.nodeId == dependency && it.status == WorkNodeInvocationRecord.STATUS_SUCCEEDED } }) {
             "A node cannot become ready until all dependencies have succeeded."
         }
         return updateNode(nodeId, at) { node ->
@@ -190,6 +197,7 @@ data class WorkGraphExecutionRecord(
                     put(JSONObject().apply {
                         put("nodeId", node.nodeId)
                         put("invocationId", node.invocationId)
+                        put("dependencies", JSONArray(node.dependencies))
                         put("status", node.status)
                         put("attempt", node.attempt)
                         put("inputHash", node.inputHash)
@@ -238,6 +246,7 @@ data class WorkGraphExecutionRecord(
                     WorkNodeInvocationRecord(
                         nodeId = row.optString("nodeId", "").take(128),
                         invocationId = row.optString("invocationId", "").take(128),
+                        dependencies = (0 until (row.optJSONArray("dependencies")?.length() ?: 0)).map { dependencyIndex -> row.getJSONArray("dependencies").getString(dependencyIndex).take(128) },
                         status = row.optString("status", "").take(40),
                         attempt = row.optInt("attempt", 0),
                         inputHash = row.optString("inputHash", "").take(64),
@@ -256,6 +265,10 @@ data class WorkGraphExecutionRecord(
             }
             require(record.graphDigest.matches(Regex("[a-fA-F0-9]{64}"))) { "Execution journal graph digest is invalid." }
             require(record.invocations.map { it.nodeId }.toSet().size == record.invocations.size) { "Execution journal contains duplicate node IDs." }
+            val nodeIds = record.invocations.map { it.nodeId }.toSet()
+            require(record.invocations.all { node -> node.nodeId !in node.dependencies && node.dependencies.toSet().size == node.dependencies.size && node.dependencies.all { it in nodeIds } }) {
+                "Execution journal dependencies are invalid."
+            }
             require(record.invocations.all { node ->
                 node.nodeId.isNotBlank() && node.invocationId.isNotBlank() &&
                     node.status in WorkNodeInvocationRecord.ALL_STATUSES && node.attempt in 0..1 &&
