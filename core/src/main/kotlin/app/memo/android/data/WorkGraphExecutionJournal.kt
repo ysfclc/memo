@@ -1,0 +1,272 @@
+package app.memo.android.data
+
+import org.json.JSONArray
+import org.json.JSONObject
+
+/**
+ * Durable, job-scoped execution journal. It records intent before dispatch and never treats
+ * an interrupted invocation as safe to replay.
+ */
+data class WorkNodeInvocationRecord(
+    val nodeId: String,
+    val invocationId: String,
+    val status: String = STATUS_BLOCKED,
+    val attempt: Int = 0,
+    val inputHash: String = "",
+    val outputReference: String = "",
+    val approvalBindingHash: String = "",
+    val error: String = "",
+    val startedAt: Long = 0L,
+    val updatedAt: Long = nowMillis(),
+    val finishedAt: Long = 0L
+) {
+    companion object {
+        const val STATUS_BLOCKED = "BLOCKED"
+        const val STATUS_READY = "READY"
+        const val STATUS_PREPARED = "PREPARED"
+        const val STATUS_RUNNING = "RUNNING"
+        const val STATUS_SUCCEEDED = "SUCCEEDED"
+        const val STATUS_FAILED = "FAILED"
+        const val STATUS_WAITING_FOR_APPROVAL = "WAITING_FOR_APPROVAL"
+        const val STATUS_NEEDS_REVIEW = "NEEDS_REVIEW"
+        const val STATUS_CANCELLED = "CANCELLED"
+        const val STATUS_SKIPPED = "SKIPPED"
+        val ALL_STATUSES = setOf(
+            STATUS_BLOCKED, STATUS_READY, STATUS_PREPARED, STATUS_RUNNING, STATUS_SUCCEEDED,
+            STATUS_FAILED, STATUS_WAITING_FOR_APPROVAL, STATUS_NEEDS_REVIEW, STATUS_CANCELLED, STATUS_SKIPPED
+        )
+        val TERMINAL_STATUSES = setOf(STATUS_SUCCEEDED, STATUS_FAILED, STATUS_NEEDS_REVIEW, STATUS_CANCELLED, STATUS_SKIPPED)
+    }
+}
+
+data class WorkGraphExecutionRecord(
+    val id: String,
+    val jobId: String,
+    val sourceConversationId: String,
+    val sourceMessageId: String,
+    val graphDigest: String,
+    val status: String = STATUS_READY,
+    val invocations: List<WorkNodeInvocationRecord>,
+    val createdAt: Long = nowMillis(),
+    val updatedAt: Long = nowMillis()
+) {
+    fun validateFor(job: WorkJobRecord) {
+        require(id.isNotBlank() && id.length <= 128 && jobId == job.id) { "Execution journal is not bound to this Work job." }
+        require(sourceConversationId == job.sourceConversationId && sourceMessageId == job.sourceMessageId) {
+            "Execution journal source identity does not match the originating user request."
+        }
+        require(graphDigest.matches(Regex("[a-fA-F0-9]{64}"))) { "Execution journal graph digest is invalid." }
+        require(status in ALL_STATUSES && invocations.size in 1..MAX_NODES) { "Execution journal state or node count is invalid." }
+        require(invocations.map { it.nodeId }.toSet().size == invocations.size) { "Execution journal contains duplicate node IDs." }
+        require(invocations.all {
+            it.nodeId.isNotBlank() && it.nodeId.length <= 128 &&
+                it.invocationId.isNotBlank() && it.invocationId.length <= 128 &&
+                it.status in WorkNodeInvocationRecord.ALL_STATUSES && it.attempt in 0..1 &&
+                it.inputHash.length <= 64 && it.outputReference.length <= 2_048 &&
+                it.approvalBindingHash.length <= 64 && it.error.length <= 1_000 &&
+                it.startedAt >= 0L && it.updatedAt >= 0L && it.finishedAt >= 0L
+        }) { "Execution journal contains an invalid node invocation." }
+        require(invocations.count { it.status == WorkNodeInvocationRecord.STATUS_RUNNING } <= 1) {
+            "This execution journal currently supports one active node at a time."
+        }
+    }
+
+    /** Makes a node runnable only after every declared dependency has succeeded. */
+    fun markReady(nodeId: String, dependencies: Set<String>, at: Long = nowMillis()): WorkGraphExecutionRecord {
+        require(dependencies.all { dependency -> invocations.any { it.nodeId == dependency && it.status == WorkNodeInvocationRecord.STATUS_SUCCEEDED } }) {
+            "A node cannot become ready until all dependencies have succeeded."
+        }
+        return updateNode(nodeId, at) { node ->
+            require(node.status == WorkNodeInvocationRecord.STATUS_BLOCKED) { "Only a blocked node can become ready." }
+            node.copy(status = WorkNodeInvocationRecord.STATUS_READY, updatedAt = at)
+        }.copy(status = STATUS_RUNNING, updatedAt = at)
+    }
+
+    /** Persist PREPARED before any adapter is called. */
+    fun prepare(nodeId: String, inputHash: String, at: Long = nowMillis()): WorkGraphExecutionRecord {
+        require(inputHash.matches(Regex("[a-fA-F0-9]{64}"))) { "A prepared invocation requires a SHA-256 input hash." }
+        return updateNode(nodeId, at) { node ->
+            require(node.status == WorkNodeInvocationRecord.STATUS_READY) { "Only a ready node can be prepared." }
+            node.copy(status = WorkNodeInvocationRecord.STATUS_PREPARED, inputHash = inputHash, updatedAt = at)
+        }
+    }
+
+    /** Dispatch is legal only after PREPARED has been durably written by the caller. */
+    fun start(nodeId: String, at: Long = nowMillis()): WorkGraphExecutionRecord =
+        updateNode(nodeId, at) { node ->
+            require(node.status == WorkNodeInvocationRecord.STATUS_PREPARED) { "An invocation must be prepared before dispatch." }
+            node.copy(status = WorkNodeInvocationRecord.STATUS_RUNNING, startedAt = at, updatedAt = at)
+        }.copy(status = STATUS_RUNNING, updatedAt = at)
+
+    fun finish(
+        nodeId: String,
+        outcome: String,
+        outputReference: String = "",
+        error: String = "",
+        at: Long = nowMillis()
+    ): WorkGraphExecutionRecord {
+        require(outcome in setOf(
+            WorkNodeInvocationRecord.STATUS_SUCCEEDED, WorkNodeInvocationRecord.STATUS_FAILED,
+            WorkNodeInvocationRecord.STATUS_WAITING_FOR_APPROVAL, WorkNodeInvocationRecord.STATUS_NEEDS_REVIEW,
+            WorkNodeInvocationRecord.STATUS_CANCELLED
+        )) { "Unsupported invocation outcome." }
+        if (outcome == WorkNodeInvocationRecord.STATUS_SUCCEEDED) require(outputReference.isNotBlank()) {
+            "A successful invocation must reference a verifiable output."
+        }
+        val next = updateNode(nodeId, at) { node ->
+            require(node.status == WorkNodeInvocationRecord.STATUS_RUNNING) { "Only a running invocation can finish." }
+            node.copy(
+                status = outcome, outputReference = outputReference.take(2_048), error = error.take(1_000),
+                updatedAt = at, finishedAt = if (outcome == WorkNodeInvocationRecord.STATUS_WAITING_FOR_APPROVAL) 0L else at
+            )
+        }
+        val statuses = next.invocations.map { it.status }
+        val runStatus = when {
+            statuses.any { it == WorkNodeInvocationRecord.STATUS_NEEDS_REVIEW } -> STATUS_NEEDS_REVIEW
+            statuses.any { it == WorkNodeInvocationRecord.STATUS_FAILED } -> STATUS_FAILED
+            statuses.all { it in WorkNodeInvocationRecord.TERMINAL_STATUSES } -> STATUS_COMPLETED
+            statuses.any { it == WorkNodeInvocationRecord.STATUS_WAITING_FOR_APPROVAL } -> STATUS_WAITING_FOR_APPROVAL
+            else -> STATUS_RUNNING
+        }
+        return next.copy(status = runStatus, updatedAt = at)
+    }
+
+    /** Approval is bound to the exact prepared invocation input; approval never authorizes a changed payload. */
+    fun prepareAfterApproval(nodeId: String, bindingHash: String, at: Long = nowMillis()): WorkGraphExecutionRecord {
+        require(bindingHash.matches(Regex("[a-fA-F0-9]{64}"))) { "Approval must bind to a SHA-256 payload hash." }
+        return updateNode(nodeId, at) { node ->
+            require(node.status == WorkNodeInvocationRecord.STATUS_WAITING_FOR_APPROVAL) { "This node is not waiting for approval." }
+            require(node.inputHash.equals(bindingHash, ignoreCase = true)) { "Approval does not match the exact prepared input." }
+            node.copy(
+                status = WorkNodeInvocationRecord.STATUS_PREPARED,
+                approvalBindingHash = bindingHash.lowercase(),
+                updatedAt = at
+            )
+        }.copy(status = STATUS_RUNNING, updatedAt = at)
+    }
+
+    /** Process death is ambiguous: PREPARED and RUNNING are both review-only, never auto-replayed. */
+    fun recoverAfterRestart(at: Long = nowMillis()): WorkGraphExecutionRecord {
+        val recovered = invocations.map { node ->
+            if (node.status in setOf(WorkNodeInvocationRecord.STATUS_PREPARED, WorkNodeInvocationRecord.STATUS_RUNNING)) {
+                node.copy(
+                    status = WorkNodeInvocationRecord.STATUS_NEEDS_REVIEW,
+                    error = "Interrupted by application restart. Inspect evidence before deciding whether to continue.",
+                    updatedAt = at,
+                    finishedAt = at
+                )
+            } else node
+        }
+        val runStatus = if (recovered.any { it.status == WorkNodeInvocationRecord.STATUS_NEEDS_REVIEW }) STATUS_NEEDS_REVIEW else status
+        return copy(status = runStatus, invocations = recovered, updatedAt = at)
+    }
+
+    private fun updateNode(
+        nodeId: String,
+        at: Long,
+        transform: (WorkNodeInvocationRecord) -> WorkNodeInvocationRecord
+    ): WorkGraphExecutionRecord {
+        require(invocations.count { it.status == WorkNodeInvocationRecord.STATUS_RUNNING } <= 1) {
+            "A node is already running; parallel dispatch is not enabled."
+        }
+        require(invocations.any { it.nodeId == nodeId }) { "Unknown workflow node '$nodeId'." }
+        return copy(invocations = invocations.map { if (it.nodeId == nodeId) transform(it) else it }, updatedAt = at)
+    }
+
+    fun toJson(): String {
+        require(invocations.size in 1..MAX_NODES) { "Execution journal node count is invalid." }
+        return JSONObject().apply {
+            put("version", VERSION)
+            put("id", id)
+            put("jobId", jobId)
+            put("sourceConversationId", sourceConversationId)
+            put("sourceMessageId", sourceMessageId)
+            put("graphDigest", graphDigest)
+            put("status", status)
+            put("createdAt", createdAt)
+            put("updatedAt", updatedAt)
+            put("invocations", JSONArray().apply {
+                invocations.forEach { node ->
+                    put(JSONObject().apply {
+                        put("nodeId", node.nodeId)
+                        put("invocationId", node.invocationId)
+                        put("status", node.status)
+                        put("attempt", node.attempt)
+                        put("inputHash", node.inputHash)
+                        put("outputReference", node.outputReference)
+                        put("approvalBindingHash", node.approvalBindingHash)
+                        put("error", node.error)
+                        put("startedAt", node.startedAt)
+                        put("updatedAt", node.updatedAt)
+                        put("finishedAt", node.finishedAt)
+                    })
+                }
+            })
+        }.toString().also { require(it.length <= MAX_JSON_CHARS) { "Execution journal exceeds its safe size limit." } }
+    }
+
+    companion object {
+        const val STATUS_READY = "READY"
+        const val STATUS_RUNNING = "RUNNING"
+        const val STATUS_WAITING_FOR_APPROVAL = "WAITING_FOR_APPROVAL"
+        const val STATUS_NEEDS_REVIEW = "NEEDS_REVIEW"
+        const val STATUS_COMPLETED = "COMPLETED"
+        const val STATUS_FAILED = "FAILED"
+        const val STATUS_CANCELLED = "CANCELLED"
+        private const val VERSION = 1
+        private const val MAX_NODES = 100
+        private const val MAX_JSON_CHARS = 256_000
+        private val ALL_STATUSES = setOf(STATUS_READY, STATUS_RUNNING, STATUS_WAITING_FOR_APPROVAL, STATUS_NEEDS_REVIEW, STATUS_COMPLETED, STATUS_FAILED, STATUS_CANCELLED)
+
+        fun fromJson(raw: String): WorkGraphExecutionRecord {
+            require(raw.length in 2..MAX_JSON_CHARS) { "Execution journal is empty or too large." }
+            val root = JSONObject(raw)
+            require(root.optInt("version", 0) == VERSION) { "Execution journal version is not supported." }
+            val nodes = root.optJSONArray("invocations") ?: JSONArray()
+            require(nodes.length() in 1..MAX_NODES) { "Execution journal node count is invalid." }
+            val record = WorkGraphExecutionRecord(
+                id = root.optString("id", "").take(128),
+                jobId = root.optString("jobId", "").take(128),
+                sourceConversationId = root.optString("sourceConversationId", "").take(128),
+                sourceMessageId = root.optString("sourceMessageId", "").take(128),
+                graphDigest = root.optString("graphDigest", "").take(64),
+                status = root.optString("status", "").take(40),
+                createdAt = root.optLong("createdAt", 0L),
+                updatedAt = root.optLong("updatedAt", 0L),
+                invocations = (0 until nodes.length()).map { index ->
+                    val row = nodes.getJSONObject(index)
+                    WorkNodeInvocationRecord(
+                        nodeId = row.optString("nodeId", "").take(128),
+                        invocationId = row.optString("invocationId", "").take(128),
+                        status = row.optString("status", "").take(40),
+                        attempt = row.optInt("attempt", 0),
+                        inputHash = row.optString("inputHash", "").take(64),
+                        outputReference = row.optString("outputReference", "").take(2_048),
+                        approvalBindingHash = row.optString("approvalBindingHash", "").take(64),
+                        error = row.optString("error", "").take(1_000),
+                        startedAt = row.optLong("startedAt", 0L),
+                        updatedAt = row.optLong("updatedAt", 0L),
+                        finishedAt = row.optLong("finishedAt", 0L)
+                    )
+                }
+            )
+            require(record.status in ALL_STATUSES) { "Execution journal status is invalid." }
+            require(record.id.isNotBlank() && record.jobId.isNotBlank() && record.sourceConversationId.isNotBlank() && record.sourceMessageId.isNotBlank()) {
+                "Execution journal identity is incomplete."
+            }
+            require(record.graphDigest.matches(Regex("[a-fA-F0-9]{64}"))) { "Execution journal graph digest is invalid." }
+            require(record.invocations.map { it.nodeId }.toSet().size == record.invocations.size) { "Execution journal contains duplicate node IDs." }
+            require(record.invocations.all { node ->
+                node.nodeId.isNotBlank() && node.invocationId.isNotBlank() &&
+                    node.status in WorkNodeInvocationRecord.ALL_STATUSES && node.attempt in 0..1 &&
+                    node.inputHash.length <= 64 && node.approvalBindingHash.length <= 64 &&
+                    node.outputReference.length <= 2_048 && node.error.length <= 1_000 &&
+                    node.startedAt >= 0L && node.updatedAt >= 0L && node.finishedAt >= 0L
+            }) { "Execution journal contains an invalid node invocation." }
+            require(record.invocations.count { it.status == WorkNodeInvocationRecord.STATUS_RUNNING } <= 1) {
+                "Execution journal contains multiple active invocations."
+            }
+            return record
+        }
+    }
+}
