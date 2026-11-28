@@ -110,10 +110,14 @@ data class WorkGraphExecutionRecord(
         require(target.dependencies.all { dependency -> invocations.any { it.nodeId == dependency && it.status == WorkNodeInvocationRecord.STATUS_SUCCEEDED } }) {
             "A node cannot become ready until all dependencies have succeeded."
         }
-        return updateNode(nodeId, at) { node ->
+        val next = updateNode(nodeId, at) { node ->
             require(node.status == WorkNodeInvocationRecord.STATUS_BLOCKED) { "Only a blocked node can become ready." }
             node.copy(status = WorkNodeInvocationRecord.STATUS_READY, updatedAt = at)
-        }.copy(status = STATUS_READY, updatedAt = at)
+        }
+        return next.copy(
+            status = if (next.invocations.any { it.status == WorkNodeInvocationRecord.STATUS_RUNNING }) STATUS_RUNNING else STATUS_READY,
+            updatedAt = at
+        )
     }
 
     /** Persist PREPARED before any adapter is called. */
@@ -175,7 +179,7 @@ data class WorkGraphExecutionRecord(
     /** Approval is bound to the exact prepared invocation input; approval never authorizes a changed payload. */
     fun prepareAfterApproval(nodeId: String, bindingHash: String, at: Long = nowMillis()): WorkGraphExecutionRecord {
         require(bindingHash.matches(Regex("[a-fA-F0-9]{64}"))) { "Approval must bind to a SHA-256 payload hash." }
-        return updateNode(nodeId, at) { node ->
+        val next = updateNode(nodeId, at) { node ->
             require(node.status == WorkNodeInvocationRecord.STATUS_WAITING_FOR_APPROVAL) { "This node is not waiting for approval." }
             require(node.inputHash.equals(bindingHash, ignoreCase = true)) { "Approval does not match the exact prepared input." }
             node.copy(
@@ -183,7 +187,11 @@ data class WorkGraphExecutionRecord(
                 approvalBindingHash = bindingHash.lowercase(),
                 updatedAt = at
             )
-        }.copy(status = STATUS_READY, updatedAt = at)
+        }
+        return next.copy(
+            status = if (next.invocations.any { it.status == WorkNodeInvocationRecord.STATUS_RUNNING }) STATUS_RUNNING else STATUS_READY,
+            updatedAt = at
+        )
     }
 
     val hasInterruptedInvocation: Boolean
