@@ -310,11 +310,12 @@ data class AppSnapshot(
                 ) else task
             },
             jobs = jobs.map { job ->
-                val recoveredJournal = job.executionJournalJson.takeIf { it.isNotBlank() }
-                    ?.let { WorkGraphExecutionRecord.fromJson(it).recoverAfterRestart().toJson() }
-                if (job.status == "RUNNING" || (job.executionJournalJson.isNotBlank() && WorkGraphExecutionRecord.fromJson(job.executionJournalJson).hasInterruptedInvocation)) job.copy(
+                val journal = job.executionJournalJson.takeIf { it.isNotBlank() }
+                    ?.let(WorkGraphExecutionRecord::fromJson)
+                val shouldRecover = job.status == "RUNNING" || journal?.hasInterruptedInvocation == true
+                if (shouldRecover) job.copy(
                     status = "WAITING_FOR_USER",
-                    executionJournalJson = recoveredJournal.orEmpty(),
+                    executionJournalJson = journal?.recoverAfterRestart()?.toJson().orEmpty(),
                     resultSummary = "Memo restarted during this job. Review the last step before resuming.",
                     steps = job.steps.map { step ->
                         if (step.status != "RUNNING") step
