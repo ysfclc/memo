@@ -475,9 +475,9 @@ data class AppSnapshot(
         councilRunLimit: Int
     ): String {
         val root = JSONObject()
-        root.put("schemaVersion", 7)
-        root.put("schemaSemver", "7.0.0")
-        root.put("minimumReaderVersion", 7)
+        root.put("schemaVersion", 8)
+        root.put("schemaSemver", "8.0.0")
+        root.put("minimumReaderVersion", 8)
         root.put("exportedAt", nowMillis())
         root.put("themeMode", themeMode)
         root.put("tasks", JSONArray().apply {
@@ -728,13 +728,13 @@ data class AppSnapshot(
             require(raw.toByteArray(Charsets.UTF_8).size <= MAX_WORKSPACE_BACKUP_BYTES) { "Import file is larger than 40 MB." }
             val root = JSONObject(raw)
             val schema = root.optInt("schemaVersion", 0)
-            require(schema in 1..7) { "This backup format is not supported." }
+            require(schema in 1..8) { "This backup format is not supported." }
             val schemaSemver = root.safeString("schemaSemver")
             if (schemaSemver.isNotBlank()) {
                 val major = schemaSemver.substringBefore('.').toIntOrNull()
                 require(major == schema) { "Backup schema version metadata is inconsistent." }
             }
-            require(root.optInt("minimumReaderVersion", schema).coerceAtLeast(1) <= 7) { "This backup requires a newer Memo reader." }
+            require(root.optInt("minimumReaderVersion", schema).coerceAtLeast(1) <= 8) { "This backup requires a newer Memo reader." }
 
             val usedTaskIds = mutableSetOf<String>()
             val tasks = root.optJSONArray("tasks").toTypedRecords(MAX_TASKS) { row ->
