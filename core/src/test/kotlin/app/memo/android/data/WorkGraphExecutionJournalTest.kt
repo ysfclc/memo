@@ -99,7 +99,7 @@ class WorkGraphExecutionJournalTest {
         val (_, initial) = fixture()
         val running = initial.markReady("collect").prepare("collect", hash).start("collect")
         val withSecondReady = running.copy(invocations = running.invocations.map { node ->
-            if (node.nodeId == "review") node.copy(status = WorkNodeInvocationRecord.STATUS_READY) else node
+            if (node.nodeId == "review") node.copy(status = WorkNodeInvocationRecord.STATUS_READY, dependencies = emptyList()) else node
         })
         assertTrue(runCatching { withSecondReady.prepare("review", hash).start("review") }.isFailure)
     }
