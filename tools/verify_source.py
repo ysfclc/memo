@@ -228,7 +228,7 @@ for marker in (
     "secondNodeCannotStartWhileAnotherInvocationIsRunning",
     "approvalIsBoundToExactPreparedInput",
     "interruptedPreparedOrRunningInvocationBecomesReviewOnlyAndIsNeverReplayed",
-    "journalRoundTripsInsideExistingJobBackupWithoutChangingWorkspaceSchema",
+    "journalRoundTripsInsideExistingJobBackupWithSchemaVersionEight",
     "journalRejectsChangedGraphOrSourceIdentity",
     "restartRecoveryIsIntegratedIntoWorkspaceSnapshot",
 ):
