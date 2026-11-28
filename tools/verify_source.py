@@ -215,7 +215,7 @@ for marker in (
     "data class VerifiedWorkOutput",
     "fun verifyObserved(",
     "persisted output whose read-back digest has been verified",
-    "Another workflow node is already running",,
+    "Another workflow node is already running",
     "fun recoverAfterRestart(",
     "fun validateFor(job: WorkJobRecord)",
     "graphDigest(job.workflowGraphJson)",
