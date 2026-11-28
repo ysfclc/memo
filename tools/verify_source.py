@@ -210,6 +210,7 @@ for marker in (
     "data class WorkNodeInvocationRecord(",
     "fun markReady(nodeId: String",
     "fun prepare(nodeId: String",
+    "requireDependenciesSucceeded(nodeId)",
     "fun start(nodeId: String",
     "fun prepareAfterApproval(",
     "data class VerifiedWorkOutput",
