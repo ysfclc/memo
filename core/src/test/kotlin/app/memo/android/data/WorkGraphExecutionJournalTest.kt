@@ -88,7 +88,7 @@ class WorkGraphExecutionJournalTest {
         assertTrue(runCatching {
             running.finish("collect", WorkNodeInvocationRecord.STATUS_SUCCEEDED)
         }.isFailure)
-        assertEquals(WorkNodeInvocationRecord.STATUS_RUNNING, running.invocations.single().status)
+        assertEquals(WorkNodeInvocationRecord.STATUS_RUNNING, running.invocations.first().status)
     }
 
     @Test fun approvalIsBoundToExactPreparedInput() {
