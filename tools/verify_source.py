@@ -224,6 +224,9 @@ for marker in (
     "fun createFor(",
     "invocationIdFactory(node.id)",
     "graphDigest(job.workflowGraphJson)",
+    "A completed graph must have only successful or explicitly skipped nodes.",
+    "A failed graph must contain a failed node.",
+    "A graph waiting for approval must contain a node waiting for approval.",
 ):
     if marker not in work_journal:
         fail(f"durable Work graph journal contract is missing: {marker}")
