@@ -229,6 +229,7 @@ for marker in (
     "approvalIsBoundToExactPreparedInput",
     "interruptedPreparedOrRunningInvocationBecomesReviewOnlyAndIsNeverReplayed",
     "journalRoundTripsInsideExistingJobBackupWithSchemaVersionEight",
+    "schemaSevenWorkspaceImportsWithoutInventingAnExecutionJournal",
     "journalRejectsChangedGraphOrSourceIdentity",
     "restartRecoveryIsIntegratedIntoWorkspaceSnapshot",
 ):
