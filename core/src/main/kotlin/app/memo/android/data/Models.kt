@@ -200,7 +200,9 @@ data class WorkJobRecord(
     val updatedAt: Long = nowMillis(),
     val workflowGraphJson: String = "",
     val todayPriority: String = "UNSORTED",
-    val todayPriorityDate: String = ""
+    val todayPriorityDate: String = "",
+    /** Versioned durable per-node execution journal; blank for jobs that have not entered graph execution. */
+    val executionJournalJson: String = ""
 )
 
 
@@ -361,8 +363,11 @@ data class AppSnapshot(
         require(conversations.all { it.messages.size <= MAX_MESSAGES_PER_CONVERSATION }) { "A conversation exceeds the 250-message backup limit." }
         require(entities.size <= MAX_ENTITIES) { "Workspace contains too many entities for a safe backup." }
         require(relationships.size <= MAX_RELATIONSHIPS) { "Workspace contains too many relationships for a safe backup." }
-        require(jobs.size <= MAX_JOBS && jobs.all { it.steps.size <= MAX_JOB_STEPS && it.workflowGraphJson.length <= 64_000 }) { "Workspace contains too many jobs, job steps or workflow graph data for a safe backup." }
-        jobs.forEach { job -> if (job.workflowGraphJson.isNotBlank()) app.memo.android.orchestration.WorkflowGraph.fromJson(job.workflowGraphJson) }
+        require(jobs.size <= MAX_JOBS && jobs.all { it.steps.size <= MAX_JOB_STEPS && it.workflowGraphJson.length <= 64_000 && it.executionJournalJson.length <= 256_000 }) { "Workspace contains too many jobs, job steps, workflow graph or execution journal data for a safe backup." }
+        jobs.forEach { job ->
+            if (job.workflowGraphJson.isNotBlank()) app.memo.android.orchestration.WorkflowGraph.fromJson(job.workflowGraphJson)
+            if (job.executionJournalJson.isNotBlank()) WorkGraphExecutionRecord.fromJson(job.executionJournalJson).validateFor(job)
+        }
         require(actionApprovals.size <= MAX_ACTION_APPROVALS) { "Workspace contains too many action approval records for a safe backup." }
         require(actionAuditEvents.size <= MAX_ACTION_AUDIT_EVENTS) { "Workspace contains too many audit events for a safe backup." }
         require(agentRuns.size <= MAX_AGENT_RUNS) { "Workspace contains too many Memo execution records for a safe backup." }
@@ -432,7 +437,7 @@ data class AppSnapshot(
         }
         relationships.forEach { add(it.id); add(it.fromEntityId); add(it.toEntityId); add(it.relationType); add(it.sourceConversationId) }
         jobs.forEach { job ->
-            add(job.id); add(job.title); add(job.goal); add(job.status); add(job.runtimeId); add(job.sourceConversationId); add(job.sourceMessageId); add(job.resultSummary); add(job.workflowGraphJson); add(job.todayPriority); add(job.todayPriorityDate)
+            add(job.id); add(job.title); add(job.goal); add(job.status); add(job.runtimeId); add(job.sourceConversationId); add(job.sourceMessageId); add(job.resultSummary); add(job.workflowGraphJson); add(job.todayPriority); add(job.todayPriorityDate); add(job.executionJournalJson)
             job.steps.forEach { add(it.id); add(it.title); add(it.detail); add(it.status); add(it.evidence) }
         }
         actionApprovals.forEach { action ->
@@ -620,6 +625,7 @@ data class AppSnapshot(
                     put("sourceMessageId", job.sourceMessageId.take(128))
                     put("resultSummary", job.resultSummary.take(4_000))
                     put("workflowGraphJson", job.workflowGraphJson.take(64_000))
+                    put("executionJournalJson", job.executionJournalJson.take(256_000))
                     put("todayPriority", job.todayPriority)
                     put("todayPriorityDate", job.todayPriorityDate.take(10))
                     put("createdAt", job.createdAt)
@@ -894,6 +900,7 @@ data class AppSnapshot(
                     createdAt = row.optLong("createdAt", nowMillis()),
                     updatedAt = row.optLong("updatedAt", nowMillis()),
                     workflowGraphJson = row.safeString("workflowGraphJson").take(64_000),
+                    executionJournalJson = row.safeString("executionJournalJson").take(256_000),
                     todayPriority = row.safeString("todayPriority").takeIf { it in TODAY_PRIORITY_VALUES && row.safeString("todayPriorityDate").matches(Regex("\\d{4}-\\d{2}-\\d{2}")) } ?: "UNSORTED",
                     todayPriorityDate = row.safeString("todayPriorityDate").takeIf { it.matches(Regex("\\d{4}-\\d{2}-\\d{2}")) }.orEmpty()
                 )
