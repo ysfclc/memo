@@ -126,4 +126,10 @@ class WorkGraphSchedulerTest {
         val allDone = completeNode(completeNode(completeNode(initial, "gather_b"), "gather_a"), "synthesize")
         assertTrue(WorkGraphScheduler.next(job, allDone) is WorkGraphScheduler.Decision.Completed)
     }
+    @Test fun inconsistentTerminalRunStateIsRejectedBeforeScheduling() {
+        val (job, journal) = fixture()
+        val forgedComplete = journal.copy(status = WorkGraphExecutionRecord.STATUS_COMPLETED)
+        assertTrue(runCatching { WorkGraphScheduler.next(job, forgedComplete) }.isFailure)
+    }
+
 }
